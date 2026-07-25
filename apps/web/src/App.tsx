@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
+import type {
+  AuthChangeEvent,
+  Session,
+} from '@supabase/supabase-js'
+
 import { supabase } from './lib/supabase'
+import { SkpeCockpit } from './modules/skpe/SkpeCockpit'
+
 import './App.css'
 
-const LAST_SUCCESSFUL_EMAIL_KEY = 'skpe:last-successful-email'
+const LAST_SUCCESSFUL_EMAIL_KEY =
+  'skpe:last-successful-email'
 
 type MessageType = 'info' | 'success' | 'error'
 
@@ -47,7 +54,11 @@ type PasswordVisibilityButtonProps = {
 
 function EyeIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path
         d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"
         fill="none"
@@ -71,7 +82,11 @@ function EyeIcon() {
 
 function EyeOffIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path
         d="M3 3l18 18"
         fill="none"
@@ -112,7 +127,11 @@ function EyeOffIcon() {
 
 function ArrowRightIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path
         d="M5 12h14M13 6l6 6-6 6"
         fill="none"
@@ -127,7 +146,11 @@ function ArrowRightIcon() {
 
 function StrategyIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
       <circle
         cx="12"
         cy="12"
@@ -146,7 +169,12 @@ function StrategyIcon() {
         strokeWidth="1.7"
       />
 
-      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      <circle
+        cx="12"
+        cy="12"
+        r="1.5"
+        fill="currentColor"
+      />
 
       <path
         d="M14 10l5-5M16.5 5H19v2.5"
@@ -184,41 +212,75 @@ function PasswordVisibilityButton({
 }
 
 function App() {
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] =
+    useState<Session | null>(null)
 
   const [email, setEmail] = useState(() => {
-    return localStorage.getItem(LAST_SUCCESSFUL_EMAIL_KEY) ?? ''
+    return (
+      localStorage.getItem(
+        LAST_SUCCESSFUL_EMAIL_KEY,
+      ) ?? ''
+    )
   })
 
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] =
+    useState(false)
 
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [selectedOrganization, setSelectedOrganization] =
-    useState<Organization | null>(null)
+  const [organizations, setOrganizations] =
+    useState<Organization[]>([])
 
-  const [modules, setModules] = useState<PlatformModule[]>([])
-  const [platformRoles, setPlatformRoles] = useState<PlatformRole[]>([])
+  const [
+    selectedOrganization,
+    setSelectedOrganization,
+  ] = useState<Organization | null>(null)
+
+  const [modules, setModules] =
+    useState<PlatformModule[]>([])
+
+  const [openedModule, setOpenedModule] =
+    useState<PlatformModule | null>(null)
+
+  const [platformRoles, setPlatformRoles] =
+    useState<PlatformRole[]>([])
 
   const [message, setMessage] = useState('')
+
   const [messageType, setMessageType] =
     useState<MessageType>('info')
 
   const [loading, setLoading] = useState(true)
-  const [loadingModules, setLoadingModules] = useState(false)
 
-  const [forgotPasswordMode, setForgotPasswordMode] =
+  const [loadingModules, setLoadingModules] =
     useState(false)
 
-  const [passwordRecoveryMode, setPasswordRecoveryMode] =
-    useState(false)
+  const [
+    forgotPasswordMode,
+    setForgotPasswordMode,
+  ] = useState(false)
 
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmNewPassword, setConfirmNewPassword] = useState('')
+  const [
+    passwordRecoveryMode,
+    setPasswordRecoveryMode,
+  ] = useState(false)
 
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmNewPassword, setShowConfirmNewPassword] =
-    useState(false)
+  const [newPassword, setNewPassword] =
+    useState('')
+
+  const [
+    confirmNewPassword,
+    setConfirmNewPassword,
+  ] = useState('')
+
+  const [
+    showNewPassword,
+    setShowNewPassword,
+  ] = useState(false)
+
+  const [
+    showConfirmNewPassword,
+    setShowConfirmNewPassword,
+  ] = useState(false)
 
   const showMessage = (
     text: string,
@@ -237,7 +299,8 @@ function App() {
     let mounted = true
 
     const loadInitialSession = async () => {
-      const { data, error } = await supabase.auth.getSession()
+      const { data, error } =
+        await supabase.auth.getSession()
 
       if (!mounted) {
         return
@@ -286,6 +349,7 @@ function App() {
           setModules([])
           setPlatformRoles([])
           setSelectedOrganization(null)
+          setOpenedModule(null)
         }
       },
     )
@@ -299,56 +363,59 @@ function App() {
   useEffect(() => {
     let mounted = true
 
-    const loadAuthenticatedUserData = async () => {
-      if (!session || passwordRecoveryMode) {
-        setOrganizations([])
-        setPlatformRoles([])
-        return
+    const loadAuthenticatedUserData =
+      async () => {
+        if (!session || passwordRecoveryMode) {
+          setOrganizations([])
+          setPlatformRoles([])
+          return
+        }
+
+        setLoading(true)
+        clearMessage()
+
+        const [
+          organizationsResponse,
+          platformRolesResponse,
+        ] = await Promise.all([
+          supabase.rpc('get_my_organizations'),
+          supabase.rpc('get_my_platform_roles'),
+        ])
+
+        if (!mounted) {
+          return
+        }
+
+        if (organizationsResponse.error) {
+          showMessage(
+            `Erro ao carregar organizações: ${organizationsResponse.error.message}`,
+            'error',
+          )
+
+          setOrganizations([])
+        } else {
+          setOrganizations(
+            (organizationsResponse.data ??
+              []) as Organization[],
+          )
+        }
+
+        if (platformRolesResponse.error) {
+          console.error(
+            'Não foi possível carregar os papéis globais:',
+            platformRolesResponse.error,
+          )
+
+          setPlatformRoles([])
+        } else {
+          setPlatformRoles(
+            (platformRolesResponse.data ??
+              []) as PlatformRole[],
+          )
+        }
+
+        setLoading(false)
       }
-
-      setLoading(true)
-      clearMessage()
-
-      const [
-        organizationsResponse,
-        platformRolesResponse,
-      ] = await Promise.all([
-        supabase.rpc('get_my_organizations'),
-        supabase.rpc('get_my_platform_roles'),
-      ])
-
-      if (!mounted) {
-        return
-      }
-
-      if (organizationsResponse.error) {
-        showMessage(
-          `Erro ao carregar organizações: ${organizationsResponse.error.message}`,
-          'error',
-        )
-
-        setOrganizations([])
-      } else {
-        setOrganizations(
-          (organizationsResponse.data ?? []) as Organization[],
-        )
-      }
-
-      if (platformRolesResponse.error) {
-        console.error(
-          'Não foi possível carregar os papéis globais:',
-          platformRolesResponse.error,
-        )
-
-        setPlatformRoles([])
-      } else {
-        setPlatformRoles(
-          (platformRolesResponse.data ?? []) as PlatformRole[],
-        )
-      }
-
-      setLoading(false)
-    }
 
     void loadAuthenticatedUserData()
 
@@ -361,13 +428,18 @@ function App() {
     organization: Organization,
   ) => {
     setSelectedOrganization(organization)
+    setOpenedModule(null)
     setModules([])
     setLoadingModules(true)
     clearMessage()
 
-    const { data, error } = await supabase.rpc('get_my_modules', {
-      target_organization_id: organization.organization_id,
-    })
+    const { data, error } = await supabase.rpc(
+      'get_my_modules',
+      {
+        target_organization_id:
+          organization.organization_id,
+      },
+    )
 
     if (error) {
       showMessage(
@@ -386,17 +458,22 @@ function App() {
 
   const handleReturnToOrganizations = () => {
     setSelectedOrganization(null)
+    setOpenedModule(null)
     setModules([])
     clearMessage()
   }
 
-  const handleOpenModule = (module: PlatformModule) => {
-    if (module.module_code === 'SK-PE') {
-      showMessage(
-        'O acesso ao cockpit do SK-PE será implementado na próxima etapa.',
-        'info',
-      )
+  const handleReturnToModules = () => {
+    setOpenedModule(null)
+    clearMessage()
+  }
 
+  const handleOpenModule = (
+    module: PlatformModule,
+  ) => {
+    if (module.module_code === 'SK-PE') {
+      setOpenedModule(module)
+      clearMessage()
       return
     }
 
@@ -414,12 +491,15 @@ function App() {
     setLoading(true)
     clearMessage()
 
-    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedEmail = email
+      .trim()
+      .toLowerCase()
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    })
+    const { error } =
+      await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
 
     if (error) {
       showMessage(
@@ -446,7 +526,8 @@ function App() {
     setLoading(true)
     clearMessage()
 
-    const { error } = await supabase.auth.signOut()
+    const { error } =
+      await supabase.auth.signOut()
 
     if (error) {
       showMessage(
@@ -464,6 +545,7 @@ function App() {
     setModules([])
     setPlatformRoles([])
     setSelectedOrganization(null)
+    setOpenedModule(null)
     setLoading(false)
   }
 
@@ -475,14 +557,17 @@ function App() {
     setLoading(true)
     clearMessage()
 
-    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedEmail = email
+      .trim()
+      .toLowerCase()
 
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      normalizedEmail,
-      {
-        redirectTo: window.location.origin,
-      },
-    )
+    const { error } =
+      await supabase.auth.resetPasswordForEmail(
+        normalizedEmail,
+        {
+          redirectTo: window.location.origin,
+        },
+      )
 
     if (error) {
       console.error(
@@ -516,7 +601,9 @@ function App() {
       return
     }
 
-    if (newPassword !== confirmNewPassword) {
+    if (
+      newPassword !== confirmNewPassword
+    ) {
       showMessage(
         'As senhas informadas não são iguais.',
         'error',
@@ -592,15 +679,44 @@ function App() {
     clearMessage()
   }
 
-  const isPlatformSuperAdmin = platformRoles.some(
-    (role) => role.role_code === 'super_admin',
-  )
+  const isPlatformSuperAdmin =
+    platformRoles.some(
+      (role) =>
+        role.role_code === 'super_admin',
+    )
 
-  if (loading && !session && !forgotPasswordMode) {
+  if (
+    openedModule &&
+    selectedOrganization
+  ) {
+    return (
+      <SkpeCockpit
+        organizationName={
+          selectedOrganization.trade_name ??
+          selectedOrganization.legal_name
+        }
+        organizationCode={
+          selectedOrganization.organization_code
+        }
+        userRole={openedModule.role_name}
+        onReturnToModules={
+          handleReturnToModules
+        }
+      />
+    )
+  }
+
+  if (
+    loading &&
+    !session &&
+    !forgotPasswordMode
+  ) {
     return (
       <main className="app-shell">
         <section className="panel login-panel">
-          <p className="loading-text">Carregando...</p>
+          <p className="loading-text">
+            Carregando...
+          </p>
         </section>
       </main>
     )
@@ -610,12 +726,15 @@ function App() {
     return (
       <main className="app-shell">
         <section className="panel login-panel">
-          <p className="eyebrow">Plataforma SPARKs</p>
+          <p className="eyebrow">
+            Plataforma SPARKs
+          </p>
 
           <h1>Definir nova senha</h1>
 
           <p className="supporting-text">
-            Informe e confirme a nova senha da sua conta.
+            Informe e confirme a nova senha da
+            sua conta.
           </p>
 
           <form
@@ -628,11 +747,15 @@ function App() {
               <div className="password-field">
                 <input
                   type={
-                    showNewPassword ? 'text' : 'password'
+                    showNewPassword
+                      ? 'text'
+                      : 'password'
                   }
                   value={newPassword}
                   onChange={(event) =>
-                    setNewPassword(event.target.value)
+                    setNewPassword(
+                      event.target.value,
+                    )
                   }
                   autoComplete="new-password"
                   minLength={8}
@@ -642,7 +765,9 @@ function App() {
                 <PasswordVisibilityButton
                   visible={showNewPassword}
                   onToggle={() =>
-                    setShowNewPassword((current) => !current)
+                    setShowNewPassword(
+                      (current) => !current,
+                    )
                   }
                   label="nova senha"
                 />
@@ -659,9 +784,13 @@ function App() {
                       ? 'text'
                       : 'password'
                   }
-                  value={confirmNewPassword}
+                  value={
+                    confirmNewPassword
+                  }
                   onChange={(event) =>
-                    setConfirmNewPassword(event.target.value)
+                    setConfirmNewPassword(
+                      event.target.value,
+                    )
                   }
                   autoComplete="new-password"
                   minLength={8}
@@ -669,7 +798,9 @@ function App() {
                 />
 
                 <PasswordVisibilityButton
-                  visible={showConfirmNewPassword}
+                  visible={
+                    showConfirmNewPassword
+                  }
                   onToggle={() =>
                     setShowConfirmNewPassword(
                       (current) => !current,
@@ -695,7 +826,9 @@ function App() {
             <p
               className={`message message-${messageType}`}
               role={
-                messageType === 'error' ? 'alert' : 'status'
+                messageType === 'error'
+                  ? 'alert'
+                  : 'status'
               }
             >
               {message}
@@ -710,7 +843,9 @@ function App() {
     return (
       <main className="app-shell">
         <section className="panel login-panel">
-          <p className="eyebrow">Plataforma SPARKs</p>
+          <p className="eyebrow">
+            Plataforma SPARKs
+          </p>
 
           <h1>
             {forgotPasswordMode
@@ -726,7 +861,9 @@ function App() {
 
           {forgotPasswordMode ? (
             <form
-              onSubmit={handlePasswordResetRequest}
+              onSubmit={
+                handlePasswordResetRequest
+              }
               className="login-form"
             >
               <label>
@@ -736,7 +873,9 @@ function App() {
                   type="email"
                   value={email}
                   onChange={(event) =>
-                    setEmail(event.target.value)
+                    setEmail(
+                      event.target.value,
+                    )
                   }
                   autoComplete="email"
                   required
@@ -774,7 +913,9 @@ function App() {
                   type="email"
                   value={email}
                   onChange={(event) =>
-                    setEmail(event.target.value)
+                    setEmail(
+                      event.target.value,
+                    )
                   }
                   autoComplete="email"
                   required
@@ -787,11 +928,15 @@ function App() {
                 <div className="password-field">
                   <input
                     type={
-                      showPassword ? 'text' : 'password'
+                      showPassword
+                        ? 'text'
+                        : 'password'
                     }
                     value={password}
                     onChange={(event) =>
-                      setPassword(event.target.value)
+                      setPassword(
+                        event.target.value,
+                      )
                     }
                     autoComplete="current-password"
                     required
@@ -800,7 +945,10 @@ function App() {
                   <PasswordVisibilityButton
                     visible={showPassword}
                     onToggle={() =>
-                      setShowPassword((current) => !current)
+                      setShowPassword(
+                        (current) =>
+                          !current,
+                      )
                     }
                   />
                 </div>
@@ -811,7 +959,9 @@ function App() {
                 className="primary-button"
                 disabled={loading}
               >
-                {loading ? 'Entrando...' : 'Entrar'}
+                {loading
+                  ? 'Entrando...'
+                  : 'Entrar'}
               </button>
 
               <button
@@ -829,7 +979,9 @@ function App() {
             <p
               className={`message message-${messageType}`}
               role={
-                messageType === 'error' ? 'alert' : 'status'
+                messageType === 'error'
+                  ? 'alert'
+                  : 'status'
               }
             >
               {message}
@@ -844,19 +996,27 @@ function App() {
     <main className="platform-shell">
       <header className="topbar">
         <div className="brand-area">
-          <span className="brand-symbol">S</span>
+          <span className="brand-symbol">
+            S
+          </span>
 
           <div>
-            <p className="brand-name">Plataforma SPARKs</p>
+            <p className="brand-name">
+              Plataforma SPARKs
+            </p>
+
             <p className="brand-caption">
-              Gestão integrada das organizações
+              Gestão integrada das
+              organizações
             </p>
           </div>
         </div>
 
         <div className="user-area">
           <div className="user-identification">
-            <strong>{session.user.email}</strong>
+            <strong>
+              {session.user.email}
+            </strong>
 
             <div className="user-badges">
               {isPlatformSuperAdmin && (
@@ -865,7 +1025,8 @@ function App() {
                 </span>
               )}
 
-              {selectedOrganization?.is_organization_admin && (
+              {selectedOrganization
+                ?.is_organization_admin && (
                 <span className="badge badge-organization">
                   ADMIN DA ORGANIZAÇÃO
                 </span>
@@ -890,7 +1051,9 @@ function App() {
             <button
               type="button"
               className="back-button"
-              onClick={handleReturnToOrganizations}
+              onClick={
+                handleReturnToOrganizations
+              }
             >
               ← Voltar para organizações
             </button>
@@ -898,7 +1061,9 @@ function App() {
             <section className="page-heading">
               <div>
                 <p className="eyebrow">
-                  {selectedOrganization.organization_code}
+                  {
+                    selectedOrganization.organization_code
+                  }
                 </p>
 
                 <h1>
@@ -907,18 +1072,25 @@ function App() {
                 </h1>
 
                 <p className="supporting-text">
-                  Selecione um dos módulos disponíveis para esta
+                  Selecione um dos módulos
+                  disponíveis para esta
                   organização.
                 </p>
               </div>
 
               <div className="organization-summary">
                 <span>
-                  Nível: {selectedOrganization.organization_level}
+                  Nível:{' '}
+                  {
+                    selectedOrganization.organization_level
+                  }
                 </span>
 
                 <span>
-                  Vínculo: {selectedOrganization.membership_status}
+                  Vínculo:{' '}
+                  {
+                    selectedOrganization.membership_status
+                  }
                 </span>
               </div>
             </section>
@@ -938,15 +1110,20 @@ function App() {
 
             {loadingModules ? (
               <div className="state-card">
-                <p>Carregando módulos...</p>
+                <p>
+                  Carregando módulos...
+                </p>
               </div>
             ) : modules.length === 0 ? (
               <div className="state-card">
-                <h2>Nenhum módulo disponível</h2>
+                <h2>
+                  Nenhum módulo disponível
+                </h2>
 
                 <p>
-                  O usuário não possui acesso ativo a módulos
-                  desta organização.
+                  O usuário não possui acesso
+                  ativo a módulos desta
+                  organização.
                 </p>
               </div>
             ) : (
@@ -954,7 +1131,9 @@ function App() {
                 {modules.map((module) => (
                   <article
                     className="module-card"
-                    key={module.organization_module_id}
+                    key={
+                      module.organization_module_id
+                    }
                   >
                     <div className="module-icon">
                       <StrategyIcon />
@@ -962,10 +1141,14 @@ function App() {
 
                     <div className="module-card-content">
                       <p className="module-code">
-                        {module.module_short_name}
+                        {
+                          module.module_short_name
+                        }
                       </p>
 
-                      <h2>{module.module_name}</h2>
+                      <h2>
+                        {module.module_name}
+                      </h2>
 
                       <p className="module-description">
                         {module.module_description ??
@@ -974,14 +1157,21 @@ function App() {
 
                       <div className="module-meta">
                         <span>Perfil</span>
-                        <strong>{module.role_name}</strong>
+
+                        <strong>
+                          {module.role_name}
+                        </strong>
                       </div>
                     </div>
 
                     <button
                       type="button"
                       className="module-access-button"
-                      onClick={() => handleOpenModule(module)}
+                      onClick={() =>
+                        handleOpenModule(
+                          module,
+                        )
+                      }
                     >
                       Acessar módulo
                       <ArrowRightIcon />
@@ -995,12 +1185,17 @@ function App() {
           <>
             <section className="page-heading">
               <div>
-                <p className="eyebrow">Portal da Plataforma</p>
+                <p className="eyebrow">
+                  Portal da Plataforma
+                </p>
 
-                <h1>Minhas organizações</h1>
+                <h1>
+                  Minhas organizações
+                </h1>
 
                 <p className="supporting-text">
-                  Selecione a organização em que deseja trabalhar.
+                  Selecione a organização em
+                  que deseja trabalhar.
                 </p>
               </div>
             </section>
@@ -1020,63 +1215,85 @@ function App() {
 
             {organizations.length === 0 ? (
               <div className="state-card">
-                <h2>Nenhuma organização disponível</h2>
+                <h2>
+                  Nenhuma organização
+                  disponível
+                </h2>
 
                 <p>
-                  O usuário está autenticado, mas não possui
-                  vínculo ativo com uma organização.
+                  O usuário está autenticado,
+                  mas não possui vínculo ativo
+                  com uma organização.
                 </p>
               </div>
             ) : (
               <section className="organization-grid">
-                {organizations.map((organization) => (
-                  <article
-                    className="organization-card"
-                    key={organization.organization_id}
-                  >
-                    <div className="organization-card-header">
-                      <div>
-                        <p className="organization-code">
-                          {organization.organization_code}
-                        </p>
-
-                        <h2>
-                          {organization.trade_name ??
-                            organization.legal_name}
-                        </h2>
-                      </div>
-
-                      {organization.is_organization_admin && (
-                        <span className="badge badge-organization">
-                          ADMIN
-                        </span>
-                      )}
-                    </div>
-
-                    <dl>
-                      <div>
-                        <dt>Nível</dt>
-                        <dd>{organization.organization_level}</dd>
-                      </div>
-
-                      <div>
-                        <dt>Vínculo</dt>
-                        <dd>{organization.membership_status}</dd>
-                      </div>
-                    </dl>
-
-                    <button
-                      type="button"
-                      className="organization-access-button"
-                      onClick={() =>
-                        void handleSelectOrganization(organization)
+                {organizations.map(
+                  (organization) => (
+                    <article
+                      className="organization-card"
+                      key={
+                        organization.organization_id
                       }
                     >
-                      Acessar organização
-                      <ArrowRightIcon />
-                    </button>
-                  </article>
-                ))}
+                      <div className="organization-card-header">
+                        <div>
+                          <p className="organization-code">
+                            {
+                              organization.organization_code
+                            }
+                          </p>
+
+                          <h2>
+                            {organization.trade_name ??
+                              organization.legal_name}
+                          </h2>
+                        </div>
+
+                        {organization.is_organization_admin && (
+                          <span className="badge badge-organization">
+                            ADMIN
+                          </span>
+                        )}
+                      </div>
+
+                      <dl>
+                        <div>
+                          <dt>Nível</dt>
+
+                          <dd>
+                            {
+                              organization.organization_level
+                            }
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt>Vínculo</dt>
+
+                          <dd>
+                            {
+                              organization.membership_status
+                            }
+                          </dd>
+                        </div>
+                      </dl>
+
+                      <button
+                        type="button"
+                        className="organization-access-button"
+                        onClick={() =>
+                          void handleSelectOrganization(
+                            organization,
+                          )
+                        }
+                      >
+                        Acessar organização
+                        <ArrowRightIcon />
+                      </button>
+                    </article>
+                  ),
+                )}
               </section>
             )}
           </>
