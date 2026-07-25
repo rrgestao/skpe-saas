@@ -18,6 +18,27 @@ type Organization = {
   is_organization_admin: boolean
 }
 
+type PlatformModule = {
+  organization_module_id: string
+  module_id: string
+  module_code: string
+  module_name: string
+  module_short_name: string
+  module_description: string | null
+  module_route_path: string | null
+  module_icon_name: string | null
+  role_code: string
+  role_name: string
+}
+
+type PlatformRole = {
+  role_code: string
+  role_name: string
+  role_level: number
+  valid_from: string
+  valid_until: string | null
+}
+
 type PasswordVisibilityButtonProps = {
   visible: boolean
   onToggle: () => void
@@ -26,11 +47,7 @@ type PasswordVisibilityButtonProps = {
 
 function EyeIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      focusable="false"
-    >
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path
         d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"
         fill="none"
@@ -54,11 +71,7 @@ function EyeIcon() {
 
 function EyeOffIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      focusable="false"
-    >
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path
         d="M3 3l18 18"
         fill="none"
@@ -90,6 +103,56 @@ function EyeOffIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M5 12h14M13 6l6 6-6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function StrategyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <circle
+        cx="12"
+        cy="12"
+        r="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+
+      <path
+        d="M14 10l5-5M16.5 5H19v2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -131,12 +194,18 @@ function App() {
   const [showPassword, setShowPassword] = useState(false)
 
   const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [selectedOrganization, setSelectedOrganization] =
+    useState<Organization | null>(null)
+
+  const [modules, setModules] = useState<PlatformModule[]>([])
+  const [platformRoles, setPlatformRoles] = useState<PlatformRole[]>([])
 
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] =
     useState<MessageType>('info')
 
   const [loading, setLoading] = useState(true)
+  const [loadingModules, setLoadingModules] = useState(false)
 
   const [forgotPasswordMode, setForgotPasswordMode] =
     useState(false)
@@ -211,6 +280,13 @@ function App() {
             'info',
           )
         }
+
+        if (event === 'SIGNED_OUT') {
+          setOrganizations([])
+          setModules([])
+          setPlatformRoles([])
+          setSelectedOrganization(null)
+        }
       },
     )
 
@@ -223,43 +299,112 @@ function App() {
   useEffect(() => {
     let mounted = true
 
-    const loadOrganizations = async () => {
+    const loadAuthenticatedUserData = async () => {
       if (!session || passwordRecoveryMode) {
         setOrganizations([])
+        setPlatformRoles([])
         return
       }
 
       setLoading(true)
       clearMessage()
 
-      const { data, error } = await supabase.rpc(
-        'get_my_organizations',
-      )
+      const [
+        organizationsResponse,
+        platformRolesResponse,
+      ] = await Promise.all([
+        supabase.rpc('get_my_organizations'),
+        supabase.rpc('get_my_platform_roles'),
+      ])
 
       if (!mounted) {
         return
       }
 
-      if (error) {
+      if (organizationsResponse.error) {
         showMessage(
-          `Erro ao carregar organizações: ${error.message}`,
+          `Erro ao carregar organizações: ${organizationsResponse.error.message}`,
           'error',
         )
 
         setOrganizations([])
       } else {
-        setOrganizations((data ?? []) as Organization[])
+        setOrganizations(
+          (organizationsResponse.data ?? []) as Organization[],
+        )
+      }
+
+      if (platformRolesResponse.error) {
+        console.error(
+          'Não foi possível carregar os papéis globais:',
+          platformRolesResponse.error,
+        )
+
+        setPlatformRoles([])
+      } else {
+        setPlatformRoles(
+          (platformRolesResponse.data ?? []) as PlatformRole[],
+        )
       }
 
       setLoading(false)
     }
 
-    void loadOrganizations()
+    void loadAuthenticatedUserData()
 
     return () => {
       mounted = false
     }
   }, [session, passwordRecoveryMode])
+
+  const handleSelectOrganization = async (
+    organization: Organization,
+  ) => {
+    setSelectedOrganization(organization)
+    setModules([])
+    setLoadingModules(true)
+    clearMessage()
+
+    const { data, error } = await supabase.rpc('get_my_modules', {
+      target_organization_id: organization.organization_id,
+    })
+
+    if (error) {
+      showMessage(
+        `Erro ao carregar módulos: ${error.message}`,
+        'error',
+      )
+
+      setModules([])
+      setLoadingModules(false)
+      return
+    }
+
+    setModules((data ?? []) as PlatformModule[])
+    setLoadingModules(false)
+  }
+
+  const handleReturnToOrganizations = () => {
+    setSelectedOrganization(null)
+    setModules([])
+    clearMessage()
+  }
+
+  const handleOpenModule = (module: PlatformModule) => {
+    if (module.module_code === 'SK-PE') {
+      showMessage(
+        'O acesso ao cockpit do SK-PE será implementado na próxima etapa.',
+        'info',
+      )
+
+      return
+    }
+
+    showMessage(
+      `${module.module_name} ainda está em desenvolvimento.`,
+      'info',
+    )
+  }
 
   const handleLogin = async (
     event: FormEvent<HTMLFormElement>,
@@ -316,6 +461,9 @@ function App() {
     setPassword('')
     setShowPassword(false)
     setOrganizations([])
+    setModules([])
+    setPlatformRoles([])
+    setSelectedOrganization(null)
     setLoading(false)
   }
 
@@ -379,46 +527,55 @@ function App() {
 
     setLoading(true)
 
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    })
+    try {
+      const { error: updateError } =
+        await supabase.auth.updateUser({
+          password: newPassword,
+        })
 
-    if (error) {
+      if (updateError) {
+        showMessage(
+          `Não foi possível atualizar a senha: ${updateError.message}`,
+          'error',
+        )
+
+        return
+      }
+
+      setNewPassword('')
+      setConfirmNewPassword('')
+      setShowNewPassword(false)
+      setShowConfirmNewPassword(false)
+
       showMessage(
-        `Não foi possível atualizar a senha: ${error.message}`,
+        'Senha atualizada com sucesso. Entre novamente com a nova senha.',
+        'success',
+      )
+
+      await supabase.auth.signOut()
+
+      setPasswordRecoveryMode(false)
+      setForgotPasswordMode(false)
+      setSession(null)
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.origin,
+      )
+    } catch (error) {
+      console.error(
+        'Erro inesperado durante a atualização da senha:',
+        error,
+      )
+
+      showMessage(
+        'Ocorreu um erro inesperado ao atualizar a senha.',
         'error',
       )
-
+    } finally {
       setLoading(false)
-      return
     }
-
-    const { error: signOutError } = await supabase.auth.signOut()
-
-    if (signOutError) {
-      console.error(
-        'Falha ao encerrar a sessão após alterar a senha:',
-        signOutError,
-      )
-    }
-
-    setPasswordRecoveryMode(false)
-    setForgotPasswordMode(false)
-
-    setNewPassword('')
-    setConfirmNewPassword('')
-
-    setShowNewPassword(false)
-    setShowConfirmNewPassword(false)
-
-    setSession(null)
-
-    showMessage(
-      'Senha atualizada com sucesso. Entre novamente com a nova senha.',
-      'success',
-    )
-
-    setLoading(false)
   }
 
   const openForgotPassword = () => {
@@ -435,6 +592,10 @@ function App() {
     clearMessage()
   }
 
+  const isPlatformSuperAdmin = platformRoles.some(
+    (role) => role.role_code === 'super_admin',
+  )
+
   if (loading && !session && !forgotPasswordMode) {
     return (
       <main className="app-shell">
@@ -449,7 +610,7 @@ function App() {
     return (
       <main className="app-shell">
         <section className="panel login-panel">
-          <p className="eyebrow">SK-PE SaaS</p>
+          <p className="eyebrow">Plataforma SPARKs</p>
 
           <h1>Definir nova senha</h1>
 
@@ -549,18 +710,18 @@ function App() {
     return (
       <main className="app-shell">
         <section className="panel login-panel">
-          <p className="eyebrow">SK-PE SaaS</p>
+          <p className="eyebrow">Plataforma SPARKs</p>
 
           <h1>
             {forgotPasswordMode
               ? 'Recuperar acesso'
-              : 'Gestão da Jornada Estratégica'}
+              : 'Gestão Integrada das Organizações'}
           </h1>
 
           <p className="supporting-text">
             {forgotPasswordMode
               ? 'Informe seu e-mail para receber as instruções de recuperação.'
-              : 'Entre com seu usuário para acessar o sistema.'}
+              : 'Entre com seu usuário para acessar a plataforma.'}
           </p>
 
           {forgotPasswordMode ? (
@@ -641,7 +802,6 @@ function App() {
                     onToggle={() =>
                       setShowPassword((current) => !current)
                     }
-                    label="senha"
                   />
                 </div>
               </label>
@@ -681,17 +841,36 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <section className="panel">
-        <header className="page-header">
+    <main className="platform-shell">
+      <header className="topbar">
+        <div className="brand-area">
+          <span className="brand-symbol">S</span>
+
           <div>
-            <p className="eyebrow">SK-PE SaaS</p>
-
-            <h1>Minhas organizações</h1>
-
-            <p className="supporting-text">
-              {session.user.email}
+            <p className="brand-name">Plataforma SPARKs</p>
+            <p className="brand-caption">
+              Gestão integrada das organizações
             </p>
+          </div>
+        </div>
+
+        <div className="user-area">
+          <div className="user-identification">
+            <strong>{session.user.email}</strong>
+
+            <div className="user-badges">
+              {isPlatformSuperAdmin && (
+                <span className="badge badge-platform">
+                  SUPER-ADMIN
+                </span>
+              )}
+
+              {selectedOrganization?.is_organization_admin && (
+                <span className="badge badge-organization">
+                  ADMIN DA ORGANIZAÇÃO
+                </span>
+              )}
+            </div>
           </div>
 
           <button
@@ -702,73 +881,207 @@ function App() {
           >
             {loading ? 'Saindo...' : 'Sair'}
           </button>
-        </header>
+        </div>
+      </header>
 
-        {message && (
-          <p
-            className={`message message-${messageType}`}
-            role={
-              messageType === 'error' ? 'alert' : 'status'
-            }
-          >
-            {message}
-          </p>
-        )}
+      <div className="platform-content">
+        {selectedOrganization ? (
+          <>
+            <button
+              type="button"
+              className="back-button"
+              onClick={handleReturnToOrganizations}
+            >
+              ← Voltar para organizações
+            </button>
 
-        {organizations.length === 0 ? (
-          <div className="empty-state">
-            <h2>Nenhuma organização disponível</h2>
-
-            <p>
-              O usuário está autenticado, mas não possui
-              vínculo ativo com uma organização.
-            </p>
-          </div>
-        ) : (
-          <div className="organization-grid">
-            {organizations.map((organization) => (
-              <article
-                className="organization-card"
-                key={organization.organization_id}
-              >
-                <p className="organization-code">
-                  {organization.organization_code}
+            <section className="page-heading">
+              <div>
+                <p className="eyebrow">
+                  {selectedOrganization.organization_code}
                 </p>
 
-                <h2>
-                  {organization.trade_name ??
-                    organization.legal_name}
-                </h2>
+                <h1>
+                  {selectedOrganization.trade_name ??
+                    selectedOrganization.legal_name}
+                </h1>
 
-                <dl>
-                  <div>
-                    <dt>Nível</dt>
-                    <dd>
-                      {organization.organization_level}
-                    </dd>
-                  </div>
+                <p className="supporting-text">
+                  Selecione um dos módulos disponíveis para esta
+                  organização.
+                </p>
+              </div>
 
-                  <div>
-                    <dt>Vínculo</dt>
-                    <dd>
-                      {organization.membership_status}
-                    </dd>
-                  </div>
+              <div className="organization-summary">
+                <span>
+                  Nível: {selectedOrganization.organization_level}
+                </span>
 
-                  <div>
-                    <dt>Perfil</dt>
-                    <dd>
-                      {organization.is_organization_admin
-                        ? 'Administrador'
-                        : 'Participante'}
-                    </dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
+                <span>
+                  Vínculo: {selectedOrganization.membership_status}
+                </span>
+              </div>
+            </section>
+
+            {message && (
+              <p
+                className={`message message-${messageType}`}
+                role={
+                  messageType === 'error'
+                    ? 'alert'
+                    : 'status'
+                }
+              >
+                {message}
+              </p>
+            )}
+
+            {loadingModules ? (
+              <div className="state-card">
+                <p>Carregando módulos...</p>
+              </div>
+            ) : modules.length === 0 ? (
+              <div className="state-card">
+                <h2>Nenhum módulo disponível</h2>
+
+                <p>
+                  O usuário não possui acesso ativo a módulos
+                  desta organização.
+                </p>
+              </div>
+            ) : (
+              <section className="module-grid">
+                {modules.map((module) => (
+                  <article
+                    className="module-card"
+                    key={module.organization_module_id}
+                  >
+                    <div className="module-icon">
+                      <StrategyIcon />
+                    </div>
+
+                    <div className="module-card-content">
+                      <p className="module-code">
+                        {module.module_short_name}
+                      </p>
+
+                      <h2>{module.module_name}</h2>
+
+                      <p className="module-description">
+                        {module.module_description ??
+                          'Módulo da Plataforma SPARKs.'}
+                      </p>
+
+                      <div className="module-meta">
+                        <span>Perfil</span>
+                        <strong>{module.role_name}</strong>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="module-access-button"
+                      onClick={() => handleOpenModule(module)}
+                    >
+                      Acessar módulo
+                      <ArrowRightIcon />
+                    </button>
+                  </article>
+                ))}
+              </section>
+            )}
+          </>
+        ) : (
+          <>
+            <section className="page-heading">
+              <div>
+                <p className="eyebrow">Portal da Plataforma</p>
+
+                <h1>Minhas organizações</h1>
+
+                <p className="supporting-text">
+                  Selecione a organização em que deseja trabalhar.
+                </p>
+              </div>
+            </section>
+
+            {message && (
+              <p
+                className={`message message-${messageType}`}
+                role={
+                  messageType === 'error'
+                    ? 'alert'
+                    : 'status'
+                }
+              >
+                {message}
+              </p>
+            )}
+
+            {organizations.length === 0 ? (
+              <div className="state-card">
+                <h2>Nenhuma organização disponível</h2>
+
+                <p>
+                  O usuário está autenticado, mas não possui
+                  vínculo ativo com uma organização.
+                </p>
+              </div>
+            ) : (
+              <section className="organization-grid">
+                {organizations.map((organization) => (
+                  <article
+                    className="organization-card"
+                    key={organization.organization_id}
+                  >
+                    <div className="organization-card-header">
+                      <div>
+                        <p className="organization-code">
+                          {organization.organization_code}
+                        </p>
+
+                        <h2>
+                          {organization.trade_name ??
+                            organization.legal_name}
+                        </h2>
+                      </div>
+
+                      {organization.is_organization_admin && (
+                        <span className="badge badge-organization">
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
+
+                    <dl>
+                      <div>
+                        <dt>Nível</dt>
+                        <dd>{organization.organization_level}</dd>
+                      </div>
+
+                      <div>
+                        <dt>Vínculo</dt>
+                        <dd>{organization.membership_status}</dd>
+                      </div>
+                    </dl>
+
+                    <button
+                      type="button"
+                      className="organization-access-button"
+                      onClick={() =>
+                        void handleSelectOrganization(organization)
+                      }
+                    >
+                      Acessar organização
+                      <ArrowRightIcon />
+                    </button>
+                  </article>
+                ))}
+              </section>
+            )}
+          </>
         )}
-      </section>
+      </div>
     </main>
   )
 }
