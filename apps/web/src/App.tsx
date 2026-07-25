@@ -1,121 +1,225 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import { supabase } from './lib/supabase'
 import './App.css'
 
+type Organization = {
+  organization_id: string
+  organization_code: string
+  legal_name: string
+  trade_name: string | null
+  organization_level: string
+  membership_status: string
+  is_organization_admin: boolean
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [session, setSession] = useState<Session | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadInitialSession = async () => {
+      const { data, error } = await supabase.auth.getSession()
+
+      if (error) {
+        setMessage(`Erro ao verificar sessão: ${error.message}`)
+      }
+
+      setSession(data.session)
+      setLoading(false)
+    }
+
+    void loadInitialSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    const loadOrganizations = async () => {
+      if (!session) {
+        setOrganizations([])
+        return
+      }
+
+      setLoading(true)
+      setMessage('')
+
+      const { data, error } = await supabase.rpc('get_my_organizations')
+
+      if (error) {
+        setMessage(`Erro ao carregar organizações: ${error.message}`)
+        setOrganizations([])
+      } else {
+        setOrganizations((data ?? []) as Organization[])
+      }
+
+      setLoading(false)
+    }
+
+    void loadOrganizations()
+  }, [session])
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setLoading(true)
+    setMessage('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setMessage(`Não foi possível entrar: ${error.message}`)
+    }
+
+    setLoading(false)
+  }
+
+  const handleLogout = async () => {
+    setLoading(true)
+    setMessage('')
+
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      setMessage(`Não foi possível sair: ${error.message}`)
+    }
+
+    setLoading(false)
+  }
+
+  if (loading && !session) {
+    return (
+      <main className="app-shell">
+        <section className="panel">
+          <p>Carregando...</p>
+        </section>
+      </main>
+    )
+  }
+
+  if (!session) {
+    return (
+      <main className="app-shell">
+        <section className="panel login-panel">
+          <p className="eyebrow">SK-PE SaaS</p>
+          <h1>Gestão da Jornada Estratégica</h1>
+          <p className="supporting-text">
+            Entre com o usuário criado no Supabase Auth.
+          </p>
+
+          <form onSubmit={handleLogin} className="login-form">
+            <label>
+              E-mail
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <label>
+              Senha
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+
+            <button type="submit" disabled={loading}>
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
+
+          {message && <p className="message">{message}</p>}
+        </section>
+      </main>
+    )
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+    <main className="app-shell">
+      <section className="panel">
+        <header className="page-header">
+          <div>
+            <p className="eyebrow">SK-PE SaaS</p>
+            <h1>Minhas organizações</h1>
+            <p className="supporting-text">{session.user.email}</p>
+          </div>
+
+          <button type="button" className="secondary-button" onClick={handleLogout}>
+            Sair
+          </button>
+        </header>
+
+        {message && <p className="message">{message}</p>}
+
+        {organizations.length === 0 ? (
+          <div className="empty-state">
+            <h2>Nenhuma organização disponível</h2>
+            <p>
+              O usuário está autenticado, mas não possui vínculo ativo com uma
+              organização.
+            </p>
+          </div>
+        ) : (
+          <div className="organization-grid">
+            {organizations.map((organization) => (
+              <article
+                className="organization-card"
+                key={organization.organization_id}
+              >
+                <p className="organization-code">
+                  {organization.organization_code}
+                </p>
+
+                <h2>{organization.trade_name ?? organization.legal_name}</h2>
+
+                <dl>
+                  <div>
+                    <dt>Nível</dt>
+                    <dd>{organization.organization_level}</dd>
+                  </div>
+
+                  <div>
+                    <dt>Vínculo</dt>
+                    <dd>{organization.membership_status}</dd>
+                  </div>
+
+                  <div>
+                    <dt>Perfil</dt>
+                    <dd>
+                      {organization.is_organization_admin
+                        ? 'Administrador'
+                        : 'Participante'}
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </main>
   )
 }
 
