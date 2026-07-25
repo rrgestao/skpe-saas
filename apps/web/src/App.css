@@ -197,3 +197,63 @@ h2 {
     flex-direction: column;
   }
 }
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  padding-right: 6.25rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.45rem;
+  width: auto;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  background: transparent;
+  color: #176b53;
+  font-size: 0.85rem;
+}
+
+.password-toggle:hover {
+  background: #e9efed;
+}
+
+.password-toggle:focus-visible,
+.text-button:focus-visible {
+  outline: 3px solid rgba(23, 107, 83, 0.25);
+  outline-offset: 2px;
+}
+
+.text-button {
+  justify-self: center;
+  width: auto;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  color: #176b53;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.text-button:hover {
+  background: #eef5f2;
+}
+
+.message-info {
+  background: #eef5ff;
+  color: #17406b;
+}
+
+.message-success {
+  background: #e8f7ef;
+  color: #155c3e;
+}
+
+.message-error {
+  background: #fdecec;
+  color: #842029;
+}
