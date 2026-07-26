@@ -60,7 +60,7 @@
 }
 
 .skpe-organization-context span,
-.skpe-sidebar-footer span {
+.skpe-sidebar-footer > span {
   color: #b9d2c9;
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -121,6 +121,12 @@
   font-size: 0.86rem;
 }
 
+.skpe-platform-role-label {
+  color: #d4c6ff;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
 .skpe-sidebar-footer button {
   display: flex;
   align-items: center;
@@ -144,7 +150,7 @@
 }
 
 .skpe-main {
-  width: min(1180px, 100%);
+  width: min(1420px, 100%);
   padding: 2.5rem;
 }
 
@@ -213,7 +219,11 @@
 .skpe-dashboard-card,
 .skpe-phase-card,
 .skpe-governance-card,
-.skpe-administration-card {
+.skpe-admin-kpi-card,
+.skpe-user-table-card,
+.skpe-user-detail-card,
+.skpe-access-denied-card,
+.skpe-admin-state-card {
   border: 1px solid #dce5e1;
   background: #ffffff;
   box-shadow: 0 8px 25px
@@ -443,8 +453,7 @@
   margin: 0;
 }
 
-.skpe-governance-grid,
-.skpe-administration-grid {
+.skpe-governance-grid {
   display: grid;
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
@@ -452,8 +461,7 @@
   margin-top: 2rem;
 }
 
-.skpe-governance-card,
-.skpe-administration-card {
+.skpe-governance-card {
   padding: 1.4rem;
   border-radius: 15px;
 }
@@ -470,32 +478,597 @@
   font-weight: 900;
 }
 
-.skpe-governance-card h2,
-.skpe-administration-card h2 {
+.skpe-governance-card h2 {
   margin: 0;
 }
 
-.skpe-governance-card p,
-.skpe-administration-card p {
+.skpe-governance-card p {
   color: #607069;
   line-height: 1.5;
 }
 
-.skpe-governance-card strong,
-.skpe-administration-card > span {
+.skpe-governance-card strong {
   color: #176b53;
   font-size: 0.84rem;
 }
 
-.skpe-administration-card > strong {
-  display: inline-block;
-  margin-top: 0.75rem;
+.skpe-administration-heading {
+  align-items: center;
+}
+
+.skpe-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0.7rem 1rem;
+  border: 1px solid #b9d2c8;
+  border-radius: 10px;
+  background: #ffffff;
   color: #176b53;
-  font-size: 1.1rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.skpe-refresh-button:hover:not(:disabled) {
+  background: #edf6f2;
+}
+
+.skpe-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.skpe-refresh-button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.skpe-admin-kpi-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.skpe-admin-kpi-card {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1.15rem;
+  border-radius: 14px;
+}
+
+.skpe-admin-kpi-card span {
+  color: #66756f;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.skpe-admin-kpi-card strong {
+  color: #183f34;
+  font-size: 1.65rem;
+}
+
+.skpe-admin-kpi-card small {
+  color: #7a8882;
+}
+
+.skpe-admin-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1fr)
+    minmax(150px, 210px)
+    minmax(150px, 240px);
+  gap: 1rem;
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.skpe-admin-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.skpe-admin-search svg {
+  position: absolute;
+  left: 0.85rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: #75827d;
+  pointer-events: none;
+}
+
+.skpe-admin-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.75rem 0.85rem 0.75rem 2.65rem;
+  border: 1px solid #cbd7d2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1c2b25;
+}
+
+.skpe-admin-filter {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.skpe-admin-filter > span {
+  color: #64736d;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.skpe-admin-filter select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #cbd7d2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1c2b25;
+  font: inherit;
+}
+
+.skpe-admin-search input:focus,
+.skpe-admin-filter select:focus {
+  outline: 3px solid
+    rgba(23, 107, 83, 0.18);
+  border-color: #176b53;
+}
+
+.skpe-admin-message {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.skpe-admin-message-error {
+  border: 1px solid #efb6b6;
+  background: #fdecec;
+  color: #842029;
+}
+
+.skpe-admin-state-card {
+  margin-top: 1.2rem;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.skpe-admin-state-card h2 {
+  margin: 0;
+}
+
+.skpe-admin-state-card p {
+  margin: 0.6rem 0 0;
+  color: #64736d;
+}
+
+.skpe-user-management-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) 340px;
+  gap: 1.2rem;
+  align-items: start;
+  margin-top: 1.2rem;
+}
+
+.skpe-user-table-card {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 15px;
+}
+
+.skpe-user-table-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid #e2e8e5;
+}
+
+.skpe-user-table-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.skpe-user-table-header p {
+  margin: 0.25rem 0 0;
+  color: #6d7b75;
+  font-size: 0.8rem;
+}
+
+.skpe-user-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.skpe-user-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.skpe-user-table th,
+.skpe-user-table td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #e7ecea;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.skpe-user-table th {
+  background: #f6f8f7;
+  color: #697770;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.skpe-user-table tbody tr:hover,
+.skpe-user-row-selected {
+  background: #f4faf7;
+}
+
+.skpe-user-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.skpe-user-avatar,
+.skpe-user-detail-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: #e6f3ed;
+  color: #176b53;
+}
+
+.skpe-user-avatar {
+  width: 38px;
+  height: 38px;
+}
+
+.skpe-user-avatar svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.skpe-user-identity > div {
+  display: grid;
+  gap: 0.14rem;
+}
+
+.skpe-user-identity strong {
+  color: #1f312a;
+  font-size: 0.88rem;
+}
+
+.skpe-user-identity span {
+  color: #66756f;
+  font-size: 0.78rem;
+}
+
+.skpe-user-identity small {
+  color: #88938e;
+  font-size: 0.72rem;
+}
+
+.skpe-access-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.skpe-access-status-active {
+  background: #e5f5ed;
+  color: #176b53;
+}
+
+.skpe-access-status-invited {
+  background: #eaf1ff;
+  color: #315c9d;
+}
+
+.skpe-access-status-suspended {
+  background: #fff3d7;
+  color: #855b00;
+}
+
+.skpe-access-status-revoked {
+  background: #f6e8e8;
+  color: #8a3030;
+}
+
+.skpe-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: #e9e3ff;
+  color: #543d99;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.skpe-muted-label {
+  color: #7b8883;
+  font-size: 0.78rem;
+}
+
+.skpe-module-role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.skpe-module-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 27px;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid #d5e3dd;
+  border-radius: 999px;
+  background: #f5f9f7;
+  font-size: 0.7rem;
+}
+
+.skpe-module-role-chip strong {
+  color: #176b53;
+}
+
+.skpe-module-role-chip span {
+  color: #596862;
+}
+
+.skpe-user-details-button {
+  min-height: 34px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #bad2c8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #176b53;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.skpe-user-details-button:hover {
+  background: #eaf5f0;
+}
+
+.skpe-user-detail-card {
+  position: sticky;
+  top: 1.5rem;
+  min-height: 420px;
+  padding: 1.2rem;
+  border-radius: 15px;
+}
+
+.skpe-user-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8e5;
+}
+
+.skpe-user-detail-avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.skpe-user-detail-avatar svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.skpe-user-detail-heading > div {
+  min-width: 0;
+}
+
+.skpe-user-detail-heading p {
+  margin: 0 0 0.2rem;
+  color: #176b53;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skpe-user-detail-heading h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.skpe-user-detail-heading span {
+  display: block;
+  margin-top: 0.15rem;
+  color: #6c7974;
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.skpe-user-detail-list {
+  display: grid;
+  gap: 0;
+  margin: 1rem 0 0;
+}
+
+.skpe-user-detail-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #edf0ef;
+}
+
+.skpe-user-detail-list dt {
+  color: #71807a;
+  font-size: 0.76rem;
+}
+
+.skpe-user-detail-list dd {
+  margin: 0;
+  color: #26372f;
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-align: right;
+}
+
+.skpe-user-detail-modules {
+  margin-top: 1.2rem;
+}
+
+.skpe-user-detail-modules h3 {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+}
+
+.skpe-user-detail-modules > p {
+  color: #71807a;
+  font-size: 0.8rem;
+}
+
+.skpe-user-detail-modules article {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid #deE7e3;
+  border-radius: 11px;
+  background: #f8faf9;
+}
+
+.skpe-user-detail-modules article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.skpe-user-detail-modules article > div span {
+  color: #176b53;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.skpe-user-detail-modules article dl {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.skpe-user-detail-modules article dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-user-detail-modules dt {
+  color: #77847f;
+  font-size: 0.72rem;
+}
+
+.skpe-user-detail-modules dd {
+  margin: 0;
+  color: #2d3d36;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.skpe-user-detail-notice {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border-radius: 9px;
+  background: #f0f5f3;
+  color: #687670;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.skpe-user-detail-empty {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.skpe-user-detail-empty > svg {
+  width: 2rem;
+  height: 2rem;
+  color: #176b53;
+}
+
+.skpe-user-detail-empty h2 {
+  margin: 0.8rem 0 0;
+  font-size: 1rem;
+}
+
+.skpe-user-detail-empty p {
+  margin: 0.5rem 0 0;
+  color: #6b7873;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.skpe-access-denied-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border-radius: 15px;
+}
+
+.skpe-access-denied-card > svg {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  color: #855b00;
+}
+
+.skpe-access-denied-card h2 {
+  margin: 0;
+}
+
+.skpe-access-denied-card p {
+  margin: 0.55rem 0 0;
+  color: #64736d;
+  line-height: 1.55;
+}
+
+@media (max-width: 1180px) {
+  .skpe-user-management-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-user-detail-card {
+    position: static;
+  }
 }
 
 @media (max-width: 1050px) {
-  .skpe-kpi-grid {
+  .skpe-kpi-grid,
+  .skpe-admin-kpi-grid {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
@@ -506,6 +1079,14 @@
 
   .skpe-current-phase-card {
     grid-row: auto;
+  }
+
+  .skpe-admin-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .skpe-admin-search {
+    grid-column: 1 / -1;
   }
 }
 
@@ -535,14 +1116,23 @@
   .skpe-page-heading {
     flex-direction: column;
   }
+
+  .skpe-administration-heading {
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 600px) {
   .skpe-kpi-grid,
+  .skpe-admin-kpi-grid,
   .skpe-governance-grid,
-  .skpe-administration-grid,
-  .skpe-navigation {
+  .skpe-navigation,
+  .skpe-admin-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .skpe-admin-search {
+    grid-column: auto;
   }
 
   .skpe-main {
@@ -556,5 +1146,22 @@
 
   .skpe-phase-card {
     grid-template-columns: 1fr;
+  }
+
+  .skpe-refresh-button {
+    width: 100%;
+  }
+
+  .skpe-user-detail-list > div {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .skpe-user-detail-list dd {
+    text-align: left;
+  }
+
+  .skpe-access-denied-card {
+    flex-direction: column;
   }
 }

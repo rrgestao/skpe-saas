@@ -601,9 +601,7 @@ function App() {
       return
     }
 
-    if (
-      newPassword !== confirmNewPassword
-    ) {
+    if (newPassword !== confirmNewPassword) {
       showMessage(
         'As senhas informadas não são iguais.',
         'error',
@@ -685,12 +683,12 @@ function App() {
         role.role_code === 'super_admin',
     )
 
-  if (
-    openedModule &&
-    selectedOrganization
-  ) {
+  if (openedModule && selectedOrganization) {
     return (
       <SkpeCockpit
+        organizationId={
+          selectedOrganization.organization_id
+        }
         organizationName={
           selectedOrganization.trade_name ??
           selectedOrganization.legal_name
@@ -698,7 +696,14 @@ function App() {
         organizationCode={
           selectedOrganization.organization_code
         }
-        userRole={openedModule.role_name}
+        userRoleCode={openedModule.role_code}
+        userRoleName={openedModule.role_name}
+        isOrganizationAdmin={
+          selectedOrganization.is_organization_admin
+        }
+        isPlatformSuperAdmin={
+          isPlatformSuperAdmin
+        }
         onReturnToModules={
           handleReturnToModules
         }
