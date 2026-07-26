@@ -986,10 +986,22 @@ function GovernanceSection() {
   )
 }
 
+
 type AdministrationSectionProps = {
   organizationId: string
   userRoleName: string
   canManageUsers: boolean
+}
+
+type ModuleRoleOption = {
+  role_code: string
+  role_name: string
+  role_level: number
+}
+
+type ActionMessage = {
+  type: 'success' | 'error'
+  text: string
 }
 
 function AdministrationSection({
@@ -1003,8 +1015,14 @@ function AdministrationSection({
   const [loading, setLoading] =
     useState(false)
 
+  const [saving, setSaving] =
+    useState(false)
+
   const [errorMessage, setErrorMessage] =
     useState('')
+
+  const [actionMessage, setActionMessage] =
+    useState<ActionMessage | null>(null)
 
   const [searchTerm, setSearchTerm] =
     useState('')
@@ -1024,16 +1042,26 @@ function AdministrationSection({
     setSelectedUserId,
   ] = useState<string | null>(null)
 
+  const [
+    availableRoles,
+    setAvailableRoles,
+  ] = useState<ModuleRoleOption[]>([])
+
+  const [
+    selectedRoleCode,
+    setSelectedRoleCode,
+  ] = useState('')
+
+  const [changeReason, setChangeReason] =
+    useState('')
+
   const users = useMemo(
     () => groupUserAccessRows(rows),
     [rows],
   )
 
   const availableModules = useMemo(() => {
-    const modules = new Map<
-      string,
-      string
-    >()
+    const modules = new Map<string, string>()
 
     for (const user of users) {
       for (const module of user.modules) {
@@ -1106,6 +1134,12 @@ function AdministrationSection({
     [users, selectedUserId],
   )
 
+  const selectedSkpeAccess =
+    selectedUser?.modules.find(
+      (module) =>
+        module.moduleCode === 'SK-PE',
+    ) ?? null
+
   const activeUsersCount = users.filter(
     (user) =>
       user.membershipStatus === 'active' &&
@@ -1160,8 +1194,38 @@ function AdministrationSection({
     setLoading(false)
   }
 
+  const loadAvailableRoles = async () => {
+    if (!canManageUsers) {
+      setAvailableRoles([])
+      return
+    }
+
+    const { data, error } = await supabase.rpc(
+      'get_module_roles_for_organization',
+      {
+        target_organization_id:
+          organizationId,
+        target_module_code: 'SK-PE',
+      },
+    )
+
+    if (error) {
+      console.error(
+        'Erro ao carregar papéis do módulo:',
+        error,
+      )
+      setAvailableRoles([])
+      return
+    }
+
+    setAvailableRoles(
+      (data ?? []) as ModuleRoleOption[],
+    )
+  }
+
   useEffect(() => {
     void loadUsers()
+    void loadAvailableRoles()
   }, [organizationId, canManageUsers])
 
   useEffect(() => {
@@ -1176,6 +1240,176 @@ function AdministrationSection({
     }
   }, [users, selectedUserId])
 
+  useEffect(() => {
+    setSelectedRoleCode(
+      selectedSkpeAccess?.roleCode ?? '',
+    )
+    setChangeReason('')
+    setActionMessage(null)
+  }, [
+    selectedUserId,
+    selectedSkpeAccess?.roleCode,
+  ])
+
+  const runAction = async (
+    action: () => Promise<{
+      error: { message: string } | null
+    }>,
+    successMessage: string,
+  ) => {
+    if (!selectedUser) {
+      return
+    }
+
+    const normalizedReason =
+      changeReason.trim()
+
+    if (normalizedReason.length < 10) {
+      setActionMessage({
+        type: 'error',
+        text:
+          'Informe uma justificativa com pelo menos 10 caracteres.',
+      })
+      return
+    }
+
+    setSaving(true)
+    setActionMessage(null)
+
+    const { error } = await action()
+
+    if (error) {
+      setActionMessage({
+        type: 'error',
+        text: error.message,
+      })
+      setSaving(false)
+      return
+    }
+
+    await loadUsers()
+
+    setActionMessage({
+      type: 'success',
+      text: successMessage,
+    })
+    setChangeReason('')
+    setSaving(false)
+  }
+
+  const handleSaveRole = async () => {
+    if (!selectedUser || !selectedRoleCode) {
+      setActionMessage({
+        type: 'error',
+        text: 'Selecione um perfil para o SK-PE.',
+      })
+      return
+    }
+
+    await runAction(
+      async () =>
+        supabase.rpc(
+          'set_user_module_role',
+          {
+            target_organization_id:
+              organizationId,
+            target_user_id:
+              selectedUser.userId,
+            target_module_code: 'SK-PE',
+            target_role_code:
+              selectedRoleCode,
+            change_reason:
+              changeReason.trim(),
+          },
+        ),
+      'Perfil do SK-PE atualizado com sucesso.',
+    )
+  }
+
+  const handleModuleStatus = async (
+    targetStatus: 'active' | 'suspended',
+  ) => {
+    if (!selectedUser) {
+      return
+    }
+
+    await runAction(
+      async () =>
+        supabase.rpc(
+          'set_user_module_access_status',
+          {
+            target_organization_id:
+              organizationId,
+            target_user_id:
+              selectedUser.userId,
+            target_module_code: 'SK-PE',
+            target_status: targetStatus,
+            change_reason:
+              changeReason.trim(),
+          },
+        ),
+      targetStatus === 'active'
+        ? 'Acesso ao SK-PE reativado com sucesso.'
+        : 'Acesso ao SK-PE suspenso com sucesso.',
+    )
+  }
+
+  const handleOrganizationAdmin =
+    async () => {
+      if (!selectedUser) {
+        return
+      }
+
+      const newValue =
+        !selectedUser.isOrganizationAdmin
+
+      await runAction(
+        async () =>
+          supabase.rpc(
+            'set_organization_member_admin',
+            {
+              target_organization_id:
+                organizationId,
+              target_user_id:
+                selectedUser.userId,
+              target_is_admin: newValue,
+              change_reason:
+                changeReason.trim(),
+            },
+          ),
+        newValue
+          ? 'Usuário definido como administrador da organização.'
+          : 'Permissão de administrador da organização removida.',
+      )
+    }
+
+  const handleMembershipStatus = async (
+    targetStatus: 'active' | 'suspended',
+  ) => {
+    if (!selectedUser) {
+      return
+    }
+
+    await runAction(
+      async () =>
+        supabase.rpc(
+          'set_organization_member_status',
+          {
+            target_organization_id:
+              organizationId,
+            target_user_id:
+              selectedUser.userId,
+            target_status: targetStatus,
+            change_reason:
+              changeReason.trim(),
+          },
+        ),
+      targetStatus === 'active'
+        ? 'Vínculo organizacional reativado com sucesso.'
+        : 'Vínculo organizacional suspenso com sucesso.',
+    )
+  }
+
   if (!canManageUsers) {
     return (
       <>
@@ -1185,9 +1419,7 @@ function AdministrationSection({
               Administração do módulo
             </p>
 
-            <h1>
-              Usuários e Acessos
-            </h1>
+            <h1>Usuários e Acessos</h1>
 
             <p>
               Gestão dos participantes, papéis,
@@ -1229,7 +1461,7 @@ function AdministrationSection({
           <h1>Usuários e Acessos</h1>
 
           <p>
-            Consulte os vínculos, módulos,
+            Consulte e administre vínculos,
             perfis e situações de acesso dos
             usuários da organização.
           </p>
@@ -1239,7 +1471,7 @@ function AdministrationSection({
           type="button"
           className="skpe-refresh-button"
           onClick={() => void loadUsers()}
-          disabled={loading}
+          disabled={loading || saving}
         >
           <RefreshIcon />
 
@@ -1251,55 +1483,27 @@ function AdministrationSection({
 
       <section className="skpe-admin-kpi-grid">
         <article className="skpe-admin-kpi-card">
-          <span>
-            Usuários vinculados
-          </span>
-
+          <span>Usuários vinculados</span>
           <strong>{users.length}</strong>
-
-          <small>
-            Total de vínculos encontrados
-          </small>
+          <small>Total de vínculos encontrados</small>
         </article>
 
         <article className="skpe-admin-kpi-card">
           <span>Usuários ativos</span>
-
-          <strong>
-            {activeUsersCount}
-          </strong>
-
-          <small>
-            Vínculo e cadastro ativos
-          </small>
+          <strong>{activeUsersCount}</strong>
+          <small>Vínculo e cadastro ativos</small>
         </article>
 
         <article className="skpe-admin-kpi-card">
-          <span>
-            Administradores
-          </span>
-
-          <strong>
-            {organizationAdminsCount}
-          </strong>
-
-          <small>
-            Administradores da organização
-          </small>
+          <span>Administradores</span>
+          <strong>{organizationAdminsCount}</strong>
+          <small>Administradores da organização</small>
         </article>
 
         <article className="skpe-admin-kpi-card">
-          <span>
-            Com acesso a módulos
-          </span>
-
-          <strong>
-            {usersWithModulesCount}
-          </strong>
-
-          <small>
-            Usuários com ao menos um perfil
-          </small>
+          <span>Com acesso a módulos</span>
+          <strong>{usersWithModulesCount}</strong>
+          <small>Usuários com ao menos um perfil</small>
         </article>
       </section>
 
@@ -1331,25 +1535,11 @@ function AdministrationSection({
               )
             }
           >
-            <option value="all">
-              Todas
-            </option>
-
-            <option value="active">
-              Ativos
-            </option>
-
-            <option value="invited">
-              Convidados
-            </option>
-
-            <option value="suspended">
-              Suspensos
-            </option>
-
-            <option value="revoked">
-              Revogados
-            </option>
+            <option value="all">Todas</option>
+            <option value="active">Ativos</option>
+            <option value="invited">Convidados</option>
+            <option value="suspended">Suspensos</option>
+            <option value="revoked">Revogados</option>
           </select>
         </label>
 
@@ -1364,9 +1554,7 @@ function AdministrationSection({
               )
             }
           >
-            <option value="all">
-              Todos
-            </option>
+            <option value="all">Todos</option>
 
             {availableModules.map(
               ([moduleCode, moduleName]) => (
@@ -1393,15 +1581,11 @@ function AdministrationSection({
 
       {loading ? (
         <section className="skpe-admin-state-card">
-          <p>
-            Carregando usuários e acessos...
-          </p>
+          <p>Carregando usuários e acessos...</p>
         </section>
       ) : filteredUsers.length === 0 ? (
         <section className="skpe-admin-state-card">
-          <h2>
-            Nenhum usuário encontrado
-          </h2>
+          <h2>Nenhum usuário encontrado</h2>
 
           <p>
             Ajuste os filtros ou verifique se
@@ -1414,9 +1598,7 @@ function AdministrationSection({
           <div className="skpe-user-table-card">
             <div className="skpe-user-table-header">
               <div>
-                <h2>
-                  Matriz de usuários
-                </h2>
+                <h2>Matriz de usuários</h2>
 
                 <p>
                   {filteredUsers.length}{' '}
@@ -1468,9 +1650,7 @@ function AdministrationSection({
                                   user.email}
                               </strong>
 
-                              <span>
-                                {user.email}
-                              </span>
+                              <span>{user.email}</span>
 
                               {user.jobTitle && (
                                 <small>
@@ -1505,8 +1685,7 @@ function AdministrationSection({
 
                         <td>
                           <div className="skpe-module-role-list">
-                            {user.modules.length ===
-                            0 ? (
+                            {user.modules.length === 0 ? (
                               <span className="skpe-muted-label">
                                 Sem módulo atribuído
                               </span>
@@ -1521,15 +1700,11 @@ function AdministrationSection({
                                     className="skpe-module-role-chip"
                                   >
                                     <strong>
-                                      {
-                                        module.moduleShortName
-                                      }
+                                      {module.moduleShortName}
                                     </strong>
 
                                     <span>
-                                      {
-                                        module.roleName
-                                      }
+                                      {module.roleName}
                                     </span>
                                   </span>
                                 ),
@@ -1548,7 +1723,7 @@ function AdministrationSection({
                               )
                             }
                           >
-                            Detalhes
+                            Gerenciar
                           </button>
                         </td>
                       </tr>
@@ -1568,27 +1743,20 @@ function AdministrationSection({
                   </span>
 
                   <div>
-                    <p>
-                      Detalhes do usuário
-                    </p>
+                    <p>Gestão do usuário</p>
 
                     <h2>
                       {selectedUser.displayName ??
                         selectedUser.email}
                     </h2>
 
-                    <span>
-                      {selectedUser.email}
-                    </span>
+                    <span>{selectedUser.email}</span>
                   </div>
                 </div>
 
                 <dl className="skpe-user-detail-list">
                   <div>
-                    <dt>
-                      Situação do vínculo
-                    </dt>
-
+                    <dt>Situação do vínculo</dt>
                     <dd>
                       {getMembershipStatusLabel(
                         selectedUser.membershipStatus,
@@ -1597,10 +1765,7 @@ function AdministrationSection({
                   </div>
 
                   <div>
-                    <dt>
-                      Cadastro do usuário
-                    </dt>
-
+                    <dt>Cadastro do usuário</dt>
                     <dd>
                       {selectedUser.userActive
                         ? 'Ativo'
@@ -1609,10 +1774,7 @@ function AdministrationSection({
                   </div>
 
                   <div>
-                    <dt>
-                      Administrador da organização
-                    </dt>
-
+                    <dt>Administrador da organização</dt>
                     <dd>
                       {selectedUser.isOrganizationAdmin
                         ? 'Sim'
@@ -1622,7 +1784,6 @@ function AdministrationSection({
 
                   <div>
                     <dt>Função</dt>
-
                     <dd>
                       {selectedUser.jobTitle ??
                         'Não informada'}
@@ -1630,10 +1791,7 @@ function AdministrationSection({
                   </div>
 
                   <div>
-                    <dt>
-                      Início do vínculo
-                    </dt>
-
+                    <dt>Início do vínculo</dt>
                     <dd>
                       {formatDate(
                         selectedUser.membershipValidFrom,
@@ -1642,10 +1800,7 @@ function AdministrationSection({
                   </div>
 
                   <div>
-                    <dt>
-                      Término do vínculo
-                    </dt>
-
+                    <dt>Término do vínculo</dt>
                     <dd>
                       {formatDate(
                         selectedUser.membershipValidUntil,
@@ -1654,16 +1809,142 @@ function AdministrationSection({
                   </div>
                 </dl>
 
-                <div className="skpe-user-detail-modules">
-                  <h3>
-                    Módulos e perfis
-                  </h3>
+                <div className="skpe-access-management-form">
+                  <h3>Alterar acessos</h3>
 
-                  {selectedUser.modules.length ===
-                  0 ? (
-                    <p>
-                      Nenhum módulo atribuído.
-                    </p>
+                  <label>
+                    <span>Perfil no SK-PE</span>
+
+                    <select
+                      value={selectedRoleCode}
+                      onChange={(event) =>
+                        setSelectedRoleCode(
+                          event.target.value,
+                        )
+                      }
+                      disabled={saving}
+                    >
+                      <option value="">
+                        Selecione um perfil
+                      </option>
+
+                      {availableRoles.map(
+                        (role) => (
+                          <option
+                            key={role.role_code}
+                            value={role.role_code}
+                          >
+                            {role.role_name}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>
+                      Justificativa da alteração
+                    </span>
+
+                    <textarea
+                      value={changeReason}
+                      onChange={(event) =>
+                        setChangeReason(
+                          event.target.value,
+                        )
+                      }
+                      minLength={10}
+                      placeholder="Descreva o motivo da alteração para fins de auditoria."
+                      disabled={saving}
+                    />
+                  </label>
+
+                  {actionMessage && (
+                    <div
+                      className={`skpe-action-message skpe-action-message-${actionMessage.type}`}
+                      role={
+                        actionMessage.type ===
+                        'error'
+                          ? 'alert'
+                          : 'status'
+                      }
+                    >
+                      {actionMessage.text}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className="skpe-primary-action-button"
+                    onClick={() =>
+                      void handleSaveRole()
+                    }
+                    disabled={
+                      saving ||
+                      !selectedRoleCode
+                    }
+                  >
+                    {saving
+                      ? 'Salvando...'
+                      : 'Salvar perfil do SK-PE'}
+                  </button>
+
+                  <div className="skpe-secondary-actions">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleModuleStatus(
+                          selectedSkpeAccess?.status ===
+                            'active'
+                            ? 'suspended'
+                            : 'active',
+                        )
+                      }
+                      disabled={saving}
+                    >
+                      {selectedSkpeAccess?.status ===
+                      'active'
+                        ? 'Suspender acesso ao SK-PE'
+                        : 'Ativar acesso ao SK-PE'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleOrganizationAdmin()
+                      }
+                      disabled={saving}
+                    >
+                      {selectedUser.isOrganizationAdmin
+                        ? 'Remover administrador'
+                        : 'Tornar administrador'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleMembershipStatus(
+                          selectedUser.membershipStatus ===
+                            'active'
+                            ? 'suspended'
+                            : 'active',
+                        )
+                      }
+                      disabled={saving}
+                    >
+                      {selectedUser.membershipStatus ===
+                      'active'
+                        ? 'Suspender vínculo'
+                        : 'Reativar vínculo'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="skpe-user-detail-modules">
+                  <h3>Módulos e perfis atuais</h3>
+
+                  {selectedUser.modules.length === 0 ? (
+                    <p>Nenhum módulo atribuído.</p>
                   ) : (
                     selectedUser.modules.map(
                       (module) => (
@@ -1686,17 +1967,11 @@ function AdministrationSection({
                           <dl>
                             <div>
                               <dt>Perfil</dt>
-
-                              <dd>
-                                {
-                                  module.roleName
-                                }
-                              </dd>
+                              <dd>{module.roleName}</dd>
                             </div>
 
                             <div>
                               <dt>Situação</dt>
-
                               <dd>
                                 {getMembershipStatusLabel(
                                   module.status,
@@ -1706,7 +1981,6 @@ function AdministrationSection({
 
                             <div>
                               <dt>Validade</dt>
-
                               <dd>
                                 {formatDate(
                                   module.validUntil,
@@ -1721,24 +1995,21 @@ function AdministrationSection({
                 </div>
 
                 <div className="skpe-user-detail-notice">
-                  Alterações de perfil, suspensão,
-                  convite e recuperação de acesso
-                  serão implementadas nas próximas
-                  etapas com auditoria.
+                  Toda alteração exige
+                  justificativa e é registrada na
+                  trilha de auditoria.
                 </div>
               </>
             ) : (
               <div className="skpe-user-detail-empty">
                 <UserIcon />
 
-                <h2>
-                  Selecione um usuário
-                </h2>
+                <h2>Selecione um usuário</h2>
 
                 <p>
-                  Clique em “Detalhes” para
-                  consultar o vínculo, os módulos
-                  e os perfis atribuídos.
+                  Clique em “Gerenciar” para
+                  consultar e alterar vínculo,
+                  perfil e permissões.
                 </p>
               </div>
             )}
@@ -1748,6 +2019,7 @@ function AdministrationSection({
     </>
   )
 }
+
 
 export function SkpeCockpit({
   organizationId,

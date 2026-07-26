@@ -1165,3 +1165,124 @@
     flex-direction: column;
   }
 }
+
+/* ============================================================
+   GESTÃO OPERACIONAL DE ACESSOS
+   ============================================================ */
+
+.skpe-access-management-form {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border: 1px solid #d8e4df;
+  border-radius: 12px;
+  background: #f7faf8;
+}
+
+.skpe-access-management-form h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.skpe-access-management-form label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.skpe-access-management-form label > span {
+  color: #5f6f68;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.skpe-access-management-form select,
+.skpe-access-management-form textarea {
+  width: 100%;
+  border: 1px solid #c7d5cf;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #1f312a;
+  font: inherit;
+}
+
+.skpe-access-management-form select {
+  min-height: 42px;
+  padding: 0.65rem 0.75rem;
+}
+
+.skpe-access-management-form textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding: 0.75rem;
+  line-height: 1.45;
+}
+
+.skpe-access-management-form select:focus,
+.skpe-access-management-form textarea:focus {
+  outline: 3px solid rgba(23, 107, 83, 0.16);
+  border-color: #176b53;
+}
+
+.skpe-primary-action-button {
+  min-height: 42px;
+  padding: 0.7rem 0.9rem;
+  border-radius: 9px;
+  background: #176b53;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-primary-action-button:hover:not(:disabled) {
+  background: #125642;
+}
+
+.skpe-primary-action-button:disabled,
+.skpe-secondary-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.skpe-secondary-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.skpe-secondary-actions button {
+  min-height: 38px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #c7d5cf;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #355048;
+  font-weight: 720;
+  cursor: pointer;
+  text-align: left;
+}
+
+.skpe-secondary-actions button:hover:not(:disabled) {
+  border-color: #8fb9aa;
+  background: #edf6f2;
+  color: #176b53;
+}
+
+.skpe-action-message {
+  padding: 0.75rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.skpe-action-message-success {
+  border: 1px solid #a9d5c2;
+  background: #eaf7f1;
+  color: #176b53;
+}
+
+.skpe-action-message-error {
+  border: 1px solid #e9b7b7;
+  background: #fcecec;
+  color: #842029;
+}
+
