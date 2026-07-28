@@ -10,3 +10,7 @@ coverage/
 *.log
 supabase/.temp/
 .vscode/settings.local.json
+
+# Backups e copias locais temporarias
+*_atual_*
+*atual_v*.txt

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import type {
   AuthChangeEvent,
   Session,
@@ -7,6 +7,7 @@ import type {
 
 import { supabase } from './lib/supabase'
 import { SkpeCockpit } from './modules/skpe/SkpeCockpit'
+import { PlatformAdmin } from './modules/platform-admin/PlatformAdmin'
 
 import './App.css'
 
@@ -44,6 +45,53 @@ type PlatformRole = {
   role_level: number
   valid_from: string
   valid_until: string | null
+}
+
+type OrganizationNetworkRow = {
+  organization_id: string
+  organization_code: string
+  organization_name: string
+  organization_level: string
+  hierarchy_depth: number
+  module_enabled: boolean
+  active_projects: number
+  average_project_progress: number
+  initiatives_total: number
+  initiatives_attention: number
+  active_memberships: number
+}
+
+
+const ORGANIZATION_LEVEL_LABELS: Record<string, string> = {
+  singular: 'Cooperativa singular',
+  federation_central: 'Central ou federação',
+  confederation: 'Confederação',
+  system_guardian: 'Organização guardiã do sistema',
+  matrix: 'Matriz',
+  branch: 'Filial',
+  unit: 'Unidade',
+  national: 'Nacional',
+  regional: 'Regional',
+  state: 'Estadual',
+  municipal: 'Municipal',
+}
+
+const MEMBERSHIP_STATUS_LABELS: Record<string, string> = {
+  invited: 'Convidado',
+  active: 'Ativo',
+  suspended: 'Suspenso',
+  revoked: 'Revogado',
+  inactive: 'Inativo',
+  pending: 'Pendente',
+  archived: 'Arquivado',
+}
+
+function getOrganizationLevelLabel(value: string) {
+  return ORGANIZATION_LEVEL_LABELS[value] ?? value
+}
+
+function getMembershipStatusLabel(value: string) {
+  return MEMBERSHIP_STATUS_LABELS[value] ?? value
 }
 
 type PasswordVisibilityButtonProps = {
@@ -123,6 +171,42 @@ function EyeOffIcon() {
       />
     </svg>
   )
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle
+        cx="11"
+        cy="11"
+        r="6.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M16 16l4 4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function activateWithKeyboard(
+  event: KeyboardEvent<HTMLElement>,
+  action: () => void,
+) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    action()
+  }
 }
 
 function ArrowRightIcon() {
@@ -230,13 +314,68 @@ function App() {
   const [organizations, setOrganizations] =
     useState<Organization[]>([])
 
+  const [platformAdminOpen, setPlatformAdminOpen] =
+    useState(false)
+
+  const [organizationViewMode, setOrganizationViewMode] =
+    useState<'cards' | 'grid'>('cards')
+
+  const [organizationSearch, setOrganizationSearch] =
+    useState('')
+
+  const [organizationSortDirection, setOrganizationSortDirection] =
+    useState<'asc' | 'desc'>('asc')
+
   const [
     selectedOrganization,
     setSelectedOrganization,
   ] = useState<Organization | null>(null)
 
+  const visibleOrganizations = useMemo(() => {
+    const term = organizationSearch.trim().toLocaleLowerCase('pt-BR')
+    return [...organizations]
+      .filter((organization) => {
+        if (!term) return true
+        return [organization.organization_code, organization.trade_name, organization.legal_name]
+          .filter(Boolean)
+          .some((value) => String(value).toLocaleLowerCase('pt-BR').includes(term))
+      })
+      .sort((first, second) => {
+        const firstName = first.trade_name ?? first.legal_name ?? first.organization_code
+        const secondName = second.trade_name ?? second.legal_name ?? second.organization_code
+        const comparison = firstName.localeCompare(secondName, 'pt-BR')
+        return organizationSortDirection === 'asc' ? comparison : -comparison
+      })
+  }, [organizations, organizationSearch, organizationSortDirection])
+
   const [modules, setModules] =
     useState<PlatformModule[]>([])
+
+  const [organizationNetwork, setOrganizationNetwork] =
+    useState<OrganizationNetworkRow[]>([])
+
+  const [loadingOrganizationNetwork, setLoadingOrganizationNetwork] =
+    useState(false)
+
+  const networkSummary = useMemo(() => {
+    const rows = organizationNetwork
+    const organizationsTotal = rows.length
+    const activeProjects = rows.reduce((total, row) => total + Number(row.active_projects ?? 0), 0)
+    const initiativesTotal = rows.reduce((total, row) => total + Number(row.initiatives_total ?? 0), 0)
+    const initiativesAttention = rows.reduce((total, row) => total + Number(row.initiatives_attention ?? 0), 0)
+    const progressRows = rows.filter((row) => Number(row.active_projects ?? 0) > 0)
+    const averageProgress = progressRows.length
+      ? progressRows.reduce((total, row) => total + Number(row.average_project_progress ?? 0), 0) / progressRows.length
+      : 0
+
+    return {
+      organizationsTotal,
+      activeProjects,
+      initiativesTotal,
+      initiativesAttention,
+      averageProgress,
+    }
+  }, [organizationNetwork])
 
   const [openedModule, setOpenedModule] =
     useState<PlatformModule | null>(null)
@@ -350,6 +489,7 @@ function App() {
           setPlatformRoles([])
           setSelectedOrganization(null)
           setOpenedModule(null)
+          setPlatformAdminOpen(false)
         }
       },
     )
@@ -427,39 +567,66 @@ function App() {
   const handleSelectOrganization = async (
     organization: Organization,
   ) => {
+    setPlatformAdminOpen(false)
     setSelectedOrganization(organization)
     setOpenedModule(null)
     setModules([])
+    setOrganizationNetwork([])
     setLoadingModules(true)
+    setLoadingOrganizationNetwork(true)
     clearMessage()
 
-    const { data, error } = await supabase.rpc(
-      'get_my_modules',
-      {
-        target_organization_id:
-          organization.organization_id,
-      },
-    )
+    const [modulesResponse, networkResponse] = await Promise.all([
+      supabase.rpc('get_my_modules', {
+        target_organization_id: organization.organization_id,
+      }),
+      supabase.rpc('get_organization_network_dashboard', {
+        target_organization_id: organization.organization_id,
+        target_module_code: 'SK-PE',
+      }),
+    ])
 
-    if (error) {
+    if (modulesResponse.error) {
       showMessage(
-        `Erro ao carregar módulos: ${error.message}`,
+        `Erro ao carregar módulos: ${modulesResponse.error.message}`,
         'error',
       )
-
       setModules([])
-      setLoadingModules(false)
-      return
+    } else {
+      setModules((modulesResponse.data ?? []) as PlatformModule[])
     }
 
-    setModules((data ?? []) as PlatformModule[])
+    if (networkResponse.error) {
+      console.error('Não foi possível carregar o painel da rede organizacional:', networkResponse.error)
+      setOrganizationNetwork([])
+    } else {
+      setOrganizationNetwork((networkResponse.data ?? []) as OrganizationNetworkRow[])
+    }
+
     setLoadingModules(false)
+    setLoadingOrganizationNetwork(false)
   }
 
   const handleReturnToOrganizations = () => {
+    setPlatformAdminOpen(false)
     setSelectedOrganization(null)
     setOpenedModule(null)
     setModules([])
+    setOrganizationNetwork([])
+    setLoadingOrganizationNetwork(false)
+    clearMessage()
+  }
+
+  const handleOpenPlatformAdmin = () => {
+    setPlatformAdminOpen(true)
+    setSelectedOrganization(null)
+    setOpenedModule(null)
+    setModules([])
+    clearMessage()
+  }
+
+  const handleClosePlatformAdmin = () => {
+    setPlatformAdminOpen(false)
     clearMessage()
   }
 
@@ -546,6 +713,7 @@ function App() {
     setPlatformRoles([])
     setSelectedOrganization(null)
     setOpenedModule(null)
+    setPlatformAdminOpen(false)
     setLoading(false)
   }
 
@@ -1001,8 +1169,8 @@ function App() {
     <main className="platform-shell">
       <header className="topbar">
         <div className="brand-area">
-          <span className="brand-symbol">
-            S
+          <span className="brand-symbol" aria-hidden="true">
+            <img src="/sparkoop-mascot.png" alt="" />
           </span>
 
           <div>
@@ -1039,6 +1207,17 @@ function App() {
             </div>
           </div>
 
+          {isPlatformSuperAdmin && (
+            <button
+              type="button"
+              className="platform-admin-topbar-button"
+              onClick={handleOpenPlatformAdmin}
+              disabled={loading}
+            >
+              Administração da Plataforma
+            </button>
+          )}
+
           <button
             type="button"
             className="secondary-button"
@@ -1051,7 +1230,9 @@ function App() {
       </header>
 
       <div className="platform-content">
-        {selectedOrganization ? (
+        {platformAdminOpen && isPlatformSuperAdmin ? (
+          <PlatformAdmin onBack={handleClosePlatformAdmin} />
+        ) : selectedOrganization ? (
           <>
             <button
               type="button"
@@ -1087,14 +1268,18 @@ function App() {
                 <span>
                   Nível:{' '}
                   {
-                    selectedOrganization.organization_level
+                    getOrganizationLevelLabel(
+                      selectedOrganization.organization_level,
+                    )
                   }
                 </span>
 
                 <span>
                   Vínculo:{' '}
                   {
-                    selectedOrganization.membership_status
+                    getMembershipStatusLabel(
+                      selectedOrganization.membership_status,
+                    )
                   }
                 </span>
               </div>
@@ -1112,6 +1297,79 @@ function App() {
                 {message}
               </p>
             )}
+
+            {loadingOrganizationNetwork ? (
+              <div className="state-card">
+                <p>Carregando visão consolidada da rede organizacional...</p>
+              </div>
+            ) : organizationNetwork.length > 0 ? (
+              <section className="network-dashboard" aria-label="Painel consolidado da rede organizacional">
+                <div className="network-dashboard-heading">
+                  <div>
+                    <p className="eyebrow">Visão consolidada</p>
+                    <h2>Desempenho da organização e de sua rede</h2>
+                    <p>Acompanhamento do Planejamento Estratégico das organizações acessíveis no nível atual.</p>
+                  </div>
+                </div>
+
+                <div className="network-summary-grid">
+                  {[
+                    ['Organizações', networkSummary.organizationsTotal, 'Abrir organizações da rede'],
+                    ['Projetos estratégicos', networkSummary.activeProjects, 'Abrir detalhamento por organização'],
+                    ['Progresso médio', `${networkSummary.averageProgress.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`, 'Comparar progresso da rede'],
+                    ['Iniciativas', networkSummary.initiativesTotal, `${networkSummary.initiativesAttention} requerem atenção`],
+                  ].map(([label, value, detail]) => (
+                    <article
+                      key={String(label)}
+                      className="network-summary-card network-interactive-record"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => document.getElementById('network-organization-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      onKeyDown={(event) => activateWithKeyboard(event, () => document.getElementById('network-organization-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))}
+                    >
+                      <span>{label}</span><strong>{value}</strong><small>{detail}</small>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="network-table-wrap" id="network-organization-details">
+                  <table className="network-table">
+                    <thead><tr><th>Organização</th><th>Nível</th><th>Módulo</th><th>Projetos</th><th>Progresso</th><th>Iniciativas</th><th>Atenção</th></tr></thead>
+                    <tbody>
+                      {organizationNetwork.map((row) => {
+                        const accessibleOrganization = organizations.find((organization) => organization.organization_id === row.organization_id)
+                        const openOrganization = () => {
+                          if (accessibleOrganization) {
+                            void handleSelectOrganization(accessibleOrganization)
+                            return
+                          }
+                          showMessage('A organização está visível no consolidado, mas não há permissão para abrir seu contexto detalhado.', 'info')
+                        }
+                        return (
+                          <tr
+                            key={row.organization_id}
+                            className="network-interactive-record"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Abrir contexto de ${row.organization_name}`}
+                            onClick={openOrganization}
+                            onKeyDown={(event) => activateWithKeyboard(event, openOrganization)}
+                          >
+                            <td><span style={{ paddingLeft: `${Math.min(Number(row.hierarchy_depth ?? 0), 5) * 14}px` }}><strong>{row.organization_name}</strong><small>{row.organization_code}</small></span></td>
+                            <td>{getOrganizationLevelLabel(row.organization_level)}</td>
+                            <td>{row.module_enabled ? 'Habilitado' : 'Não habilitado'}</td>
+                            <td>{row.active_projects}</td>
+                            <td>{Number(row.average_project_progress ?? 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</td>
+                            <td>{row.initiatives_total}</td>
+                            <td>{row.initiatives_attention}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ) : null}
 
             {loadingModules ? (
               <div className="state-card">
@@ -1135,10 +1393,13 @@ function App() {
               <section className="module-grid">
                 {modules.map((module) => (
                   <article
-                    className="module-card"
-                    key={
-                      module.organization_module_id
-                    }
+                    className="module-card module-card-interactive"
+                    key={module.organization_module_id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Acessar ${module.module_name}`}
+                    onClick={() => handleOpenModule(module)}
+                    onKeyDown={(event) => activateWithKeyboard(event, () => handleOpenModule(module))}
                   >
                     <div className="module-icon">
                       <StrategyIcon />
@@ -1172,11 +1433,10 @@ function App() {
                     <button
                       type="button"
                       className="module-access-button"
-                      onClick={() =>
-                        handleOpenModule(
-                          module,
-                        )
-                      }
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        handleOpenModule(module)
+                      }}
                     >
                       Acessar módulo
                       <ArrowRightIcon />
@@ -1205,6 +1465,29 @@ function App() {
               </div>
             </section>
 
+            {isPlatformSuperAdmin && (
+              <section className="platform-admin-entry">
+                <div className="platform-admin-entry-icon" aria-hidden="true">⚙</div>
+                <div className="platform-admin-entry-content">
+                  <p className="eyebrow">Acesso global</p>
+                  <h2>Administração da Plataforma</h2>
+                  <p>
+                    Gerencie organizações, usuários, vínculos, módulos,
+                    perfis globais, hierarquias e parâmetros mestres sem
+                    precisar selecionar uma organização.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="platform-admin-entry-button"
+                  onClick={handleOpenPlatformAdmin}
+                >
+                  Acessar administração
+                  <ArrowRightIcon />
+                </button>
+              </section>
+            )}
+
             {message && (
               <p
                 className={`message message-${messageType}`}
@@ -1232,13 +1515,37 @@ function App() {
                 </p>
               </div>
             ) : (
+              <>
+                <section className="primary-list-toolbar">
+                  <div className="primary-list-search">
+                    <SearchIcon />
+                    <input type="search" value={organizationSearch} onChange={(event) => setOrganizationSearch(event.target.value)} placeholder="Pesquisar organizações" aria-label="Pesquisar organizações" />
+                  </div>
+                  <button type="button" className="primary-list-sort" onClick={() => setOrganizationSortDirection((current) => current === 'asc' ? 'desc' : 'asc')} title="Alterar ordenação alfabética">
+                    {organizationSortDirection === 'asc' ? 'A → Z' : 'Z → A'}
+                  </button>
+                  <div className="primary-list-view-toggle" aria-label="Modo de visualização">
+                    <button type="button" className={organizationViewMode === 'cards' ? 'active' : ''} onClick={() => setOrganizationViewMode('cards')} title="Visualizar em cards">▦</button>
+                    <button type="button" className={organizationViewMode === 'grid' ? 'active' : ''} onClick={() => setOrganizationViewMode('grid')} title="Visualizar em linhas">☷</button>
+                  </div>
+                </section>
+                {organizationViewMode === 'cards' ? (
               <section className="organization-grid">
-                {organizations.map(
+                {visibleOrganizations.map(
                   (organization) => (
                     <article
                       className="organization-card"
                       key={
                         organization.organization_id
+                      }
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Abrir ${organization.trade_name ?? organization.legal_name}`}
+                      onClick={() => void handleSelectOrganization(organization)}
+                      onKeyDown={(event) =>
+                        activateWithKeyboard(event, () =>
+                          void handleSelectOrganization(organization),
+                        )
                       }
                     >
                       <div className="organization-card-header">
@@ -1268,7 +1575,9 @@ function App() {
 
                           <dd>
                             {
-                              organization.organization_level
+                              getOrganizationLevelLabel(
+                                organization.organization_level,
+                              )
                             }
                           </dd>
                         </div>
@@ -1278,7 +1587,9 @@ function App() {
 
                           <dd>
                             {
-                              organization.membership_status
+                              getMembershipStatusLabel(
+                                organization.membership_status,
+                              )
                             }
                           </dd>
                         </div>
@@ -1287,11 +1598,10 @@ function App() {
                       <button
                         type="button"
                         className="organization-access-button"
-                        onClick={() =>
-                          void handleSelectOrganization(
-                            organization,
-                          )
-                        }
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void handleSelectOrganization(organization)
+                        }}
                       >
                         Acessar organização
                         <ArrowRightIcon />
@@ -1300,6 +1610,36 @@ function App() {
                   ),
                 )}
               </section>
+                ) : (
+                  <section className="organization-table-card">
+                    <table className="organization-table">
+                      <thead><tr><th onClick={() => setOrganizationSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Código</th><th>Nível</th><th>Vínculo</th><th>Perfil</th><th>Ações</th></tr></thead>
+                      <tbody>{visibleOrganizations.map((organization) => (
+                        <tr
+                          key={organization.organization_id}
+                          className="interactive-record-row"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Abrir ${organization.trade_name ?? organization.legal_name}`}
+                          onClick={() => void handleSelectOrganization(organization)}
+                          onKeyDown={(event) =>
+                            activateWithKeyboard(event, () =>
+                              void handleSelectOrganization(organization),
+                            )
+                          }
+                        >
+                          <td><strong>{organization.trade_name ?? organization.legal_name}</strong></td>
+                          <td>{organization.organization_code}</td>
+                          <td>{getOrganizationLevelLabel(organization.organization_level)}</td>
+                          <td>{getMembershipStatusLabel(organization.membership_status)}</td>
+                          <td>{organization.is_organization_admin ? 'Administrador' : 'Participante'}</td>
+                          <td><button type="button" title="Acessar organização" onClick={(event) => { event.stopPropagation(); void handleSelectOrganization(organization) }}>→</button></td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </section>
+                )}
+              </>
             )}
           </>
         )}
