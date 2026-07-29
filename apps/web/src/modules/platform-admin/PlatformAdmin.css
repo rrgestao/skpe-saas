@@ -1698,3 +1698,130 @@
     flex: 1;
   }
 }
+
+
+/* FEEDBACK E PROTECAO DE DADOS NAO SALVOS - V4 */
+.pa-sticky-form-actions {
+  position: sticky;
+  top: -1.25rem;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  margin: -1rem -1.25rem 0;
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid #d8e5df;
+  border-bottom: 1px solid #cbdcd5;
+  background: rgba(247, 251, 249, 0.98);
+  box-shadow: 0 10px 24px rgba(23, 107, 83, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.pa-sticky-form-actions-error {
+  border-color: #e7aaaa;
+  background: rgba(255, 244, 244, 0.98);
+}
+
+.pa-sticky-form-actions-success {
+  border-color: #8ebcaa;
+  background: rgba(237, 250, 244, 0.98);
+}
+
+.pa-sticky-form-actions-dirty {
+  border-color: #dfc878;
+  background: rgba(255, 250, 232, 0.98);
+}
+
+.pa-sticky-form-message {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.pa-sticky-form-message > svg {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  margin-top: 0.1rem;
+  color: #9c2f35;
+}
+
+.pa-sticky-form-message > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+}
+
+.pa-sticky-form-message strong {
+  color: #173e33;
+}
+
+.pa-sticky-form-actions-error .pa-sticky-form-message strong {
+  color: #842029;
+}
+
+.pa-sticky-form-message span {
+  color: #566a62;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.pa-sticky-form-actions-error .pa-sticky-form-message span {
+  color: #842029;
+}
+
+.pa-sticky-form-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.pa-button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.pa-button-with-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pa-field-invalid {
+  scroll-margin-top: 115px;
+}
+
+label.pa-field-invalid,
+section.pa-field-invalid {
+  padding: 0.65rem;
+  border: 2px solid #c83c45 !important;
+  border-radius: 11px;
+  background: #fff5f5 !important;
+  box-shadow: 0 0 0 4px rgba(200, 60, 69, 0.1);
+}
+
+label.pa-field-invalid::after {
+  content: 'Corrija esta pendência antes de salvar novamente.';
+  color: #842029;
+  font-size: 0.75rem;
+  font-weight: 760;
+}
+
+@media (max-width: 720px) {
+  .pa-sticky-form-actions {
+    position: sticky;
+    top: -1.25rem;
+    grid-template-columns: 1fr;
+  }
+
+  .pa-sticky-form-buttons {
+    width: 100%;
+  }
+
+  .pa-sticky-form-buttons button {
+    flex: 1;
+  }
+}

@@ -607,6 +607,36 @@ function PrintIcon() {
   )
 }
 
+function SaveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function WarningIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 3L2.8 20h18.4L12 3zM12 9v5M12 17.5h.01"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (value: ViewMode) => void }) {
   return (
     <div className="pa-view-toggle" aria-label="Modo de visualização">
@@ -653,6 +683,10 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     text: string
   } | null>(null)
 
+  const [organizationDirty, setOrganizationDirty] = useState(false)
+  const [organizationErrorField, setOrganizationErrorField] =
+    useState<string | null>(null)
+
   const [userPanelOpen, setUserPanelOpen] = useState(false)
   const [userDetailTab, setUserDetailTab] = useState<UserDetailTab>('profile')
   const [userForm, setUserForm] = useState<UserForm>(EMPTY_USER_FORM)
@@ -686,6 +720,112 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const clearMessage = () => {
     setMessage('')
     setMessageType('info')
+  }
+
+  const normalizeErrorText = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('pt-BR')
+
+  const resolveOrganizationErrorField = (reason: string) => {
+    const normalized = normalizeErrorText(reason)
+
+    if (normalized.includes('ramo cooperativista')) {
+      return 'organization-field-branch'
+    }
+    if (normalized.includes('cnpj')) {
+      return 'organization-field-cnpj'
+    }
+    if (normalized.includes('cep')) {
+      return 'organization-field-postal-code'
+    }
+    if (normalized.includes('logradouro')) {
+      return 'organization-field-street'
+    }
+    if (normalized.includes('numero')) {
+      return 'organization-field-number'
+    }
+    if (normalized.includes('bairro')) {
+      return 'organization-field-district'
+    }
+    if (normalized.includes('municipio') || normalized.includes('cidade')) {
+      return 'organization-field-city'
+    }
+    if (normalized.includes('uf') || normalized.includes('estado')) {
+      return 'organization-field-state'
+    }
+    if (normalized.includes('e-mail') || normalized.includes('email')) {
+      return 'organization-field-email'
+    }
+    if (normalized.includes('cnae')) {
+      return 'organization-field-cnaes'
+    }
+    if (normalized.includes('justificativa')) {
+      return 'organization-field-change-reason'
+    }
+
+    return 'organization-form-top'
+  }
+
+  const focusOrganizationError = (fieldId: string) => {
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById(fieldId)
+      target?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+      target
+        ?.querySelector<HTMLElement>('input, select, textarea, button')
+        ?.focus({ preventScroll: true })
+    })
+  }
+
+  const reportOrganizationSaveError = (reason: string) => {
+    const fieldId = resolveOrganizationErrorField(reason)
+    setOrganizationErrorField(fieldId)
+    showMessage(
+      `Não foi possível salvar as alterações. ${reason} As informações alteradas continuam nesta tela, mas ainda não foram gravadas. Corrija a pendência e salve novamente. Se fechar, trocar de área ou atualizar a página, os dados alterados serão perdidos.`,
+      'error',
+    )
+    focusOrganizationError(fieldId)
+  }
+
+  const requestCloseOrganizationPanel = () => {
+    if (
+      organizationDirty &&
+      !window.confirm(
+        'Existem alterações não salvas. Ao sair desta tela, as informações alteradas serão perdidas. Deseja sair sem salvar?',
+      )
+    ) {
+      return
+    }
+
+    setOrganizationDirty(false)
+    setOrganizationErrorField(null)
+    clearMessage()
+    setOrganizationPanelOpen(false)
+  }
+
+  const changeOrganizationDetailTab = (tab: OrganizationDetailTab) => {
+    if (
+      organizationDetailTab === 'data' &&
+      tab !== 'data' &&
+      organizationDirty &&
+      !window.confirm(
+        'Existem alterações não salvas nos dados gerais. Ao trocar de área, essas informações serão perdidas. Deseja continuar?',
+      )
+    ) {
+      return
+    }
+
+    if (organizationDetailTab === 'data' && tab !== 'data') {
+      setOrganizationDirty(false)
+      setOrganizationErrorField(null)
+      clearMessage()
+    }
+
+    setOrganizationDetailTab(tab)
   }
 
   const loadAll = async () => {
@@ -752,6 +892,19 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   useEffect(() => {
     void loadAll()
   }, [])
+
+  useEffect(() => {
+    if (!organizationPanelOpen || !organizationDirty) return
+
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    return () =>
+      window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [organizationPanelOpen, organizationDirty])
 
   useEffect(() => {
     if (!selectedOrganizationForModules) {
@@ -1038,6 +1191,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   }, [cnaeSearch, organizationPanelOpen, selectedCnaes])
 
   const addCnae = (candidate: CnaeCatalogSearchRow) => {
+    setOrganizationDirty(true)
+    setOrganizationErrorField(null)
+
     if (
       selectedCnaes.some(
         (item) => item.cnaeCatalogId === candidate.cnae_catalog_id,
@@ -1066,6 +1222,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   }
 
   const makePrimaryCnae = (cnaeCatalogId: string) => {
+    setOrganizationDirty(true)
+    setOrganizationErrorField(null)
     setSelectedCnaes((current) =>
       current.map((item) => ({
         ...item,
@@ -1075,6 +1233,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   }
 
   const removeCnae = (cnaeCatalogId: string) => {
+    setOrganizationDirty(true)
+    setOrganizationErrorField(null)
     setSelectedCnaes((current) => {
       const removed = current.find(
         (item) => item.cnaeCatalogId === cnaeCatalogId,
@@ -1356,6 +1516,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     setCnaeResults([])
     setCnaeSearchError('')
     setCepLookupMessage(null)
+    setOrganizationDirty(false)
+    setOrganizationErrorField(null)
 
     setOrganizationForm({
       organizationId: organization.organization_id,
@@ -1394,6 +1556,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   }
 
   const openNewOrganization = () => {
+    clearMessage()
+    setOrganizationDirty(false)
+    setOrganizationErrorField(null)
     setOrganizationLogoFile(null)
     setOrganizationLogoPreview(null)
     setSelectedCnaes([])
@@ -1414,6 +1579,19 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   }
 
   const openOrganizationEdit = async (organization: Organization) => {
+    if (
+      organizationPanelOpen &&
+      organizationDirty &&
+      !window.confirm(
+        'Existem alterações não salvas. Ao abrir outra organização, as informações alteradas serão perdidas. Deseja continuar?',
+      )
+    ) {
+      return
+    }
+
+    clearMessage()
+    setOrganizationDirty(false)
+    setOrganizationErrorField(null)
     setOrganizationLogoFile(null)
     setOrganizationLogoPreview(null)
     applyOrganizationToForm(organization)
@@ -1453,14 +1631,19 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const saveOrganization = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     clearMessage()
+    setOrganizationErrorField(null)
 
     if (!organizationForm.code.trim() || !organizationForm.legalName.trim()) {
-      showMessage('Informe o código e a razão social da organização.', 'error')
+      reportOrganizationSaveError(
+        'Informe o código e a razão social da organização.',
+      )
       return
     }
 
     if (organizationForm.changeReason.trim().length < 10) {
-      showMessage('Informe uma justificativa com pelo menos 10 caracteres.', 'error')
+      reportOrganizationSaveError(
+        'Informe uma justificativa com pelo menos 10 caracteres.',
+      )
       return
     }
 
@@ -1468,7 +1651,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       selectedCnaes.length > 0 &&
       selectedCnaes.filter((item) => item.isPrimary).length !== 1
     ) {
-      showMessage('Selecione exatamente um CNAE principal.', 'error')
+      reportOrganizationSaveError(
+        'Selecione exatamente um CNAE principal.',
+      )
       return
     }
 
@@ -1520,10 +1705,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       )
 
       if (error) {
-        showMessage(
-          `Não foi possível salvar a organização: ${error.message}`,
-          'error',
-        )
+        reportOrganizationSaveError(error.message)
         return
       }
 
@@ -1619,6 +1801,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       }
 
       applyOrganizationToForm(persistedOrganization)
+      setOrganizationDirty(false)
+      setOrganizationErrorField(null)
       setSelectedOrganizationForModules(savedOrganizationId)
       await loadAll()
       showMessage(
@@ -2182,18 +2366,77 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       </div>
 
       {organizationPanelOpen && (
-        <div className="pa-modal-backdrop" role="presentation" onMouseDown={() => setOrganizationPanelOpen(false)}>
+        <div className="pa-modal-backdrop" role="presentation" onMouseDown={requestCloseOrganizationPanel}>
           <aside className="pa-side-panel pa-side-panel-wide" role="dialog" aria-modal="true" aria-label="Cadastro da organização" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="pa-panel-header"><div><p className="pa-eyebrow">Cadastro mestre</p><h2>{organizationForm.organizationId ? 'Visualização e manutenção da organização' : 'Nova organização'}</h2></div><button type="button" onClick={() => setOrganizationPanelOpen(false)} title="Fechar"><CloseIcon /></button></div>
+            <div className="pa-panel-header"><div><p className="pa-eyebrow">Cadastro mestre</p><h2>{organizationForm.organizationId ? 'Visualização e manutenção da organização' : 'Nova organização'}</h2></div><button type="button" onClick={requestCloseOrganizationPanel} title="Fechar cadastro" aria-label="Fechar cadastro"><CloseIcon /></button></div>
             <nav className="pa-detail-tabs" aria-label="Dados relacionados à organização">
-              <button type="button" className={organizationDetailTab === 'data' ? 'active' : ''} onClick={() => setOrganizationDetailTab('data')}>Dados gerais</button>
-              <button type="button" className={organizationDetailTab === 'users' ? 'active' : ''} onClick={() => setOrganizationDetailTab('users')} disabled={!organizationForm.organizationId}>Usuários e acessos <span>{organizationMemberships.length}</span></button>
-              <button type="button" className={organizationDetailTab === 'modules' ? 'active' : ''} onClick={() => setOrganizationDetailTab('modules')} disabled={!organizationForm.organizationId}>Módulos <span>{organizationModules.filter((module) => module.enabled).length}</span></button>
-              <button type="button" className={organizationDetailTab === 'hierarchy' ? 'active' : ''} onClick={() => setOrganizationDetailTab('hierarchy')} disabled={!organizationForm.organizationId}>Hierarquia <span>{organizationChildren.length}</span></button>
+              <button type="button" className={organizationDetailTab === 'data' ? 'active' : ''} onClick={() => changeOrganizationDetailTab('data')}>Dados gerais</button>
+              <button type="button" className={organizationDetailTab === 'users' ? 'active' : ''} onClick={() => changeOrganizationDetailTab('users')} disabled={!organizationForm.organizationId}>Usuários e acessos <span>{organizationMemberships.length}</span></button>
+              <button type="button" className={organizationDetailTab === 'modules' ? 'active' : ''} onClick={() => changeOrganizationDetailTab('modules')} disabled={!organizationForm.organizationId}>Módulos <span>{organizationModules.filter((module) => module.enabled).length}</span></button>
+              <button type="button" className={organizationDetailTab === 'hierarchy' ? 'active' : ''} onClick={() => changeOrganizationDetailTab('hierarchy')} disabled={!organizationForm.organizationId}>Hierarquia <span>{organizationChildren.length}</span></button>
             </nav>
 
             {organizationDetailTab === 'data' ? (
-              <form className="pa-form pa-onboarding-form" onSubmit={saveOrganization}>
+              <form
+                id="organization-form-top"
+                className="pa-form pa-onboarding-form"
+                onSubmit={saveOrganization}
+                onChange={() => {
+                  setOrganizationDirty(true)
+                  setOrganizationErrorField(null)
+                }}
+              >
+                {/* FEEDBACK E PROTECAO DE DADOS NAO SALVOS - V4 */}
+                <div
+                  className={`pa-sticky-form-actions ${message ? `pa-sticky-form-actions-${messageType}` : organizationDirty ? 'pa-sticky-form-actions-dirty' : ''}`}
+                  aria-live="polite"
+                >
+                  <div className="pa-sticky-form-message">
+                    {message ? (
+                      <>
+                        {messageType === 'error' && <WarningIcon />}
+                        <div>
+                          <strong>{messageType === 'error' ? 'Atenção: alterações não gravadas' : messageType === 'success' ? 'Operação concluída' : 'Informação'}</strong>
+                          <span>{message}</span>
+                        </div>
+                      </>
+                    ) : organizationDirty ? (
+                      <>
+                        <WarningIcon />
+                        <div>
+                          <strong>Existem alterações não salvas</strong>
+                          <span>Salve antes de fechar, trocar de área ou atualizar a página.</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <strong>Cadastro institucional</strong>
+                        <span>Os dados permanecem preservados até que uma ação seja executada.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pa-sticky-form-buttons">
+                    <button
+                      type="button"
+                      className="pa-secondary-button pa-button-with-icon"
+                      onClick={requestCloseOrganizationPanel}
+                      title="Fechar cadastro"
+                    >
+                      <CloseIcon />
+                      <span>Fechar</span>
+                    </button>
+                    <button
+                      type="submit"
+                      className="pa-primary-button pa-button-with-icon"
+                      disabled={saving}
+                      title={organizationForm.organizationId ? 'Salvar alterações' : 'Criar organização'}
+                    >
+                      <SaveIcon />
+                      <span>{saving ? 'Salvando...' : organizationForm.organizationId ? 'Salvar alterações' : 'Criar organização'}</span>
+                    </button>
+                  </div>
+                </div>
                 <section className="pa-organization-branding-editor">
                   <div className="pa-organization-logo-preview">
                     {organizationLogoPreview ? <img src={organizationLogoPreview} alt={`Logo de ${organizationForm.tradeName || organizationForm.legalName || 'organização'}`} /> : <span>{(organizationForm.tradeName || organizationForm.legalName || organizationForm.code || 'OR').slice(0, 2).toUpperCase()}</span>}
@@ -2239,9 +2482,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   </div>
                   <label>Organização superior<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm((current) => ({ ...current, parentOrganizationId: event.target.value }))}><option value="">Sem organização superior</option>{organizations.filter((organization) => organization.organization_id !== organizationForm.organizationId).map((organization) => <option key={organization.organization_id} value={organization.organization_id}>{organization.trade_name ?? organization.legal_name}</option>)}</select></label>
                   <div className="pa-form-grid">
-                    <label>CNPJ<input value={organizationForm.cnpj} onChange={(event) => setOrganizationForm((current) => ({ ...current, cnpj: formatCnpjInput(event.target.value) }))} inputMode="numeric" /></label>
+                    <label id="organization-field-cnpj" className={organizationErrorField === 'organization-field-cnpj' ? 'pa-field-invalid' : ''}>CNPJ<input value={organizationForm.cnpj} onChange={(event) => setOrganizationForm((current) => ({ ...current, cnpj: formatCnpjInput(event.target.value) }))} inputMode="numeric" /></label>
                     {organizationForm.organizationType === 'cooperative' ? (
-                      <label>Ramo cooperativista<select value={organizationForm.cooperativeBranchCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, cooperativeBranchCode: event.target.value }))}><option value="">Selecione o ramo</option>{cooperativeBranches.map((branch) => <option key={branch.branch_id} value={branch.branch_code}>{branch.branch_name}</option>)}</select><small className="pa-field-hint">Catálogo mestre oficial, incluindo o Ramo Seguros.</small></label>
+                      <label id="organization-field-branch" className={organizationErrorField === 'organization-field-branch' ? 'pa-field-invalid' : ''}>Ramo cooperativista<select value={organizationForm.cooperativeBranchCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, cooperativeBranchCode: event.target.value }))}><option value="">Selecione o ramo</option>{cooperativeBranches.map((branch) => <option key={branch.branch_id} value={branch.branch_code}>{branch.branch_name}</option>)}</select><small className="pa-field-hint">Catálogo mestre oficial, incluindo o Ramo Seguros.</small></label>
                     ) : (
                       <div className="pa-not-applicable-field"><strong>Ramo cooperativista</strong><span>Não aplicável ao tipo de organização selecionado.</span></div>
                     )}
@@ -2259,24 +2502,27 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   </header>
 
                   <div className="pa-cep-row">
-                    <label>CEP<input value={organizationForm.postalCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, postalCode: formatPostalCodeInput(event.target.value) }))} onBlur={() => { if (onlyDigits(organizationForm.postalCode).length === 8) void lookupPostalCode() }} inputMode="numeric" /></label>
+                    <label id="organization-field-postal-code" className={organizationErrorField === 'organization-field-postal-code' ? 'pa-field-invalid' : ''}>CEP<input value={organizationForm.postalCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, postalCode: formatPostalCodeInput(event.target.value) }))} onBlur={() => { if (onlyDigits(organizationForm.postalCode).length === 8) void lookupPostalCode() }} inputMode="numeric" /></label>
                     <button type="button" className="pa-secondary-button" onClick={() => void lookupPostalCode()} disabled={lookingUpCep}>{lookingUpCep ? 'Consultando...' : 'Consultar CEP'}</button>
                   </div>
                   {cepLookupMessage && <div className={`pa-lookup-message pa-lookup-message-${cepLookupMessage.type}`} role="status">{cepLookupMessage.text}</div>}
-                  <label>Logradouro<input value={organizationForm.street} onChange={(event) => setOrganizationForm((current) => ({ ...current, street: event.target.value }))} /></label>
+                  <label id="organization-field-street" className={organizationErrorField === 'organization-field-street' ? 'pa-field-invalid' : ''}>Logradouro<input value={organizationForm.street} onChange={(event) => setOrganizationForm((current) => ({ ...current, street: event.target.value }))} /></label>
                   <div className="pa-form-grid">
-                    <label>Número<input value={organizationForm.addressNumber} onChange={(event) => setOrganizationForm((current) => ({ ...current, addressNumber: event.target.value }))} /></label>
+                    <label id="organization-field-number" className={organizationErrorField === 'organization-field-number' ? 'pa-field-invalid' : ''}>Número<input value={organizationForm.addressNumber} onChange={(event) => setOrganizationForm((current) => ({ ...current, addressNumber: event.target.value }))} /></label>
                     <label>Complemento<input value={organizationForm.addressComplement} onChange={(event) => setOrganizationForm((current) => ({ ...current, addressComplement: event.target.value }))} /></label>
                   </div>
-                  <label>Bairro<input value={organizationForm.district} onChange={(event) => setOrganizationForm((current) => ({ ...current, district: event.target.value }))} /></label>
+                  <label id="organization-field-district" className={organizationErrorField === 'organization-field-district' ? 'pa-field-invalid' : ''}>Bairro<input value={organizationForm.district} onChange={(event) => setOrganizationForm((current) => ({ ...current, district: event.target.value }))} /></label>
                   <div className="pa-form-grid pa-form-grid-three">
-                    <label>Município<input value={organizationForm.city} onChange={(event) => setOrganizationForm((current) => ({ ...current, city: event.target.value }))} /></label>
-                    <label>UF<input maxLength={2} value={organizationForm.stateCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, stateCode: event.target.value.toUpperCase() }))} /></label>
+                    <label id="organization-field-city" className={organizationErrorField === 'organization-field-city' ? 'pa-field-invalid' : ''}>Município<input value={organizationForm.city} onChange={(event) => setOrganizationForm((current) => ({ ...current, city: event.target.value }))} /></label>
+                    <label id="organization-field-state" className={organizationErrorField === 'organization-field-state' ? 'pa-field-invalid' : ''}>UF<input maxLength={2} value={organizationForm.stateCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, stateCode: event.target.value.toUpperCase() }))} /></label>
                     <label>País<input maxLength={2} value={organizationForm.countryCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, countryCode: event.target.value.toUpperCase() }))} /></label>
                   </div>
                 </section>
 
-                <section className="pa-onboarding-section">
+                <section
+                  id="organization-field-cnaes"
+                  className={`pa-onboarding-section ${organizationErrorField === 'organization-field-cnaes' ? 'pa-field-invalid' : ''}`}
+                >
                   <header>
                     <span>3</span>
                     <div>
@@ -2332,7 +2578,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                       <p>Informações compartilhadas pelos módulos da plataforma.</p>
                     </div>
                   </header>
-                  <label>E-mail institucional<input type="email" value={organizationForm.institutionalEmail} onChange={(event) => setOrganizationForm((current) => ({ ...current, institutionalEmail: event.target.value }))} /></label>
+                  <label id="organization-field-email" className={organizationErrorField === 'organization-field-email' ? 'pa-field-invalid' : ''}>E-mail institucional<input type="email" value={organizationForm.institutionalEmail} onChange={(event) => setOrganizationForm((current) => ({ ...current, institutionalEmail: event.target.value }))} /></label>
                   <div className="pa-form-grid">
                     <label>Telefone<input value={organizationForm.phone} onChange={(event) => setOrganizationForm((current) => ({ ...current, phone: event.target.value }))} /></label>
                     <label>Site<input type="url" value={organizationForm.website} onChange={(event) => setOrganizationForm((current) => ({ ...current, website: event.target.value }))} placeholder="https://" /></label>
@@ -2351,12 +2597,18 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                     <strong>{organizationForm.status === 'active' ? 'Validação para ativação habilitada' : 'Cadastro em preparação'}</strong>
                     <span>{organizationForm.status === 'active' ? 'O banco verificará todos os requisitos obrigatórios antes de concluir.' : 'Você pode salvar o registro incompleto e concluir os dados posteriormente.'}</span>
                   </div>
-                  <label>Justificativa para auditoria *<textarea rows={3} value={organizationForm.changeReason} onChange={(event) => setOrganizationForm((current) => ({ ...current, changeReason: event.target.value }))} placeholder="Informe o motivo da criação ou alteração, com pelo menos 10 caracteres." required /></label>
+                  <label id="organization-field-change-reason" className={organizationErrorField === 'organization-field-change-reason' ? 'pa-field-invalid' : ''}>Justificativa para auditoria *<textarea rows={3} value={organizationForm.changeReason} onChange={(event) => setOrganizationForm((current) => ({ ...current, changeReason: event.target.value }))} placeholder="Informe o motivo da criação ou alteração, com pelo menos 10 caracteres." required /></label>
                 </section>
 
                 <div className="pa-form-actions">
-                  <button type="button" className="pa-secondary-button" onClick={() => setOrganizationPanelOpen(false)}>Fechar</button>
-                  <button type="submit" className="pa-primary-button" disabled={saving}>{saving ? 'Salvando e conferindo...' : organizationForm.organizationId ? 'Salvar alterações' : 'Criar organização'}</button>
+                  <button type="button" className="pa-secondary-button pa-button-with-icon" onClick={requestCloseOrganizationPanel}>
+                    <CloseIcon />
+                    <span>Fechar</span>
+                  </button>
+                  <button type="submit" className="pa-primary-button pa-button-with-icon" disabled={saving}>
+                    <SaveIcon />
+                    <span>{saving ? 'Salvando e conferindo...' : organizationForm.organizationId ? 'Salvar alterações' : 'Criar organização'}</span>
+                  </button>
                 </div>
               </form>
             ) : organizationDetailTab === 'users' ? (
