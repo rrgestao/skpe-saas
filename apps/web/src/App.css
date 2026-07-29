@@ -959,3 +959,36 @@ h2 {
 #network-organization-details {
   scroll-margin-top: 1.25rem;
 }
+
+/* ============================================================
+   Administração da Organização
+   ============================================================ */
+
+.organization-admin-entry {
+  border-color: #b9d9ce;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(237, 250, 245, 0.98),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.organization-admin-entry .platform-admin-entry-icon {
+  background: #15725a;
+  color: #ffffff;
+}
+
+.organization-admin-entry .platform-admin-entry-button {
+  background: #15725a;
+  border-color: #15725a;
+}
+
+.organization-admin-entry .platform-admin-entry-button:hover {
+  background: #105b48;
+  border-color: #105b48;
+}
+
+.organization-admin-entry .eyebrow {
+  color: #0d6952;
+}

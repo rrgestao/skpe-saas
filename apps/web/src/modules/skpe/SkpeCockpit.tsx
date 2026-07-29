@@ -24,6 +24,10 @@ type CockpitSection =
   | 'organization-hierarchy'
   | 'domains'
 
+type SkpeCockpitMode =
+  | 'module'
+  | 'organization-admin'
+
 type SkpeCockpitProps = {
   organizationId: string
   organizationName: string
@@ -32,6 +36,8 @@ type SkpeCockpitProps = {
   userRoleName: string
   isOrganizationAdmin: boolean
   isPlatformSuperAdmin: boolean
+  mode?: SkpeCockpitMode
+  initialSection?: CockpitSection
   onReturnToModules: () => void
 }
 
@@ -5207,17 +5213,23 @@ export function SkpeCockpit({
   userRoleName,
   isOrganizationAdmin,
   isPlatformSuperAdmin,
+  mode = 'module',
+  initialSection,
   onReturnToModules,
 }: SkpeCockpitProps) {
   const [activeSection, setActiveSection] =
-    useState<CockpitSection>('overview')
+    useState<CockpitSection>(
+      initialSection ??
+        (mode === 'organization-admin'
+          ? 'organization'
+          : 'overview'),
+    )
 
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfileRow | null>(null)
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState<string | null>(null)
   const [projectContext, setProjectContext] = useState<StrategicProjectContext | null>(null)
   const [startingProject, setStartingProject] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [adminMenuOpen, setAdminMenuOpen] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sparks-theme') === 'dark' ? 'dark' : 'light'))
 
   const loadOrganizationHeader = async () => {
@@ -5291,8 +5303,13 @@ export function SkpeCockpit({
 
   useEffect(() => {
     void loadOrganizationHeader()
-    void loadStrategicProjectContext()
-  }, [organizationId])
+
+    if (mode === 'module') {
+      void loadStrategicProjectContext()
+    } else {
+      setProjectContext(null)
+    }
+  }, [organizationId, mode])
   useEffect(() => {
     localStorage.setItem('sparks-theme', theme)
   }, [theme])
@@ -5329,7 +5346,14 @@ export function SkpeCockpit({
       <aside className="skpe-sidebar">
         <div className="skpe-sidebar-brand">
           <img className="skpe-platform-mascot" src="/sparkoop-mascot.png" alt="Mascote da SPARKOOP" />
-          <div className="skpe-sidebar-brand-text"><strong>Plataforma SPARKs</strong><span>Planejamento Estratégico</span></div>
+          <div className="skpe-sidebar-brand-text">
+            <strong>Plataforma SPARKs</strong>
+            <span>
+              {mode === 'organization-admin'
+                ? 'Administração da Organização'
+                : 'Planejamento Estratégico'}
+            </span>
+          </div>
           <button type="button" className="skpe-sidebar-icon-button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'} title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}>☰</button>
         </div>
         <div className="skpe-theme-switcher">
@@ -5370,88 +5394,199 @@ export function SkpeCockpit({
 
         <nav
           className="skpe-navigation"
-          aria-label="Navegação de Planejamento Estratégico"
+          aria-label={
+            mode === 'organization-admin'
+              ? 'Navegacao da Administração da Organização'
+              : 'Navegacao de Planejamento Estratégico'
+          }
         >
-          <button
-            type="button"
-            className={
-              activeSection === 'overview'
-                ? 'skpe-nav-active'
-                : ''
-            }
-            onClick={() =>
-              setActiveSection('overview')
-            }
-          >
-            <DashboardIcon />
-            Visão Geral
-          </button>
+          {mode === 'module' ? (
+            <>
+              <button
+                type="button"
+                className={
+                  activeSection === 'overview'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('overview')
+                }
+              >
+                <DashboardIcon />
+                Visão Geral
+              </button>
 
-          <button
-            type="button"
-            className={
-              activeSection === 'journey'
-                ? 'skpe-nav-active'
-                : ''
-            }
-            onClick={() =>
-              setActiveSection('journey')
-            }
-          >
-            <JourneyIcon />
-            Jornada Estratégica
-          </button>
+              <button
+                type="button"
+                className={
+                  activeSection === 'journey'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('journey')
+                }
+              >
+                <JourneyIcon />
+                Jornada Estratégica
+              </button>
 
-          <button
-            type="button"
-            className={
-              activeSection === 'initiatives'
-                ? 'skpe-nav-active'
-                : ''
-            }
-            onClick={() =>
-              setActiveSection('initiatives')
-            }
-          >
-            <InitiativesIcon />
-            Iniciativas
-          </button>
+              <button
+                type="button"
+                className={
+                  activeSection === 'initiatives'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('initiatives')
+                }
+              >
+                <InitiativesIcon />
+                Iniciativas
+              </button>
 
-          <button
-            type="button"
-            className={activeSection === 'artifacts' ? 'skpe-nav-active' : ''}
-            onClick={() => setActiveSection('artifacts')}
-          >
-            <DashboardIcon />
-            Artefatos e evidências
-          </button>
+              <button
+                type="button"
+                className={
+                  activeSection === 'artifacts'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('artifacts')
+                }
+              >
+                <DashboardIcon />
+                Artefatos e evidências
+              </button>
 
-          <button
-            type="button"
-            className={
-              activeSection === 'governance'
-                ? 'skpe-nav-active'
-                : ''
-            }
-            onClick={() =>
-              setActiveSection(
-                'governance',
-              )
-            }
-          >
-            <GovernanceIcon />
-            Governança
-          </button>
+              <button
+                type="button"
+                className={
+                  activeSection === 'governance'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('governance')
+                }
+              >
+                <GovernanceIcon />
+                Governança
+              </button>
 
-          <button type="button" className={activeSection === 'administration' || activeSection === 'organization' || activeSection === 'governance-roles' || activeSection === 'organizational-areas' || activeSection === 'organization-hierarchy' || activeSection === 'domains' ? 'skpe-nav-active' : ''} onClick={() => setAdminMenuOpen((value) => !value)} aria-expanded={adminMenuOpen}><AdministrationIcon /><span>Administração</span><b className="skpe-admin-submenu-chevron">{adminMenuOpen ? '−' : '+'}</b></button>
-          {adminMenuOpen && <div className="skpe-admin-submenu">
-            <button type="button" className={activeSection === 'organization' ? 'skpe-nav-active' : ''} onClick={() => setActiveSection('organization')}><OrganizationIcon /><span>Organizações</span></button>
-            <button type="button" className={activeSection === 'administration' ? 'skpe-nav-active' : ''} onClick={() => setActiveSection('administration')}><UserIcon /><span>Usuários e acessos</span></button>
-            <button type="button" className={activeSection === 'governance-roles' ? 'skpe-nav-active' : ''} onClick={() => setActiveSection('governance-roles')}><GovernanceIcon /><span>Papéis e responsabilidades</span></button>
-            <button type="button" className={activeSection === 'organizational-areas' ? 'skpe-nav-active' : ''} onClick={() => setActiveSection('organizational-areas')}><OrganizationIcon /><span>Áreas e estrutura organizacional</span></button>
-            <button type="button" className={activeSection === 'organization-hierarchy' ? 'skpe-nav-active' : ''} onClick={() => setActiveSection('organization-hierarchy')}><OrganizationIcon /><span>Hierarquia e acessos organizacionais</span></button>
-            <button type="button" className={activeSection === 'domains' ? 'skpe-nav-active' : ''} onClick={() => setActiveSection('domains')}><DashboardIcon /><span>Tabelas de domínio</span></button>
-          </div>}
+              <button
+                type="button"
+                className={
+                  activeSection === 'administration'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('administration')
+                }
+              >
+                <AdministrationIcon />
+                <span>Administração do SK-PE</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={
+                  activeSection === 'organization'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('organization')
+                }
+              >
+                <OrganizationIcon />
+                <span>Cadastro institucional</span>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  activeSection === 'administration'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('administration')
+                }
+              >
+                <UserIcon />
+                <span>Usuários e acessos</span>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  activeSection === 'governance-roles'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('governance-roles')
+                }
+              >
+                <GovernanceIcon />
+                <span>Papéis e responsabilidades</span>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  activeSection === 'organizational-areas'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('organizational-areas')
+                }
+              >
+                <OrganizationIcon />
+                <span>Áreas e estrutura</span>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  activeSection === 'organization-hierarchy'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection(
+                    'organization-hierarchy',
+                  )
+                }
+              >
+                <OrganizationIcon />
+                <span>Hierarquia e acessos</span>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  activeSection === 'domains'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  setActiveSection('domains')
+                }
+              >
+                <DashboardIcon />
+                <span>Tabelas de domínio</span>
+              </button>
+            </>
+          )}
         </nav>
 
         <div className="skpe-sidebar-footer">
@@ -5470,7 +5605,9 @@ export function SkpeCockpit({
             onClick={onReturnToModules}
           >
             <ArrowLeftIcon />
-            Voltar aos módulos
+            {mode === 'organization-admin'
+              ? 'Voltar à organização'
+              : 'Voltar aos módulos'}
           </button>
         </div>
       </aside>

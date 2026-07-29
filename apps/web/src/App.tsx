@@ -317,6 +317,9 @@ function App() {
   const [platformAdminOpen, setPlatformAdminOpen] =
     useState(false)
 
+  const [organizationAdminOpen, setOrganizationAdminOpen] =
+    useState(false)
+
   const [organizationViewMode, setOrganizationViewMode] =
     useState<'cards' | 'grid'>('cards')
 
@@ -490,6 +493,7 @@ function App() {
           setSelectedOrganization(null)
           setOpenedModule(null)
           setPlatformAdminOpen(false)
+          setOrganizationAdminOpen(false)
         }
       },
     )
@@ -568,6 +572,7 @@ function App() {
     organization: Organization,
   ) => {
     setPlatformAdminOpen(false)
+    setOrganizationAdminOpen(false)
     setSelectedOrganization(organization)
     setOpenedModule(null)
     setModules([])
@@ -609,6 +614,7 @@ function App() {
 
   const handleReturnToOrganizations = () => {
     setPlatformAdminOpen(false)
+    setOrganizationAdminOpen(false)
     setSelectedOrganization(null)
     setOpenedModule(null)
     setModules([])
@@ -619,6 +625,7 @@ function App() {
 
   const handleOpenPlatformAdmin = () => {
     setPlatformAdminOpen(true)
+    setOrganizationAdminOpen(false)
     setSelectedOrganization(null)
     setOpenedModule(null)
     setModules([])
@@ -627,6 +634,35 @@ function App() {
 
   const handleClosePlatformAdmin = () => {
     setPlatformAdminOpen(false)
+    clearMessage()
+  }
+  const handleOpenOrganizationAdmin = () => {
+    if (!selectedOrganization) {
+      return
+    }
+
+    const canManageOrganization =
+      selectedOrganization.is_organization_admin ||
+      platformRoles.some(
+        (role) => role.role_code === 'super_admin',
+      )
+
+    if (!canManageOrganization) {
+      showMessage(
+        'Seu perfil nao possui permissao para administrar esta organização.',
+        'error',
+      )
+      return
+    }
+
+    setPlatformAdminOpen(false)
+    setOrganizationAdminOpen(true)
+    setOpenedModule(null)
+    clearMessage()
+  }
+
+  const handleCloseOrganizationAdmin = () => {
+    setOrganizationAdminOpen(false)
     clearMessage()
   }
 
@@ -714,6 +750,7 @@ function App() {
     setSelectedOrganization(null)
     setOpenedModule(null)
     setPlatformAdminOpen(false)
+    setOrganizationAdminOpen(false)
     setLoading(false)
   }
 
@@ -850,6 +887,36 @@ function App() {
       (role) =>
         role.role_code === 'super_admin',
     )
+  if (organizationAdminOpen && selectedOrganization) {
+    return (
+      <SkpeCockpit
+        mode="organization-admin"
+        initialSection="organization"
+        organizationId={
+          selectedOrganization.organization_id
+        }
+        organizationName={
+          selectedOrganization.trade_name ??
+          selectedOrganization.legal_name
+        }
+        organizationCode={
+          selectedOrganization.organization_code
+        }
+        userRoleCode="administrator"
+        userRoleName="Administrador da Organização"
+        isOrganizationAdmin={
+          selectedOrganization.is_organization_admin ||
+          isPlatformSuperAdmin
+        }
+        isPlatformSuperAdmin={
+          isPlatformSuperAdmin
+        }
+        onReturnToModules={
+          handleCloseOrganizationAdmin
+        }
+      />
+    )
+  }
 
   if (openedModule && selectedOrganization) {
     return (
@@ -1258,9 +1325,7 @@ function App() {
                 </h1>
 
                 <p className="supporting-text">
-                  Selecione um dos módulos
-                  disponíveis para esta
-                  organização.
+                  Acesse a administração organizacional ou selecione um dos módulos disponíveis.
                 </p>
               </div>
 
@@ -1284,6 +1349,43 @@ function App() {
                 </span>
               </div>
             </section>
+            {(selectedOrganization.is_organization_admin ||
+              isPlatformSuperAdmin) && (
+              <section className="platform-admin-entry organization-admin-entry">
+                <div
+                  className="platform-admin-entry-icon"
+                  aria-hidden="true"
+                >
+                  ⚙
+                </div>
+
+                <div className="platform-admin-entry-content">
+                  <p className="eyebrow">
+                    Escopo organizacional
+                  </p>
+
+                  <h2>
+                    Administração da Organização
+                  </h2>
+
+                  <p>
+                    Gerencie cadastro institucional, usuários,
+                    vínculos, acessos, papéis, áreas, hierarquia,
+                    domínios e configurações exclusivas desta
+                    organização, sem entrar em um módulo.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="platform-admin-entry-button"
+                  onClick={handleOpenOrganizationAdmin}
+                >
+                  Acessar administração
+                  <ArrowRightIcon />
+                </button>
+              </section>
+            )}
 
             {message && (
               <p
