@@ -2338,6 +2338,49 @@ type OrganizationProfileRow = {
 }
 
 
+type CnaeCatalogSearchRow = {
+  cnae_catalog_id: string
+  version_code: string
+  subclass_code: string
+  formatted_code: string
+  description: string
+  section_code: string | null
+  section_name: string | null
+  division_code: string | null
+  division_name: string | null
+  group_code: string | null
+  group_name: string | null
+  class_code: string | null
+  class_name: string | null
+}
+
+type OrganizationCnaeRow = {
+  organization_activity_id: string
+  cnae_catalog_id: string | null
+  version_code: string | null
+  subclass_code: string
+  formatted_code: string
+  description: string
+  is_primary: boolean
+  verification_status: string
+  source_type: string | null
+  source_reference: string | null
+  verified_at: string | null
+  verified_by: string | null
+  is_official_catalog_entry: boolean
+}
+
+type SelectedCnae = {
+  cnaeCatalogId: string
+  versionCode: string
+  subclassCode: string
+  formattedCode: string
+  description: string
+  sectionCode: string | null
+  sectionName: string | null
+  isPrimary: boolean
+}
+
 type OrganizationContactRow = {
   organization_person_id: string
   person_id: string
@@ -3062,10 +3105,25 @@ function OrganizationSection({
   const [contacts, setContacts] = useState<OrganizationContactRow[]>([])
   const [contactForm, setContactForm] = useState<OrganizationContactForm>({ organizationPersonId: null, fullName: '', contactFunction: '', phone: '', mobilePhone: '', email: '', isPrimaryContact: false, changeReason: '' })
   const [savingContact, setSavingContact] = useState(false)
+  const [selectedCnaes, setSelectedCnaes] = useState<SelectedCnae[]>([])
+  const [legacyCnaes, setLegacyCnaes] = useState<OrganizationCnaeRow[]>([])
+  const [cnaeSearch, setCnaeSearch] = useState('')
+  const [cnaeResults, setCnaeResults] = useState<CnaeCatalogSearchRow[]>([])
+  const [searchingCnaes, setSearchingCnaes] = useState(false)
+  const [cnaeSearchError, setCnaeSearchError] = useState('')
+  const [cnaeSourceType, setCnaeSourceType] = useState('manual_confirmed')
+  const [cnaeSourceReference, setCnaeSourceReference] = useState('')
 
   const loadProfile = async () => {
     setLoading(true)
     setMessage(null)
+    setSelectedCnaes([])
+    setLegacyCnaes([])
+    setCnaeSearch('')
+    setCnaeResults([])
+    setCnaeSearchError('')
+    setCnaeSourceType('manual_confirmed')
+    setCnaeSourceReference('')
     const { data, error } = await supabase.rpc('get_sparks_organization_profile_v2', {
       target_organization_id: organizationId,
     })
@@ -3108,12 +3166,175 @@ function OrganizationSection({
       setLogoUrl(signedLogo)
       onProfileUpdated(loaded, signedLogo)
     }
+    const cnaesResponse = await supabase.rpc('get_organization_cnaes_v3', {
+      target_organization_id: organizationId,
+    })
+
+    if (cnaesResponse.error) {
+      setMessage({
+        type: 'error',
+        text: `Cadastro carregado, mas nao foi possivel consultar os CNAEs: ${cnaesResponse.error.message}`,
+      })
+    } else {
+      const cnaeRows = (cnaesResponse.data ?? []) as OrganizationCnaeRow[]
+      const officialRows = cnaeRows.filter(
+        (row) => row.is_official_catalog_entry && Boolean(row.cnae_catalog_id),
+      )
+      const unresolvedRows = cnaeRows.filter(
+        (row) => !row.is_official_catalog_entry || !row.cnae_catalog_id,
+      )
+
+      setSelectedCnaes(
+        officialRows.map((row) => ({
+          cnaeCatalogId: row.cnae_catalog_id as string,
+          versionCode: row.version_code ?? '2.3',
+          subclassCode: row.subclass_code,
+          formattedCode: row.formatted_code,
+          description: row.description,
+          sectionCode: null,
+          sectionName: null,
+          isPrimary: row.is_primary,
+        })),
+      )
+      setLegacyCnaes(unresolvedRows)
+
+      const primaryCnae = officialRows.find((row) => row.is_primary)
+      if (primaryCnae) {
+        setForm((current) => ({
+          ...current,
+          primaryActivityDescription: primaryCnae.description,
+        }))
+      }
+
+      const sourceRow =
+        officialRows.find((row) => row.is_primary) ??
+        officialRows[0]
+
+      if (sourceRow?.source_type) {
+        setCnaeSourceType(sourceRow.source_type)
+      }
+      setCnaeSourceReference(sourceRow?.source_reference ?? '')
+    }
     const contactsResponse = await supabase.rpc('get_sparks_organization_contacts', { target_organization_id: organizationId })
     if (!contactsResponse.error) setContacts((contactsResponse.data ?? []) as OrganizationContactRow[])
     setLoading(false)
   }
 
   useEffect(() => { void loadProfile() }, [organizationId])
+  useEffect(() => {
+    const term = cnaeSearch.trim()
+
+    if (!canManageOrganization || term.length < 2) {
+      setCnaeResults([])
+      setCnaeSearchError('')
+      setSearchingCnaes(false)
+      return
+    }
+
+    let cancelled = false
+
+    const timer = window.setTimeout(async () => {
+      setSearchingCnaes(true)
+      setCnaeSearchError('')
+
+      const { data, error } = await supabase.rpc('search_cnae_catalog', {
+        search_term: term,
+        result_limit: 20,
+        result_offset: 0,
+      })
+
+      if (cancelled) return
+
+      if (error) {
+        setCnaeResults([])
+        setCnaeSearchError(error.message)
+        setSearchingCnaes(false)
+        return
+      }
+
+      const selectedIds = new Set(
+        selectedCnaes.map((item) => item.cnaeCatalogId),
+      )
+
+      setCnaeResults(
+        ((data ?? []) as CnaeCatalogSearchRow[]).filter(
+          (item) => !selectedIds.has(item.cnae_catalog_id),
+        ),
+      )
+      setSearchingCnaes(false)
+    }, 300)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [cnaeSearch, canManageOrganization, selectedCnaes])
+
+  const addCnae = (candidate: CnaeCatalogSearchRow) => {
+    if (
+      selectedCnaes.some(
+        (item) => item.cnaeCatalogId === candidate.cnae_catalog_id,
+      )
+    ) {
+      return
+    }
+
+    const isFirst = selectedCnaes.length === 0
+    const next: SelectedCnae = {
+      cnaeCatalogId: candidate.cnae_catalog_id,
+      versionCode: candidate.version_code,
+      subclassCode: candidate.subclass_code,
+      formattedCode: candidate.formatted_code,
+      description: candidate.description,
+      sectionCode: candidate.section_code,
+      sectionName: candidate.section_name,
+      isPrimary: isFirst,
+    }
+
+    setSelectedCnaes((current) => [...current, next])
+    setCnaeResults((current) =>
+      current.filter(
+        (item) => item.cnae_catalog_id !== candidate.cnae_catalog_id,
+      ),
+    )
+
+    if (isFirst) {
+      updateForm('primaryActivityDescription', candidate.description)
+    }
+  }
+
+  const makePrimaryCnae = (cnaeCatalogId: string) => {
+    const selected = selectedCnaes.find(
+      (item) => item.cnaeCatalogId === cnaeCatalogId,
+    )
+    if (!selected) return
+
+    setSelectedCnaes((current) =>
+      current.map((item) => ({
+        ...item,
+        isPrimary: item.cnaeCatalogId === cnaeCatalogId,
+      })),
+    )
+    updateForm('primaryActivityDescription', selected.description)
+  }
+
+  const removeCnae = (cnaeCatalogId: string) => {
+    const removed = selectedCnaes.find(
+      (item) => item.cnaeCatalogId === cnaeCatalogId,
+    )
+    const remaining = selectedCnaes.filter(
+      (item) => item.cnaeCatalogId !== cnaeCatalogId,
+    )
+
+    if (removed?.isPrimary && remaining.length > 0) {
+      remaining[0] = { ...remaining[0], isPrimary: true }
+      updateForm('primaryActivityDescription', remaining[0].description)
+    } else if (remaining.length === 0) {
+      updateForm('primaryActivityDescription', '')
+    }
+
+    setSelectedCnaes(remaining)
+  }
 
   const updateForm = <K extends keyof OrganizationFormState>(field: K, value: OrganizationFormState[K]) => {
     setForm((current) => ({ ...current, [field]: value }))
@@ -3127,6 +3348,23 @@ function OrganizationSection({
     }
     if (form.changeReason.trim().length < 10) {
       setMessage({ type: 'error', text: 'Informe uma justificativa com pelo menos 10 caracteres.' })
+      return
+    }
+    if (legacyCnaes.length > 0) {
+      setMessage({
+        type: 'error',
+        text: 'Existem CNAEs legados sem vinculo com o catalogo oficial. Substitua-os por CNAEs oficiais antes de salvar.',
+      })
+      return
+    }
+    if (
+      selectedCnaes.length > 0 &&
+      selectedCnaes.filter((item) => item.isPrimary).length !== 1
+    ) {
+      setMessage({
+        type: 'error',
+        text: 'Selecione exatamente um CNAE principal.',
+      })
       return
     }
     setSaving(true)
@@ -3151,10 +3389,12 @@ function OrganizationSection({
       uploadedLogoUrl = signedData?.signedUrl ?? null
     }
 
-    const parsedCnaes = form.cnaesText.split('\n').map((line) => line.trim()).filter(Boolean).map((line, index) => {
-      const [code, description = '', marker = ''] = line.split('|').map((part) => part.trim())
-      return { code: onlyDigits(code), description, is_primary: marker.toUpperCase() === 'PRINCIPAL' || index === 0 }
-    })
+    const primaryCnae = selectedCnaes.find((item) => item.isPrimary) ?? null
+    const parsedCnaes = selectedCnaes.map((item) => ({
+      code: item.subclassCode,
+      description: item.description,
+      is_primary: item.isPrimary,
+    }))
 
     const { error } = await supabase.rpc('update_sparks_organization_profile_v2', {
       target_organization_id: organizationId,
@@ -3162,7 +3402,7 @@ function OrganizationSection({
       target_trade_name: form.tradeName.trim(),
       target_cnpj: onlyDigits(form.cnpj),
       target_organization_type: form.organizationType,
-      target_primary_activity_description: form.primaryActivityDescription.trim() || null,
+      target_primary_activity_description: primaryCnae?.description ?? null,
       target_economic_activities: parsedCnaes,
       target_institutional_email: form.institutionalEmail.trim() || null,
       target_phone: onlyDigits(form.phone) || null,
@@ -3185,8 +3425,31 @@ function OrganizationSection({
       setSaving(false)
       return
     }
+    const { error: cnaeError } = await supabase.rpc(
+      'replace_organization_cnaes_v3',
+      {
+        target_organization_id: organizationId,
+        selected_cnaes: selectedCnaes.map((item) => ({
+          cnae_catalog_id: item.cnaeCatalogId,
+          is_primary: item.isPrimary,
+        })),
+        target_source_type: cnaeSourceType,
+        target_source_reference:
+          cnaeSourceReference.trim() || null,
+        change_reason: form.changeReason.trim(),
+      },
+    )
+
+    if (cnaeError) {
+      setMessage({
+        type: 'error',
+        text: `Os dados institucionais foram processados, mas os CNAEs oficiais nao puderam ser confirmados: ${cnaeError.message}`,
+      })
+      setSaving(false)
+      return
+    }
     setLogoFile(null)
-    setMessage({ type: 'success', text: 'Cadastro institucional atualizado com sucesso.' })
+    setMessage({ type: 'success', text: 'Cadastro institucional e CNAEs oficiais atualizados com sucesso.' })
     await loadProfile()
     if (uploadedLogoUrl) setLogoUrl(uploadedLogoUrl)
     setSaving(false)
@@ -3269,8 +3532,180 @@ function OrganizationSection({
                 <label><span>CNPJ</span><input value={form.cnpj} onChange={(e) => updateForm('cnpj', formatCnpjInput(e.target.value))} placeholder="99.999.999/9999-99" disabled={!canManageOrganization} /></label>
                 <label><span>Tipo de organização *</span><select value={form.organizationType} onChange={(e) => updateForm('organizationType', e.target.value)} disabled={!canManageOrganization}><option value="cooperative">Cooperativa</option><option value="industry">Indústria</option><option value="commerce">Comércio</option><option value="services">Serviços</option><option value="association">Associação</option><option value="foundation">Fundação</option><option value="public_body">Órgão público</option><option value="rural_producer">Produtor rural</option><option value="other">Outro</option></select></label>
                 {form.organizationType === 'cooperative' && <label><span>Ramo cooperativo</span><input value={form.cooperativeBranch} onChange={(e) => updateForm('cooperativeBranch', e.target.value)} disabled={!canManageOrganization} /></label>}
-                <label className="skpe-form-field-wide"><span>Atividade principal</span><input value={form.primaryActivityDescription} onChange={(e) => updateForm('primaryActivityDescription', e.target.value)} placeholder="Descreva a atividade econômica principal" disabled={!canManageOrganization} /></label>
-                <label className="skpe-form-field-full"><span>CNAEs — um por linha</span><textarea value={form.cnaesText} onChange={(e) => updateForm('cnaesText', e.target.value)} placeholder={"0111301 | Cultivo de arroz | PRINCIPAL\n0111399 | Cultivo de outros cereais"} disabled={!canManageOrganization} /><small>Formato: código | descrição | PRINCIPAL. O primeiro item também será considerado principal quando não houver marcação.</small></label>
+
+                <label className="skpe-form-field-wide">
+                  <span>Atividade principal</span>
+                  <input
+                    value={form.primaryActivityDescription}
+                    readOnly
+                    placeholder="Definida automaticamente pelo CNAE principal"
+                    aria-readonly="true"
+                  />
+                  <small>A descrição é derivada do CNAE marcado como principal e não pode ser digitada livremente.</small>
+                </label>
+
+                <div className="skpe-cnae-manager skpe-form-field-full">
+                  <div className="skpe-cnae-manager-heading">
+                    <div>
+                      <span>CNAEs oficiais</span>
+                      <small>Catálogo CNAE-Subclasses 2.3 — IBGE/CONCLA</small>
+                    </div>
+                    <strong>{selectedCnaes.length} selecionado{selectedCnaes.length === 1 ? '' : 's'}</strong>
+                  </div>
+
+                  {canManageOrganization && (
+                    <div className="skpe-cnae-search">
+                      <label>
+                        <span>Pesquisar por código ou atividade</span>
+                        <input
+                          value={cnaeSearch}
+                          onChange={(event) => setCnaeSearch(event.target.value)}
+                          placeholder="Ex.: 0111301, mandioca, horticultura"
+                          role="combobox"
+                          aria-expanded={cnaeResults.length > 0}
+                          aria-controls="skpe-cnae-search-results"
+                          autoComplete="off"
+                        />
+                      </label>
+
+                      {searchingCnaes && (
+                        <p className="skpe-cnae-search-status">
+                          Pesquisando no catálogo oficial...
+                        </p>
+                      )}
+
+                      {cnaeSearchError && (
+                        <p className="skpe-cnae-search-error">
+                          {cnaeSearchError}
+                        </p>
+                      )}
+
+                      {cnaeResults.length > 0 && (
+                        <div
+                          id="skpe-cnae-search-results"
+                          className="skpe-cnae-search-results"
+                          role="listbox"
+                        >
+                          {cnaeResults.map((result) => (
+                            <button
+                              key={result.cnae_catalog_id}
+                              type="button"
+                              onClick={() => addCnae(result)}
+                              role="option"
+                            >
+                              <strong>{result.formatted_code}</strong>
+                              <span>{result.description}</span>
+                              <small>
+                                {result.section_code && result.section_name
+                                  ? `${result.section_code} — ${result.section_name}`
+                                  : 'CNAE-Subclasses 2.3'}
+                              </small>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {cnaeSearch.trim().length >= 2 &&
+                        !searchingCnaes &&
+                        !cnaeSearchError &&
+                        cnaeResults.length === 0 && (
+                          <p className="skpe-cnae-search-status">
+                            Nenhum novo CNAE encontrado para esta pesquisa.
+                          </p>
+                        )}
+                    </div>
+                  )}
+
+                  {legacyCnaes.length > 0 && (
+                    <div className="skpe-cnae-legacy-warning">
+                      <strong>CNAEs legados pendentes de saneamento</strong>
+                      <p>
+                        Estes registros não possuem vínculo com o catálogo oficial.
+                        Pesquise e selecione os CNAEs equivalentes antes de salvar.
+                      </p>
+                      <ul>
+                        {legacyCnaes.map((item) => (
+                          <li key={item.organization_activity_id}>
+                            {item.formatted_code} — {item.description}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="skpe-cnae-selected-list">
+                    {selectedCnaes.length === 0 ? (
+                      <div className="skpe-cnae-empty">
+                        Nenhum CNAE oficial selecionado.
+                      </div>
+                    ) : (
+                      selectedCnaes.map((item) => (
+                        <article
+                          key={item.cnaeCatalogId}
+                          className={item.isPrimary ? 'skpe-cnae-primary' : ''}
+                        >
+                          <label className="skpe-cnae-primary-control">
+                            <input
+                              type="radio"
+                              name="primary-cnae"
+                              checked={item.isPrimary}
+                              onChange={() => makePrimaryCnae(item.cnaeCatalogId)}
+                              disabled={!canManageOrganization}
+                            />
+                            <span>Principal</span>
+                          </label>
+
+                          <div className="skpe-cnae-selected-content">
+                            <strong>{item.formattedCode}</strong>
+                            <span>{item.description}</span>
+                            <small>
+                              Versão {item.versionCode}
+                              {item.sectionCode && item.sectionName
+                                ? ` · ${item.sectionCode} — ${item.sectionName}`
+                                : ''}
+                            </small>
+                          </div>
+
+                          {canManageOrganization && (
+                            <button
+                              type="button"
+                              className="skpe-cnae-remove-button"
+                              onClick={() => removeCnae(item.cnaeCatalogId)}
+                              aria-label={`Remover CNAE ${item.formattedCode}`}
+                            >
+                              Remover
+                            </button>
+                          )}
+                        </article>
+                      ))
+                    )}
+                  </div>
+
+                  {canManageOrganization && (
+                    <div className="skpe-cnae-source-grid">
+                      <label>
+                        <span>Origem da confirmação</span>
+                        <select
+                          value={cnaeSourceType}
+                          onChange={(event) => setCnaeSourceType(event.target.value)}
+                        >
+                          <option value="manual_confirmed">Confirmado pela organização</option>
+                          <option value="official_cnpj">Comprovante oficial do CNPJ</option>
+                          <option value="official_ibge">Base oficial IBGE/CONCLA</option>
+                          <option value="official_document">Outro documento oficial</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Referência da fonte</span>
+                        <input
+                          value={cnaeSourceReference}
+                          onChange={(event) => setCnaeSourceReference(event.target.value)}
+                          placeholder="Número, URL, documento ou observação"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
                 <label><span>Porte</span><select value={form.organizationSize} onChange={(e) => updateForm('organizationSize', e.target.value)} disabled={!canManageOrganization}><option value="">Não informado</option><option value="micro">Micro</option><option value="small">Pequeno</option><option value="medium">Médio</option><option value="large">Grande</option></select></label>
                 <label><span>E-mail institucional</span><input type="email" value={form.institutionalEmail} onChange={(e) => updateForm('institutionalEmail', e.target.value)} disabled={!canManageOrganization} /></label>
                 <label><span>Telefone</span><input value={form.phone} onChange={(e) => updateForm('phone', formatPhoneInput(e.target.value))} placeholder="(99) 9999-9999" disabled={!canManageOrganization} /></label>
@@ -5348,11 +5783,8 @@ export function SkpeCockpit({
           <img className="skpe-platform-mascot" src="/sparkoop-mascot.png" alt="Mascote da SPARKOOP" />
           <div className="skpe-sidebar-brand-text">
             <strong>Plataforma SPARKs</strong>
-            <span>
-              {mode === 'organization-admin'
-                ? 'Administração da Organização'
-                : 'Planejamento Estratégico'}
-            </span>
+            <span className="skpe-sidebar-user-role">{userRoleName}</span>
+
           </div>
           <button type="button" className="skpe-sidebar-icon-button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'} title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}>☰</button>
         </div>
@@ -5590,10 +6022,6 @@ export function SkpeCockpit({
         </nav>
 
         <div className="skpe-sidebar-footer">
-          <span>Perfil</span>
-
-          <strong>{userRoleName}</strong>
-
           {isPlatformSuperAdmin && (
             <small className="skpe-platform-role-label">
               SUPER-ADMIN da Plataforma
