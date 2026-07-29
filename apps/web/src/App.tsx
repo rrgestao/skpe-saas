@@ -311,6 +311,9 @@ function App() {
   const [showPassword, setShowPassword] =
     useState(false)
 
+  const [passwordFieldReady, setPasswordFieldReady] =
+    useState(false)
+
   const [organizations, setOrganizations] =
     useState<Organization[]>([])
 
@@ -487,6 +490,9 @@ function App() {
         }
 
         if (event === 'SIGNED_OUT') {
+          setPassword('')
+          setShowPassword(false)
+          setPasswordFieldReady(false)
           setOrganizations([])
           setModules([])
           setPlatformRoles([])
@@ -722,6 +728,7 @@ function App() {
     setEmail(normalizedEmail)
     setPassword('')
     setShowPassword(false)
+    setPasswordFieldReady(false)
     setLoading(false)
   }
 
@@ -744,6 +751,7 @@ function App() {
 
     setPassword('')
     setShowPassword(false)
+    setPasswordFieldReady(false)
     setOrganizations([])
     setModules([])
     setPlatformRoles([])
@@ -872,6 +880,7 @@ function App() {
     setForgotPasswordMode(true)
     setPassword('')
     setShowPassword(false)
+    setPasswordFieldReady(false)
     clearMessage()
   }
 
@@ -879,6 +888,7 @@ function App() {
     setForgotPasswordMode(false)
     setPassword('')
     setShowPassword(false)
+    setPasswordFieldReady(false)
     clearMessage()
   }
 
@@ -1145,6 +1155,7 @@ function App() {
             <form
               onSubmit={handleLogin}
               className="login-form"
+              autoComplete="off"
             >
               <label>
                 E-mail
@@ -1173,12 +1184,17 @@ function App() {
                         : 'password'
                     }
                     value={password}
+                    readOnly={!passwordFieldReady}
+                    onFocus={() =>
+                      setPasswordFieldReady(true)
+                    }
                     onChange={(event) =>
                       setPassword(
                         event.target.value,
                       )
                     }
-                    autoComplete="current-password"
+                    autoComplete="off"
+                    name="sparks-login-password"
                     required
                   />
 
