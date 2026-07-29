@@ -992,3 +992,24 @@ h2 {
 .organization-admin-entry .eyebrow {
   color: #0d6952;
 }
+/* Acesso organizacional por hierarquia */
+.organization-access-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.badge-hierarchical {
+  border: 1px solid rgba(35, 92, 132, 0.3);
+  background: rgba(35, 92, 132, 0.1);
+  color: #235c84;
+}
+
+@media (prefers-color-scheme: dark) {
+  .badge-hierarchical {
+    border-color: rgba(139, 194, 232, 0.35);
+    background: rgba(139, 194, 232, 0.12);
+    color: #b7dcf4;
+  }
+}

@@ -24,6 +24,12 @@ type Organization = {
   organization_level: string
   membership_status: string
   is_organization_admin: boolean
+  access_origin: string
+  access_mode: string
+  source_organization_id: string | null
+  source_organization_name: string | null
+  hierarchy_depth: number | null
+  can_manage_organization: boolean
 }
 
 type PlatformModule = {
@@ -92,6 +98,41 @@ function getOrganizationLevelLabel(value: string) {
 
 function getMembershipStatusLabel(value: string) {
   return MEMBERSHIP_STATUS_LABELS[value] ?? value
+}
+
+function isHierarchicalReadOnlyAccess(
+  organization: Organization,
+) {
+  return (
+    organization.access_origin === 'hierarchical_management' ||
+    organization.access_mode === 'read_only'
+  )
+}
+
+function getOrganizationAccessLabel(
+  organization: Organization,
+) {
+  if (isHierarchicalReadOnlyAccess(organization)) {
+    return organization.source_organization_name
+      ? `Gestão sistêmica via ${organization.source_organization_name}`
+      : 'Acesso hierárquico — somente leitura'
+  }
+
+  return getMembershipStatusLabel(
+    organization.membership_status,
+  )
+}
+
+function getOrganizationProfileLabel(
+  organization: Organization,
+) {
+  if (isHierarchicalReadOnlyAccess(organization)) {
+    return 'Visualização hierárquica'
+  }
+
+  return organization.is_organization_admin
+    ? 'Administrador'
+    : 'Participante'
 }
 
 type PasswordVisibilityButtonProps = {
@@ -528,7 +569,7 @@ function App() {
           organizationsResponse,
           platformRolesResponse,
         ] = await Promise.all([
-          supabase.rpc('get_my_organizations'),
+          supabase.rpc('get_my_organizations_v2'),
           supabase.rpc('get_my_platform_roles'),
         ])
 
@@ -1680,11 +1721,19 @@ function App() {
                           </h2>
                         </div>
 
-                        {organization.is_organization_admin && (
-                          <span className="badge badge-organization">
-                            ADMIN
-                          </span>
-                        )}
+                        <div className="organization-access-badges">
+                          {organization.is_organization_admin && (
+                            <span className="badge badge-organization">
+                              ADMIN
+                            </span>
+                          )}
+
+                          {isHierarchicalReadOnlyAccess(organization) && (
+                            <span className="badge badge-hierarchical">
+                              VISUALIZAÇÃO
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <dl>
@@ -1705,9 +1754,7 @@ function App() {
 
                           <dd>
                             {
-                              getMembershipStatusLabel(
-                                organization.membership_status,
-                              )
+                              getOrganizationAccessLabel(organization)
                             }
                           </dd>
                         </div>
@@ -1749,8 +1796,8 @@ function App() {
                           <td><strong>{organization.trade_name ?? organization.legal_name}</strong></td>
                           <td>{organization.organization_code}</td>
                           <td>{getOrganizationLevelLabel(organization.organization_level)}</td>
-                          <td>{getMembershipStatusLabel(organization.membership_status)}</td>
-                          <td>{organization.is_organization_admin ? 'Administrador' : 'Participante'}</td>
+                          <td>{getOrganizationAccessLabel(organization)}</td>
+                          <td>{getOrganizationProfileLabel(organization)}</td>
                           <td><button type="button" title="Acessar organização" onClick={(event) => { event.stopPropagation(); void handleSelectOrganization(organization) }}>→</button></td>
                         </tr>
                       ))}</tbody>
