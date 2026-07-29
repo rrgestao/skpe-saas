@@ -3113,6 +3113,11 @@ function OrganizationSection({
   const [cnaeSearchError, setCnaeSearchError] = useState('')
   const [cnaeSourceType, setCnaeSourceType] = useState('manual_confirmed')
   const [cnaeSourceReference, setCnaeSourceReference] = useState('')
+  const [lookingUpCep, setLookingUpCep] = useState(false)
+  const [cepLookupMessage, setCepLookupMessage] = useState<{
+    type: 'info' | 'success' | 'error'
+    text: string
+  } | null>(null)
 
   const loadProfile = async () => {
     setLoading(true)
@@ -3124,6 +3129,7 @@ function OrganizationSection({
     setCnaeSearchError('')
     setCnaeSourceType('manual_confirmed')
     setCnaeSourceReference('')
+    setCepLookupMessage(null)
     const { data, error } = await supabase.rpc('get_sparks_organization_profile_v2', {
       target_organization_id: organizationId,
     })
@@ -3338,6 +3344,118 @@ function OrganizationSection({
 
   const updateForm = <K extends keyof OrganizationFormState>(field: K, value: OrganizationFormState[K]) => {
     setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  /* CONSULTA SEGURA DE CEP - EDGE FUNCTION */
+  const lookupPostalCode = async () => {
+    if (!canManageOrganization || lookingUpCep) return
+
+    const normalizedCep = onlyDigits(form.postalCode)
+
+    if (normalizedCep.length !== 8) {
+      setCepLookupMessage({
+        type: 'error',
+        text: 'Informe um CEP válido com oito dígitos.',
+      })
+      return
+    }
+
+    setLookingUpCep(true)
+    setCepLookupMessage({
+      type: 'info',
+      text: 'Consultando o endereço...',
+    })
+
+    const { data, error } = await supabase.functions.invoke(
+      'lookup-address-by-cep',
+      {
+        body: { cep: normalizedCep },
+      },
+    )
+
+    if (error) {
+      let errorMessage =
+        'Não foi possível consultar o CEP neste momento. O endereço continua disponível para preenchimento manual.'
+
+      const errorContext =
+        typeof error === 'object' &&
+        error !== null &&
+        'context' in error
+          ? (error as { context?: Response }).context
+          : undefined
+
+      if (errorContext) {
+        try {
+          const payload = (await errorContext.clone().json()) as {
+            error?: string
+          }
+
+          if (payload.error?.trim()) {
+            errorMessage = payload.error
+          }
+        } catch {
+          if (error instanceof Error && error.message) {
+            errorMessage = error.message
+          }
+        }
+      } else if (error instanceof Error && error.message) {
+        errorMessage = error.message
+      }
+
+      setCepLookupMessage({
+        type: 'error',
+        text: errorMessage,
+      })
+      setLookingUpCep(false)
+      return
+    }
+
+    const payload = data as {
+      ok?: boolean
+      address?: {
+        cep?: string
+        street?: string
+        district?: string
+        city?: string
+        stateCode?: string
+        ibgeCode?: string
+        ddd?: string
+        provider?: string
+        providerReference?: string
+      }
+      error?: string
+    } | null
+
+    if (!payload?.ok || !payload.address) {
+      setCepLookupMessage({
+        type: 'error',
+        text:
+          payload?.error ??
+          'A consulta não retornou um endereço válido. Preencha os campos manualmente.',
+      })
+      setLookingUpCep(false)
+      return
+    }
+
+    const address = payload.address
+
+    setForm((current) => ({
+      ...current,
+      postalCode: formatPostalCodeInput(address.cep ?? normalizedCep),
+      street: address.street?.trim() || current.street,
+      district: address.district?.trim() || current.district,
+      city: address.city?.trim() || current.city,
+      stateCode:
+        address.stateCode?.trim().toUpperCase() ||
+        current.stateCode,
+    }))
+
+    setCepLookupMessage({
+      type: 'success',
+      text:
+        'Endereço localizado. Confira os dados, informe o número e o complemento e depois salve o cadastro.',
+    })
+    setLookingUpCep(false)
   }
 
   const saveProfile = async () => {
@@ -3716,7 +3834,52 @@ function OrganizationSection({
             <div className="skpe-organization-form-section">
               <div><p className="skpe-card-code">Localização</p><h2>Endereço completo</h2></div>
               <div className="skpe-organization-form-grid">
-                <label><span>CEP</span><input value={form.postalCode} onChange={(e) => updateForm('postalCode', formatPostalCodeInput(e.target.value))} placeholder="99999-999" disabled={!canManageOrganization} /></label>
+                <div className="skpe-cep-field">
+                  <label>
+                    <span>CEP</span>
+                    <input
+                      value={form.postalCode}
+                      onChange={(event) => {
+                        updateForm(
+                          'postalCode',
+                          formatPostalCodeInput(event.target.value),
+                        )
+                        setCepLookupMessage(null)
+                      }}
+                      onBlur={() => {
+                        if (onlyDigits(form.postalCode).length === 8) {
+                          void lookupPostalCode()
+                        }
+                      }}
+                      placeholder="99999-999"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      disabled={!canManageOrganization || lookingUpCep}
+                    />
+                  </label>
+                  {canManageOrganization && (
+                    <button
+                      type="button"
+                      className="skpe-cep-lookup-button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => void lookupPostalCode()}
+                      disabled={
+                        lookingUpCep ||
+                        onlyDigits(form.postalCode).length !== 8
+                      }
+                    >
+                      {lookingUpCep ? 'Consultando...' : 'Consultar CEP'}
+                    </button>
+                  )}
+                  {cepLookupMessage && (
+                    <small
+                      className={`skpe-cep-feedback skpe-cep-feedback-${cepLookupMessage.type}`}
+                      role="status"
+                    >
+                      {cepLookupMessage.text}
+                    </small>
+                  )}
+                </div>
                 <label className="skpe-form-field-wide"><span>Logradouro</span><input value={form.street} onChange={(e) => updateForm('street', e.target.value)} disabled={!canManageOrganization} /></label>
                 <label><span>Número</span><input value={form.addressNumber} onChange={(e) => updateForm('addressNumber', e.target.value)} disabled={!canManageOrganization} /></label>
                 <label className="skpe-form-field-wide"><span>Complemento</span><input value={form.addressComplement} onChange={(e) => updateForm('addressComplement', e.target.value)} disabled={!canManageOrganization} /></label>

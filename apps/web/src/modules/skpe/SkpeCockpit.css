@@ -3245,3 +3245,76 @@ tr.skpe-interactive-record:focus-visible {
     grid-column: auto;
   }
 }
+/* CONSULTA SEGURA DE CEP - EDGE FUNCTION */
+.skpe-cep-field {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+}
+
+.skpe-cep-field > label {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.skpe-cep-lookup-button {
+  min-height: 38px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #176b53;
+  border-radius: 9px;
+  background: #eef7f3;
+  color: #176b53;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.skpe-cep-lookup-button:hover:not(:disabled) {
+  background: #176b53;
+  color: #ffffff;
+}
+
+.skpe-cep-lookup-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.skpe-cep-feedback {
+  display: block;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.skpe-cep-feedback-info {
+  background: #eef5f8;
+  color: #315d70;
+}
+
+.skpe-cep-feedback-success {
+  background: #eaf7f0;
+  color: #176b53;
+}
+
+.skpe-cep-feedback-error {
+  background: #fff0f0;
+  color: #9a2f2f;
+}
+
+.skpe-theme-dark .skpe-cep-lookup-button {
+  background: #18352c;
+  color: #d9f3e8;
+  border-color: #5a8f7c;
+}
+
+.skpe-theme-dark .skpe-cep-feedback-info,
+.skpe-theme-dark .skpe-cep-feedback-success,
+.skpe-theme-dark .skpe-cep-feedback-error {
+  background: #1b2823;
+}
