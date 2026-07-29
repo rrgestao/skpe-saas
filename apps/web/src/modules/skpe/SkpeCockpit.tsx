@@ -3529,11 +3529,11 @@ function OrganizationSection({
               <div className="skpe-organization-form-grid">
                 <label className="skpe-form-field-wide"><span>Razão Social *</span><input value={form.legalName} onChange={(e) => updateForm('legalName', e.target.value)} disabled={!canManageOrganization} /></label>
                 <label className="skpe-form-field-wide"><span>Nome Fantasia *</span><input value={form.tradeName} onChange={(e) => updateForm('tradeName', e.target.value)} disabled={!canManageOrganization} /></label>
-                <label><span>CNPJ</span><input value={form.cnpj} onChange={(e) => updateForm('cnpj', formatCnpjInput(e.target.value))} placeholder="99.999.999/9999-99" disabled={!canManageOrganization} /></label>
+                <label className="skpe-organization-field-span-2"><span>CNPJ</span><input value={form.cnpj} onChange={(e) => updateForm('cnpj', formatCnpjInput(e.target.value))} placeholder="99.999.999/9999-99" disabled={!canManageOrganization} /></label>
                 <label><span>Tipo de organização *</span><select value={form.organizationType} onChange={(e) => updateForm('organizationType', e.target.value)} disabled={!canManageOrganization}><option value="cooperative">Cooperativa</option><option value="industry">Indústria</option><option value="commerce">Comércio</option><option value="services">Serviços</option><option value="association">Associação</option><option value="foundation">Fundação</option><option value="public_body">Órgão público</option><option value="rural_producer">Produtor rural</option><option value="other">Outro</option></select></label>
                 {form.organizationType === 'cooperative' && <label><span>Ramo cooperativo</span><input value={form.cooperativeBranch} onChange={(e) => updateForm('cooperativeBranch', e.target.value)} disabled={!canManageOrganization} /></label>}
 
-                <label className="skpe-form-field-wide">
+                <label className="skpe-organization-field-span-full">
                   <span>Atividade principal</span>
                   <input
                     value={form.primaryActivityDescription}
@@ -3707,9 +3707,9 @@ function OrganizationSection({
                   )}
                 </div>
                 <label><span>Porte</span><select value={form.organizationSize} onChange={(e) => updateForm('organizationSize', e.target.value)} disabled={!canManageOrganization}><option value="">Não informado</option><option value="micro">Micro</option><option value="small">Pequeno</option><option value="medium">Médio</option><option value="large">Grande</option></select></label>
-                <label><span>E-mail institucional</span><input type="email" value={form.institutionalEmail} onChange={(e) => updateForm('institutionalEmail', e.target.value)} disabled={!canManageOrganization} /></label>
+                <label className="skpe-organization-field-span-2"><span>E-mail institucional</span><input type="email" value={form.institutionalEmail} onChange={(e) => updateForm('institutionalEmail', e.target.value)} disabled={!canManageOrganization} /></label>
                 <label><span>Telefone</span><input value={form.phone} onChange={(e) => updateForm('phone', formatPhoneInput(e.target.value))} placeholder="(99) 9999-9999" disabled={!canManageOrganization} /></label>
-                <label className="skpe-form-field-wide"><span>Site</span><input value={form.website} onChange={(e) => updateForm('website', e.target.value)} placeholder="https://" disabled={!canManageOrganization} /></label>
+                <label className="skpe-organization-field-span-2"><span>Site</span><input value={form.website} onChange={(e) => updateForm('website', e.target.value)} placeholder="https://" disabled={!canManageOrganization} /></label>
               </div>
             </div>
 

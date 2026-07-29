@@ -3230,3 +3230,18 @@ tr.skpe-interactive-record:focus-visible {
     display: block;
   }
 }
+/* CADASTRO ORGANIZACIONAL - LARGURA DOS CAMPOS PRIORITARIOS */
+.skpe-organization-form-grid .skpe-organization-field-span-2 {
+  grid-column: span 2;
+}
+
+.skpe-organization-form-grid .skpe-organization-field-span-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 650px) {
+  .skpe-organization-form-grid .skpe-organization-field-span-2,
+  .skpe-organization-form-grid .skpe-organization-field-span-full {
+    grid-column: auto;
+  }
+}
