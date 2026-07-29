@@ -52,6 +52,18 @@ type Organization = {
   city: string | null
   institutional_email: string | null
   cooperative_branch: string | null
+  cooperative_branch_id?: string | null
+  cooperative_branch_code?: string | null
+  primary_activity_description?: string | null
+  economic_activities?: OrganizationEconomicActivity[] | null
+  phone?: string | null
+  website?: string | null
+  postal_code?: string | null
+  street?: string | null
+  address_number?: string | null
+  address_complement?: string | null
+  district?: string | null
+  country_code?: string | null
   description: string | null
   memberships_count: number
   enabled_modules_count: number
@@ -204,6 +216,48 @@ type Invitation = {
   failure_reason: string | null
 }
 
+type OrganizationEconomicActivity = {
+  organization_activity_id?: string | null
+  cnae_catalog_id: string | null
+  version_code?: string | null
+  subclass_code: string
+  formatted_code: string
+  description: string
+  is_primary: boolean
+  verification_status?: string | null
+  source_type?: string | null
+  source_reference?: string | null
+}
+
+type CooperativeBranch = {
+  branch_id: string
+  branch_code: string
+  branch_name: string
+  short_name: string | null
+  description: string | null
+  display_order: number
+  status: string
+}
+
+type CnaeCatalogSearchRow = {
+  cnae_catalog_id: string
+  version_code: string
+  subclass_code: string
+  formatted_code: string
+  description: string
+  section_code: string | null
+  section_name: string | null
+}
+
+type SelectedCnae = {
+  cnaeCatalogId: string
+  versionCode: string
+  subclassCode: string
+  formattedCode: string
+  description: string
+  isPrimary: boolean
+}
+
 type OrganizationForm = {
   organizationId: string | null
   code: string
@@ -214,11 +268,22 @@ type OrganizationForm = {
   status: string
   parentOrganizationId: string
   cnpj: string
-  stateCode: string
-  city: string
+  cooperativeBranchCode: string
   institutionalEmail: string
-  cooperativeBranch: string
+  phone: string
+  website: string
+  postalCode: string
+  street: string
+  addressNumber: string
+  addressComplement: string
+  district: string
+  city: string
+  stateCode: string
+  countryCode: string
+  cnaeSourceType: string
+  cnaeSourceReference: string
   description: string
+  changeReason: string
 }
 
 type UserForm = {
@@ -283,11 +348,22 @@ const EMPTY_ORGANIZATION_FORM: OrganizationForm = {
   status: 'draft',
   parentOrganizationId: '',
   cnpj: '',
-  stateCode: '',
-  city: '',
+  cooperativeBranchCode: '',
   institutionalEmail: '',
-  cooperativeBranch: '',
+  phone: '',
+  website: '',
+  postalCode: '',
+  street: '',
+  addressNumber: '',
+  addressComplement: '',
+  district: '',
+  city: '',
+  stateCode: '',
+  countryCode: 'BR',
+  cnaeSourceType: 'manual_confirmed',
+  cnaeSourceReference: '',
   description: '',
+  changeReason: '',
 }
 
 const EMPTY_USER_FORM: UserForm = {
@@ -419,6 +495,24 @@ function labelOrganizationType(value: string | null | undefined) {
   return ORGANIZATION_TYPE_LABELS[value] ?? value
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, '')
+}
+
+function formatCnpjInput(value: string) {
+  const digits = onlyDigits(value).slice(0, 14)
+  return digits
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+}
+
+function formatPostalCodeInput(value: string) {
+  const digits = onlyDigits(value).slice(0, 8)
+  return digits.replace(/^(\d{5})(\d)/, '$1-$2')
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('pt-BR', {
@@ -537,6 +631,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [modules, setModules] = useState<PlatformModule[]>([])
   const [roles, setRoles] = useState<PlatformRole[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [cooperativeBranches, setCooperativeBranches] = useState<CooperativeBranch[]>([])
 
   const [search, setSearch] = useState('')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -547,6 +642,16 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [organizationDetailTab, setOrganizationDetailTab] = useState<OrganizationDetailTab>('data')
   const [organizationLogoFile, setOrganizationLogoFile] = useState<File | null>(null)
   const [organizationLogoPreview, setOrganizationLogoPreview] = useState<string | null>(null)
+  const [selectedCnaes, setSelectedCnaes] = useState<SelectedCnae[]>([])
+  const [cnaeSearch, setCnaeSearch] = useState('')
+  const [cnaeResults, setCnaeResults] = useState<CnaeCatalogSearchRow[]>([])
+  const [searchingCnaes, setSearchingCnaes] = useState(false)
+  const [cnaeSearchError, setCnaeSearchError] = useState('')
+  const [lookingUpCep, setLookingUpCep] = useState(false)
+  const [cepLookupMessage, setCepLookupMessage] = useState<{
+    type: 'info' | 'success' | 'error'
+    text: string
+  } | null>(null)
 
   const [userPanelOpen, setUserPanelOpen] = useState(false)
   const [userDetailTab, setUserDetailTab] = useState<UserDetailTab>('profile')
@@ -596,6 +701,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       modulesResponse,
       rolesResponse,
       invitationsResponse,
+      branchesResponse,
     ] = await Promise.all([
       supabase.rpc('get_platform_admin_summary'),
       supabase.rpc('get_platform_admin_organizations'),
@@ -608,6 +714,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       supabase.rpc('get_platform_admin_modules'),
       supabase.rpc('get_platform_admin_platform_roles'),
       supabase.rpc('get_platform_admin_invitations'),
+      supabase.rpc('get_cooperative_branches', {
+        include_inactive: false,
+      }),
     ])
 
     const firstError = [
@@ -619,6 +728,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       modulesResponse.error,
       rolesResponse.error,
       invitationsResponse.error,
+      branchesResponse.error,
     ].find(Boolean)
 
     if (firstError) {
@@ -635,6 +745,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     setModules((modulesResponse.data ?? []) as PlatformModule[])
     setRoles((rolesResponse.data ?? []) as PlatformRole[])
     setInvitations((invitationsResponse.data ?? []) as Invitation[])
+    setCooperativeBranches((branchesResponse.data ?? []) as CooperativeBranch[])
     setLoading(false)
   }
 
@@ -865,12 +976,195 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     setOrganizationForm((current) => ({
       ...current,
       organizationType,
+      cooperativeBranchCode:
+        organizationType === 'cooperative'
+          ? current.cooperativeBranchCode
+          : '',
       organizationLevel: nextLevels.some(
         (level) => level.level_code === current.organizationLevel,
       )
         ? current.organizationLevel
         : nextLevels[0]?.level_code ?? current.organizationLevel,
     }))
+  }
+
+  useEffect(() => {
+    const term = cnaeSearch.trim()
+
+    if (!organizationPanelOpen || term.length < 2) {
+      setCnaeResults([])
+      setCnaeSearchError('')
+      setSearchingCnaes(false)
+      return
+    }
+
+    let cancelled = false
+
+    const timer = window.setTimeout(async () => {
+      setSearchingCnaes(true)
+      setCnaeSearchError('')
+
+      const { data, error } = await supabase.rpc('search_cnae_catalog', {
+        search_term: term,
+        result_limit: 20,
+        result_offset: 0,
+      })
+
+      if (cancelled) return
+
+      if (error) {
+        setCnaeResults([])
+        setCnaeSearchError(error.message)
+        setSearchingCnaes(false)
+        return
+      }
+
+      const selectedIds = new Set(
+        selectedCnaes.map((item) => item.cnaeCatalogId),
+      )
+
+      setCnaeResults(
+        ((data ?? []) as CnaeCatalogSearchRow[]).filter(
+          (item) => !selectedIds.has(item.cnae_catalog_id),
+        ),
+      )
+      setSearchingCnaes(false)
+    }, 300)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [cnaeSearch, organizationPanelOpen, selectedCnaes])
+
+  const addCnae = (candidate: CnaeCatalogSearchRow) => {
+    if (
+      selectedCnaes.some(
+        (item) => item.cnaeCatalogId === candidate.cnae_catalog_id,
+      )
+    ) {
+      return
+    }
+
+    const isFirst = selectedCnaes.length === 0
+    setSelectedCnaes((current) => [
+      ...current,
+      {
+        cnaeCatalogId: candidate.cnae_catalog_id,
+        versionCode: candidate.version_code,
+        subclassCode: candidate.subclass_code,
+        formattedCode: candidate.formatted_code,
+        description: candidate.description,
+        isPrimary: isFirst,
+      },
+    ])
+    setCnaeResults((current) =>
+      current.filter(
+        (item) => item.cnae_catalog_id !== candidate.cnae_catalog_id,
+      ),
+    )
+  }
+
+  const makePrimaryCnae = (cnaeCatalogId: string) => {
+    setSelectedCnaes((current) =>
+      current.map((item) => ({
+        ...item,
+        isPrimary: item.cnaeCatalogId === cnaeCatalogId,
+      })),
+    )
+  }
+
+  const removeCnae = (cnaeCatalogId: string) => {
+    setSelectedCnaes((current) => {
+      const removed = current.find(
+        (item) => item.cnaeCatalogId === cnaeCatalogId,
+      )
+      const remaining = current.filter(
+        (item) => item.cnaeCatalogId !== cnaeCatalogId,
+      )
+
+      if (removed?.isPrimary && remaining.length > 0) {
+        remaining[0] = { ...remaining[0], isPrimary: true }
+      }
+
+      return remaining
+    })
+  }
+
+  const lookupPostalCode = async () => {
+    if (lookingUpCep) return
+
+    const normalizedCep = onlyDigits(organizationForm.postalCode)
+    if (normalizedCep.length !== 8) {
+      setCepLookupMessage({
+        type: 'error',
+        text: 'Informe um CEP válido com oito dígitos.',
+      })
+      return
+    }
+
+    setLookingUpCep(true)
+    setCepLookupMessage({
+      type: 'info',
+      text: 'Consultando o endereço...',
+    })
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'lookup-address-by-cep',
+        { body: { cep: normalizedCep } },
+      )
+
+      if (error) {
+        setCepLookupMessage({
+          type: 'error',
+          text: 'Não foi possível consultar o CEP. O endereço permanece disponível para preenchimento manual.',
+        })
+        return
+      }
+
+      const payload = data as {
+        ok?: boolean
+        address?: {
+          cep?: string
+          street?: string
+          district?: string
+          city?: string
+          stateCode?: string
+        }
+        error?: string
+      } | null
+
+      if (!payload?.ok || !payload.address) {
+        setCepLookupMessage({
+          type: 'error',
+          text:
+            payload?.error ??
+            'A consulta não retornou um endereço válido. Preencha os campos manualmente.',
+        })
+        return
+      }
+
+      const address = payload.address
+      setOrganizationForm((current) => ({
+        ...current,
+        postalCode: formatPostalCodeInput(
+          address.cep ?? normalizedCep,
+        ),
+        street: address.street?.trim() || current.street,
+        district: address.district?.trim() || current.district,
+        city: address.city?.trim() || current.city,
+        stateCode:
+          address.stateCode?.trim().toUpperCase() ||
+          current.stateCode,
+      }))
+      setCepLookupMessage({
+        type: 'success',
+        text: 'Endereço localizado. Confira os dados e informe o número e o complemento.',
+      })
+    } finally {
+      setLookingUpCep(false)
+    }
   }
 
   const openUserMaintenance = (user: PlatformUser) => {
@@ -1040,6 +1334,29 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   }, [invitations, normalizedSearch, sortDirection])
 
   const applyOrganizationToForm = (organization: Organization) => {
+    const activities = organization.economic_activities ?? []
+    const officialActivities = activities.filter(
+      (activity) => Boolean(activity.cnae_catalog_id),
+    )
+    const sourceActivity =
+      officialActivities.find((activity) => activity.is_primary) ??
+      officialActivities[0]
+
+    setSelectedCnaes(
+      officialActivities.map((activity) => ({
+        cnaeCatalogId: activity.cnae_catalog_id as string,
+        versionCode: activity.version_code ?? '2.3',
+        subclassCode: activity.subclass_code,
+        formattedCode: activity.formatted_code,
+        description: activity.description,
+        isPrimary: activity.is_primary,
+      })),
+    )
+    setCnaeSearch('')
+    setCnaeResults([])
+    setCnaeSearchError('')
+    setCepLookupMessage(null)
+
     setOrganizationForm({
       organizationId: organization.organization_id,
       code: organization.organization_code,
@@ -1049,18 +1366,41 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       organizationType: organization.organization_type ?? 'other',
       status: organization.status,
       parentOrganizationId: organization.parent_organization_id ?? '',
-      cnpj: organization.cnpj ?? '',
-      stateCode: organization.state_code ?? '',
-      city: organization.city ?? '',
+      cnpj: formatCnpjInput(organization.cnpj ?? ''),
+      cooperativeBranchCode:
+        organization.cooperative_branch_code ??
+        cooperativeBranches.find(
+          (branch) =>
+            branch.branch_id === organization.cooperative_branch_id ||
+            branch.branch_name === organization.cooperative_branch,
+        )?.branch_code ??
+        '',
       institutionalEmail: organization.institutional_email ?? '',
-      cooperativeBranch: organization.cooperative_branch ?? '',
+      phone: organization.phone ?? '',
+      website: organization.website ?? '',
+      postalCode: formatPostalCodeInput(organization.postal_code ?? ''),
+      street: organization.street ?? '',
+      addressNumber: organization.address_number ?? '',
+      addressComplement: organization.address_complement ?? '',
+      district: organization.district ?? '',
+      city: organization.city ?? '',
+      stateCode: organization.state_code ?? '',
+      countryCode: organization.country_code ?? 'BR',
+      cnaeSourceType: sourceActivity?.source_type ?? 'manual_confirmed',
+      cnaeSourceReference: sourceActivity?.source_reference ?? '',
       description: organization.description ?? '',
+      changeReason: '',
     })
   }
 
   const openNewOrganization = () => {
     setOrganizationLogoFile(null)
     setOrganizationLogoPreview(null)
+    setSelectedCnaes([])
+    setCnaeSearch('')
+    setCnaeResults([])
+    setCnaeSearchError('')
+    setCepLookupMessage(null)
     setOrganizationForm({
       ...EMPTY_ORGANIZATION_FORM,
       organizationLevel: getOrganizationLevelsForType(
@@ -1082,7 +1422,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     setOrganizationPanelOpen(true)
 
     const [detailResponse, brandingResponse] = await Promise.all([
-      supabase.rpc('get_platform_admin_organization_detail', {
+      supabase.rpc('get_platform_admin_organization_detail_v2', {
         target_organization_id: organization.organization_id,
       }),
       supabase.rpc('get_platform_admin_organization_branding', {
@@ -1112,107 +1452,186 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
   const saveOrganization = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSaving(true)
     clearMessage()
 
-    const { data, error } = await supabase.rpc('upsert_platform_admin_organization', {
-      target_organization_id: organizationForm.organizationId,
-      input_code: organizationForm.code,
-      input_legal_name: organizationForm.legalName,
-      input_trade_name: organizationForm.tradeName || null,
-      input_organization_level: organizationForm.organizationLevel,
-      input_organization_type: organizationForm.organizationType || null,
-      input_status: organizationForm.status,
-      input_parent_organization_id: organizationForm.parentOrganizationId || null,
-      input_cnpj: organizationForm.cnpj || null,
-      input_state_code: organizationForm.stateCode || null,
-      input_city: organizationForm.city || null,
-      input_institutional_email: organizationForm.institutionalEmail || null,
-      input_cooperative_branch: organizationForm.cooperativeBranch || null,
-      input_description: organizationForm.description || null,
-    })
-
-    if (error) {
-      showMessage(`Não foi possível salvar a organização: ${error.message}`, 'error')
-      setSaving(false)
+    if (!organizationForm.code.trim() || !organizationForm.legalName.trim()) {
+      showMessage('Informe o código e a razão social da organização.', 'error')
       return
     }
 
-    const savedOrganizationId = String(data ?? organizationForm.organizationId ?? '')
-    if (!savedOrganizationId) {
-      showMessage('A operação não retornou o identificador da organização salva.', 'error')
-      setSaving(false)
+    if (organizationForm.changeReason.trim().length < 10) {
+      showMessage('Informe uma justificativa com pelo menos 10 caracteres.', 'error')
       return
     }
 
-    if (organizationLogoFile) {
-      if (organizationLogoFile.size > 5 * 1024 * 1024) {
-        showMessage('A organização foi salva, mas a logo excede o limite de 5 MB.', 'error')
-        setSaving(false)
-        return
-      }
-
-      const extension = organizationLogoFile.name.split('.').pop()?.toLowerCase() || 'png'
-      const logoStoragePath = `${savedOrganizationId}/logo/logo-institucional-${Date.now()}.${extension}`
-      const { error: uploadError } = await supabase.storage
-        .from('organization-branding')
-        .upload(logoStoragePath, organizationLogoFile, {
-          upsert: true,
-          contentType: organizationLogoFile.type,
-        })
-
-      if (uploadError) {
-        showMessage(`A organização foi salva, mas não foi possível enviar a logo: ${uploadError.message}`, 'error')
-        setSaving(false)
-        return
-      }
-
-      const { error: logoError } = await supabase.rpc('set_platform_admin_organization_logo', {
-        target_organization_id: savedOrganizationId,
-        target_logo_storage_path: logoStoragePath,
-        change_reason: 'Atualização da identidade visual pela Administração da Plataforma.',
-      })
-
-      if (logoError) {
-        showMessage(`A organização foi salva, mas a identidade visual não pôde ser vinculada: ${logoError.message}`, 'error')
-        setSaving(false)
-        return
-      }
-
-      const { data: signedData } = await supabase.storage
-        .from('organization-branding')
-        .createSignedUrl(logoStoragePath, 60 * 60)
-      setOrganizationLogoPreview(signedData?.signedUrl ?? null)
-      setOrganizationLogoFile(null)
+    if (
+      selectedCnaes.length > 0 &&
+      selectedCnaes.filter((item) => item.isPrimary).length !== 1
+    ) {
+      showMessage('Selecione exatamente um CNAE principal.', 'error')
+      return
     }
 
-    const { data: refreshedData, error: refreshError } = await supabase.rpc(
-      'get_platform_admin_organization_detail',
-      { target_organization_id: savedOrganizationId },
-    )
+    setSaving(true)
 
-    if (refreshError) {
-      showMessage(`A organização foi salva, mas não foi possível reler os dados persistidos: ${refreshError.message}`, 'error')
+    try {
+      const { data, error } = await supabase.rpc(
+        'upsert_platform_admin_organization_v2',
+        {
+          target_organization_id: organizationForm.organizationId,
+          payload: {
+            code: organizationForm.code,
+            legal_name: organizationForm.legalName,
+            trade_name: organizationForm.tradeName,
+            organization_level: organizationForm.organizationLevel,
+            organization_type: organizationForm.organizationType,
+            status: organizationForm.status,
+            parent_organization_id:
+              organizationForm.parentOrganizationId || null,
+            cnpj: onlyDigits(organizationForm.cnpj),
+            cooperative_branch_code:
+              organizationForm.organizationType === 'cooperative'
+                ? organizationForm.cooperativeBranchCode || null
+                : null,
+            institutional_email:
+              organizationForm.institutionalEmail || null,
+            phone: organizationForm.phone || null,
+            website: organizationForm.website || null,
+            postal_code: onlyDigits(organizationForm.postalCode),
+            street: organizationForm.street || null,
+            address_number: organizationForm.addressNumber || null,
+            address_complement:
+              organizationForm.addressComplement || null,
+            district: organizationForm.district || null,
+            city: organizationForm.city || null,
+            state_code: organizationForm.stateCode || null,
+            country_code: organizationForm.countryCode || 'BR',
+            selected_cnaes: selectedCnaes.map((item) => ({
+              cnae_catalog_id: item.cnaeCatalogId,
+              is_primary: item.isPrimary,
+            })),
+            cnae_source_type: organizationForm.cnaeSourceType,
+            cnae_source_reference:
+              organizationForm.cnaeSourceReference || null,
+            description: organizationForm.description || null,
+            change_reason: organizationForm.changeReason,
+          },
+        },
+      )
+
+      if (error) {
+        showMessage(
+          `Não foi possível salvar a organização: ${error.message}`,
+          'error',
+        )
+        return
+      }
+
+      const savedOrganizationId = String(
+        data ?? organizationForm.organizationId ?? '',
+      )
+      if (!savedOrganizationId) {
+        showMessage(
+          'A operação não retornou o identificador da organização salva.',
+          'error',
+        )
+        return
+      }
+
+      if (organizationLogoFile) {
+        if (organizationLogoFile.size > 5 * 1024 * 1024) {
+          showMessage(
+            'A organização foi salva, mas a logo excede o limite de 5 MB.',
+            'error',
+          )
+          return
+        }
+
+        const extension =
+          organizationLogoFile.name.split('.').pop()?.toLowerCase() ||
+          'png'
+        const logoStoragePath =
+          `${savedOrganizationId}/logo/logo-institucional-${Date.now()}.${extension}`
+        const { error: uploadError } = await supabase.storage
+          .from('organization-branding')
+          .upload(logoStoragePath, organizationLogoFile, {
+            upsert: true,
+            contentType: organizationLogoFile.type,
+          })
+
+        if (uploadError) {
+          showMessage(
+            `A organização foi salva, mas não foi possível enviar a logo: ${uploadError.message}`,
+            'error',
+          )
+          return
+        }
+
+        const { error: logoError } = await supabase.rpc(
+          'set_platform_admin_organization_logo',
+          {
+            target_organization_id: savedOrganizationId,
+            target_logo_storage_path: logoStoragePath,
+            change_reason:
+              'Atualização da identidade visual pela Administração da Plataforma.',
+          },
+        )
+
+        if (logoError) {
+          showMessage(
+            `A organização foi salva, mas a identidade visual não pôde ser vinculada: ${logoError.message}`,
+            'error',
+          )
+          return
+        }
+
+        const { data: signedData } = await supabase.storage
+          .from('organization-branding')
+          .createSignedUrl(logoStoragePath, 60 * 60)
+        setOrganizationLogoPreview(signedData?.signedUrl ?? null)
+        setOrganizationLogoFile(null)
+      }
+
+      const { data: refreshedData, error: refreshError } =
+        await supabase.rpc(
+          'get_platform_admin_organization_detail_v2',
+          { target_organization_id: savedOrganizationId },
+        )
+
+      if (refreshError) {
+        showMessage(
+          `A organização foi salva, mas não foi possível reler os dados persistidos: ${refreshError.message}`,
+          'error',
+        )
+        await loadAll()
+        return
+      }
+
+      const persistedOrganization =
+        ((refreshedData ?? []) as Organization[])[0]
+      if (!persistedOrganization) {
+        showMessage(
+          'A organização foi salva, mas o registro persistido não foi localizado para conferência.',
+          'error',
+        )
+        await loadAll()
+        return
+      }
+
+      applyOrganizationToForm(persistedOrganization)
+      setSelectedOrganizationForModules(savedOrganizationId)
       await loadAll()
+      showMessage(
+        organizationForm.organizationId
+          ? 'Organização atualizada e conferida com sucesso.'
+          : 'Organização criada e conferida com sucesso.',
+        'success',
+      )
+      setOrganizationPanelOpen(false)
+      setOrganizationDetailTab('data')
+    } finally {
       setSaving(false)
-      return
     }
-
-    const persistedOrganization = ((refreshedData ?? []) as Organization[])[0]
-    if (!persistedOrganization) {
-      showMessage('A organização foi salva, mas o registro persistido não foi localizado para conferência.', 'error')
-      await loadAll()
-      setSaving(false)
-      return
-    }
-
-    applyOrganizationToForm(persistedOrganization)
-    setSelectedOrganizationForModules(savedOrganizationId)
-    await loadAll()
-    showMessage('Organização salva e conferida com sucesso.', 'success')
-    setOrganizationPanelOpen(false)
-    setOrganizationDetailTab('data')
-    setSaving(false)
   }
 
   const openNewMembership = () => {
@@ -1774,7 +2193,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
             </nav>
 
             {organizationDetailTab === 'data' ? (
-              <form className="pa-form" onSubmit={saveOrganization}>
+              <form className="pa-form pa-onboarding-form" onSubmit={saveOrganization}>
                 <section className="pa-organization-branding-editor">
                   <div className="pa-organization-logo-preview">
                     {organizationLogoPreview ? <img src={organizationLogoPreview} alt={`Logo de ${organizationForm.tradeName || organizationForm.legalName || 'organização'}`} /> : <span>{(organizationForm.tradeName || organizationForm.legalName || organizationForm.code || 'OR').slice(0, 2).toUpperCase()}</span>}
@@ -1798,16 +2217,147 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                     <small>PNG, JPG, WEBP ou SVG, com até 5 MB.</small>
                   </div>
                 </section>
-                <div className="pa-form-grid"><label>Código<input value={organizationForm.code} onChange={(event) => setOrganizationForm((current) => ({ ...current, code: event.target.value }))} required /></label><label>Situação<select value={organizationForm.status} onChange={(event) => setOrganizationForm((current) => ({ ...current, status: event.target.value }))}><option value="draft">Rascunho</option><option value="active">Ativo</option><option value="suspended">Suspenso</option><option value="inactive">Inativo</option><option value="archived">Arquivado</option></select></label></div>
-                <label>Razão social<input value={organizationForm.legalName} onChange={(event) => setOrganizationForm((current) => ({ ...current, legalName: event.target.value }))} required /></label>
-                <label>Nome fantasia<input value={organizationForm.tradeName} onChange={(event) => setOrganizationForm((current) => ({ ...current, tradeName: event.target.value }))} /></label>
-                <div className="pa-form-grid"><label>Tipo<select value={organizationForm.organizationType} onChange={(event) => changeOrganizationType(event.target.value)}>{Object.entries(ORGANIZATION_TYPE_LABELS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label><label>Nível<select value={organizationForm.organizationLevel} onChange={(event) => setOrganizationForm((current) => ({ ...current, organizationLevel: event.target.value }))}>{availableOrganizationLevels.map((level) => <option key={level.level_code} value={level.level_code}>{level.level_name}</option>)}</select><small className="pa-field-hint">{organizationForm.organizationType === 'system' ? 'Para organizações do tipo Sistema: Nacional, Regional ou Estadual.' : 'As opções são ajustadas conforme o tipo de organização.'}</small></label></div>
-                <label>Organização superior<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm((current) => ({ ...current, parentOrganizationId: event.target.value }))}><option value="">Sem organização superior</option>{organizations.filter((organization) => organization.organization_id !== organizationForm.organizationId).map((organization) => <option key={organization.organization_id} value={organization.organization_id}>{organization.trade_name ?? organization.legal_name}</option>)}</select></label>
-                <div className="pa-form-grid"><label>CNPJ<input value={organizationForm.cnpj} onChange={(event) => setOrganizationForm((current) => ({ ...current, cnpj: event.target.value }))} /></label><label>Ramo cooperativista<input value={organizationForm.cooperativeBranch} onChange={(event) => setOrganizationForm((current) => ({ ...current, cooperativeBranch: event.target.value }))} /></label></div>
-                <div className="pa-form-grid"><label>UF<input maxLength={2} value={organizationForm.stateCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, stateCode: event.target.value.toUpperCase() }))} /></label><label>Município<input value={organizationForm.city} onChange={(event) => setOrganizationForm((current) => ({ ...current, city: event.target.value }))} /></label></div>
-                <label>E-mail institucional<input type="email" value={organizationForm.institutionalEmail} onChange={(event) => setOrganizationForm((current) => ({ ...current, institutionalEmail: event.target.value }))} /></label>
-                <label>Descrição<textarea rows={5} value={organizationForm.description} onChange={(event) => setOrganizationForm((current) => ({ ...current, description: event.target.value }))} placeholder="Apresente a finalidade, atuação e contexto institucional da organização." /></label>
-                <div className="pa-form-actions"><button type="button" className="pa-secondary-button" onClick={() => setOrganizationPanelOpen(false)}>Fechar</button><button type="submit" className="pa-primary-button" disabled={saving}>{saving ? 'Salvando e conferindo...' : organizationForm.organizationId ? 'Salvar alterações' : 'Criar organização'}</button></div>
+
+                <section className="pa-onboarding-section">
+                  <header>
+                    <span>1</span>
+                    <div>
+                      <h3>Identificação e enquadramento</h3>
+                      <p>Dados mestres utilizados em toda a Plataforma SPARKs.</p>
+                    </div>
+                  </header>
+
+                  <div className="pa-form-grid">
+                    <label>Código<input value={organizationForm.code} onChange={(event) => setOrganizationForm((current) => ({ ...current, code: event.target.value.toUpperCase() }))} required /></label>
+                    <label>Situação<select value={organizationForm.status} onChange={(event) => setOrganizationForm((current) => ({ ...current, status: event.target.value }))}><option value="draft">Rascunho</option><option value="active">Ativo</option><option value="suspended">Suspenso</option><option value="inactive">Inativo</option><option value="archived">Arquivado</option></select></label>
+                  </div>
+                  <label>Razão social<input value={organizationForm.legalName} onChange={(event) => setOrganizationForm((current) => ({ ...current, legalName: event.target.value }))} required /></label>
+                  <label>Nome fantasia<input value={organizationForm.tradeName} onChange={(event) => setOrganizationForm((current) => ({ ...current, tradeName: event.target.value }))} /></label>
+                  <div className="pa-form-grid">
+                    <label>Tipo<select value={organizationForm.organizationType} onChange={(event) => changeOrganizationType(event.target.value)}>{Object.entries(ORGANIZATION_TYPE_LABELS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label>
+                    <label>Nível<select value={organizationForm.organizationLevel} onChange={(event) => setOrganizationForm((current) => ({ ...current, organizationLevel: event.target.value }))}>{availableOrganizationLevels.map((level) => <option key={level.level_code} value={level.level_code}>{level.level_name}</option>)}</select><small className="pa-field-hint">{organizationForm.organizationType === 'system' ? 'Para organizações do tipo Sistema: Nacional, Regional ou Estadual.' : 'As opções são ajustadas conforme o tipo de organização.'}</small></label>
+                  </div>
+                  <label>Organização superior<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm((current) => ({ ...current, parentOrganizationId: event.target.value }))}><option value="">Sem organização superior</option>{organizations.filter((organization) => organization.organization_id !== organizationForm.organizationId).map((organization) => <option key={organization.organization_id} value={organization.organization_id}>{organization.trade_name ?? organization.legal_name}</option>)}</select></label>
+                  <div className="pa-form-grid">
+                    <label>CNPJ<input value={organizationForm.cnpj} onChange={(event) => setOrganizationForm((current) => ({ ...current, cnpj: formatCnpjInput(event.target.value) }))} inputMode="numeric" /></label>
+                    {organizationForm.organizationType === 'cooperative' ? (
+                      <label>Ramo cooperativista<select value={organizationForm.cooperativeBranchCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, cooperativeBranchCode: event.target.value }))}><option value="">Selecione o ramo</option>{cooperativeBranches.map((branch) => <option key={branch.branch_id} value={branch.branch_code}>{branch.branch_name}</option>)}</select><small className="pa-field-hint">Catálogo mestre oficial, incluindo o Ramo Seguros.</small></label>
+                    ) : (
+                      <div className="pa-not-applicable-field"><strong>Ramo cooperativista</strong><span>Não aplicável ao tipo de organização selecionado.</span></div>
+                    )}
+                  </div>
+                  <label>Descrição institucional<textarea rows={4} value={organizationForm.description} onChange={(event) => setOrganizationForm((current) => ({ ...current, description: event.target.value }))} placeholder="Apresente a finalidade, atuação e contexto institucional da organização." /></label>
+                </section>
+
+                <section className="pa-onboarding-section">
+                  <header>
+                    <span>2</span>
+                    <div>
+                      <h3>Endereço institucional</h3>
+                      <p>O CEP pode preencher automaticamente os dados, que permanecem editáveis.</p>
+                    </div>
+                  </header>
+
+                  <div className="pa-cep-row">
+                    <label>CEP<input value={organizationForm.postalCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, postalCode: formatPostalCodeInput(event.target.value) }))} onBlur={() => { if (onlyDigits(organizationForm.postalCode).length === 8) void lookupPostalCode() }} inputMode="numeric" /></label>
+                    <button type="button" className="pa-secondary-button" onClick={() => void lookupPostalCode()} disabled={lookingUpCep}>{lookingUpCep ? 'Consultando...' : 'Consultar CEP'}</button>
+                  </div>
+                  {cepLookupMessage && <div className={`pa-lookup-message pa-lookup-message-${cepLookupMessage.type}`} role="status">{cepLookupMessage.text}</div>}
+                  <label>Logradouro<input value={organizationForm.street} onChange={(event) => setOrganizationForm((current) => ({ ...current, street: event.target.value }))} /></label>
+                  <div className="pa-form-grid">
+                    <label>Número<input value={organizationForm.addressNumber} onChange={(event) => setOrganizationForm((current) => ({ ...current, addressNumber: event.target.value }))} /></label>
+                    <label>Complemento<input value={organizationForm.addressComplement} onChange={(event) => setOrganizationForm((current) => ({ ...current, addressComplement: event.target.value }))} /></label>
+                  </div>
+                  <label>Bairro<input value={organizationForm.district} onChange={(event) => setOrganizationForm((current) => ({ ...current, district: event.target.value }))} /></label>
+                  <div className="pa-form-grid pa-form-grid-three">
+                    <label>Município<input value={organizationForm.city} onChange={(event) => setOrganizationForm((current) => ({ ...current, city: event.target.value }))} /></label>
+                    <label>UF<input maxLength={2} value={organizationForm.stateCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, stateCode: event.target.value.toUpperCase() }))} /></label>
+                    <label>País<input maxLength={2} value={organizationForm.countryCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, countryCode: event.target.value.toUpperCase() }))} /></label>
+                  </div>
+                </section>
+
+                <section className="pa-onboarding-section">
+                  <header>
+                    <span>3</span>
+                    <div>
+                      <h3>Atividades econômicas</h3>
+                      <p>Selecione CNAEs do catálogo oficial vigente e defina exatamente um como principal.</p>
+                    </div>
+                  </header>
+
+                  <label>Pesquisar CNAE<input value={cnaeSearch} onChange={(event) => setCnaeSearch(event.target.value)} placeholder="Digite o código ou parte da descrição" /></label>
+                  {searchingCnaes && <p className="pa-field-help">Pesquisando no catálogo oficial...</p>}
+                  {cnaeSearchError && <p className="pa-inline-error">{cnaeSearchError}</p>}
+                  {cnaeResults.length > 0 && (
+                    <div className="pa-cnae-results">
+                      {cnaeResults.map((candidate) => (
+                        <button type="button" key={candidate.cnae_catalog_id} onClick={() => addCnae(candidate)}>
+                          <strong>{candidate.formatted_code}</strong>
+                          <span>{candidate.description}</span>
+                          <small>{candidate.section_name ?? 'CNAE oficial'}</small>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="pa-cnae-selected">
+                    {selectedCnaes.length === 0 ? (
+                      <div className="pa-empty-state">Nenhum CNAE selecionado. O primeiro CNAE incluído será definido como principal.</div>
+                    ) : selectedCnaes.map((item) => (
+                      <article key={item.cnaeCatalogId} className={item.isPrimary ? 'is-primary' : ''}>
+                        <div>
+                          <span>{item.isPrimary ? 'Principal' : 'Secundário'}</span>
+                          <strong>{item.formattedCode}</strong>
+                          <p>{item.description}</p>
+                        </div>
+                        <div className="pa-cnae-actions">
+                          {!item.isPrimary && <button type="button" onClick={() => makePrimaryCnae(item.cnaeCatalogId)}>Tornar principal</button>}
+                          <button type="button" className="pa-danger-button" onClick={() => removeCnae(item.cnaeCatalogId)}>Remover</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  <div className="pa-form-grid">
+                    <label>Origem da confirmação<select value={organizationForm.cnaeSourceType} onChange={(event) => setOrganizationForm((current) => ({ ...current, cnaeSourceType: event.target.value }))}><option value="manual_confirmed">Confirmação manual</option><option value="official_cnpj">Comprovante oficial do CNPJ</option><option value="official_ibge">Fonte oficial IBGE/CONCLA</option><option value="official_document">Documento oficial da organização</option></select></label>
+                    <label>Referência da fonte<input value={organizationForm.cnaeSourceReference} onChange={(event) => setOrganizationForm((current) => ({ ...current, cnaeSourceReference: event.target.value }))} placeholder="Número, endereço eletrônico ou documento consultado" /></label>
+                  </div>
+                </section>
+
+                <section className="pa-onboarding-section">
+                  <header>
+                    <span>4</span>
+                    <div>
+                      <h3>Contatos institucionais</h3>
+                      <p>Informações compartilhadas pelos módulos da plataforma.</p>
+                    </div>
+                  </header>
+                  <label>E-mail institucional<input type="email" value={organizationForm.institutionalEmail} onChange={(event) => setOrganizationForm((current) => ({ ...current, institutionalEmail: event.target.value }))} /></label>
+                  <div className="pa-form-grid">
+                    <label>Telefone<input value={organizationForm.phone} onChange={(event) => setOrganizationForm((current) => ({ ...current, phone: event.target.value }))} /></label>
+                    <label>Site<input type="url" value={organizationForm.website} onChange={(event) => setOrganizationForm((current) => ({ ...current, website: event.target.value }))} placeholder="https://" /></label>
+                  </div>
+                </section>
+
+                <section className="pa-onboarding-section pa-onboarding-control">
+                  <header>
+                    <span>5</span>
+                    <div>
+                      <h3>Controle e prontidão</h3>
+                      <p>Rascunhos podem ser incompletos. A ativação exige cadastro institucional, endereço, ramo aplicável e CNAE principal.</p>
+                    </div>
+                  </header>
+                  <div className={`pa-readiness-notice ${organizationForm.status === 'active' ? 'is-active' : 'is-draft'}`}>
+                    <strong>{organizationForm.status === 'active' ? 'Validação para ativação habilitada' : 'Cadastro em preparação'}</strong>
+                    <span>{organizationForm.status === 'active' ? 'O banco verificará todos os requisitos obrigatórios antes de concluir.' : 'Você pode salvar o registro incompleto e concluir os dados posteriormente.'}</span>
+                  </div>
+                  <label>Justificativa para auditoria *<textarea rows={3} value={organizationForm.changeReason} onChange={(event) => setOrganizationForm((current) => ({ ...current, changeReason: event.target.value }))} placeholder="Informe o motivo da criação ou alteração, com pelo menos 10 caracteres." required /></label>
+                </section>
+
+                <div className="pa-form-actions">
+                  <button type="button" className="pa-secondary-button" onClick={() => setOrganizationPanelOpen(false)}>Fechar</button>
+                  <button type="submit" className="pa-primary-button" disabled={saving}>{saving ? 'Salvando e conferindo...' : organizationForm.organizationId ? 'Salvar alterações' : 'Criar organização'}</button>
+                </div>
               </form>
             ) : organizationDetailTab === 'users' ? (
               <section className="pa-related-section">

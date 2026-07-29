@@ -1450,3 +1450,251 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ONBOARDING INSTITUCIONAL COMPLETO - V2 */
+.pa-onboarding-form {
+  padding-bottom: 1rem;
+}
+
+.pa-onboarding-section {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid #d8e5df;
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+
+.pa-onboarding-section > header {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e0e9e5;
+}
+
+.pa-onboarding-section > header > span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+  background: #176b53;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.pa-onboarding-section h3,
+.pa-onboarding-section header p {
+  margin: 0;
+}
+
+.pa-onboarding-section header p {
+  margin-top: 0.25rem;
+  color: #687a73;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pa-form-grid-three {
+  grid-template-columns: minmax(0, 2fr) minmax(90px, 0.5fr) minmax(90px, 0.5fr);
+}
+
+.pa-not-applicable-field {
+  display: grid;
+  align-content: center;
+  gap: 0.35rem;
+  min-height: 74px;
+  padding: 0.75rem 0.85rem;
+  border: 1px dashed #cbd9d4;
+  border-radius: 10px;
+  background: #f3f7f5;
+}
+
+.pa-not-applicable-field span {
+  color: #6a7a74;
+  font-size: 0.8rem;
+}
+
+.pa-cep-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.pa-cep-row > button {
+  min-height: 44px;
+}
+
+.pa-lookup-message {
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pa-lookup-message-info {
+  background: #eef5ff;
+  color: #35536d;
+}
+
+.pa-lookup-message-success {
+  background: #eaf7f1;
+  color: #145f49;
+}
+
+.pa-lookup-message-error {
+  background: #fdecec;
+  color: #842029;
+}
+
+.pa-cnae-results {
+  display: grid;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #d7e3de;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.pa-cnae-results button {
+  display: grid;
+  grid-template-columns: minmax(100px, auto) minmax(0, 1fr);
+  gap: 0.2rem 0.75rem;
+  padding: 0.8rem;
+  border: 0;
+  border-bottom: 1px solid #e6eeeb;
+  background: transparent;
+  color: #263c34;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pa-cnae-results button:last-child {
+  border-bottom: 0;
+}
+
+.pa-cnae-results button:hover,
+.pa-cnae-results button:focus-visible {
+  background: #eef8f4;
+  outline: none;
+}
+
+.pa-cnae-results strong {
+  color: #176b53;
+}
+
+.pa-cnae-results span {
+  min-width: 0;
+}
+
+.pa-cnae-results small {
+  grid-column: 2;
+  color: #71817a;
+}
+
+.pa-cnae-selected {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.pa-cnae-selected article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem;
+  border: 1px solid #d9e5e0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.pa-cnae-selected article.is-primary {
+  border-color: #4f9a80;
+  box-shadow: inset 4px 0 0 #176b53;
+}
+
+.pa-cnae-selected article > div:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pa-cnae-selected article span {
+  width: max-content;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: #edf5f2;
+  color: #176b53;
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.pa-cnae-selected article strong,
+.pa-cnae-selected article p {
+  margin: 0;
+}
+
+.pa-cnae-selected article p {
+  color: #596d65;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.pa-cnae-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pa-cnae-actions button {
+  min-height: 36px;
+  padding: 0.45rem 0.65rem;
+}
+
+.pa-readiness-notice {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  border-radius: 11px;
+}
+
+.pa-readiness-notice.is-draft {
+  border: 1px solid #d8c88b;
+  background: #fff9e7;
+  color: #66531f;
+}
+
+.pa-readiness-notice.is-active {
+  border: 1px solid #8ebcaa;
+  background: #eaf7f1;
+  color: #145f49;
+}
+
+.pa-readiness-notice span {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .pa-form-grid-three,
+  .pa-cep-row,
+  .pa-cnae-selected article {
+    grid-template-columns: 1fr;
+  }
+
+  .pa-cep-row > button {
+    width: 100%;
+  }
+
+  .pa-cnae-actions {
+    justify-content: stretch;
+  }
+
+  .pa-cnae-actions button {
+    flex: 1;
+  }
+}
