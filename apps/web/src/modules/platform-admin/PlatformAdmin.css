@@ -1825,3 +1825,293 @@ label.pa-field-invalid::after {
     flex: 1;
   }
 }
+
+
+/* VISUALIZACAO HIERARQUICA DE ORGANIZACOES - V5 */
+.pa-view-toggle button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pa-hierarchy-view {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.pa-hierarchy-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #d8e5df;
+  border-radius: 14px;
+  background: #f7faf9;
+}
+
+.pa-hierarchy-toolbar > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.pa-hierarchy-toolbar strong {
+  color: #173e33;
+}
+
+.pa-hierarchy-toolbar span {
+  color: #66766f;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.pa-hierarchy-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pa-hierarchy-tree {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.pa-hierarchy-branch {
+  position: relative;
+  min-width: 0;
+}
+
+.pa-hierarchy-node {
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(210px, 1.5fr) minmax(250px, 1fr) auto 40px;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid #d8e4df;
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.pa-hierarchy-node:hover,
+.pa-hierarchy-node:focus-within {
+  border-color: #7eac9c;
+  background: #f8fcfa;
+  box-shadow: 0 8px 22px rgba(23, 107, 83, 0.08);
+}
+
+.pa-hierarchy-node.is-search-match {
+  border-color: #176b53;
+  background: #edf8f3;
+  box-shadow: 0 0 0 3px rgba(23, 107, 83, 0.1);
+}
+
+.pa-hierarchy-node.has-hierarchy-warning {
+  border-color: #d9a441;
+  background: #fffaf0;
+}
+
+.pa-hierarchy-expand-button,
+.pa-hierarchy-actions button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid #d2ddd8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #176b53;
+  cursor: pointer;
+}
+
+.pa-hierarchy-expand-button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.pa-hierarchy-expand-button svg,
+.pa-hierarchy-actions svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pa-hierarchy-expand-button svg {
+  transition: transform 150ms ease;
+}
+
+.pa-hierarchy-expand-button svg.is-expanded {
+  transform: rotate(90deg);
+}
+
+.pa-hierarchy-main {
+  display: grid;
+  grid-template-columns: minmax(62px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1f302a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pa-hierarchy-main:focus-visible {
+  outline: 3px solid rgba(23, 107, 83, 0.18);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.pa-hierarchy-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  background: #e9f4ef;
+  color: #176b53;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+}
+
+.pa-hierarchy-name {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.pa-hierarchy-name strong,
+.pa-hierarchy-name small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pa-hierarchy-name strong {
+  color: #20342d;
+}
+
+.pa-hierarchy-name small {
+  color: #6a7973;
+}
+
+.pa-hierarchy-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.pa-hierarchy-metrics span {
+  display: inline-flex;
+  min-height: 27px;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e0e8e5;
+  border-radius: 999px;
+  background: #f7f9f8;
+  color: #596a63;
+  font-size: 0.7rem;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.pa-hierarchy-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pa-hierarchy-warning {
+  margin: 0.35rem 0 0 3rem;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid #d9a441;
+  border-radius: 0 8px 8px 0;
+  background: #fff6df;
+  color: #725216;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.pa-hierarchy-children {
+  position: relative;
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+  margin-left: 1.15rem;
+  padding-left: 1.8rem;
+  border-left: 2px solid #c7d9d2;
+}
+
+.pa-hierarchy-children > .pa-hierarchy-branch::before {
+  content: '';
+  position: absolute;
+  top: 1.65rem;
+  left: -1.8rem;
+  width: 1.25rem;
+  border-top: 2px solid #c7d9d2;
+}
+
+@media (max-width: 1180px) {
+  .pa-hierarchy-node {
+    grid-template-columns: 38px minmax(200px, 1fr) auto 40px;
+  }
+
+  .pa-hierarchy-metrics {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .pa-hierarchy-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pa-hierarchy-toolbar-actions button {
+    flex: 1;
+  }
+
+  .pa-hierarchy-node {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+
+  .pa-hierarchy-main {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .pa-hierarchy-code {
+    width: fit-content;
+  }
+
+  .pa-hierarchy-node > .pa-status {
+    grid-column: 2;
+    width: fit-content;
+  }
+
+  .pa-hierarchy-actions {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .pa-hierarchy-metrics {
+    grid-column: 2 / -1;
+  }
+
+  .pa-hierarchy-children {
+    margin-left: 0.65rem;
+    padding-left: 1.1rem;
+  }
+
+  .pa-hierarchy-children > .pa-hierarchy-branch::before {
+    left: -1.1rem;
+    width: 0.75rem;
+  }
+}

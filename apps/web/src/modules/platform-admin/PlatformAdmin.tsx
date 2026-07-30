@@ -21,7 +21,8 @@ type AdminTab =
   | 'invitations'
   | 'portability'
 
-type ViewMode = 'cards' | 'grid'
+// VISUALIZACAO HIERARQUICA DE ORGANIZACOES - V5
+type ViewMode = 'cards' | 'grid' | 'hierarchy'
 type SortDirection = 'asc' | 'desc'
 type OrganizationDetailTab = 'data' | 'users' | 'modules' | 'hierarchy'
 type UserDetailTab = 'profile' | 'organizations' | 'roles' | 'moduleRoles' | 'audit'
@@ -637,11 +638,44 @@ function WarningIcon() {
   )
 }
 
-function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (value: ViewMode) => void }) {
+function HierarchyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 5v4M5 19v-4h14v4M5 15v-3h14v3M12 9v3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="9" y="2.5" width="6" height="3.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="2" y="18" width="6" height="3.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="9" y="18" width="6" height="3.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="16" y="18" width="6" height="3.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg className={expanded ? 'is-expanded' : ''} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ViewToggle({
+  value,
+  onChange,
+  showHierarchy = false,
+}: {
+  value: ViewMode
+  onChange: (value: ViewMode) => void
+  showHierarchy?: boolean
+}) {
   return (
     <div className="pa-view-toggle" aria-label="Modo de visualização">
-      <button type="button" className={value === 'cards' ? 'active' : ''} onClick={() => onChange('cards')} title="Visualizar em cards">▦</button>
-      <button type="button" className={value === 'grid' ? 'active' : ''} onClick={() => onChange('grid')} title="Visualizar em linhas">☷</button>
+      <button type="button" className={value === 'cards' ? 'active' : ''} onClick={() => onChange('cards')} title="Visualizar em cards" aria-label="Visualizar em cards">▦</button>
+      <button type="button" className={value === 'grid' ? 'active' : ''} onClick={() => onChange('grid')} title="Visualizar em linhas" aria-label="Visualizar em linhas">☷</button>
+      {showHierarchy && (
+        <button type="button" className={value === 'hierarchy' ? 'active' : ''} onClick={() => onChange('hierarchy')} title="Visualizar hierarquia" aria-label="Visualizar hierarquia">
+          <HierarchyIcon />
+        </button>
+      )}
     </div>
   )
 }
@@ -666,6 +700,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [search, setSearch] = useState('')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
+  const [expandedOrganizationIds, setExpandedOrganizationIds] =
+    useState<Set<string>>(() => new Set())
 
   const [organizationPanelOpen, setOrganizationPanelOpen] = useState(false)
   const [organizationForm, setOrganizationForm] = useState<OrganizationForm>(EMPTY_ORGANIZATION_FORM)
@@ -1421,24 +1457,126 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     [userModuleRoleGroups],
   )
 
+  const organizationMatchesSearch = (organization: Organization) => {
+    if (!normalizedSearch) return true
+
+    return [
+      organization.organization_code,
+      organization.trade_name,
+      organization.legal_name,
+      organization.cnpj,
+      organization.city,
+      organization.cooperative_branch,
+      organization.parent_organization_name,
+    ]
+      .filter(Boolean)
+      .some((value) =>
+        String(value).toLocaleLowerCase('pt-BR').includes(normalizedSearch),
+      )
+  }
+
   const filteredOrganizations = useMemo(() => {
     return [...organizations]
-      .filter((organization) => {
-        if (!normalizedSearch) return true
-        return [
-          organization.organization_code,
-          organization.trade_name,
-          organization.legal_name,
-          organization.cnpj,
-          organization.city,
-          organization.cooperative_branch,
-        ].filter(Boolean).some((value) => String(value).toLocaleLowerCase('pt-BR').includes(normalizedSearch))
-      })
+      .filter(organizationMatchesSearch)
       .sort((first, second) => {
         const comparison = (first.trade_name ?? first.legal_name).localeCompare(second.trade_name ?? second.legal_name, 'pt-BR')
         return sortDirection === 'asc' ? comparison : -comparison
       })
   }, [organizations, normalizedSearch, sortDirection])
+
+  const organizationHierarchy = useMemo(() => {
+    const byId = new Map(
+      organizations.map((organization) => [organization.organization_id, organization]),
+    )
+    const childrenByParent = new Map<string, Organization[]>()
+    const rootKey = '__root__'
+
+    const compareOrganizations = (first: Organization, second: Organization) => {
+      const comparison = (first.trade_name ?? first.legal_name).localeCompare(second.trade_name ?? second.legal_name, 'pt-BR')
+      return sortDirection === 'asc' ? comparison : -comparison
+    }
+
+    for (const organization of organizations) {
+      const parentId = organization.parent_organization_id
+      const parentKey = parentId && byId.has(parentId) ? parentId : rootKey
+      const children = childrenByParent.get(parentKey) ?? []
+      children.push(organization)
+      childrenByParent.set(parentKey, children)
+    }
+
+    for (const children of childrenByParent.values()) {
+      children.sort(compareOrganizations)
+    }
+
+    const matchIds = new Set<string>()
+    const visibleIds = new Set<string>()
+
+    if (!normalizedSearch) {
+      for (const organization of organizations) {
+        visibleIds.add(organization.organization_id)
+      }
+    } else {
+      for (const organization of organizations) {
+        if (!organizationMatchesSearch(organization)) continue
+
+        matchIds.add(organization.organization_id)
+        visibleIds.add(organization.organization_id)
+
+        let parentId = organization.parent_organization_id
+        const visited = new Set<string>([organization.organization_id])
+
+        while (parentId && !visited.has(parentId)) {
+          visited.add(parentId)
+          const parent = byId.get(parentId)
+          if (!parent) break
+          visibleIds.add(parent.organization_id)
+          parentId = parent.parent_organization_id
+        }
+      }
+    }
+
+    const roots = (childrenByParent.get(rootKey) ?? []).filter(
+      (organization) => visibleIds.has(organization.organization_id),
+    )
+    const expandableIds: string[] = []
+
+    for (const organization of organizations) {
+      const visibleChildren = (childrenByParent.get(organization.organization_id) ?? []).filter(
+        (child) => visibleIds.has(child.organization_id),
+      )
+      if (visibleChildren.length > 0) expandableIds.push(organization.organization_id)
+    }
+
+    return { byId, childrenByParent, roots, visibleIds, matchIds, expandableIds }
+  }, [organizations, normalizedSearch, sortDirection])
+
+  useEffect(() => {
+    if (activeTab !== 'organizations' && viewMode === 'hierarchy') {
+      setViewMode('cards')
+    }
+  }, [activeTab, viewMode])
+
+  useEffect(() => {
+    if (viewMode !== 'hierarchy') return
+    setExpandedOrganizationIds(new Set(organizationHierarchy.expandableIds))
+  }, [viewMode, normalizedSearch, organizations])
+
+  const toggleOrganizationExpansion = (organizationId: string) => {
+    setExpandedOrganizationIds((current) => {
+      const next = new Set(current)
+      if (next.has(organizationId)) next.delete(organizationId)
+      else next.add(organizationId)
+      return next
+    })
+  }
+
+  const expandAllOrganizations = () => {
+    setExpandedOrganizationIds(new Set(organizationHierarchy.expandableIds))
+  }
+
+  const collapseAllOrganizations = () => {
+    setExpandedOrganizationIds(new Set())
+  }
 
   const filteredUsers = useMemo(() => {
     return [...users]
@@ -2144,6 +2282,74 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     window.print()
   }
 
+  function renderOrganizationHierarchyNode(organization: Organization) {
+    const children = (organizationHierarchy.childrenByParent.get(organization.organization_id) ?? []).filter(
+      (child) => organizationHierarchy.visibleIds.has(child.organization_id),
+    )
+    const totalChildren = (organizationHierarchy.childrenByParent.get(organization.organization_id) ?? []).length
+    const hasChildren = children.length > 0
+    const expanded = expandedOrganizationIds.has(organization.organization_id)
+    const isSearchMatch = organizationHierarchy.matchIds.has(organization.organization_id)
+    const missingParent = Boolean(
+      organization.parent_organization_id &&
+        !organizationHierarchy.byId.has(organization.parent_organization_id),
+    )
+    const levelLabel = organizationLevels.find(
+      (level) => level.level_code === organization.organization_level,
+    )?.level_name ?? organization.organization_level
+
+    return (
+      <div className="pa-hierarchy-branch" key={organization.organization_id}>
+        <div className={`pa-hierarchy-node ${isSearchMatch ? 'is-search-match' : ''} ${missingParent ? 'has-hierarchy-warning' : ''}`}>
+          <button
+            type="button"
+            className="pa-hierarchy-expand-button"
+            onClick={() => toggleOrganizationExpansion(organization.organization_id)}
+            disabled={!hasChildren}
+            aria-label={hasChildren ? (expanded ? `Recolher subordinadas de ${organization.trade_name ?? organization.legal_name}` : `Expandir subordinadas de ${organization.trade_name ?? organization.legal_name}`) : 'Organização sem subordinadas visíveis'}
+            title={hasChildren ? (expanded ? 'Recolher subordinadas' : 'Expandir subordinadas') : 'Sem subordinadas'}
+          >
+            {hasChildren ? <ChevronIcon expanded={expanded} /> : <span aria-hidden="true">•</span>}
+          </button>
+
+          <button type="button" className="pa-hierarchy-main" onClick={() => void openOrganizationEdit(organization)}>
+            <span className="pa-hierarchy-code">{organization.organization_code}</span>
+            <span className="pa-hierarchy-name">
+              <strong>{organization.trade_name ?? organization.legal_name}</strong>
+              <small>{labelOrganizationType(organization.organization_type)} · {levelLabel}</small>
+            </span>
+          </button>
+
+          <div className="pa-hierarchy-metrics" aria-label="Resumo da organização">
+            <span title="Subordinadas diretas">{totalChildren} subordinada(s)</span>
+            <span title="Usuários vinculados">{organization.memberships_count} usuário(s)</span>
+            <span title="Módulos habilitados">{organization.enabled_modules_count} módulo(s)</span>
+          </div>
+
+          <span className={`pa-status pa-status-${organization.status}`}>{labelStatus(organization.status)}</span>
+
+          <div className="pa-hierarchy-actions">
+            <button type="button" title="Editar organização" aria-label={`Editar ${organization.trade_name ?? organization.legal_name}`} onClick={() => void openOrganizationEdit(organization)}>
+              <EditIcon />
+            </button>
+          </div>
+        </div>
+
+        {missingParent && (
+          <div className="pa-hierarchy-warning" role="status">
+            A organização superior informada não foi encontrada no cadastro mestre.
+          </div>
+        )}
+
+        {hasChildren && expanded && (
+          <div className="pa-hierarchy-children">
+            {children.map((child) => renderOrganizationHierarchyNode(child))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const toolbar = (actionLabel?: string, action?: () => void) => (
     <section className="pa-toolbar">
       <div className="pa-search">
@@ -2161,7 +2367,11 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
         {sortDirection === 'asc' ? 'A → Z' : 'Z → A'}
       </button>
 
-      <ViewToggle value={viewMode} onChange={setViewMode} />
+      <ViewToggle
+        value={viewMode}
+        onChange={setViewMode}
+        showHierarchy={activeTab === 'organizations'}
+      />
 
       <button type="button" className="pa-icon-button" onClick={printCurrentView} title="Imprimir listagem">
         <PrintIcon />
@@ -2274,6 +2484,31 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                       </div>
                     </article>
                   ))}
+                </section>
+              ) : viewMode === 'hierarchy' ? (
+                <section className="pa-hierarchy-view" aria-label="Hierarquia das organizações">
+                  <div className="pa-hierarchy-toolbar">
+                    <div>
+                      <strong>Estrutura organizacional</strong>
+                      <span>
+                        {normalizedSearch
+                          ? `${organizationHierarchy.matchIds.size} registro(s) localizado(s), com os respectivos ancestrais.`
+                          : `${organizations.length} organização(ões) distribuída(s) por dependência hierárquica.`}
+                      </span>
+                    </div>
+                    <div className="pa-hierarchy-toolbar-actions">
+                      <button type="button" className="pa-secondary-button" onClick={expandAllOrganizations}>Expandir tudo</button>
+                      <button type="button" className="pa-secondary-button" onClick={collapseAllOrganizations}>Recolher tudo</button>
+                    </div>
+                  </div>
+
+                  {organizationHierarchy.roots.length === 0 ? (
+                    <div className="pa-empty-state">Nenhuma organização foi localizada na estrutura hierárquica.</div>
+                  ) : (
+                    <div className="pa-hierarchy-tree">
+                      {organizationHierarchy.roots.map((organization) => renderOrganizationHierarchyNode(organization))}
+                    </div>
+                  )}
                 </section>
               ) : (
                 <div className="pa-table-card">
