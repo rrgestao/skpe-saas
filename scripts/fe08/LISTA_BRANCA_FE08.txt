@@ -1,0 +1,11 @@
+supabase/migrations/20260730100000_create_strategic_monitoring_governance_and_learning.sql
+supabase/verification/verificar_fe08_monitoramento_governanca_aprendizado.sql
+docs/03-methodology/REQ-SKPE-FE-009_MONITORAMENTO_GOVERNANCA_APRENDIZADO_ESTRATEGICO.md
+docs/03-methodology/RELATORIO_INSPECAO_E_DECISAO_ARQUITETURAL_FE08.md
+docs/03-methodology/GUIA_EXECUCAO_FE08_SUPABASE_WEB.md
+docs/03-methodology/RELATORIO_VALIDACAO_ESTATICA_FE08.md
+scripts/fe08/instalar_fe08_no_repositorio.ps1
+scripts/fe08/validar_e_preparar_commit_fe08.ps1
+scripts/fe08/commit_e_push_fe08.ps1
+scripts/fe08/LISTA_BRANCA_FE08.txt
+scripts/fe08/MANIFESTO_SHA256_FE08.txt
