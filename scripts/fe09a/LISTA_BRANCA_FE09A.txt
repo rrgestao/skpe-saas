@@ -1,0 +1,16 @@
+﻿docs/03-methodology/REQ-SKPE-FE-010_EXPERIENCIA_APLICACIONAL_E_OPERACIONALIZACAO_FORMULACAO.md
+docs/03-methodology/RELATORIO_INSPECAO_E_DECISAO_ARQUITETURAL_FE09A.md
+docs/03-methodology/ARQUITETURA_INFORMACAO_E_NAVEGACAO_FE09A.md
+docs/03-methodology/MATRIZ_ROTAS_CONTEXTO_FE09A.md
+docs/03-methodology/MATRIZ_PERMISSOES_CAPACIDADES_ESCOPOS_FE09A.md
+docs/03-methodology/MAPA_COMPONENTES_FRONTEND_FE09A.md
+docs/03-methodology/MAPA_CONTRATOS_RPCS_FE09A.md
+docs/03-methodology/PLANO_REFATORACAO_INCREMENTAL_FE09A.md
+docs/03-methodology/CRITERIOS_ACEITE_E_TESTES_FE09A.md
+docs/03-methodology/ROADMAP_EXTENSOES_OCB_FE09A.md
+docs/03-methodology/GUIA_IMPLEMENTACAO_CONTROLADA_FE09A.md
+scripts/fe09a/instalar_fe09a_no_repositorio.ps1
+scripts/fe09a/validar_fe09a_planejamento.ps1
+scripts/fe09a/commit_e_push_fe09a.ps1
+scripts/fe09a/LISTA_BRANCA_FE09A.txt
+scripts/fe09a/MANIFESTO_SHA256_FE09A.txt
