@@ -1,0 +1,289 @@
+/* FE-09.A.01-C1 — camada transversal de responsividade e prevenção de truncamento */
+html,body,#root{width:100%;max-width:100%;min-width:0;min-height:100%;overflow-x:hidden}
+*,*::before,*::after{box-sizing:border-box;min-width:0}
+img,svg,video,canvas{max-width:100%;height:auto}
+button,input,select,textarea{max-width:100%}
+.platform-shell,.platform-content,.skpe-shell,.skpe-main,.platform-admin,.pa-layout,.pa-content,.skpe-artifacts-page{min-width:0;max-width:100%}
+.platform-content,.skpe-main,.pa-content{overflow-x:auto;scrollbar-gutter:stable}
+.network-table-wrap,.organization-table-card,.pa-table-wrap,.skpe-artifacts-table-wrap,[class*="table-wrap"],[class*="table-card"]{display:block;width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-gutter:stable both-edges}
+.network-table,.organization-table,.pa-table,.skpe-artifacts-table-wrap table,table{min-width:max(760px,100%);width:max-content;max-width:none}
+.skpe-artifacts-header,.pa-heading,.page-heading,.platform-header,.skpe-readiness-section>header{flex-wrap:wrap}
+.skpe-artifacts-header>*,.pa-heading>*,.page-heading>*,.platform-header>*{min-width:0}
+.skpe-artifacts-header-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.platform-admin-entry{grid-template-columns:auto minmax(0,1fr) auto}
+.platform-admin-entry-icon svg{width:28px;height:28px;display:block}
+.skpe-navigation button[hidden]{display:none!important}
+
+@media(max-width:1180px){
+  .skpe-shell{grid-template-columns:minmax(210px,240px) minmax(0,1fr)}
+  .skpe-artifacts-summary,.pa-summary-grid,.network-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .skpe-artifacts-toolbar{grid-template-columns:minmax(220px,1fr) minmax(170px,.7fr)}
+  .skpe-artifacts-toolbar>div{grid-column:auto}
+  .pa-layout{grid-template-columns:minmax(190px,230px) minmax(0,1fr)}
+}
+
+@media(max-width:900px){
+  body{overflow-x:auto}
+  .skpe-shell{display:block}
+  .skpe-sidebar{position:relative;inset:auto;width:100%;height:auto;max-height:none;overflow:visible}
+  .skpe-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .skpe-sidebar-footer{position:relative;margin-top:12px}
+  .skpe-main{width:100%;min-height:auto}
+  .pa-layout{display:block}
+  .pa-navigation{display:flex;overflow-x:auto;gap:6px;padding-bottom:8px;scrollbar-gutter:stable}
+  .pa-navigation button{flex:0 0 auto;white-space:nowrap}
+  .platform-admin-entry{grid-template-columns:auto minmax(0,1fr)}
+  .platform-admin-entry-button{grid-column:1/-1;width:100%}
+  .module-grid,.organization-grid,.pa-card-grid,.skpe-artifacts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:680px){
+  .platform-content,.skpe-main,.pa-content,.skpe-artifacts-page{padding-left:14px!important;padding-right:14px!important}
+  .skpe-navigation{grid-template-columns:1fr}
+  .module-grid,.organization-grid,.pa-card-grid,.skpe-artifacts-grid,.skpe-artifacts-summary,.pa-summary-grid,.network-summary-grid{grid-template-columns:1fr}
+  .skpe-artifacts-toolbar,.primary-list-toolbar,.pa-toolbar{display:grid!important;grid-template-columns:1fr!important}
+  .skpe-artifacts-toolbar>*,.primary-list-toolbar>*,.pa-toolbar>*{width:100%}
+  .platform-header{align-items:flex-start}
+  .platform-header-user{width:100%;justify-content:space-between}
+  .platform-admin-entry{grid-template-columns:1fr}
+  .platform-admin-entry-icon{justify-self:start}
+  .skpe-artifact-drawer-panel,.pa-side-panel{width:100vw!important;max-width:100vw!important}
+  table{font-size:.9rem}
+}
+
+/* FE09A02.2 RESPONSIVE TYPOGRAPHY FOUNDATION START */
+:root {
+  --sparks-content-inline: clamp(1rem, 2.4vw, 2.5rem);
+  --sparks-content-block: clamp(1rem, 2vw, 2rem);
+  --sparks-readable-min: 0.875rem;
+  --sparks-body-size: clamp(0.9375rem, 0.2vw + 0.9rem, 1rem);
+  --sparks-heading-1: clamp(1.75rem, 1.2vw + 1.35rem, 2.5rem);
+  --sparks-heading-2: clamp(1.35rem, 0.8vw + 1.1rem, 1.9rem);
+  --sparks-control-min-height: 2.75rem;
+}
+
+html { font-size: 16px; }
+
+body,
+button,
+input,
+select,
+textarea { font-size: var(--sparks-body-size); }
+
+.platform-shell,
+.platform-content,
+.skpe-shell,
+.skpe-main,
+.platform-admin,
+.pa-layout,
+.pa-content,
+.skpe-artifacts-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.skpe-main,
+.platform-content,
+.pa-content { padding-inline: var(--sparks-content-inline); }
+
+.skpe-page-heading,
+.skpe-administration-heading,
+.pa-heading,
+.page-heading {
+  width: 100%;
+  max-width: none;
+}
+
+.skpe-page-heading h1,
+.skpe-administration-heading h1,
+.pa-heading h1,
+.page-heading h1 {
+  font-size: var(--sparks-heading-1);
+  line-height: 1.12;
+}
+
+.skpe-page-heading h2,
+.pa-heading h2,
+.page-heading h2 {
+  font-size: var(--sparks-heading-2);
+  line-height: 1.2;
+}
+
+.skpe-page-heading p,
+.skpe-administration-heading p,
+.pa-heading p,
+.page-heading p,
+.skpe-list-toolbar,
+.skpe-data-grid,
+.skpe-hierarchy-table-wrap,
+.skpe-organization-scope-explorer,
+.skpe-area-tree,
+.skpe-area-card-grid,
+.pa-table-card {
+  font-size: max(var(--sparks-readable-min), 1em);
+}
+
+button,
+input,
+select,
+textarea { min-height: var(--sparks-control-min-height); }
+
+.skpe-list-toolbar,
+.skpe-heading-actions,
+.pa-heading,
+.skpe-page-heading { gap: clamp(0.75rem, 1.4vw, 1.5rem); }
+
+.skpe-data-grid-wrapper,
+.skpe-hierarchy-table-wrap,
+.pa-table-card,
+.network-table-wrap,
+.organization-table-card,
+.pa-table-wrap,
+.skpe-artifacts-table-wrap {
+  width: 100%;
+  max-width: 100%;
+}
+
+.skpe-data-grid th,
+.skpe-data-grid td,
+.skpe-hierarchy-table-wrap th,
+.skpe-hierarchy-table-wrap td,
+.pa-table-card th,
+.pa-table-card td {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.skpe-area-tree-node,
+.skpe-area-card-grid article,
+.skpe-organization-scope-node,
+.skpe-organization-scope-user { font-size: 0.9375rem; }
+
+/* Prevent generic responsive SVG rules from enlarging interface icons. */
+button > svg,
+.skpe-list-search svg,
+.skpe-search-field svg,
+.skpe-hierarchy-controls svg,
+.skpe-view-switch svg,
+.skpe-record-actions svg,
+.pa-search svg,
+.pa-toolbar svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  max-width: 1.125rem;
+  max-height: 1.125rem;
+  flex: 0 0 1.125rem;
+}
+
+.skpe-list-search > svg,
+.skpe-search-field > svg {
+  width: 1rem;
+  height: 1rem;
+  max-width: 1rem;
+  max-height: 1rem;
+  flex-basis: 1rem;
+}
+
+@media (min-width: 1440px) {
+  .skpe-main,
+  .platform-content,
+  .pa-content { padding-inline: clamp(1.5rem, 2vw, 3rem); }
+}
+
+@media (max-width: 1180px) {
+  .skpe-main,
+  .platform-content,
+  .pa-content { padding-inline: clamp(1rem, 2vw, 1.5rem); }
+}
+
+@media (max-width: 900px) {
+  .skpe-shell { grid-template-columns: 1fr; }
+
+  .skpe-sidebar {
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+
+  .skpe-main,
+  .platform-content,
+  .pa-content { padding-inline: 1rem; }
+
+  .skpe-page-heading,
+  .skpe-administration-heading,
+  .pa-heading,
+  .page-heading,
+  .skpe-heading-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 680px) {
+  html { font-size: 16px; }
+
+  .skpe-main,
+  .platform-content,
+  .pa-content,
+  .skpe-artifacts-page { padding-inline: 0.75rem; }
+
+  .skpe-list-toolbar > *,
+  .skpe-heading-actions > *,
+  .pa-heading > * { width: 100%; }
+
+  .skpe-area-card-grid,
+  .skpe-artifacts-grid,
+  .skpe-artifacts-summary { grid-template-columns: 1fr; }
+}
+/* FE09A02.2 RESPONSIVE TYPOGRAPHY FOUNDATION END */
+
+/* FE09A02.2.1 - full width and professional branding */
+:root {
+  --sparks-page-gutter: clamp(1rem, 2.2vw, 2rem);
+  --sparks-content-max: none;
+}
+
+.platform-shell,
+.platform-content,
+.platform-content > main,
+.platform-content > section,
+.platform-content > div,
+.app-shell,
+.skpe-shell,
+.skpe-main {
+  width: 100%;
+  max-width: none !important;
+  min-width: 0;
+}
+
+.platform-content,
+.skpe-main {
+  padding-inline: var(--sparks-page-gutter);
+}
+
+.platform-content > *,
+.skpe-main > * {
+  max-width: none !important;
+}
+
+@media (min-width: 1440px) {
+  .platform-content,
+  .skpe-main {
+    padding-inline: clamp(1.5rem, 2.5vw, 3rem);
+  }
+}
+
+@media (max-width: 900px) {
+  .platform-content,
+  .skpe-main {
+    padding-inline: 1rem;
+  }
+}
+
+/* FE09A02.2.2 HEADER BRANDING RESTORE */
+.platform-header .organization-branding-logo,.platform-header .platform-branding-center,.platform-header .platform-header-branding{display:grid!important;visibility:visible!important;opacity:1!important;place-items:center;justify-self:center}.platform-header .organization-branding-logo img,.platform-header .platform-branding-center img,.platform-header .platform-header-branding img{display:block!important;width:auto!important;max-width:min(260px,28vw)!important;max-height:54px!important;object-fit:contain!important}
+@media(max-width:900px){.platform-header .organization-branding-logo img,.platform-header .platform-branding-center img,.platform-header .platform-header-branding img{max-width:180px!important;max-height:44px!important}}
+@media(max-width:640px){.platform-header .organization-branding-logo,.platform-header .platform-branding-center,.platform-header .platform-header-branding{grid-column:1/-1;order:2}.platform-header .organization-branding-logo img,.platform-header .platform-branding-center img,.platform-header .platform-header-branding img{max-width:150px!important;max-height:38px!important}}
+

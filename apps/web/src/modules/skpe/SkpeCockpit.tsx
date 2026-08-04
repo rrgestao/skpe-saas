@@ -1,4 +1,4 @@
-import {
+﻿import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
@@ -7,6 +7,8 @@ import {
 } from 'react'
 
 import { supabase } from '../../lib/supabase'
+
+import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
 
 import './SkpeCockpit.css'
 import { MethodologyArtifactsSection } from './MethodologyArtifactsSection'
@@ -39,6 +41,26 @@ type SkpeCockpitProps = {
   mode?: SkpeCockpitMode
   initialSection?: CockpitSection
   onReturnToModules: () => void
+  userDisplayName: string
+  userEmail: string
+  userAvatarUrl: string | null
+  onOpenPlatformAdmin?: () => void
+  onOpenUserProfile?: () => void
+}
+
+type SkpeCapabilities = {
+  can_view_overview: boolean
+  can_view_journey: boolean
+  can_view_initiatives: boolean
+  can_view_artifacts: boolean
+  can_generate_delivery_kit: boolean
+  can_view_governance: boolean
+  can_manage_journey: boolean
+  can_manage_artifacts: boolean
+  can_manage_skpe: boolean
+  can_administer_users: boolean
+  can_administer_memberships: boolean
+  can_administer_settings: boolean
 }
 
 type StrategicProjectContext = {
@@ -407,23 +429,9 @@ function OrganizationIcon() {
 
 function AdministrationIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle
-        cx="12"
-        cy="8"
-        r="3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
-
-      <path
-        d="M5 20c.5-4 3-6 7-6s6.5 2 7 6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 00-1.88-.34 1.7 1.7 0 00-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 00-1.03-1.56 1.7 1.7 0 00-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 007 15a1.7 1.7 0 00-1.56-1.03h-.08v-3h.08A1.7 1.7 0 007 9a1.7 1.7 0 00-.34-1.88l-.06-.06 2.12-2.12.06.06A1.7 1.7 0 0010.68 5 1.7 1.7 0 0011.7 3.44v-.08h3v.08A1.7 1.7 0 0015.74 5a1.7 1.7 0 001.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0019.4 9a1.7 1.7 0 001.56 1.03h.08v3h-.08A1.7 1.7 0 0019.4 15z" fill="none" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -543,7 +551,7 @@ const publicLabelByCode: Record<string, string> = {
 
 function publicLabel(value: string | null | undefined, fallback = 'Não informado') {
   if (!value) return fallback
-  return publicLabelByCode[value.trim().toLowerCase()] ?? value
+  return statusLabelPtBr(value, publicLabelByCode[value.trim().toLowerCase()])
 }
 
 
@@ -555,6 +563,63 @@ function activateRecordWithKeyboard(
     event.preventDefault()
     action()
   }
+}
+
+function CardsViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="13.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="13.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  )
+}
+
+function RowsViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 6h11M9 12h11M9 18h11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="5" cy="6" r="1" fill="currentColor" />
+      <circle cx="5" cy="12" r="1" fill="currentColor" />
+      <circle cx="5" cy="18" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+function HierarchyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="15" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 7v5M6 17v-3h12v3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+function methodologyTextPtBr(value: string | null | undefined) {
+  if (!value) return ''
+  const exactLabels: Record<string, string> = {
+    'Diagnostico e Entendimento Estrategico': 'Diagnóstico e Entendimento Estratégico',
+    'Formulacao Estrategica': 'Formulação Estratégica',
+    'Abertura da Formulacao Estrategica': 'Abertura da Formulação Estratégica',
+    'Direcionadores Estrategicos': 'Direcionadores Estratégicos',
+  }
+  const exact = exactLabels[value.trim()]
+  if (exact) return exact
+  const replacements: Array<[RegExp, string]> = [
+    [/\bDiagnostico\b/g, 'Diagnóstico'], [/\bFormulacao\b/g, 'Formulação'],
+    [/\bEstrategico\b/g, 'Estratégico'], [/\bEstrategica\b/g, 'Estratégica'],
+    [/\bProposito\b/g, 'Propósito'], [/\bMissao\b/g, 'Missão'], [/\bVisao\b/g, 'Visão'],
+    [/\bValidacao\b/g, 'Validação'], [/\bOrganizacao\b/g, 'Organização'],
+    [/\bAdministracao\b/g, 'Administração'], [/\bConfiguracao\b/g, 'Configuração'],
+    [/\bInformacao\b/g, 'Informação'], [/\bGovernanca\b/g, 'Governança'],
+    [/\bExecucao\b/g, 'Execução'], [/\bAvaliacao\b/g, 'Avaliação'], [/\bConcluida\b/g, 'Concluída'],
+    [/\bcriterios\b/g, 'critérios'], [/\borganizacao\b/g, 'organização'],
+    [/\bformulacao\b/g, 'formulação'], [/\bproposito\b/g, 'propósito'],
+    [/\bmissao\b/g, 'missão'], [/\bvisao\b/g, 'visão'], [/\bprincipios\b/g, 'princípios'],
+  ]
+  return replacements.reduce((current, [pattern, replacement]) => current.replace(pattern, replacement), value)
 }
 
 function SearchIcon() {
@@ -1124,7 +1189,7 @@ function OverviewSection({
         </div>
 
         <div className="skpe-heading-status-group">
-          <div className="skpe-horizon-chip">Horizonte estratégico: {strategicHorizon}</div>
+
           <div className="skpe-status-chip">
             <span className="skpe-status-dot" />
             {projectStatusLabel}
@@ -1197,11 +1262,15 @@ function OverviewSection({
 type JourneySectionProps = {
   organizationId: string
   canManageJourney: boolean
+  canGenerateDeliverables: boolean
+  onGenerateDeliverables: (item: JourneyRow) => void
 }
 
 function JourneySection({
   organizationId,
   canManageJourney,
+  canGenerateDeliverables,
+  onGenerateDeliverables,
 }: JourneySectionProps) {
   const [rows, setRows] =
     useState<JourneyRow[]>([])
@@ -1261,7 +1330,7 @@ function JourneySection({
 
     if (error) {
       setRows([])
-      setErrorMessage(error.message)
+      setErrorMessage(translateBackendMessage(error.message))
       setLoading(false)
       return
     }
@@ -1349,7 +1418,7 @@ function JourneySection({
     )
 
     if (error) {
-      window.alert(error.message)
+      window.alert(translateBackendMessage(error.message))
       setSavingItemId(null)
       return
     }
@@ -1432,7 +1501,7 @@ function JourneySection({
                   · {item.item_code}
                 </p>
 
-                <h2>{item.item_name}</h2>
+                <h2>{methodologyTextPtBr(item.item_name)}</h2>
               </div>
 
               <div className="skpe-journey-heading-actions">
@@ -1484,7 +1553,7 @@ function JourneySection({
             </div>
 
             {item.item_description && (
-              <p>{item.item_description}</p>
+              <p>{methodologyTextPtBr(item.item_description)}</p>
             )}
 
             <div className="skpe-journey-meta">
@@ -1517,7 +1586,7 @@ function JourneySection({
                 <span>
                   Validação:{' '}
                   <strong>
-                    {item.validation_status}
+                    {statusLabelPtBr(item.validation_status)}
                   </strong>
                 </span>
               )}
@@ -1614,6 +1683,19 @@ function JourneySection({
                     }
                   >
                     Reabrir
+                  </button>
+                )}
+
+                {level === 0 &&
+                  canGenerateDeliverables && (
+                  <button
+                    type="button"
+                    className="skpe-generate-deliverables-button"
+                    onClick={() =>
+                      onGenerateDeliverables(item)
+                    }
+                  >
+                    Gerar entregáveis
                   </button>
                 )}
               </div>
@@ -1745,7 +1827,7 @@ function JourneySection({
                   )}
                 </p>
 
-                <h2>{selectedItem.item_name}</h2>
+                <h2>{methodologyTextPtBr(selectedItem.item_name)}</h2>
 
                 <p>
                   {selectedItem.item_description ??
@@ -1781,8 +1863,8 @@ function JourneySection({
                     <dt>Validação</dt>
                     <dd>
                       {selectedItem.validation_required
-                        ? selectedItem.validation_status
-                        : 'Não obrigatória'}
+                        ? statusLabelPtBr(selectedItem.validation_status)
+                        : 'Validação não obrigatória'}
                     </dd>
                   </div>
                 </dl>
@@ -1934,7 +2016,7 @@ function CanvasSection({
     )
 
     if (error) {
-      setErrorMessage(error.message)
+      setErrorMessage(translateBackendMessage(error.message))
       setLoading(false)
       return
     }
@@ -1971,7 +2053,7 @@ function CanvasSection({
     )
 
     if (error) {
-      window.alert(error.message)
+      window.alert(translateBackendMessage(error.message))
       setSavingBlockId(null)
       return
     }
@@ -2017,7 +2099,7 @@ function CanvasSection({
     )
 
     if (error) {
-      window.alert(error.message)
+      window.alert(translateBackendMessage(error.message))
       return
     }
 
@@ -2933,7 +3015,7 @@ function InitiativesSection({
       change_reason: validationReason.trim(),
     })
     if (error) {
-      window.alert(error.message)
+      window.alert(translateBackendMessage(error.message))
       return
     }
     setValidationNotes('')
@@ -4151,7 +4233,7 @@ function GovernanceOperationsSection({
   const [message, setMessage] = useState<ActionMessage | null>(null)
   const [activePanel, setActivePanel] = useState<'people' | 'roles' | 'responsibilities'>('people')
   const [saving, setSaving] = useState(false)
-  const [governanceViewMode, setGovernanceViewMode] = useState<'cards' | 'grid'>('cards')
+  const [governanceViewMode, setGovernanceViewMode] = useState<'cards' | 'grid' | 'hierarchy'>('cards')
   const [governanceSearch, setGovernanceSearch] = useState('')
   const [governanceSortDirection, setGovernanceSortDirection] = useState<'asc' | 'desc'>('asc')
   const [roleForm, setRoleForm] = useState({ id: null as string | null, code: '', name: '', roleType: 'function', description: '', area: '', authorityLevel: 'operational', governance: false, mandate: false, active: true, reason: '' })
@@ -4396,7 +4478,7 @@ function GovernanceOperationsSection({
       <section className="skpe-primary-list-toolbar">
         <div className="skpe-admin-search"><SearchIcon /><input type="search" value={governanceSearch} onChange={(event) => setGovernanceSearch(event.target.value)} placeholder="Pesquisar pessoas, papéis ou responsabilidades" /></div>
         <button type="button" className="skpe-list-sort-button" onClick={() => setGovernanceSortDirection((current) => current === 'asc' ? 'desc' : 'asc')} title="Alterar ordenação alfabética">{governanceSortDirection === 'asc' ? 'A → Z' : 'Z → A'}</button>
-        <div className="skpe-list-view-toggle" aria-label="Modo de visualização"><button type="button" className={governanceViewMode === 'cards' ? 'active' : ''} onClick={() => setGovernanceViewMode('cards')} title="Visualizar em cards">▦</button><button type="button" className={governanceViewMode === 'grid' ? 'active' : ''} onClick={() => setGovernanceViewMode('grid')} title="Visualizar em linhas">☷</button></div>
+        <div className="skpe-list-view-toggle" aria-label="Modo de visualização"><button type="button" className={governanceViewMode === 'cards' ? 'active' : ''} onClick={() => setGovernanceViewMode('cards')} title="Visualizar em cards"><CardsViewIcon /></button><button type="button" className={governanceViewMode === 'grid' ? 'active' : ''} onClick={() => setGovernanceViewMode('grid')} title="Visualizar em linhas"><RowsViewIcon /></button></div>
       </section>
 
       {message && <div className={`skpe-action-message skpe-action-message-${message.type}`}>{message.text}</div>}
@@ -4561,7 +4643,7 @@ function OrganizationalAreasSection({ organizationId, canManageAreas }: Organiza
   return <>
     <section className="skpe-page-heading skpe-administration-heading"><div><p className="skpe-eyebrow">Estrutura organizacional</p><h1>Áreas e estrutura organizacional</h1><p>Inclua, edite, organize, filtre e imprima áreas da organização. A ordenação inicial é alfabética crescente (A–Z).</p></div><div className="skpe-heading-actions"><button type="button" className="skpe-refresh-button" onClick={() => void loadAreas()} disabled={loading}><RefreshIcon />Atualizar</button>{canManageAreas && <button type="button" className="skpe-primary-action-button" onClick={openNew}>+ Nova área</button>}</div></section>
     {message && <div className={`skpe-action-message skpe-action-message-${message.type}`}>{message.text}</div>}
-    <section className="skpe-list-toolbar"><label className="skpe-list-search"><SearchIcon /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar por nome, código, descrição ou área superior" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">Todas as situações</option><option value="active">Ativas</option><option value="inactive">Inativas</option></select><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option>{areaTypes.map((type) => <option key={type} value={type}>{publicLabel(type)}</option>)}</select><div className="skpe-view-switch" aria-label="Modo de visualização"><button type="button" title="Cards" className={viewMode === 'cards' ? 'active' : ''} onClick={() => setViewMode('cards')}>▦</button><button type="button" title="Grid" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')}>☷</button><button type="button" title="Hierarquia" className={viewMode === 'tree' ? 'active' : ''} onClick={() => setViewMode('tree')}>⌘</button></div></section>
+    <section className="skpe-list-toolbar"><label className="skpe-list-search"><SearchIcon /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar por nome, código, descrição ou área superior" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">Todas as situações</option><option value="active">Ativas</option><option value="inactive">Inativas</option></select><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option>{areaTypes.map((type) => <option key={type} value={type}>{publicLabel(type)}</option>)}</select><div className="skpe-view-switch" aria-label="Modo de visualização"><button type="button" title="Cards" className={viewMode === 'cards' ? 'active' : ''} onClick={() => setViewMode('cards')}><CardsViewIcon /></button><button type="button" title="Grid" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')}><RowsViewIcon /></button><button type="button" title="Hierarquia" className={viewMode === 'tree' ? 'active' : ''} onClick={() => setViewMode('tree')}>⌘</button></div></section>
     {loading ? <section className="skpe-admin-state-card"><p>Carregando áreas...</p></section> : visibleAreas.length === 0 ? <section className="skpe-admin-state-card"><p>Nenhuma área encontrada para os filtros informados.</p></section> : viewMode === 'cards' ? <section className="skpe-area-card-grid">{visibleAreas.map((area) => <article key={area.area_id} className={`skpe-interactive-record ${!area.active ? 'skpe-record-inactive' : ''}`} role="button" tabIndex={0} aria-label={`Abrir detalhes de ${area.area_name}`} onClick={() => setSelectedArea(area)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedArea(area))}><div className="skpe-area-card-heading"><div><strong>{area.area_name}</strong><span>{area.area_code}</span></div>{renderActions(area)}</div><p>{area.area_description ?? 'Sem descrição complementar.'}</p><div className="skpe-area-card-meta"><b>{publicLabel(area.area_type, 'Sem tipo')}</b><span>{area.parent_area_name ? `Subordinada a ${area.parent_area_name}` : 'Área de primeiro nível'}</span><small>{area.linked_role_count} papéis · {area.child_count} áreas subordinadas</small></div></article>)}</section> : viewMode === 'grid' ? <section className="skpe-data-grid-wrapper"><table className="skpe-data-grid"><thead><tr><th><button type="button" onClick={() => toggleSort('area_name')}>Nome {sortKey === 'area_name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th><button type="button" onClick={() => toggleSort('area_code')}>Código {sortKey === 'area_code' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th><button type="button" onClick={() => toggleSort('area_type')}>Tipo {sortKey === 'area_type' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th><button type="button" onClick={() => toggleSort('parent_area_name')}>Área superior {sortKey === 'parent_area_name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th>Papéis</th><th><button type="button" onClick={() => toggleSort('active')}>Situação {sortKey === 'active' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th>Ações</th></tr></thead><tbody>{visibleAreas.map((area) => <tr key={area.area_id} className={`skpe-interactive-record ${!area.active ? 'skpe-record-inactive' : ''}`} role="button" tabIndex={0} aria-label={`Abrir detalhes de ${area.area_name}`} onClick={() => setSelectedArea(area)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedArea(area))}><td><strong>{area.area_name}</strong></td><td>{area.area_code}</td><td>{publicLabel(area.area_type, '—')}</td><td>{area.parent_area_name ?? '—'}</td><td>{area.linked_role_count}</td><td>{area.active ? 'Ativa' : 'Inativa'}</td><td>{renderActions(area)}</td></tr>)}</tbody></table></section> : <section className="skpe-area-tree">{roots.map((area) => renderTree(area))}</section>}
     {selectedArea && !showForm && <aside className="skpe-record-detail-panel"><button type="button" className="skpe-panel-close" onClick={() => setSelectedArea(null)}>×</button><p className="skpe-eyebrow">Detalhes da área</p><h2>{selectedArea.area_name}</h2><span>{selectedArea.area_code}</span><p>{selectedArea.area_description ?? 'Sem descrição complementar.'}</p><dl><dt>Tipo</dt><dd>{publicLabel(selectedArea.area_type)}</dd><dt>Área superior</dt><dd>{selectedArea.parent_area_name ?? 'Sem área superior'}</dd><dt>Situação</dt><dd>{selectedArea.active ? 'Ativa' : 'Inativa'}</dd><dt>Papéis vinculados</dt><dd>{selectedArea.linked_role_count}</dd></dl>{canManageAreas && <div className="skpe-panel-actions">{renderActions(selectedArea)}</div>}</aside>}
     {showForm && <div className="skpe-modal-backdrop"><section className="skpe-modal-card skpe-area-form-modal"><button type="button" className="skpe-panel-close" onClick={() => setShowForm(false)}>×</button><p className="skpe-eyebrow">{form.id ? 'Editar área' : 'Incluir área'}</p><h2>{form.id ? form.name : 'Nova área organizacional'}</h2><div className="skpe-governance-form"><label><span>Código *</span><input value={form.code} disabled={Boolean(form.id)} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_') }))} /></label><label><span>Nome *</span><input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Tipo</span><select value={form.areaType} onChange={(event) => setForm((current) => ({ ...current, areaType: event.target.value }))}><option value="governance">Governança</option><option value="management">Gestão</option><option value="business">Negócios</option><option value="operations">Operação</option><option value="support">Suporte</option><option value="control">Controle</option><option value="project">Projeto</option><option value="people">Pessoas</option><option value="technology">Tecnologia</option><option value="sustainability">Sustentabilidade</option></select></label><label><span>Área superior</span><select value={form.parentId} onChange={(event) => setForm((current) => ({ ...current, parentId: event.target.value }))}><option value="">Sem área superior</option>{areas.filter((area) => area.area_id !== form.id && area.active).sort((a, b) => a.area_name.localeCompare(b.area_name, 'pt-BR')).map((area) => <option key={area.area_id} value={area.area_id}>{area.area_name}</option>)}</select></label><label><span>Ordem técnica</span><input type="number" value={form.displayOrder} onChange={(event) => setForm((current) => ({ ...current, displayOrder: event.target.value }))} /></label><label className="skpe-governance-check"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} /><span>Área ativa</span></label><label className="skpe-form-field-wide"><span>Descrição</span><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={form.reason} onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} /></label><div className="skpe-form-field-wide skpe-modal-actions"><button type="button" onClick={() => setShowForm(false)}>Cancelar</button><button type="button" className="skpe-primary-action-button" onClick={() => void saveArea()} disabled={saving}>{saving ? 'Salvando...' : 'Salvar área'}</button></div></div></section></div>}
@@ -4692,7 +4774,7 @@ function OrganizationHierarchySection({ organizationId, canManage }: { organizat
   return <>
     <section className="skpe-page-heading skpe-administration-heading"><div><p className="skpe-eyebrow">Arquitetura multinível</p><h1>Estrutura organizacional e acessos hierárquicos</h1><p>Administre vínculos entre organizações e autorizações descendentes, sem conceder acesso irrestrito automaticamente.</p></div><button type="button" className="skpe-refresh-button" onClick={() => void loadData()} disabled={loading}><RefreshIcon />Atualizar</button></section>
     {message && <div className={`skpe-action-message skpe-action-message-${message.type}`}>{message.text}</div>}
-    <section className="skpe-hierarchy-toolbar"><div className="skpe-hierarchy-tabs"><button className={tab==='relationships'?'active':''} onClick={()=>setTab('relationships')}>Vínculos organizacionais</button><button className={tab==='policies'?'active':''} onClick={()=>setTab('policies')}>Políticas de acesso</button></div><div className="skpe-hierarchy-controls"><label className="skpe-search-field"><SearchIcon /><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Pesquisar..." /></label><button title="Cards" className={viewMode==='cards'?'active':''} onClick={()=>setViewMode('cards')}>▦</button><button title="Grid" className={viewMode==='grid'?'active':''} onClick={()=>setViewMode('grid')}>☷</button>{tab==='relationships' && <button title="Árvore" className={viewMode==='tree'?'active':''} onClick={()=>setViewMode('tree')}>⌘</button>}<button onClick={()=>setSortDirection(v=>v==='asc'?'desc':'asc')}>{sortDirection==='asc'?'A → Z':'Z → A'}</button></div></section>
+    <section className="skpe-hierarchy-toolbar"><div className="skpe-hierarchy-tabs"><button className={tab==='relationships'?'active':''} onClick={()=>setTab('relationships')}>Vínculos organizacionais</button><button className={tab==='policies'?'active':''} onClick={()=>setTab('policies')}>Políticas de acesso</button></div><div className="skpe-hierarchy-controls"><label className="skpe-search-field"><SearchIcon /><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Pesquisar..." /></label><button title="Cards" className={viewMode==='cards'?'active':''} onClick={()=>setViewMode('cards')}><CardsViewIcon /></button><button title="Grid" className={viewMode==='grid'?'active':''} onClick={()=>setViewMode('grid')}><RowsViewIcon /></button>{tab==='relationships' && <button title="Árvore" className={viewMode==='tree'?'active':''} onClick={()=>setViewMode('tree')}>⌘</button>}<button onClick={()=>setSortDirection(v=>v==='asc'?'desc':'asc')}>{sortDirection==='asc'?'A → Z':'Z → A'}</button></div></section>
     {canManage && tab==='relationships' && <section className="skpe-hierarchy-form"><h2>{relationshipForm.id ? 'Editar vínculo organizacional' : 'Novo vínculo organizacional'}</h2><div className="skpe-hierarchy-form-grid"><label><span>Organização superior *</span><select value={relationshipForm.parentId} onChange={e=>setRelationshipForm(v=>({...v,parentId:e.target.value}))}>{organizations.map(o=><option key={o.id} value={o.id}>{organizationDisplayName(o)}</option>)}</select></label><label><span>Organização subordinada *</span><select value={relationshipForm.childId} onChange={e=>setRelationshipForm(v=>({...v,childId:e.target.value}))}><option value="">Selecione</option>{organizations.filter(o=>o.id!==relationshipForm.parentId).map(o=><option key={o.id} value={o.id}>{organizationDisplayName(o)}</option>)}</select></label><label><span>Tipo de relacionamento *</span><select value={relationshipForm.typeCode} onChange={e=>setRelationshipForm(v=>({...v,typeCode:e.target.value}))}><option value="">Selecione</option>{types.map(t=><option key={t.id} value={t.code}>{t.name}</option>)}</select></label><label><span>Situação</span><select value={relationshipForm.status} onChange={e=>setRelationshipForm(v=>({...v,status:e.target.value}))}><option value="active">Ativo</option><option value="pending">Pendente</option><option value="suspended">Suspenso</option><option value="ended">Encerrado</option></select></label><label><span>Início</span><input type="date" value={relationshipForm.start} onChange={e=>setRelationshipForm(v=>({...v,start:e.target.value}))}/></label><label><span>Término</span><input type="date" value={relationshipForm.end} onChange={e=>setRelationshipForm(v=>({...v,end:e.target.value}))}/></label><label className="skpe-hierarchy-check"><input type="checkbox" checked={relationshipForm.primary} onChange={e=>setRelationshipForm(v=>({...v,primary:e.target.checked}))}/><span>Vínculo principal</span></label><label className="skpe-hierarchy-check"><input type="checkbox" checked={relationshipForm.consolidated} onChange={e=>setRelationshipForm(v=>({...v,consolidated:e.target.checked}))}/><span>Permite visão consolidada</span></label><label className="skpe-hierarchy-check"><input type="checkbox" checked={relationshipForm.delegated} onChange={e=>setRelationshipForm(v=>({...v,delegated:e.target.checked}))}/><span>Permite administração delegada</span></label><label className="wide"><span>Justificativa *</span><textarea value={relationshipForm.reason} onChange={e=>setRelationshipForm(v=>({...v,reason:e.target.value}))}/></label></div><div className="skpe-form-actions"><button className="skpe-primary-action-button" onClick={()=>void saveRelationship()} disabled={saving}>Salvar vínculo</button>{relationshipForm.id && <button onClick={()=>setRelationshipForm(v=>({...v,id:''}))}>Cancelar edição</button>}</div></section>}
     {canManage && tab==='policies' && <section className="skpe-hierarchy-form"><h2>{policyForm.id ? 'Editar política de acesso' : 'Nova política de acesso'}</h2><div className="skpe-hierarchy-form-grid"><label><span>Organização superior *</span><select value={policyForm.sourceId} onChange={e=>setPolicyForm(v=>({...v,sourceId:e.target.value}))}>{organizations.map(o=><option key={o.id} value={o.id}>{organizationDisplayName(o)}</option>)}</select></label><label><span>Escopo</span><select value={policyForm.scope} onChange={e=>setPolicyForm(v=>({...v,scope:e.target.value}))}><option value="direct_children">Subordinadas diretas</option><option value="all_descendants">Toda a estrutura descendente</option><option value="specific_organization">Organização específica</option></select></label>{policyForm.scope==='specific_organization' && <label><span>Organização específica</span><select value={policyForm.targetId} onChange={e=>setPolicyForm(v=>({...v,targetId:e.target.value}))}><option value="">Selecione</option>{organizations.filter(o=>o.id!==policyForm.sourceId).map(o=><option key={o.id} value={o.id}>{organizationDisplayName(o)}</option>)}</select></label>}<label><span>Módulo</span><select value={policyForm.moduleCode} onChange={e=>setPolicyForm(v=>({...v,moduleCode:e.target.value}))}><option value="">Todos</option>{['SK-PE','SK-FIN','SK-ASM','SK-DOC','SK-DA','SK-PN'].map(m=><option key={m}>{m}</option>)}</select></label><label><span>Modo de acesso</span><select value={policyForm.mode} onChange={e=>setPolicyForm(v=>({...v,mode:e.target.value}))}><option value="consolidated">Consolidado</option><option value="read_only">Somente leitura</option><option value="operational_delegated">Operacional delegado</option><option value="administrative_delegated">Administrativo delegado</option></select></label><label><span>Situação</span><select value={policyForm.status} onChange={e=>setPolicyForm(v=>({...v,status:e.target.value}))}><option value="active">Ativo</option><option value="draft">Rascunho</option><option value="suspended">Suspenso</option><option value="ended">Encerrado</option></select></label><label><span>Início</span><input type="date" value={policyForm.start} onChange={e=>setPolicyForm(v=>({...v,start:e.target.value}))}/></label><label><span>Término</span><input type="date" value={policyForm.end} onChange={e=>setPolicyForm(v=>({...v,end:e.target.value}))}/></label>{[['viewConsolidated','Ver consolidado'],['viewDetail','Ver detalhes'],['create','Incluir'],['update','Editar'],['delete','Excluir'],['manageUsers','Administrar usuários'],['confidential','Acessar confidenciais'],['consent','Exigir concordância da subordinada']].map(([key,label])=><label key={key} className="skpe-hierarchy-check"><input type="checkbox" checked={Boolean(policyForm[key as keyof typeof policyForm])} onChange={e=>setPolicyForm(v=>({...v,[key]:e.target.checked}))}/><span>{label}</span></label>)}<label><span>Concordância</span><select value={policyForm.consentStatus} onChange={e=>setPolicyForm(v=>({...v,consentStatus:e.target.value}))}><option value="pending">Pendente</option><option value="approved">Aprovada</option><option value="rejected">Rejeitada</option><option value="revoked">Revogada</option><option value="not_required">Não exigida</option></select></label><label className="wide"><span>Justificativa *</span><textarea value={policyForm.reason} onChange={e=>setPolicyForm(v=>({...v,reason:e.target.value}))}/></label></div><div className="skpe-form-actions"><button className="skpe-primary-action-button" onClick={()=>void savePolicy()} disabled={saving}>Salvar política</button></div></section>}
     {loading ? <section className="skpe-admin-state-card"><p>Carregando estrutura...</p></section> : tab==='relationships' ? <section className={`skpe-hierarchy-list mode-${viewMode}`}>{viewMode==='grid' ? <div className="skpe-hierarchy-table-wrap"><table><thead><tr><th onClick={()=>setSortDirection(v=>v==='asc'?'desc':'asc')}>Subordinada</th><th>Superior</th><th>Tipo</th><th>Situação</th><th>Vigência</th><th>Ações</th></tr></thead><tbody>{visibleRelationships.map(item=><tr key={item.id} className="skpe-interactive-record" role="button" tabIndex={0} aria-label={`Editar vínculo de ${organizationDisplayName(orgMap.get(item.child_organization_id))}`} onClick={()=>editRelationship(item)} onKeyDown={(event)=>activateRecordWithKeyboard(event,()=>editRelationship(item))}><td>{organizationDisplayName(orgMap.get(item.child_organization_id))}</td><td>{organizationDisplayName(orgMap.get(item.parent_organization_id))}</td><td>{typeMap.get(item.relationship_type_id)?.name}</td><td>{hierarchyLabel(item.status)}</td><td>{item.valid_from} — {item.valid_until ?? 'Indeterminado'}</td><td><button title="Editar" onClick={e=>{e.stopPropagation();editRelationship(item)}}>✎</button><button title="Imprimir" onClick={e=>{e.stopPropagation();printRelationship(item)}}>⎙</button></td></tr>)}</tbody></table></div> : viewMode==='tree' ? <div className="skpe-hierarchy-tree">{visibleRelationships.map(item=><article key={item.id} className="skpe-interactive-record" role="button" tabIndex={0} onClick={()=>editRelationship(item)} onKeyDown={(event)=>activateRecordWithKeyboard(event,()=>editRelationship(item))}><strong>{organizationDisplayName(orgMap.get(item.parent_organization_id))}</strong><span>└── {organizationDisplayName(orgMap.get(item.child_organization_id))}</span><small>{typeMap.get(item.relationship_type_id)?.name} · {hierarchyLabel(item.status)}</small><div><button onClick={(event)=>{event.stopPropagation();editRelationship(item)}}>✎</button><button onClick={(event)=>{event.stopPropagation();printRelationship(item)}}>⎙</button></div></article>)}</div> : <div className="skpe-hierarchy-card-grid">{visibleRelationships.map(item=><article key={item.id} className="skpe-interactive-record" role="button" tabIndex={0} aria-label={`Editar vínculo de ${organizationDisplayName(orgMap.get(item.child_organization_id))}`} onClick={()=>editRelationship(item)} onKeyDown={(event)=>activateRecordWithKeyboard(event,()=>editRelationship(item))}><div className="skpe-hierarchy-card-head"><span>{typeMap.get(item.relationship_type_id)?.name}</span><b>{hierarchyLabel(item.status)}</b></div><h3>{organizationDisplayName(orgMap.get(item.child_organization_id))}</h3><p>Subordinada a <strong>{organizationDisplayName(orgMap.get(item.parent_organization_id))}</strong></p><small>{item.valid_from} a {item.valid_until ?? 'prazo indeterminado'}</small><footer><button title="Editar" onClick={e=>{e.stopPropagation();editRelationship(item)}}>✎</button><button title="Imprimir" onClick={e=>{e.stopPropagation();printRelationship(item)}}>⎙</button></footer></article>)}</div>}</section> : <section className={`skpe-hierarchy-list mode-${viewMode}`}>{viewMode==='grid' ? <div className="skpe-hierarchy-table-wrap"><table><thead><tr><th>Organização superior</th><th>Escopo</th><th>Módulo</th><th>Modo</th><th>Situação</th><th>Ações</th></tr></thead><tbody>{visiblePolicies.map(item=><tr key={item.id} className="skpe-interactive-record" role="button" tabIndex={0} aria-label={`Editar política de ${organizationDisplayName(orgMap.get(item.source_organization_id))}`} onClick={()=>editPolicy(item)} onKeyDown={(event)=>activateRecordWithKeyboard(event,()=>editPolicy(item))}><td>{organizationDisplayName(orgMap.get(item.source_organization_id))}</td><td>{hierarchyLabel(item.relationship_scope)}</td><td>{item.module_code ?? 'Todos'}</td><td>{hierarchyLabel(item.access_mode)}</td><td>{hierarchyLabel(item.status)}</td><td><button onClick={e=>{e.stopPropagation();editPolicy(item)}}>✎</button><button onClick={e=>{e.stopPropagation();printPolicy(item)}}>⎙</button></td></tr>)}</tbody></table></div> : <div className="skpe-hierarchy-card-grid">{visiblePolicies.map(item=><article key={item.id} className="skpe-interactive-record" role="button" tabIndex={0} aria-label={`Editar política de ${organizationDisplayName(orgMap.get(item.source_organization_id))}`} onClick={()=>editPolicy(item)} onKeyDown={(event)=>activateRecordWithKeyboard(event,()=>editPolicy(item))}><div className="skpe-hierarchy-card-head"><span>{item.module_code ?? 'Todos os módulos'}</span><b>{hierarchyLabel(item.status)}</b></div><h3>{organizationDisplayName(orgMap.get(item.source_organization_id))}</h3><p>{hierarchyLabel(item.relationship_scope)} · {hierarchyLabel(item.access_mode)}</p><small>Concordância: {hierarchyLabel(item.child_consent_status)}</small><footer><button onClick={e=>{e.stopPropagation();editPolicy(item)}}>✎</button><button onClick={e=>{e.stopPropagation();printPolicy(item)}}>⎙</button></footer></article>)}</div>}</section>}
@@ -4733,10 +4815,48 @@ function DomainTablesSection({ organizationId, canManageDomains }: DomainTablesS
   return <><section className="skpe-page-heading skpe-administration-heading"><div><p className="skpe-eyebrow">Padronização transversal</p><h1>Tabelas de domínio</h1><p>Consulte valores canônicos e extensões permitidas para a organização, mantendo consistência entre cadastros, indicadores, responsabilidades e fluxos.</p></div><button type="button" className="skpe-refresh-button" onClick={() => void loadDomain()} disabled={loading}><RefreshIcon />Atualizar domínio</button></section><section className="skpe-domain-layout"><aside className="skpe-domain-menu">{domainCatalog.map(([code, name]) => <button key={code} type="button" className={selectedCode === code ? 'skpe-domain-menu-active' : ''} onClick={() => setSelectedCode(code)}><strong>{name}</strong><small>{code}</small></button>)}</aside><div className="skpe-domain-content">{message && <div className={`skpe-action-message skpe-action-message-${message.type}`}>{message.text}</div>}{loading ? <section className="skpe-admin-state-card"><p>Carregando valores...</p></section> : <div className="skpe-domain-values">{values.map((value) => <article key={`${value.domain_scope}-${value.value_id}`}><div><strong>{value.value_name}</strong><span>{value.value_code}</span><small>{value.value_description ?? 'Sem descrição complementar.'}</small></div><div><b>{value.domain_scope === 'organization' ? 'Específico da organização' : value.domain_scope === 'module' ? 'Padrão do módulo' : 'Padrão global'}</b>{value.protected && <em>Protegido</em>}</div></article>)}</div>}{canManageDomains && allowsExtension && <div className="skpe-governance-form"><h3>Adicionar valor específico da organização</h3><label><span>Código *</span><input value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))} /></label><label><span>Nome *</span><input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Ordem</span><input type="number" value={form.order} onChange={(event) => setForm((current) => ({ ...current, order: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Descrição</span><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={form.reason} onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} /></label><button type="button" className="skpe-primary-action-button" onClick={() => void addValue()}>Adicionar valor</button></div>}</div></section></>
 }
 
+type OrganizationScopeExplorerUser = {
+  user_id: string
+  email: string | null
+  display_name: string | null
+  user_active: boolean
+  membership_id: string
+  membership_status: string
+  is_organization_admin: boolean
+  job_title: string | null
+  valid_from: string | null
+  valid_until: string | null
+}
+
+type OrganizationScopeExplorerNode = {
+  organization_id: string
+  parent_organization_id: string | null
+  organization_code: string
+  organization_name: string
+  organization_status: string
+  depth: number
+  path: string[]
+  access_origin: string
+  access_mode: string
+  detail_available: boolean
+  item_count: number
+  items: OrganizationScopeExplorerUser[]
+}
+
+type OrganizationScopeExplorerResponse = {
+  contract_version: string
+  root_organization_id: string
+  module_code: string
+  domain: string
+  include_inactive: boolean
+  organization_count: number
+  organizations: OrganizationScopeExplorerNode[]
+}
 type AdministrationSectionProps = {
   organizationId: string
   userRoleName: string
   canManageUsers: boolean
+  canManageMemberships: boolean
 }
 
 type ModuleRoleOption = {
@@ -4754,6 +4874,7 @@ function AdministrationSection({
   organizationId,
   userRoleName,
   canManageUsers,
+  canManageMemberships,
 }: AdministrationSectionProps) {
   const [rows, setRows] =
     useState<UserAccessRow[]>([])
@@ -4773,7 +4894,12 @@ function AdministrationSection({
   const [searchTerm, setSearchTerm] =
     useState('')
 
-  const [userViewMode, setUserViewMode] = useState<'cards' | 'grid'>('grid')
+  const [userViewMode, setUserViewMode] = useState<'cards' | 'grid' | 'hierarchy'>('grid')
+  const [userHierarchyMode, setUserHierarchyMode] = useState<'organization' | 'functional'>('organization')
+  const [organizationScopeOrganizations, setOrganizationScopeOrganizations] = useState<OrganizationScopeExplorerNode[]>([])
+  const [organizationScopeLoading, setOrganizationScopeLoading] = useState(false)
+  const [organizationScopeError, setOrganizationScopeError] = useState('')
+  const [expandedScopeOrganizationIds, setExpandedScopeOrganizationIds] = useState<Set<string>>(new Set())
   const [userSortDirection, setUserSortDirection] = useState<'asc' | 'desc'>('asc')
 
   const [
@@ -4831,6 +4957,43 @@ function AdministrationSection({
     )
   }, [users])
 
+  async function loadOrganizationScopeUsers() {
+    setOrganizationScopeLoading(true)
+    setOrganizationScopeError('')
+    try {
+      const { data, error } = await supabase.rpc('get_organization_scope_explorer', {
+        root_organization_id: organizationId,
+        target_module_code: 'SK-PE',
+        target_domain: 'users',
+        include_inactive: false,
+      })
+      if (error) throw error
+      const payload = (data ?? {}) as OrganizationScopeExplorerResponse
+      const organizations = Array.isArray(payload.organizations) ? payload.organizations : []
+      setOrganizationScopeOrganizations(organizations)
+      setExpandedScopeOrganizationIds(new Set(organizations.map((item) => item.organization_id)))
+    } catch (error) {
+      setOrganizationScopeOrganizations([])
+      setOrganizationScopeError(error instanceof Error ? error.message : 'Não foi possível carregar a rede organizacional de usuários.')
+    } finally {
+      setOrganizationScopeLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (userViewMode === 'hierarchy' && userHierarchyMode === 'organization') {
+      void loadOrganizationScopeUsers()
+    }
+  }, [organizationId, userViewMode, userHierarchyMode])
+
+  const toggleScopeOrganization = (targetOrganizationId: string) => {
+    setExpandedScopeOrganizationIds((current) => {
+      const next = new Set(current)
+      if (next.has(targetOrganizationId)) next.delete(targetOrganizationId)
+      else next.add(targetOrganizationId)
+      return next
+    })
+  }
   const filteredUsers = useMemo(() => {
     const normalizedSearch =
       searchTerm.trim().toLowerCase()
@@ -5036,7 +5199,7 @@ function AdministrationSection({
     if (error) {
       setActionMessage({
         type: 'error',
-        text: error.message,
+        text: translateBackendMessage(error.message),
       })
       setSaving(false)
       return
@@ -5326,8 +5489,9 @@ function AdministrationSection({
 
         <button type="button" className="skpe-list-sort-button" onClick={() => setUserSortDirection((current) => current === 'asc' ? 'desc' : 'asc')} title="Alterar ordenação alfabética">{userSortDirection === 'asc' ? 'A → Z' : 'Z → A'}</button>
         <div className="skpe-list-view-toggle" aria-label="Modo de visualização">
-          <button type="button" className={userViewMode === 'cards' ? 'active' : ''} onClick={() => setUserViewMode('cards')} title="Visualizar em cards">▦</button>
-          <button type="button" className={userViewMode === 'grid' ? 'active' : ''} onClick={() => setUserViewMode('grid')} title="Visualizar em linhas">☷</button>
+          <button type="button" className={userViewMode === 'cards' ? 'active' : ''} onClick={() => setUserViewMode('cards')} title="Visualizar em cards"><CardsViewIcon /></button>
+          <button type="button" className={userViewMode === 'grid' ? 'active' : ''} onClick={() => setUserViewMode('grid')} title="Visualizar em linhas"><RowsViewIcon /></button>
+          <button type="button" className={userViewMode === 'hierarchy' ? 'active' : ''} onClick={() => setUserViewMode('hierarchy')} title="Visualizar por hierarquia funcional" aria-label="Visualizar usuários por hierarquia funcional"><HierarchyIcon /></button>
         </div>
       </section>
 
@@ -5374,9 +5538,214 @@ function AdministrationSection({
                 </p>
               </div>
             </div>
+            {userViewMode === 'hierarchy' ? (
+              <section className="skpe-user-hierarchy" aria-label="Hierarquia dos usuários por organização e função">
+                <header className="skpe-user-hierarchy-header">
+                  <div>
+                    <h3>Hierarquia de usuários</h3>
+                    <p>Alterne entre a estrutura da organização e os agrupamentos funcionais, preservando vínculo, cargo e papéis modulares.</p>
+                  </div>
+                  <span>{filteredUsers.length} usuário(s)</span>
+                </header>
 
-            {userViewMode === 'cards' ? (
-              <div className="skpe-primary-card-grid">
+                <div className="skpe-user-hierarchy-mode" role="group" aria-label="Critério da hierarquia de usuários">
+                  <button
+                    type="button"
+                    className={userHierarchyMode === 'organization' ? 'active' : ''}
+                    onClick={() => setUserHierarchyMode('organization')}
+                    aria-pressed={userHierarchyMode === 'organization'}
+                  >
+                    Por organização
+                  </button>
+                  <button
+                    type="button"
+                    className={userHierarchyMode === 'functional' ? 'active' : ''}
+                    onClick={() => setUserHierarchyMode('functional')}
+                    aria-pressed={userHierarchyMode === 'functional'}
+                  >
+                    Por função
+                  </button>
+                </div>
+
+                {userHierarchyMode === 'organization' ? (
+                  <section className="skpe-organization-scope-explorer" aria-label="Rede organizacional agregada de usuários">
+                    {/* FE09A01-C1.8.2-B ORGANIZATION SCOPE EXPLORER */}
+                    <header className="skpe-organization-scope-explorer-summary">
+                      <div>
+                        <strong>Rede organizacional acessível</strong>
+                        <small>Usuários apresentados no contexto de cada vínculo organizacional, respeitando o acesso direto, hierárquico ou delegado.</small>
+                      </div>
+                      <button type="button" onClick={() => void loadOrganizationScopeUsers()} disabled={organizationScopeLoading}>
+                        {organizationScopeLoading ? 'Atualizando...' : 'Atualizar rede'}
+                      </button>
+                    </header>
+
+                    {organizationScopeError ? (
+                      <div className="skpe-organization-scope-state error" role="alert">{organizationScopeError}</div>
+                    ) : organizationScopeLoading && organizationScopeOrganizations.length === 0 ? (
+                      <div className="skpe-organization-scope-state">Carregando organizações e vínculos...</div>
+                    ) : organizationScopeOrganizations.length === 0 ? (
+                      <div className="skpe-organization-scope-state">Nenhuma organização acessível foi retornada para este escopo.</div>
+                    ) : (
+                      <div className="skpe-organization-scope-tree">
+                        {organizationScopeOrganizations.map((organization) => {
+                          const expanded = expandedScopeOrganizationIds.has(organization.organization_id)
+                          const groups = [
+                            {
+                              key: 'administrators',
+                              title: 'Administradores da organização',
+                              users: organization.items.filter((user) => user.is_organization_admin),
+                            },
+                            {
+                              key: 'governance',
+                              title: 'Governança e direção',
+                              users: organization.items.filter((user) => !user.is_organization_admin && /presidente|vice|conselh|diretor|secret[aá]r|tesour/i.test(user.job_title ?? '')),
+                            },
+                            {
+                              key: 'management',
+                              title: 'Gestão, coordenação e operação',
+                              users: organization.items.filter((user) => !user.is_organization_admin && !/presidente|vice|conselh|diretor|secret[aá]r|tesour/i.test(user.job_title ?? '')),
+                            },
+                          ]
+                          return (
+                            <article
+                              key={organization.organization_id}
+                              className="skpe-organization-scope-node"
+                              style={{ marginLeft: `${Math.min(organization.depth, 6) * 22}px` }}
+                            >
+                              <header className="skpe-organization-scope-node-header">
+                                <button
+                                  type="button"
+                                  className="skpe-organization-scope-toggle"
+                                  onClick={() => toggleScopeOrganization(organization.organization_id)}
+                                  aria-expanded={expanded}
+                                  aria-label={`${expanded ? 'Recolher' : 'Expandir'} ${organization.organization_name}`}
+                                >
+                                  <span aria-hidden="true">{expanded ? '▾' : '▸'}</span>
+                                </button>
+                                <div className="skpe-organization-scope-identity">
+                                  <strong>{organization.organization_name}</strong>
+                                  <small>{organization.organization_code} · nível {organization.depth}</small>
+                                </div>
+                                <div className="skpe-organization-scope-access">
+                                  <span>{organization.access_origin === 'root' ? 'Escopo raiz' : organization.access_origin === 'hierarchical_policy' ? 'Acesso hierárquico' : organization.access_origin}</span>
+                                  <small>{organization.access_mode === 'read_only' ? 'Somente leitura' : organization.access_mode === 'root' ? 'Acesso direto' : organization.access_mode}</small>
+                                </div>
+                                <span className="skpe-organization-scope-count">{organization.item_count} usuário(s)</span>
+                              </header>
+
+                              {expanded && (
+                                <div className="skpe-organization-scope-node-body">
+                                  {organization.items.length === 0 ? (
+                                    <p className="skpe-user-hierarchy-empty">Nenhum usuário vinculado a esta organização.</p>
+                                  ) : (
+                                    groups.map((group) => (
+                                      <section key={`${organization.organization_id}-${group.key}`} className="skpe-user-hierarchy-group skpe-user-hierarchy-group-nested">
+                                        <header>
+                                          <strong>{group.title}</strong>
+                                          <span>{group.users.length}</span>
+                                        </header>
+                                        {group.users.length === 0 ? (
+                                          <p className="skpe-user-hierarchy-empty">Nenhum usuário neste agrupamento.</p>
+                                        ) : (
+                                          <div className="skpe-user-hierarchy-list">
+                                            {group.users.map((user) => (
+                                              <article key={user.membership_id} className="skpe-organization-scope-user">
+                                                <span className="skpe-user-hierarchy-branch" aria-hidden="true">└─</span>
+                                                <span className="skpe-user-hierarchy-identity">
+                                                  <strong>{user.display_name ?? user.email ?? 'Usuário sem identificação'}</strong>
+                                                  <small>{user.email ?? 'E-mail não informado'}</small>
+                                                </span>
+                                                <span className="skpe-user-hierarchy-semantic">
+                                                  <b>{user.job_title ?? 'Função não informada'}</b>
+                                                  <small>Usuário: {user.user_active ? 'Ativo' : 'Inativo'}</small>
+                                                  <small>Vínculo: {getMembershipStatusLabel(user.membership_status)}</small>
+                                                </span>
+                                                <span className="skpe-organization-scope-validity">
+                                                  <b>{user.is_organization_admin ? 'Administrador local' : 'Participante'}</b>
+                                                  <small>{user.valid_until ? `Válido até ${formatDate(user.valid_until)}` : 'Vigência indeterminada'}</small>
+                                                </span>
+                                              </article>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </section>
+                                    ))
+                                  )}
+                                </div>
+                              )}
+                            </article>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </section>
+                ) : (
+                  <div className="skpe-user-hierarchy-functional">
+                    {[
+                      {
+                        key: 'administrators',
+                        title: 'Administradores da organização',
+                        description: 'Usuários com responsabilidade administrativa no escopo organizacional.',
+                        users: filteredUsers.filter((user) => user.isOrganizationAdmin),
+                      },
+                      {
+                        key: 'governance',
+                        title: 'Governança e direção',
+                        description: 'Responsabilidades de direção, conselhos e governança identificadas pelo cargo ou função.',
+                        users: filteredUsers.filter((user) => !user.isOrganizationAdmin && /presidente|vice|conselh|diretor|secret[aá]r|tesour/i.test(user.jobTitle ?? '')),
+                      },
+                      {
+                        key: 'management',
+                        title: 'Gestão, coordenação e operação',
+                        description: 'Demais usuários com vínculo direto e atribuições operacionais ou de gestão.',
+                        users: filteredUsers.filter((user) => !user.isOrganizationAdmin && !/presidente|vice|conselh|diretor|secret[aá]r|tesour/i.test(user.jobTitle ?? '')),
+                      },
+                    ].map((group) => (
+                      <article key={group.key} className="skpe-user-hierarchy-group">
+                        <header>
+                          <div>
+                            <strong>{group.title}</strong>
+                            <small>{group.description}</small>
+                          </div>
+                          <span>{group.users.length}</span>
+                        </header>
+
+                        {group.users.length === 0 ? (
+                          <p className="skpe-user-hierarchy-empty">Nenhum usuário neste agrupamento.</p>
+                        ) : (
+                          <div className="skpe-user-hierarchy-list">
+                            {group.users.map((user) => (
+                              <button
+                                type="button"
+                                key={user.userId}
+                                className={selectedUserId === user.userId ? 'selected' : ''}
+                                onClick={() => setSelectedUserId(user.userId)}
+                              >
+                                <span className="skpe-user-hierarchy-branch" aria-hidden="true">└─</span>
+                                <span className="skpe-user-hierarchy-identity">
+                                  <strong>{user.displayName ?? user.email}</strong>
+                                  <small>{user.email}</small>
+                                </span>
+                                <span className="skpe-user-hierarchy-semantic">
+                                  <b>{user.jobTitle ?? 'Função não informada'}</b>
+                                  <small>Usuário: {user.userActive ? 'Ativo' : 'Inativo'}</small>
+                                  <small>Vínculo: {getMembershipStatusLabel(user.membershipStatus)}</small>
+                                </span>
+                                <span className="skpe-user-hierarchy-modules">
+                                  <b>{user.modules.length} módulo(s)</b>
+                                  <small>{user.modules.length > 0 ? user.modules.map((module) => module.roleName).filter(Boolean).join(' · ') : 'Sem papel modular atribuído'}</small>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : userViewMode === 'cards' ? (              <div className="skpe-primary-card-grid">
                 {filteredUsers.map((user) => (
                   <article key={user.userId} className={`skpe-interactive-record ${selectedUserId === user.userId ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Abrir acessos de ${user.displayName ?? user.email}`} onClick={() => setSelectedUserId(user.userId)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedUserId(user.userId))}>
                     <header><div><strong>{user.displayName ?? user.email}</strong><span>{user.email}</span></div><span className={`skpe-access-status skpe-access-status-${user.membershipStatus}`}>{getMembershipStatusLabel(user.membershipStatus)}</span></header>
@@ -5690,35 +6059,37 @@ function AdministrationSection({
                         : 'Ativar acesso ao Planejamento Estratégico'}
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleOrganizationAdmin()
-                      }
-                      disabled={saving}
-                    >
-                      {selectedUser.isOrganizationAdmin
-                        ? 'Remover administrador'
-                        : 'Tornar administrador'}
-                    </button>
+                    {canManageMemberships && <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleOrganizationAdmin()
+                        }
+                        disabled={saving}
+                      >
+                        {selectedUser.isOrganizationAdmin
+                          ? 'Remover administrador'
+                          : 'Tornar administrador'}
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleMembershipStatus(
-                          selectedUser.membershipStatus ===
-                            'active'
-                            ? 'suspended'
-                            : 'active',
-                        )
-                      }
-                      disabled={saving}
-                    >
-                      {selectedUser.membershipStatus ===
-                      'active'
-                        ? 'Suspender vínculo'
-                        : 'Reativar vínculo'}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleMembershipStatus(
+                            selectedUser.membershipStatus ===
+                              'active'
+                              ? 'suspended'
+                              : 'active',
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        {selectedUser.membershipStatus ===
+                        'active'
+                          ? 'Suspender vínculo'
+                          : 'Reativar vínculo'}
+                      </button>
+                    </>}
                   </div>
                 </div>
 
@@ -5814,6 +6185,11 @@ export function SkpeCockpit({
   mode = 'module',
   initialSection,
   onReturnToModules,
+  userDisplayName,
+  userEmail,
+  userAvatarUrl,
+  onOpenPlatformAdmin,
+  onOpenUserProfile,
 }: SkpeCockpitProps) {
   const [activeSection, setActiveSection] =
     useState<CockpitSection>(
@@ -5829,6 +6205,31 @@ export function SkpeCockpit({
   const [startingProject, setStartingProject] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sparks-theme') === 'dark' ? 'dark' : 'light'))
+  const [capabilities, setCapabilities] = useState<SkpeCapabilities | null>(null)
+  const [capabilitiesLoading, setCapabilitiesLoading] = useState(mode === 'module')
+
+  const loadEffectiveCapabilities = async () => {
+    if (mode !== 'module') {
+      setCapabilities(null)
+      setCapabilitiesLoading(false)
+      return
+    }
+
+    setCapabilitiesLoading(true)
+    const { data, error } = await supabase.rpc('get_skpe_effective_capabilities', {
+      target_organization_id: organizationId,
+    })
+
+    if (error) {
+      console.warn('Capacidades efetivas ainda não disponíveis; utilizando compatibilidade por perfil.', translateBackendMessage(error.message), error)
+      setCapabilities(null)
+      setCapabilitiesLoading(false)
+      return
+    }
+
+    setCapabilities(((data ?? [])[0] ?? null) as SkpeCapabilities | null)
+    setCapabilitiesLoading(false)
+  }
 
   const loadOrganizationHeader = async () => {
     const { data, error } = await supabase.rpc('get_sparks_organization_profile_v2', {
@@ -5909,36 +6310,70 @@ export function SkpeCockpit({
     }
   }, [organizationId, mode])
   useEffect(() => {
+    void loadEffectiveCapabilities()
+  }, [organizationId, mode])
+
+  useEffect(() => {
     localStorage.setItem('sparks-theme', theme)
   }, [theme])
 
-  const canManageUsers =
-    isOrganizationAdmin ||
-    userRoleCode === 'administrator'
-
-  const canManageJourney =
+  const legacyCanManageJourney =
     isOrganizationAdmin ||
     isPlatformSuperAdmin ||
-    [
-      'administrator',
-      'manager',
-      'editor',
-    ].includes(userRoleCode)
+    ['administrator', 'manager', 'editor'].includes(userRoleCode)
 
-  const canManageCanvas =
-    canManageJourney
-
-
-  const canManageGovernance =
+  const legacyCanView =
     isOrganizationAdmin ||
     isPlatformSuperAdmin ||
-    userRoleCode === 'administrator'
+    ['administrator', 'manager', 'editor', 'approver', 'viewer', 'visitor'].includes(userRoleCode)
 
-  const canManageOrganization =
-    isOrganizationAdmin ||
-    isPlatformSuperAdmin ||
-    userRoleCode === 'administrator'
+  const canViewOverview = capabilities?.can_view_overview ?? legacyCanView
+  const canViewJourney = capabilities?.can_view_journey ?? legacyCanView
+  const canViewInitiatives = capabilities?.can_view_initiatives ?? legacyCanView
+  const canViewArtifacts = capabilities?.can_view_artifacts ?? legacyCanView
+  const canViewGovernance = capabilities?.can_view_governance ?? legacyCanView
+  const canManageJourney = capabilities?.can_manage_journey ?? legacyCanManageJourney
+  const canManageArtifacts = capabilities?.can_manage_artifacts ?? legacyCanManageJourney
+  const canManageUsers = mode === 'organization-admin'
+    ? isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator'
+    : capabilities?.can_administer_users ?? (isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator')
+  const canManageMemberships = mode === 'organization-admin'
+    ? isOrganizationAdmin || isPlatformSuperAdmin
+    : capabilities?.can_administer_memberships ?? (isOrganizationAdmin || isPlatformSuperAdmin)
+  const canAdministerSettings = capabilities?.can_administer_settings ?? (isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator')
+  const canOpenAdministration = mode === 'organization-admin' ? canManageUsers : canManageUsers || canAdministerSettings
+  const canManageCanvas = canManageJourney
+  const canManageGovernance = mode === 'organization-admin'
+    ? isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator'
+    : capabilities?.can_manage_skpe ?? (isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator')
+  const canManageOrganization = isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator'
 
+  useEffect(() => {
+    if (mode !== 'module' || capabilitiesLoading) return
+    const allowedBySection: Partial<Record<CockpitSection, boolean>> = {
+      overview: canViewOverview,
+      journey: canViewJourney,
+      initiatives: canViewInitiatives,
+      artifacts: canViewArtifacts,
+      governance: canViewGovernance,
+      administration: canOpenAdministration,
+    }
+    if (allowedBySection[activeSection] === false) setActiveSection('overview')
+  }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewArtifacts, canViewGovernance, canViewInitiatives, canViewJourney, canViewOverview, mode])
+
+  const activeSectionLabel: Record<CockpitSection, string> = {
+    overview: 'Visão Geral',
+    journey: 'Jornada Estratégica',
+    initiatives: 'Iniciativas',
+    artifacts: 'Artefatos e evidências',
+    governance: 'Governança',
+    organization: 'Cadastro institucional',
+    administration: 'Administração',
+    'governance-roles': 'Papéis e responsabilidades',
+    'organizational-areas': 'Áreas e estrutura',
+    'organization-hierarchy': 'Hierarquia e acessos',
+    domains: 'Tabelas de domínio',
+  }
   return (
     <div className={`skpe-shell skpe-theme-${theme} ${sidebarCollapsed ? 'skpe-sidebar-collapsed' : ''}`}>
       <aside className="skpe-sidebar">
@@ -5950,41 +6385,6 @@ export function SkpeCockpit({
 
           </div>
           <button type="button" className="skpe-sidebar-icon-button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'} title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}>☰</button>
-        </div>
-        <div className="skpe-theme-switcher">
-          <button
-            type="button"
-            onClick={() =>
-              setTheme(
-                theme === 'light' ? 'dark' : 'light',
-              )
-            }
-            title={
-              theme === 'light'
-                ? 'Ativar tema escuro'
-                : 'Ativar tema claro'
-            }
-            aria-label={
-              theme === 'light'
-                ? 'Ativar tema escuro'
-                : 'Ativar tema claro'
-            }
-          >
-            <span aria-hidden="true">
-              {theme === 'light' ? '☾' : '☀'}
-            </span>
-          </button>
-        </div>
-
-        <div className="skpe-organization-context">
-          <div className="skpe-organization-context-logo">
-            {organizationLogoUrl ? <img src={organizationLogoUrl} alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`} /> : <span>{getOrganizationInitials(organizationProfile?.trade_name ?? organizationName)}</span>}
-          </div>
-          <div>
-            <span>Organização</span>
-            <strong>{organizationProfile?.trade_name ?? organizationName}</strong>
-            <small>{getCooperativeBranchLabel(organizationProfile?.cooperative_branch)}</small>
-          </div>
         </div>
 
         <nav
@@ -6022,7 +6422,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('journey')
                 }
-              >
+               hidden={!canViewJourney}>
                 <JourneyIcon />
                 Jornada Estratégica
               </button>
@@ -6037,7 +6437,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('initiatives')
                 }
-              >
+               hidden={!canViewInitiatives}>
                 <InitiativesIcon />
                 Iniciativas
               </button>
@@ -6052,7 +6452,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('artifacts')
                 }
-              >
+               hidden={!canViewArtifacts}>
                 <DashboardIcon />
                 Artefatos e evidências
               </button>
@@ -6067,7 +6467,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('governance')
                 }
-              >
+               hidden={!canViewGovernance}>
                 <GovernanceIcon />
                 Governança
               </button>
@@ -6082,7 +6482,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('administration')
                 }
-              >
+               hidden={!canOpenAdministration}>
                 <AdministrationIcon />
                 <span>Administração do SK-PE</span>
               </button>
@@ -6114,7 +6514,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('administration')
                 }
-              >
+               hidden={!canOpenAdministration}>
                 <UserIcon />
                 <span>Usuários e acessos</span>
               </button>
@@ -6204,6 +6604,112 @@ export function SkpeCockpit({
       </aside>
 
       <main className="skpe-main">
+        <header className="skpe-cockpit-header">
+          <div className="skpe-cockpit-branding">
+            <div className="skpe-cockpit-logo">
+              {organizationLogoUrl ? (
+                <img
+                  src={organizationLogoUrl}
+                  alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`}
+                />
+              ) : (
+                <span>
+                  {getOrganizationInitials(
+                    organizationProfile?.trade_name ?? organizationName,
+                  )}
+                </span>
+              )}
+            </div>
+            <div>
+              <span>Organização</span>
+              <strong>
+                {organizationProfile?.trade_name ?? organizationName}
+              </strong>
+              <small>
+                {getCooperativeBranchLabel(
+                  organizationProfile?.cooperative_branch,
+                )}
+              </small>
+            </div>
+          </div>
+
+          <div className="skpe-cockpit-context" aria-label="Contexto estratégico">
+            <div>
+              <span>Projeto</span>
+              <strong>
+                {projectContext?.project_code ?? organizationCode}
+              </strong>
+            </div>
+            <div>
+              <span>Horizonte</span>
+              <strong>{formatStrategicHorizon(projectContext)}</strong>
+            </div>
+            <div>
+              <span>Seção</span>
+              <strong>{activeSectionLabel[activeSection]}</strong>
+            </div>
+          </div>
+
+          <div className="skpe-cockpit-actions">
+            <button
+              type="button"
+              className="skpe-cockpit-icon-button"
+              onClick={() =>
+                setTheme(theme === 'light' ? 'dark' : 'light')
+              }
+              aria-label={
+                theme === 'light'
+                  ? 'Ativar tema escuro'
+                  : 'Ativar tema claro'
+              }
+              title={
+                theme === 'light'
+                  ? 'Ativar tema escuro'
+                  : 'Ativar tema claro'
+              }
+            >
+              <span aria-hidden="true">
+                {theme === 'light' ? '☾' : '☀'}
+              </span>
+            </button>
+            {isPlatformSuperAdmin && onOpenPlatformAdmin && (
+              <button
+                type="button"
+                className="skpe-cockpit-icon-button"
+                onClick={onOpenPlatformAdmin}
+                aria-label="Administração da Plataforma"
+                title="Administração da Plataforma"
+              >
+                <AdministrationIcon />
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="skpe-cockpit-user skpe-cockpit-user-button"
+              onClick={onOpenUserProfile}
+              disabled={!onOpenUserProfile}
+              aria-label="Abrir meu perfil"
+              title="Abrir meu perfil"
+            >
+              <div className="skpe-cockpit-avatar" aria-hidden="true">
+                {userAvatarUrl ? (
+                  <img src={userAvatarUrl} alt="" />
+                ) : (
+                  (userDisplayName || userEmail || 'U')
+                    .slice(0, 2)
+                    .toUpperCase()
+                )}
+              </div>
+              <div>
+                <strong>{userDisplayName || userEmail}</strong>
+                <small>{userRoleName}</small>
+              </div>
+            </button>
+
+
+          </div>
+        </header>
         {activeSection ===
           'overview' && (
           <OverviewSection
@@ -6218,7 +6724,7 @@ export function SkpeCockpit({
         )}
 
         {activeSection ===
-          'journey' && (
+          'journey' && canViewJourney && (
           <JourneySection
             organizationId={
               organizationId
@@ -6226,11 +6732,30 @@ export function SkpeCockpit({
             canManageJourney={
               canManageJourney
             }
+            canGenerateDeliverables={
+              capabilities?.can_generate_delivery_kit ??
+              canViewArtifacts
+            }
+            onGenerateDeliverables={(item) => {
+              sessionStorage.setItem(
+                'skpe:delivery-kit:macrophase-id',
+                item.item_id,
+              )
+              sessionStorage.setItem(
+                'skpe:delivery-kit:macrophase-code',
+                item.item_code,
+              )
+              sessionStorage.setItem(
+                'skpe:delivery-kit:macrophase-name',
+                item.item_name,
+              )
+              setActiveSection('artifacts')
+            }}
           />
         )}
 
         {activeSection ===
-          'initiatives' && (
+          'initiatives' && canViewInitiatives && (
           <InitiativesSection
             organizationId={
               organizationId
@@ -6244,16 +6769,17 @@ export function SkpeCockpit({
           />
         )}
 
-        {activeSection === 'artifacts' && (
+        {activeSection === 'artifacts' && canViewArtifacts && (
           <MethodologyArtifactsSection
             organizationId={organizationId}
             projectId={projectContext?.project_id ?? ''}
-            canManage={canManageJourney}
+            canManage={canManageArtifacts}
+            canGenerateDeliveryKit={capabilities?.can_generate_delivery_kit ?? canViewArtifacts}
           />
         )}
 
         {activeSection ===
-          'governance' && (
+          'governance' && canViewGovernance && (
           <GovernanceSection />
         )}
 
@@ -6285,7 +6811,7 @@ export function SkpeCockpit({
         )}
 
         {activeSection ===
-          'administration' && (
+          'administration' && canOpenAdministration && (
           <AdministrationSection
             organizationId={
               organizationId
@@ -6294,9 +6820,15 @@ export function SkpeCockpit({
             canManageUsers={
               canManageUsers
             }
+            canManageMemberships={
+              canManageMemberships
+            }
           />
         )}
-      </main>
+        <footer className="skpe-cockpit-footer">
+          <strong>Plataforma SPARKs</strong>
+          <span>© SPARKOOP — Todos os direitos reservados</span>
+        </footer>      </main>
 
       <button
         type="button"

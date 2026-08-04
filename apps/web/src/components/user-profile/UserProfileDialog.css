@@ -1,0 +1,227 @@
+﻿.user-profile-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+  background: rgba(12, 28, 23, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.user-profile-dialog {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
+  border: 1px solid rgba(31, 73, 59, 0.16);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(12, 28, 23, 0.28);
+}
+
+.user-profile-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem 1.1rem;
+  border-bottom: 1px solid rgba(31, 73, 59, 0.1);
+}
+
+.user-profile-dialog-header h2,
+.user-profile-dialog-header p {
+  margin-bottom: 0;
+}
+
+.user-profile-dialog-close {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(31, 73, 59, 0.08);
+  color: #174f40;
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.user-profile-dialog-form {
+  display: grid;
+  gap: 1.15rem;
+  padding: 1.35rem 1.5rem 1.5rem;
+}
+
+.user-profile-avatar-editor {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(31, 73, 59, 0.12);
+  border-radius: 16px;
+  background: rgba(247, 251, 249, 0.9);
+}
+
+.user-profile-avatar-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid rgba(23, 122, 90, 0.22);
+  border-radius: 50%;
+  background: rgba(23, 122, 90, 0.1);
+  color: #176b53;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 800;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.user-profile-avatar-preview:hover {
+  border-color: rgba(23, 122, 90, 0.62);
+  box-shadow: 0 0 0 5px rgba(23, 122, 90, 0.12);
+  transform: translateY(-1px);
+}
+
+.user-profile-avatar-preview:focus-visible {
+  outline: 3px solid rgba(23, 122, 90, 0.3);
+  outline-offset: 4px;
+}
+
+.user-profile-avatar-preview:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.user-profile-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-profile-avatar-overlay {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.35rem 0.25rem 0.45rem;
+  background: rgba(9, 43, 34, 0.76);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transform: translateY(100%);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.user-profile-avatar-preview:hover
+  .user-profile-avatar-overlay,
+.user-profile-avatar-preview:focus-visible
+  .user-profile-avatar-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.user-profile-avatar-editor p {
+  margin: 0.2rem 0 0.75rem;
+}
+
+.user-profile-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.user-profile-avatar-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.user-profile-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.user-profile-dialog-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.user-profile-dialog-form input,
+.user-profile-dialog-form textarea {
+  width: 100%;
+}
+
+.user-profile-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.2rem;
+}
+
+.user-profile-trigger {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.user-profile-trigger:hover .user-avatar,
+.user-profile-trigger:focus-visible .user-avatar {
+  border-color: rgba(23, 122, 90, 0.58);
+  box-shadow: 0 0 0 4px rgba(23, 122, 90, 0.12);
+}
+
+.user-profile-trigger:focus-visible {
+  border-radius: 10px;
+  outline: 3px solid rgba(23, 122, 90, 0.22);
+  outline-offset: 4px;
+}
+
+@media (max-width: 680px) {
+  .user-profile-dialog-backdrop {
+    padding: 0;
+    place-items: stretch;
+  }
+
+  .user-profile-dialog {
+    min-height: 100vh;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .user-profile-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .user-profile-avatar-editor {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .user-profile-avatar-actions,
+  .user-profile-dialog-footer {
+    justify-content: center;
+  }
+}

@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
 import { supabase } from '../../lib/supabase'
+import { prepareOrganizationLogo } from './prepareOrganizationLogo'
+import { AdminUserAvatarEditor } from './AdminUserAvatarEditor'
+import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
 
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 
@@ -488,7 +491,44 @@ const TAB_LABELS: Record<AdminTab, string> = {
 
 function labelStatus(value: string | null | undefined) {
   if (!value) return 'Não informado'
-  return STATUS_LABELS[value] ?? value
+  return statusLabelPtBr(value, STATUS_LABELS[value])
+}
+
+function labelTechnicalCode(
+  value: string | null | undefined,
+) {
+  if (!value) return 'Não informado'
+
+  const normalized = value
+    .trim()
+    .toLocaleLowerCase('pt-BR')
+
+  const labels: Record<string, string> = {
+    responsibility_type: 'Tipo de responsabilidade',
+    organizational_role_type: 'Tipo de papel organizacional',
+    authority_level: 'Nível de autoridade',
+    strategic_object_type: 'Tipo de objeto estratégico',
+    decision_type: 'Tipo de decisão',
+    approval_status: 'Situação da aprovação',
+    validation_status: 'Situação da validação',
+    measurement_frequency: 'Frequência de medição',
+    measurement_unit: 'Unidade de medida',
+    indicator_polarity: 'Polaridade do indicador',
+    review_cycle: 'Ciclo de revisão',
+    risk_level: 'Nível de risco',
+    direct_membership: 'Vínculo direto',
+    hierarchical_policy: 'Política hierárquica',
+    hierarchical: 'Hierárquico',
+    manage_users: 'Gerenciar usuários',
+    owner: 'Responsável principal',
+    co_owner: 'Corresponsável',
+    not_required: 'Não obrigatório',
+    super_admin: 'Superadministrador',
+    organization_admin: 'Administrador da organização',
+    visitor: 'Visitante',
+  }
+
+  return labels[normalized] ?? value
 }
 
 function labelOrganizationType(value: string | null | undefined) {
@@ -512,6 +552,29 @@ function formatCnpjInput(value: string) {
 function formatPostalCodeInput(value: string) {
   const digits = onlyDigits(value).slice(0, 8)
   return digits.replace(/^(\d{5})(\d)/, '$1-$2')
+}
+
+function formatBrazilianPhoneInput(value: string) {
+  const digits = onlyDigits(value).slice(0, 11)
+  if (!digits) return ''
+  if (digits.length <= 2) return `(${digits}`
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 3)} ${digits.slice(3, 7)}-${digits.slice(7)}`
+}
+
+function isValidBrazilianPhone(value: string) {
+  const digits = onlyDigits(value)
+  if (!digits) return true
+  if (digits.length === 10) return true
+  return digits.length === 11 && digits[2] === '9'
+}
+
+function normalizeBrazilianPhone(value: string) {
+  const digits = onlyDigits(value)
+  return digits || null
 }
 
 function formatDate(value: string | null | undefined) {
@@ -658,6 +721,28 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   )
 }
 
+function CardsViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="13.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="13.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  )
+}
+
+function RowsViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 6h11M9 12h11M9 18h11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="5" cy="6" r="1" fill="currentColor" />
+      <circle cx="5" cy="12" r="1" fill="currentColor" />
+      <circle cx="5" cy="18" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
 function ViewToggle({
   value,
   onChange,
@@ -669,14 +754,182 @@ function ViewToggle({
 }) {
   return (
     <div className="pa-view-toggle" aria-label="Modo de visualização">
-      <button type="button" className={value === 'cards' ? 'active' : ''} onClick={() => onChange('cards')} title="Visualizar em cards" aria-label="Visualizar em cards">▦</button>
-      <button type="button" className={value === 'grid' ? 'active' : ''} onClick={() => onChange('grid')} title="Visualizar em linhas" aria-label="Visualizar em linhas">☷</button>
+      <button type="button" className={value === 'cards' ? 'active' : ''} onClick={() => onChange('cards')} title="Visualizar em cards" aria-label="Visualizar em cards"><CardsViewIcon /></button>
+      <button type="button" className={value === 'grid' ? 'active' : ''} onClick={() => onChange('grid')} title="Visualizar em linhas" aria-label="Visualizar em linhas"><RowsViewIcon /></button>
       {showHierarchy && (
         <button type="button" className={value === 'hierarchy' ? 'active' : ''} onClick={() => onChange('hierarchy')} title="Visualizar hierarquia" aria-label="Visualizar hierarquia">
           <HierarchyIcon />
         </button>
       )}
     </div>
+  )
+}
+
+// FE09A02.2.2 GLOBAL USER MEMBERSHIP HIERARCHY
+function GlobalUserHierarchy({
+  users,
+  memberships,
+  organizations,
+  onOpenUser,
+}: {
+  users: PlatformUser[]
+  memberships: Membership[]
+  organizations: Organization[]
+  onOpenUser: (user: PlatformUser) => void
+}) {
+  const usersById = new Map(users.map((user) => [user.user_id, user]))
+  const organizationById = new Map(
+    organizations.map((organization) => [organization.organization_id, organization]),
+  )
+  const membershipsByOrganization = new Map<string, Membership[]>()
+
+  for (const membership of memberships) {
+    if (!usersById.has(membership.user_id)) continue
+    const current = membershipsByOrganization.get(membership.organization_id) ?? []
+    current.push(membership)
+    membershipsByOrganization.set(membership.organization_id, current)
+  }
+
+  const organizationsWithUsers = Array.from(membershipsByOrganization.entries())
+    .map(([organizationId, organizationMemberships]) => ({
+      organization: organizationById.get(organizationId),
+      memberships: organizationMemberships.sort((first, second) =>
+        first.user_name.localeCompare(second.user_name, 'pt-BR'),
+      ),
+    }))
+    .sort((first, second) =>
+      (first.organization?.trade_name ?? first.organization?.legal_name ?? first.memberships[0]?.organization_name ?? '')
+        .localeCompare(
+          second.organization?.trade_name ?? second.organization?.legal_name ?? second.memberships[0]?.organization_name ?? '',
+          'pt-BR',
+        ),
+    )
+
+  const linkedUserIds = new Set(memberships.map((membership) => membership.user_id))
+  const usersWithoutOrganization = users.filter((user) => !linkedUserIds.has(user.user_id))
+
+  return (
+    <section className="pa-global-hierarchy" aria-label="Hierarquia global de usuários">
+      <header className="pa-global-hierarchy-intro">
+        <div>
+          <strong>Usuários por organização</strong>
+          <span>Visualize vínculos, perfis globais e administração local no contexto correto.</span>
+        </div>
+        <b>{users.length} usuário(s)</b>
+      </header>
+
+      {organizationsWithUsers.map(({ organization, memberships: organizationMemberships }) => {
+        const organizationName =
+          organization?.trade_name ??
+          organization?.legal_name ??
+          organizationMemberships[0]?.organization_name ??
+          'Organização não identificada'
+        const organizationCode =
+          organization?.organization_code ??
+          organizationMemberships[0]?.organization_code ??
+          'SEM-CODIGO'
+
+        return (
+          <details className="pa-global-hierarchy-group" key={organizationMemberships[0].organization_id} open>
+            <summary>
+              <span><small>{organizationCode}</small><strong>{organizationName}</strong></span>
+              <b>{organizationMemberships.length} vínculo(s)</b>
+            </summary>
+            <div className="pa-global-hierarchy-list">
+              {organizationMemberships.map((membership) => {
+                const user = usersById.get(membership.user_id)
+                if (!user) return null
+                return (
+                  <button
+                    type="button"
+                    key={membership.membership_id}
+                    className="pa-global-hierarchy-record"
+                    onClick={() => onOpenUser(user)}
+                  >
+                    <span><strong>{getUserName(user)}</strong><small>{user.email ?? 'Sem e-mail'}</small></span>
+                    <span><b>{membership.job_title ?? 'Função não informada'}</b><small>{labelStatus(membership.membership_status)}</small></span>
+                    <span><b>{membership.is_organization_admin ? 'Administrador local' : 'Participante'}</b><small>{user.platform_roles || 'Sem perfil global'}</small></span>
+                  </button>
+                )
+              })}
+            </div>
+          </details>
+        )
+      })}
+
+      {usersWithoutOrganization.length > 0 && (
+        <details className="pa-global-hierarchy-group" open>
+          <summary><span><small>SEM VÍNCULO</small><strong>Usuários sem organização</strong></span><b>{usersWithoutOrganization.length}</b></summary>
+          <div className="pa-global-hierarchy-list">
+            {usersWithoutOrganization.map((user) => (
+              <button type="button" key={user.user_id} className="pa-global-hierarchy-record" onClick={() => onOpenUser(user)}>
+                <span><strong>{getUserName(user)}</strong><small>{user.email ?? 'Sem e-mail'}</small></span>
+                <span><b>{user.active ? 'Ativo' : 'Inativo'}</b><small>{user.platform_roles || 'Sem perfil global'}</small></span>
+                <span><b>Sem vínculo organizacional</b><small>Requer associação a uma organização</small></span>
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
+    </section>
+  )
+}
+
+function GlobalMembershipHierarchy({
+  memberships,
+  organizations,
+  onOpenMembership,
+}: {
+  memberships: Membership[]
+  organizations: Organization[]
+  onOpenMembership: (membership: Membership) => void
+}) {
+  const organizationById = new Map(
+    organizations.map((organization) => [organization.organization_id, organization]),
+  )
+  const groups = new Map<string, Membership[]>()
+  for (const membership of memberships) {
+    const current = groups.get(membership.organization_id) ?? []
+    current.push(membership)
+    groups.set(membership.organization_id, current)
+  }
+
+  const orderedGroups = Array.from(groups.entries()).sort((first, second) => {
+    const firstOrganization = organizationById.get(first[0])
+    const secondOrganization = organizationById.get(second[0])
+    const firstName = firstOrganization?.trade_name ?? firstOrganization?.legal_name ?? first[1][0]?.organization_name ?? ''
+    const secondName = secondOrganization?.trade_name ?? secondOrganization?.legal_name ?? second[1][0]?.organization_name ?? ''
+    return firstName.localeCompare(secondName, 'pt-BR')
+  })
+
+  return (
+    <section className="pa-global-hierarchy" aria-label="Hierarquia global de vínculos">
+      <header className="pa-global-hierarchy-intro">
+        <div><strong>Vínculos por organização</strong><span>Consulte usuários, cargos, situação e administração local.</span></div>
+        <b>{memberships.length} vínculo(s)</b>
+      </header>
+      {orderedGroups.map(([organizationId, organizationMemberships]) => {
+        const organization = organizationById.get(organizationId)
+        const name = organization?.trade_name ?? organization?.legal_name ?? organizationMemberships[0]?.organization_name ?? 'Organização não identificada'
+        const code = organization?.organization_code ?? organizationMemberships[0]?.organization_code ?? 'SEM-CODIGO'
+        return (
+          <details className="pa-global-hierarchy-group" key={organizationId} open>
+            <summary><span><small>{code}</small><strong>{name}</strong></span><b>{organizationMemberships.length} vínculo(s)</b></summary>
+            <div className="pa-global-hierarchy-list">
+              {organizationMemberships
+                .sort((first, second) => first.user_name.localeCompare(second.user_name, 'pt-BR'))
+                .map((membership) => (
+                  <button type="button" key={membership.membership_id} className="pa-global-hierarchy-record" onClick={() => onOpenMembership(membership)}>
+                    <span><strong>{membership.user_name}</strong><small>{membership.user_email ?? 'Sem e-mail'}</small></span>
+                    <span><b>{membership.job_title ?? 'Função não informada'}</b><small>{labelStatus(membership.membership_status)}</small></span>
+                    <span><b>{membership.is_organization_admin ? 'Administrador local' : 'Participante'}</b><small>{formatDate(membership.valid_until)}</small></span>
+                  </button>
+                ))}
+            </div>
+          </details>
+        )
+      })}
+    </section>
   )
 }
 
@@ -691,6 +944,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [organizationLevels, setOrganizationLevels] = useState<OrganizationLevel[]>([])
   const [users, setUsers] = useState<PlatformUser[]>([])
+  const [userAvatarUrls, setUserAvatarUrls] = useState<Record<string, string>>({})
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [modules, setModules] = useState<PlatformModule[]>([])
   const [roles, setRoles] = useState<PlatformRole[]>([])
@@ -698,6 +952,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [cooperativeBranches, setCooperativeBranches] = useState<CooperativeBranch[]>([])
 
   const [search, setSearch] = useState('')
+  const [includeRevoked, setIncludeRevoked] = useState(false)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
   const [expandedOrganizationIds, setExpandedOrganizationIds] =
@@ -749,7 +1004,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [loadingUserRelations, setLoadingUserRelations] = useState(false)
 
   const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setMessage(text)
+    setMessage(type === 'error' ? translateBackendMessage(text) : text)
     setMessageType(type)
   }
 
@@ -864,6 +1119,46 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     setOrganizationDetailTab(tab)
   }
 
+  const loadUserAvatarUrls = useCallback(async () => {
+    const { data, error } = await supabase.rpc(
+      'list_platform_admin_user_avatars',
+    )
+
+    if (error) {
+      setUserAvatarUrls({})
+      return
+    }
+
+    const rows = (data ?? []) as Array<{
+      user_id: string
+      avatar_storage_path: string | null
+    }>
+
+    const signedEntries = await Promise.all(
+      rows
+        .filter((row) => Boolean(row.avatar_storage_path))
+        .map(async (row) => {
+          const { data: signedData, error: signedError } =
+            await supabase.storage
+              .from('user-avatars')
+              .createSignedUrl(row.avatar_storage_path as string, 60 * 60)
+
+          if (signedError || !signedData?.signedUrl) {
+            return null
+          }
+
+          return [row.user_id, signedData.signedUrl] as const
+        }),
+    )
+
+    const nextAvatarUrls = Object.fromEntries(
+      signedEntries.filter(
+        (entry): entry is readonly [string, string] => entry !== null,
+      ),
+    )
+
+    setUserAvatarUrls(nextAvatarUrls)
+  }, [])
   const loadAll = async () => {
     setLoading(true)
     clearMessage()
@@ -917,6 +1212,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     setOrganizations((organizationsResponse.data ?? []) as Organization[])
     setOrganizationLevels((levelsResponse.data ?? []) as OrganizationLevel[])
     setUsers((usersResponse.data ?? []) as PlatformUser[])
+    await loadUserAvatarUrls()
     setMemberships((membershipsResponse.data ?? []) as Membership[])
     setModules((modulesResponse.data ?? []) as PlatformModule[])
     setRoles((rolesResponse.data ?? []) as PlatformRole[])
@@ -1014,7 +1310,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       }
 
       if (auditResponse.error) {
-        showMessage(`Erro ao carregar auditoria do usuário: ${auditResponse.error.message}`, 'error')
+        console.error('Falha ao carregar auditoria do usuário', auditResponse.error)
         setUserAudit([])
       } else {
         setUserAudit((auditResponse.data ?? []) as UserAuditEvent[])
@@ -1370,7 +1666,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       userId: user.user_id,
       fullName: user.full_name ?? '',
       displayName: user.display_name ?? '',
-      phone: user.phone ?? '',
+      phone: formatBrazilianPhoneInput(user.phone ?? ''),
       active: user.active,
     })
     setSelectedUserForRoles(user.user_id)
@@ -1549,9 +1845,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
     return { byId, childrenByParent, roots, visibleIds, matchIds, expandableIds }
   }, [organizations, normalizedSearch, sortDirection])
-
   useEffect(() => {
-    if (activeTab !== 'organizations' && viewMode === 'hierarchy') {
+    const hierarchyTabs: AdminTab[] = ['organizations', 'users', 'memberships']
+    if (!hierarchyTabs.includes(activeTab) && viewMode === 'hierarchy') {
       setViewMode('cards')
     }
   }, [activeTab, viewMode])
@@ -1581,26 +1877,91 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const filteredUsers = useMemo(() => {
     return [...users]
       .filter((user) => {
+        const userMemberships = memberships.filter(
+          (membership) => membership.user_id === user.user_id,
+        )
+
+        const hasVisibleMembership =
+          userMemberships.length === 0 ||
+          userMemberships.some(
+            (membership) =>
+              membership.membership_status !== 'revoked',
+          )
+
+        if (!includeRevoked && !hasVisibleMembership) {
+          return false
+        }
+
         if (!normalizedSearch) return true
-        return [getUserName(user), user.email, user.platform_roles].filter(Boolean).some((value) => String(value).toLocaleLowerCase('pt-BR').includes(normalizedSearch))
+
+        return [getUserName(user), user.email, user.platform_roles]
+          .filter(Boolean)
+          .some((value) =>
+            String(value)
+              .toLocaleLowerCase('pt-BR')
+              .includes(normalizedSearch),
+          )
       })
       .sort((first, second) => {
-        const comparison = getUserName(first).localeCompare(getUserName(second), 'pt-BR')
+        const comparison = getUserName(first).localeCompare(
+          getUserName(second),
+          'pt-BR',
+        )
+
         return sortDirection === 'asc' ? comparison : -comparison
       })
-  }, [users, normalizedSearch, sortDirection])
+  }, [
+    users,
+    memberships,
+    includeRevoked,
+    normalizedSearch,
+    sortDirection,
+  ])
 
   const filteredMemberships = useMemo(() => {
     return [...memberships]
       .filter((membership) => {
+        if (
+          !includeRevoked &&
+          membership.membership_status === 'revoked'
+        ) {
+          return false
+        }
+
         if (!normalizedSearch) return true
-        return [membership.user_name, membership.user_email, membership.organization_name, membership.job_title].filter(Boolean).some((value) => String(value).toLocaleLowerCase('pt-BR').includes(normalizedSearch))
+
+        return [
+          membership.user_name,
+          membership.user_email,
+          membership.organization_name,
+          membership.job_title,
+        ]
+          .filter(Boolean)
+          .some((value) =>
+            String(value)
+              .toLocaleLowerCase('pt-BR')
+              .includes(normalizedSearch),
+          )
       })
       .sort((first, second) => {
-        const comparison = first.organization_name.localeCompare(second.organization_name, 'pt-BR') || first.user_name.localeCompare(second.user_name, 'pt-BR')
+        const comparison =
+          first.organization_name.localeCompare(
+            second.organization_name,
+            'pt-BR',
+          ) ||
+          first.user_name.localeCompare(
+            second.user_name,
+            'pt-BR',
+          )
+
         return sortDirection === 'asc' ? comparison : -comparison
       })
-  }, [memberships, normalizedSearch, sortDirection])
+  }, [
+    memberships,
+    includeRevoked,
+    normalizedSearch,
+    sortDirection,
+  ])
 
   const filteredModules = useMemo(() => {
     return [...modules]
@@ -1676,7 +2037,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
         )?.branch_code ??
         '',
       institutionalEmail: organization.institutional_email ?? '',
-      phone: organization.phone ?? '',
+      phone: formatBrazilianPhoneInput(organization.phone ?? ''),
       website: organization.website ?? '',
       postalCode: formatPostalCodeInput(organization.postal_code ?? ''),
       street: organization.street ?? '',
@@ -1795,6 +2156,13 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       return
     }
 
+    if (!isValidBrazilianPhone(organizationForm.phone)) {
+      reportOrganizationSaveError(
+        'Informe um telefone válido no formato (99) 9999-9999 ou (99) 9 9999-9999.',
+      )
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -1818,7 +2186,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 : null,
             institutional_email:
               organizationForm.institutionalEmail || null,
-            phone: organizationForm.phone || null,
+            phone: normalizeBrazilianPhone(organizationForm.phone),
             website: organizationForm.website || null,
             postal_code: onlyDigits(organizationForm.postalCode),
             street: organizationForm.street || null,
@@ -1867,33 +2235,64 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
           return
         }
 
-        const extension =
-          organizationLogoFile.name.split('.').pop()?.toLowerCase() ||
-          'png'
+        const preparedLogo =
+          await prepareOrganizationLogo(organizationLogoFile)
+        const timestamp = Date.now()
+        const originalExtension =
+          preparedLogo.originalFile.name
+            .split('.')
+            .pop()
+            ?.toLowerCase() || 'bin'
+        const originalStoragePath =
+          `${savedOrganizationId}/logo/original/logo-original-${timestamp}.${originalExtension}`
         const logoStoragePath =
-          `${savedOrganizationId}/logo/logo-institucional-${Date.now()}.${extension}`
-        const { error: uploadError } = await supabase.storage
+          `${savedOrganizationId}/logo/derivada/logo-institucional-${timestamp}.png`
+
+        const { error: originalUploadError } = await supabase.storage
           .from('organization-branding')
-          .upload(logoStoragePath, organizationLogoFile, {
+          .upload(originalStoragePath, preparedLogo.originalFile, {
             upsert: true,
-            contentType: organizationLogoFile.type,
+            contentType: preparedLogo.originalFile.type,
           })
 
-        if (uploadError) {
+        if (originalUploadError) {
           showMessage(
-            `A organização foi salva, mas não foi possível enviar a logo: ${uploadError.message}`,
+            `A organização foi salva, mas a logo original não pôde ser preservada: ${originalUploadError.message}`,
             'error',
           )
           return
+        }
+
+        const displayStoragePath = preparedLogo.backgroundRemoved
+          ? logoStoragePath
+          : originalStoragePath
+
+        if (preparedLogo.backgroundRemoved) {
+          const { error: processedUploadError } = await supabase.storage
+            .from('organization-branding')
+            .upload(logoStoragePath, preparedLogo.displayFile, {
+              upsert: true,
+              contentType: 'image/png',
+            })
+
+          if (processedUploadError) {
+            showMessage(
+              `A logo original foi preservada, mas a versão transparente não pôde ser enviada: ${processedUploadError.message}`,
+              'error',
+            )
+            return
+          }
         }
 
         const { error: logoError } = await supabase.rpc(
           'set_platform_admin_organization_logo',
           {
             target_organization_id: savedOrganizationId,
-            target_logo_storage_path: logoStoragePath,
+            target_logo_storage_path: displayStoragePath,
             change_reason:
-              'Atualização da identidade visual pela Administração da Plataforma.',
+              preparedLogo.backgroundRemoved
+                ? 'Atualização da identidade visual com remoção automática de fundo e preservação do original.'
+                : 'Atualização da identidade visual com preservação do arquivo original.',
           },
         )
 
@@ -1907,9 +2306,10 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
         const { data: signedData } = await supabase.storage
           .from('organization-branding')
-          .createSignedUrl(logoStoragePath, 60 * 60)
+          .createSignedUrl(displayStoragePath, 60 * 60)
         setOrganizationLogoPreview(signedData?.signedUrl ?? null)
         setOrganizationLogoFile(null)
+        showMessage(preparedLogo.processingMessage, 'success')
       }
 
       const { data: refreshedData, error: refreshError } =
@@ -1973,14 +2373,23 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
   const saveUserProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSaving(true)
     clearMessage()
+
+    if (!isValidBrazilianPhone(userForm.phone)) {
+      showMessage(
+        'Informe um telefone válido no formato (99) 9999-9999 ou (99) 9 9999-9999.',
+        'error',
+      )
+      return
+    }
+
+    setSaving(true)
 
     const { error } = await supabase.rpc('update_platform_admin_user_profile', {
       target_user_id: userForm.userId,
       input_full_name: userForm.fullName || null,
       input_display_name: userForm.displayName || null,
-      input_phone: userForm.phone || null,
+      input_phone: normalizeBrazilianPhone(userForm.phone),
       input_active: userForm.active,
     })
 
@@ -2016,8 +2425,17 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
   const saveMembership = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSaving(true)
     clearMessage()
+
+    if (membershipForm.reason.trim().length < 10) {
+      showMessage(
+        'Informe uma justificativa com pelo menos 10 caracteres para alterar o vínculo.',
+        'error',
+      )
+      return
+    }
+
+    setSaving(true)
 
     const { error } = await supabase.rpc('upsert_platform_admin_membership', {
       target_membership_id: membershipForm.membershipId,
@@ -2057,6 +2475,15 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
     if (!userCreationForm.fullName.trim()) {
       showMessage('Informe o nome completo do usuário.', 'error')
+      setSaving(false)
+      return
+    }
+
+    if (!isValidBrazilianPhone(userCreationForm.phone)) {
+      showMessage(
+        'Informe um telefone válido no formato (99) 9999-9999 ou (99) 9 9999-9999.',
+        'error',
+      )
       setSaving(false)
       return
     }
@@ -2103,7 +2530,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
         email: userCreationForm.email,
         password: userCreationForm.password,
         fullName: userCreationForm.fullName,
-        phone: userCreationForm.phone || null,
+        phone: normalizeBrazilianPhone(userCreationForm.phone),
         organizationId: userCreationForm.organizationId || null,
         platformRoleIds: userCreationForm.platformRoleIds,
         moduleRoleAssignments: visitorSelected ? [] : moduleRoleAssignments,
@@ -2363,6 +2790,33 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
         />
       </div>
 
+      {(activeTab === 'users' || activeTab === 'memberships') && (
+        <div
+          className="pa-status-filter"
+          role="group"
+          aria-label="Filtrar registros revogados"
+        >
+          <button
+            type="button"
+            className={!includeRevoked ? 'active' : ''}
+            onClick={() => setIncludeRevoked(false)}
+            aria-pressed={!includeRevoked}
+            title="Ocultar vínculos revogados"
+          >
+            Vigentes
+          </button>
+          <button
+            type="button"
+            className={includeRevoked ? 'active' : ''}
+            onClick={() => setIncludeRevoked(true)}
+            aria-pressed={includeRevoked}
+            title="Exibir também os vínculos revogados"
+          >
+            Todos
+          </button>
+        </div>
+      )}
+
       <button type="button" className="pa-sort-button" onClick={() => setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>
         {sortDirection === 'asc' ? 'A → Z' : 'Z → A'}
       </button>
@@ -2370,7 +2824,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       <ViewToggle
         value={viewMode}
         onChange={setViewMode}
-        showHierarchy={activeTab === 'organizations'}
+        showHierarchy={activeTab === 'organizations' || activeTab === 'users' || activeTab === 'memberships'}
       />
 
       <button type="button" className="pa-icon-button" onClick={printCurrentView} title="Imprimir listagem">
@@ -2385,11 +2839,43 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     </section>
   )
 
+  useEffect(() => {
+    const refreshUserAvatars = () => {
+      void loadUserAvatarUrls()
+    }
+
+    window.addEventListener(
+      'platform-user-avatar-changed',
+      refreshUserAvatars,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'platform-user-avatar-changed',
+        refreshUserAvatars,
+      )
+    }
+  }, [loadUserAvatarUrls])
   return (
     <section className="platform-admin">
       <div className="pa-heading">
         <div>
-          <button type="button" className="pa-back-button" onClick={onBack}>← Voltar ao Portal da Plataforma</button>
+          <a
+            href="/"
+            className="pa-back-button"
+            onClick={(event) => {
+              event.preventDefault()
+              onBack()
+
+              window.setTimeout(() => {
+                window.location.replace('/')
+              }, 80)
+            }}
+            aria-label="Voltar ao Portal da Plataforma"
+            title="Voltar ao Portal da Plataforma"
+          >
+            ← Voltar ao Portal da Plataforma
+          </a>
           <p className="pa-eyebrow">SUPER-ADMIN</p>
           <h1>Administração da Plataforma</h1>
           <p>Gerencie os cadastros mestres, as organizações, os usuários, os módulos e os acessos globais da Plataforma SPARKs.</p>
@@ -2410,6 +2896,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               onClick={() => {
                 setActiveTab(tab)
                 setSearch('')
+                setIncludeRevoked(false)
                 clearMessage()
               }}
             >
@@ -2436,17 +2923,27 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 </div>
               </div>
 
-              <section className="pa-summary-grid">
-                <article><span>Organizações</span><strong>{summary.organizations_total}</strong><small>{summary.organizations_active} ativas</small></article>
-                <article><span>Usuários</span><strong>{summary.users_total}</strong><small>{summary.users_active} ativos</small></article>
-                <article><span>Vínculos ativos</span><strong>{summary.memberships_active}</strong><small>usuário × organização</small></article>
-                <article><span>Módulos</span><strong>{summary.modules_total}</strong><small>{summary.modules_active} ativos</small></article>
-                <article><span>Convites pendentes</span><strong>{summary.pending_invitations}</strong><small>aguardando envio ou aceite</small></article>
+              <section className="pa-summary-grid" aria-label="Atalhos da visão geral">
+                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('organizations')} title="Consultar organizações">
+                  <span>Organizações</span><strong>{summary.organizations_total}</strong><small>{summary.organizations_active} ativas</small>
+                </button>
+                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('users')} title="Consultar usuários">
+                  <span>Usuários</span><strong>{summary.users_total}</strong><small>{summary.users_active} ativos</small>
+                </button>
+                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('memberships')} title="Consultar vínculos e acessos">
+                  <span>Vínculos ativos</span><strong>{summary.memberships_active}</strong><small>usuário × organização</small>
+                </button>
+                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('modules')} title="Consultar módulos">
+                  <span>Módulos</span><strong>{summary.modules_total}</strong><small>{summary.modules_active} ativos</small>
+                </button>
+                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('invitations')} title="Consultar convites">
+                  <span>Convites pendentes</span><strong>{summary.pending_invitations}</strong><small>aguardando envio ou aceite</small>
+                </button>
               </section>
 
               <section className="pa-quick-grid">
                 <button type="button" onClick={() => { setActiveTab('organizations'); openNewOrganization() }}><strong>Nova organização</strong><span>Cadastre uma nova organização e seu contexto institucional.</span></button>
-                <button type="button" onClick={() => { setActiveTab('invitations'); setInvitationPanelOpen(true) }}><strong>Convidar usuário</strong><span>Crie uma conta com vínculo e perfil inicial de forma segura.</span></button>
+                <button type="button" onClick={() => { setActiveTab('invitations'); setInvitationPanelOpen(true) }}><strong>Novo usuário</strong><span>Crie ou convide uma pessoa, defina o vínculo organizacional e atribua o perfil inicial.</span></button>
                 <button type="button" onClick={() => { setActiveTab('memberships'); openNewMembership() }}><strong>Novo vínculo</strong><span>Associe um usuário existente a uma organização.</span></button>
                 <button type="button" onClick={() => setActiveTab('modules')}><strong>Habilitar módulos</strong><span>Defina os módulos disponíveis por organização.</span></button>
                 <button type="button" onClick={() => setActiveTab('roles')}><strong>Perfis globais</strong><span>Gerencie atribuições de SUPER-ADMIN e outros perfis globais.</span></button>
@@ -2529,11 +3026,37 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               <div className="pa-section-heading"><div><h2>Usuários</h2><p>Crie e administre contas, vínculos organizacionais e perfis globais.</p></div><div className="pa-heading-actions"><button type="button" className="pa-primary-button" onClick={() => { setUserCreationForm(EMPTY_USER_CREATION_FORM); setShowCreationPassword(false); setUserCreationPanelOpen(true) }}>+ Criar usuário</button><button type="button" className="pa-secondary-button" onClick={() => setInvitationPanelOpen(true)}>Convidar por e-mail</button></div></div>
               {toolbar()}
 
-              {viewMode === 'cards' ? (
+              {viewMode === 'hierarchy' ? (
+                <GlobalUserHierarchy users={filteredUsers} memberships={memberships} organizations={organizations} onOpenUser={openUserMaintenance} />
+              ) : viewMode === 'cards' ? (
                 <section className="pa-card-grid">
                   {filteredUsers.map((user) => (
                     <article className="pa-record-card pa-interactive-record" key={user.user_id} role="button" tabIndex={0} aria-label={`Abrir manutenção de ${getUserName(user)}`} onClick={() => openUserMaintenance(user)} onKeyDown={(event) => activateWithKeyboard(event, () => openUserMaintenance(user))}>
-                      <div className="pa-record-card-header"><div><small>{user.email ?? 'Sem e-mail'}</small><h3>{getUserName(user)}</h3></div><span className={`pa-status pa-status-${user.active ? 'active' : 'inactive'}`}>{user.active ? 'Ativo' : 'Inativo'}</span></div>
+                      <div className="pa-record-card-header">
+                        <div className="pa-user-card-identity">
+                          <div className="pa-user-card-avatar" aria-hidden="true">
+                            {userAvatarUrls[user.user_id] ? (
+                              <img
+                                src={userAvatarUrls[user.user_id]}
+                                alt=""
+                              />
+                            ) : (
+                              <span>
+                                {getUserName(user)
+                                  .slice(0, 1)
+                                  .toLocaleUpperCase('pt-BR')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="pa-user-card-copy">
+                            <h3>{getUserName(user)}</h3>
+                            <small>{user.email ?? 'Sem e-mail'}</small>
+                          </div>
+                        </div>
+                        <span className={`pa-status pa-status-${user.active ? 'active' : 'inactive'}`}>
+                          {user.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </div>
                       <dl><div><dt>Perfis globais</dt><dd>{user.platform_roles || 'Nenhum'}</dd></div><div><dt>Organizações</dt><dd>{user.memberships_count}</dd></div><div><dt>Administrações locais</dt><dd>{user.admin_memberships_count}</dd></div></dl>
                     </article>
                   ))}
@@ -2544,15 +3067,17 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
             </>
           ) : activeTab === 'memberships' ? (
             <>
-              <div className="pa-section-heading"><div><h2>Vínculos e acessos</h2><p>Associe usuários às organizações e defina administradores locais.</p></div></div>
+              <div className="pa-section-heading"><div><h2>Vínculos e acessos</h2><p>Associe usuários às organizações, edite o cargo/função de cada vínculo e defina administradores locais.</p></div></div>
               {toolbar('Novo vínculo', openNewMembership)}
-              {viewMode === 'cards' ? (
+              {viewMode === 'hierarchy' ? (
+                <GlobalMembershipHierarchy memberships={filteredMemberships} organizations={organizations} onOpenMembership={openMembershipEdit} />
+              ) : viewMode === 'cards' ? (
                 <section className="pa-card-grid">
                   {filteredMemberships.map((membership) => (
                     <article className="pa-record-card pa-interactive-record" key={membership.membership_id} role="button" tabIndex={0} aria-label={`Abrir vínculo de ${membership.user_name}`} onClick={() => openMembershipEdit(membership)} onKeyDown={(event) => activateWithKeyboard(event, () => openMembershipEdit(membership))}>
                       <div className="pa-record-card-header"><div><small>{membership.organization_code}</small><h3>{membership.user_name}</h3><p>{membership.organization_name}</p></div><span className={`pa-status pa-status-${membership.membership_status}`}>{labelStatus(membership.membership_status)}</span></div>
                       <dl><div><dt>Cargo/função</dt><dd>{membership.job_title ?? 'Não informado'}</dd></div><div><dt>Administrador local</dt><dd>{membership.is_organization_admin ? 'Sim' : 'Não'}</dd></div><div><dt>Vigência</dt><dd>{formatDate(membership.valid_from)} a {formatDate(membership.valid_until)}</dd></div></dl>
-                      <div className="pa-card-actions"><button type="button" title="Editar" onClick={(event) => { event.stopPropagation(); openMembershipEdit(membership) }}><EditIcon /></button></div>
+                      <div className="pa-card-actions"><button type="button" className="pa-secondary-button" title="Editar cargo/função e vínculo" onClick={(event) => { event.stopPropagation(); openMembershipEdit(membership) }}><EditIcon /><span>Editar vínculo</span></button></div>
                     </article>
                   ))}
                 </section>
@@ -2575,15 +3100,15 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               <div className="pa-section-heading"><div><h2>Perfis globais</h2><p>Atribua ou revogue papéis globais dos usuários da plataforma.</p></div></div>
               <div className="pa-selector-card"><label>Usuário<select value={selectedUserForRoles} onChange={(event) => setSelectedUserForRoles(event.target.value)}><option value="">Selecione um usuário</option>{users.map((user) => <option key={user.user_id} value={user.user_id}>{getUserName(user)} — {user.email ?? 'sem e-mail'}</option>)}</select></label></div>
               {selectedUserForRoles ? (
-                <section className="pa-card-grid pa-module-grid">{userRoles.map((role) => <article className="pa-record-card" key={role.platform_role_id}><div className="pa-record-card-header"><div><small>{role.role_code}</small><h3>{role.role_name}</h3></div><span className={`pa-status pa-status-${role.assigned ? 'active' : 'inactive'}`}>{role.assigned ? 'Atribuído' : 'Não atribuído'}</span></div><p>Nível global {role.role_level}</p><button type="button" className={role.assigned ? 'pa-danger-button' : 'pa-primary-button'} onClick={() => void toggleUserRole(role)}>{role.assigned ? 'Revogar perfil' : 'Atribuir perfil'}</button></article>)}</section>
+                <section className="pa-card-grid pa-module-grid">{userRoles.map((role) => <article className="pa-record-card" key={role.platform_role_id}><div className="pa-record-card-header"><div><small>{labelTechnicalCode(role.role_code)}</small><h3>{role.role_name}</h3></div><span className={`pa-status pa-status-${role.assigned ? 'active' : 'inactive'}`}>{role.assigned ? 'Atribuído' : 'Não atribuído'}</span></div><p>Nível global {role.role_level}</p><button type="button" className={role.assigned ? 'pa-danger-button' : 'pa-primary-button'} onClick={() => void toggleUserRole(role)}>{role.assigned ? 'Revogar perfil' : 'Atribuir perfil'}</button></article>)}</section>
               ) : (
-                <>{toolbar()}<section className="pa-card-grid">{filteredRoles.map((role) => <article className="pa-record-card" key={role.platform_role_id}><div className="pa-record-card-header"><div><small>{role.role_code}</small><h3>{role.role_name}</h3></div><span className={`pa-status pa-status-${role.active ? 'active' : 'inactive'}`}>{role.active ? 'Ativo' : 'Inativo'}</span></div><p>{role.description ?? 'Perfil global da plataforma.'}</p><dl><div><dt>Nível</dt><dd>{role.role_level}</dd></div><div><dt>Usuários</dt><dd>{role.users_count}</dd></div></dl></article>)}</section></>
+                <>{toolbar()}<section className="pa-card-grid">{filteredRoles.map((role) => <article className="pa-record-card" key={role.platform_role_id}><div className="pa-record-card-header"><div><small>{labelTechnicalCode(role.role_code)}</small><h3>{role.role_name}</h3></div><span className={`pa-status pa-status-${role.active ? 'active' : 'inactive'}`}>{role.active ? 'Ativo' : 'Inativo'}</span></div><p>{role.description ?? 'Perfil global da plataforma.'}</p><dl><div><dt>Nível</dt><dd>{role.role_level}</dd></div><div><dt>Usuários</dt><dd>{role.users_count}</dd></div></dl></article>)}</section></>
               )}
             </>
           ) : activeTab === 'invitations' ? (
             <>
               <div className="pa-section-heading"><div><h2>Convites</h2><p>Crie novos usuários por meio de convite seguro e auditável.</p></div></div>
-              {toolbar('Convidar usuário', () => setInvitationPanelOpen(true))}
+              {toolbar('Novo usuário', () => setInvitationPanelOpen(true))}
               {viewMode === 'cards' ? (
                 <section className="pa-card-grid">{filteredInvitations.map((invitation) => <article className="pa-record-card" key={invitation.invitation_id}><div className="pa-record-card-header"><div><small>{invitation.email}</small><h3>{invitation.full_name ?? invitation.email}</h3></div><span className={`pa-status pa-status-${invitation.status}`}>{labelStatus(invitation.status)}</span></div><dl><div><dt>Organização</dt><dd>{invitation.organization_name ?? 'Sem vínculo inicial'}</dd></div><div><dt>Perfil global</dt><dd>{invitation.platform_role_name ?? 'Nenhum'}</dd></div><div><dt>Solicitado em</dt><dd>{formatDate(invitation.requested_at)}</dd></div></dl>{invitation.failure_reason && <p className="pa-inline-error">{invitation.failure_reason}</p>}</article>)}</section>
               ) : (
@@ -2815,7 +3340,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   </header>
                   <label id="organization-field-email" className={organizationErrorField === 'organization-field-email' ? 'pa-field-invalid' : ''}>E-mail institucional<input type="email" value={organizationForm.institutionalEmail} onChange={(event) => setOrganizationForm((current) => ({ ...current, institutionalEmail: event.target.value }))} /></label>
                   <div className="pa-form-grid">
-                    <label>Telefone<input value={organizationForm.phone} onChange={(event) => setOrganizationForm((current) => ({ ...current, phone: event.target.value }))} /></label>
+                    <label>Telefone<input value={organizationForm.phone} onChange={(event) => setOrganizationForm((current) => ({ ...current, phone: formatBrazilianPhoneInput(event.target.value) }))} inputMode="numeric" maxLength={16} placeholder="(99) 9999-9999 ou (99) 9 9999-9999" /><small className="pa-field-hint">Aceita telefone fixo com 10 dígitos ou celular com 11 dígitos.</small></label>
                     <label>Site<input type="url" value={organizationForm.website} onChange={(event) => setOrganizationForm((current) => ({ ...current, website: event.target.value }))} placeholder="https://" /></label>
                   </div>
                 </section>
@@ -2848,7 +3373,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               </form>
             ) : organizationDetailTab === 'users' ? (
               <section className="pa-related-section">
-                <div className="pa-related-heading"><div><h3>Usuários e acessos da organização</h3><p>Vínculos, papéis funcionais e condição de administrador local.</p></div><button type="button" className="pa-primary-button" onClick={() => openNewMembershipForOrganization(organizationForm.organizationId as string)}>+ Vincular usuário</button></div>
+                <div className="pa-related-heading"><div><h3>Usuários e acessos da organização</h3><p>Vínculos, cargos/funções, papéis funcionais e condição de administrador local. Clique no cartão para editar.</p></div><button type="button" className="pa-primary-button" onClick={() => openNewMembershipForOrganization(organizationForm.organizationId as string)}>+ Vincular usuário</button></div>
                 {organizationMemberships.length === 0 ? <div className="pa-empty-state">Nenhum usuário vinculado a esta organização.</div> : <div className="pa-related-grid">{organizationMemberships.map((membership) => <article key={membership.membership_id} className="pa-related-card pa-interactive-record" role="button" tabIndex={0} onClick={() => openMembershipEdit(membership)} onKeyDown={(event) => activateWithKeyboard(event, () => openMembershipEdit(membership))}><div><small>{membership.user_email ?? 'Sem e-mail'}</small><h4>{membership.user_name}</h4><p>{membership.job_title ?? 'Função não informada'}</p></div><dl><div><dt>Situação</dt><dd>{labelStatus(membership.membership_status)}</dd></div><div><dt>Admin local</dt><dd>{membership.is_organization_admin ? 'Sim' : 'Não'}</dd></div></dl></article>)}</div>}
               </section>
             ) : organizationDetailTab === 'modules' ? (
@@ -2873,7 +3398,14 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
             <div className="pa-panel-header"><div><p className="pa-eyebrow">Cadastro e relações</p><h2>Visualização e manutenção do usuário</h2></div><button type="button" onClick={() => setUserPanelOpen(false)} title="Fechar"><CloseIcon /></button></div>
 
             <section className="pa-user-context-sticky" aria-label="Usuário em manutenção">
-              <div className="pa-user-context-avatar" aria-hidden="true">{(selectedUser ? getUserName(selectedUser) : userForm.displayName || userForm.fullName || 'U').slice(0, 1).toLocaleUpperCase('pt-BR')}</div>
+              <AdminUserAvatarEditor
+                userId={userForm.userId}
+                userName={
+                  selectedUser
+                    ? getUserName(selectedUser)
+                    : userForm.displayName || userForm.fullName || 'Usuário'
+                }
+              />
               <div className="pa-user-context-copy">
                 <span>Usuário em manutenção</span>
                 <strong>{selectedUser ? getUserName(selectedUser) : userForm.displayName || userForm.fullName || 'Usuário'}</strong>
@@ -2887,6 +3419,13 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               </div>
             </section>
 
+            <div className="pa-user-maintenance-actions" aria-label="Ações de manutenção do usuário">
+              <button type="button" onClick={() => setUserDetailTab('profile')}>Editar dados</button>
+              <button type="button" onClick={() => setUserDetailTab('organizations')}>Vincular organização</button>
+              <button type="button" onClick={() => setUserDetailTab('roles')}>Gerenciar perfis globais</button>
+              <button type="button" onClick={() => setUserDetailTab('moduleRoles')}>Gerenciar perfis por módulo</button>
+            </div>
+
             <nav className="pa-detail-tabs" aria-label="Dados relacionados ao usuário">
               <button type="button" className={userDetailTab === 'profile' ? 'active' : ''} onClick={() => setUserDetailTab('profile')}>Dados do usuário</button>
               <button type="button" className={userDetailTab === 'organizations' ? 'active' : ''} onClick={() => setUserDetailTab('organizations')}>Organizações e acessos <span>{userMemberships.length}</span></button>
@@ -2899,19 +3438,19 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               <form className="pa-form" onSubmit={saveUserProfile}>
                 <label>Nome completo<input value={userForm.fullName} onChange={(event) => setUserForm((current) => ({ ...current, fullName: event.target.value }))} /></label>
                 <label>Nome de exibição<input value={userForm.displayName} onChange={(event) => setUserForm((current) => ({ ...current, displayName: event.target.value }))} /></label>
-                <label>Telefone<input value={userForm.phone} onChange={(event) => setUserForm((current) => ({ ...current, phone: event.target.value }))} /></label>
+                <label>Telefone<input value={userForm.phone} onChange={(event) => setUserForm((current) => ({ ...current, phone: formatBrazilianPhoneInput(event.target.value) }))} inputMode="numeric" maxLength={16} placeholder="(99) 9999-9999 ou (99) 9 9999-9999" /><small className="pa-field-hint">Somente telefone brasileiro válido.</small></label>
                 <label className="pa-checkbox"><input type="checkbox" checked={userForm.active} onChange={(event) => setUserForm((current) => ({ ...current, active: event.target.checked }))} />Usuário ativo na plataforma</label>
                 <div className="pa-form-actions"><button type="button" className="pa-secondary-button" onClick={() => setUserPanelOpen(false)}>Fechar</button><button type="submit" className="pa-primary-button" disabled={saving}>{saving ? 'Salvando...' : 'Salvar usuário'}</button></div>
               </form>
             ) : userDetailTab === 'organizations' ? (
               <section className="pa-related-section">
-                <div className="pa-related-heading"><div><h3>Organizações e acessos</h3><p>Todos os vínculos do usuário e seus papéis funcionais.</p></div><button type="button" className="pa-primary-button" onClick={() => openNewMembershipForUser(userForm.userId)}>+ Vincular organização</button></div>
+                <div className="pa-related-heading"><div><h3>Organizações e acessos</h3><p>Um mesmo usuário pode atuar em várias organizações, com cargo, vigência e acessos próprios em cada vínculo. Clique no cartão para editar.</p></div><button type="button" className="pa-primary-button" onClick={() => openNewMembershipForUser(userForm.userId)}>+ Vincular organização</button></div>
                 {userMemberships.length === 0 ? <div className="pa-empty-state">Este usuário ainda não possui vínculo organizacional.</div> : <div className="pa-related-grid">{userMemberships.map((membership) => <article key={membership.membership_id} className="pa-related-card pa-interactive-record" role="button" tabIndex={0} onClick={() => openMembershipEdit(membership)} onKeyDown={(event) => activateWithKeyboard(event, () => openMembershipEdit(membership))}><div><small>{membership.organization_code}</small><h4>{membership.organization_name}</h4><p>{membership.job_title ?? 'Função não informada'}</p></div><dl><div><dt>Situação</dt><dd>{labelStatus(membership.membership_status)}</dd></div><div><dt>Admin local</dt><dd>{membership.is_organization_admin ? 'Sim' : 'Não'}</dd></div></dl></article>)}</div>}
               </section>
             ) : userDetailTab === 'roles' ? (
               <section className="pa-related-section">
                 <div className="pa-related-heading"><div><h3>Perfis globais</h3><p>A lista é carregada integralmente do banco. Atribua ou revogue perfis com efeito em toda a plataforma.</p></div></div>
-                <div className="pa-related-grid">{userRoles.map((role) => <article key={role.platform_role_id} className="pa-related-card"><div><small>{role.role_code}</small><h4>{role.role_name}</h4><p>Nível global {role.role_level}</p></div><button type="button" className={role.assigned ? 'pa-danger-button' : 'pa-primary-button'} onClick={() => void toggleUserRole(role)}>{role.assigned ? 'Revogar perfil' : 'Atribuir perfil'}</button></article>)}</div>
+                <div className="pa-related-grid">{userRoles.map((role) => <article key={role.platform_role_id} className="pa-related-card"><div><small>{labelTechnicalCode(role.role_code)}</small><h4>{role.role_name}</h4><p>Nível global {role.role_level}</p></div><button type="button" className={role.assigned ? 'pa-danger-button' : 'pa-primary-button'} onClick={() => void toggleUserRole(role)}>{role.assigned ? 'Revogar perfil' : 'Atribuir perfil'}</button></article>)}</div>
               </section>
             ) : userDetailTab === 'moduleRoles' ? (
               <section className="pa-related-section">
@@ -2960,7 +3499,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               <label>Organização<select value={membershipForm.organizationId} onChange={(event) => setMembershipForm((current) => ({ ...current, organizationId: event.target.value }))} required><option value="">Selecione</option>{organizations.map((organization) => <option key={organization.organization_id} value={organization.organization_id}>{organization.trade_name ?? organization.legal_name}</option>)}</select></label>
               <label>Usuário<select value={membershipForm.userId} onChange={(event) => setMembershipForm((current) => ({ ...current, userId: event.target.value }))} required><option value="">Selecione</option>{users.map((user) => <option key={user.user_id} value={user.user_id}>{getUserName(user)} — {user.email ?? 'sem e-mail'}</option>)}</select></label>
               <div className="pa-form-grid"><label>Situação<select value={membershipForm.status} onChange={(event) => setMembershipForm((current) => ({ ...current, status: event.target.value }))}><option value="invited">Convidado</option><option value="active">Ativo</option><option value="suspended">Suspenso</option><option value="revoked">Revogado</option></select></label><label>Válido até<input type="date" value={membershipForm.validUntil} onChange={(event) => setMembershipForm((current) => ({ ...current, validUntil: event.target.value }))} /></label></div>
-              <label>Cargo/função<input value={membershipForm.jobTitle} onChange={(event) => setMembershipForm((current) => ({ ...current, jobTitle: event.target.value }))} /></label>
+              <label>Cargo/função nesta organização<input value={membershipForm.jobTitle} onChange={(event) => setMembershipForm((current) => ({ ...current, jobTitle: event.target.value }))} placeholder="Ex.: Diretora, Analista, Consultor" /><small className="pa-field-hint">O cargo pertence ao vínculo e pode ser diferente em cada organização.</small></label>
               <label className="pa-checkbox"><input type="checkbox" checked={membershipForm.isOrganizationAdmin} onChange={(event) => setMembershipForm((current) => ({ ...current, isOrganizationAdmin: event.target.checked }))} />Administrador da organização</label>
               <label>Justificativa<textarea rows={4} value={membershipForm.reason} onChange={(event) => setMembershipForm((current) => ({ ...current, reason: event.target.value }))} required /></label>
               <div className="pa-form-actions"><button type="button" className="pa-secondary-button" onClick={() => setMembershipPanelOpen(false)}>Cancelar</button><button type="submit" className="pa-primary-button" disabled={saving}>{saving ? 'Salvando...' : 'Salvar vínculo'}</button></div>
@@ -2975,8 +3514,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
             <div className="pa-panel-header"><div><p className="pa-eyebrow">Administração global</p><h2>Criar usuário</h2></div><button type="button" onClick={() => setUserCreationPanelOpen(false)} title="Fechar"><CloseIcon /></button></div>
             <form className="pa-form" onSubmit={createUserDirectly}>
               <label>Nome completo<input value={userCreationForm.fullName} onChange={(event) => setUserCreationForm((current) => ({ ...current, fullName: event.target.value }))} required /></label>
-              <label>E-mail<input type="email" value={userCreationForm.email} onChange={(event) => setUserCreationForm((current) => ({ ...current, email: event.target.value }))} required /></label>
-              <label>Telefone<input value={userCreationForm.phone} onChange={(event) => setUserCreationForm((current) => ({ ...current, phone: event.target.value }))} /></label>
+              <label>E-mail de acesso<input type="email" value={userCreationForm.email} onChange={(event) => setUserCreationForm((current) => ({ ...current, email: event.target.value }))} autoComplete="email" required /><small className="pa-field-hint">Deve ser individual e exclusivo da pessoa. Caixas compartilhadas permanecem como contato institucional.</small></label>
+              <label>Telefone<input value={userCreationForm.phone} onChange={(event) => setUserCreationForm((current) => ({ ...current, phone: formatBrazilianPhoneInput(event.target.value) }))} inputMode="numeric" maxLength={16} placeholder="(99) 9999-9999 ou (99) 9 9999-9999" /><small className="pa-field-hint">Somente telefone brasileiro válido.</small></label>
               <div className="pa-form-grid">
                 <label>Senha inicial<input type={showCreationPassword ? 'text' : 'password'} value={userCreationForm.password} onChange={(event) => setUserCreationForm((current) => ({ ...current, password: event.target.value }))} minLength={10} autoComplete="new-password" required /></label>
                 <label>Confirmar senha<input type={showCreationPassword ? 'text' : 'password'} value={userCreationForm.confirmPassword} onChange={(event) => setUserCreationForm((current) => ({ ...current, confirmPassword: event.target.value }))} minLength={10} autoComplete="new-password" required /></label>
@@ -3048,11 +3587,11 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
       {invitationPanelOpen && (
         <div className="pa-modal-backdrop" role="presentation" onMouseDown={() => setInvitationPanelOpen(false)}>
-          <aside className="pa-side-panel" role="dialog" aria-modal="true" aria-label="Convidar usuário" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="pa-panel-header"><div><p className="pa-eyebrow">Novo usuário</p><h2>Convidar usuário</h2></div><button type="button" onClick={() => setInvitationPanelOpen(false)} title="Fechar"><CloseIcon /></button></div>
+          <aside className="pa-side-panel" role="dialog" aria-modal="true" aria-label="Novo usuário" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="pa-panel-header"><div><p className="pa-eyebrow">Novo usuário</p><h2>Novo usuário</h2></div><button type="button" onClick={() => setInvitationPanelOpen(false)} title="Fechar"><CloseIcon /></button></div>
             <form className="pa-form" onSubmit={sendInvitation}>
               <label>Nome completo<input value={invitationForm.fullName} onChange={(event) => setInvitationForm((current) => ({ ...current, fullName: event.target.value }))} /></label>
-              <label>E-mail<input type="email" value={invitationForm.email} onChange={(event) => setInvitationForm((current) => ({ ...current, email: event.target.value }))} required /></label>
+              <label>E-mail de acesso<input type="email" value={invitationForm.email} onChange={(event) => setInvitationForm((current) => ({ ...current, email: event.target.value }))} autoComplete="email" required /><small className="pa-field-hint">Use um endereço individual. O e-mail institucional compartilhado deve ser mantido no cadastro da organização.</small></label>
               <label>Organização inicial<select value={invitationForm.organizationId} onChange={(event) => setInvitationForm((current) => ({ ...current, organizationId: event.target.value }))}><option value="">Sem vínculo inicial</option>{organizations.map((organization) => <option key={organization.organization_id} value={organization.organization_id}>{organization.trade_name ?? organization.legal_name}</option>)}</select></label>
               <label>Perfil global inicial<select value={invitationForm.platformRoleId} onChange={(event) => setInvitationForm((current) => ({ ...current, platformRoleId: event.target.value }))}><option value="">Nenhum perfil global</option>{roles.filter((role) => role.active).map((role) => <option key={role.platform_role_id} value={role.platform_role_id}>{role.role_name}</option>)}</select></label>
               <label>Cargo/função inicial<input value={invitationForm.jobTitle} onChange={(event) => setInvitationForm((current) => ({ ...current, jobTitle: event.target.value }))} /></label>

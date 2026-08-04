@@ -1,4 +1,4 @@
-#root {
+﻿#root {
   min-height: 100vh;
 }
 
@@ -1011,5 +1011,659 @@ h2 {
     border-color: rgba(139, 194, 232, 0.35);
     background: rgba(139, 194, 232, 0.12);
     color: #b7dcf4;
+  }
+}
+/* FE-09.A.01-C1.7 — identidade e hierarquia organizacional */
+.topbar {
+  position: relative;
+}
+
+.topbar-organization-branding {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  min-width: 80px;
+  max-width: 280px;
+  pointer-events: none;
+}
+
+.organization-hierarchy-view {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #dbe5e1;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.organization-hierarchy-row {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) minmax(120px, auto) minmax(140px, auto) minmax(150px, auto) 24px;
+  align-items: center;
+  gap: 14px;
+  min-height: 58px;
+  padding: 10px 14px;
+  border: 1px solid #e3ebe8;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.organization-hierarchy-row:hover,
+.organization-hierarchy-row:focus-visible {
+  border-color: #0f766e;
+  box-shadow: 0 8px 24px rgba(15, 118, 110, .10);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.organization-hierarchy-branch {
+  color: #0f766e;
+  font-weight: 800;
+}
+
+.organization-hierarchy-main {
+  display: grid;
+  gap: 2px;
+}
+
+.organization-hierarchy-main small {
+  color: #64748b;
+}
+
+@media (max-width: 980px) {
+  .topbar-organization-branding {
+    position: static;
+    transform: none;
+    order: 2;
+    max-width: 180px;
+  }
+
+  .organization-hierarchy-row {
+    grid-template-columns: auto minmax(0, 1fr) 24px;
+  }
+
+  .organization-hierarchy-row > span:not(.organization-hierarchy-branch) {
+    grid-column: 2;
+  }
+}
+
+/* FE-09.A.02.2.5-B2 v3 - consolidação das ações administrativas */
+.platform-admin-topbar-icon-button,
+.platform-admin-entry-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.platform-admin-topbar-icon-button {
+  width: 3rem;
+  min-width: 3rem;
+  height: 3rem;
+  min-height: 3rem;
+  padding: 0;
+  border-radius: 0.8rem;
+  background: var(--color-primary, #5f3fb3);
+  color: #fff;
+}
+
+.platform-admin-entry-icon-button {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+  padding: 0;
+  border-radius: 0.9rem;
+  background: var(--color-success-700, #137b64);
+  color: #fff;
+}
+
+.platform-admin-topbar-icon-button:hover,
+.platform-admin-entry-icon-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0.45rem 1rem rgb(15 74 61 / 18%);
+}
+
+.platform-admin-topbar-icon-button:focus-visible,
+.platform-admin-entry-icon-button:focus-visible {
+  outline: 3px solid rgb(19 123 100 / 28%);
+  outline-offset: 3px;
+}
+
+.platform-admin-topbar-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.platform-admin-action-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.platform-admin-action-glyph svg {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 680px) {
+  .platform-admin-topbar-icon-button {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+/* FIM FE-09.A.02.2.5-B2 v3 */
+
+/* FE-09.A.02.2.5-B3 - ajuste visual das administracoes */
+.platform-admin-topbar-icon-button {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
+.platform-admin-topbar-icon-button:hover {
+  background: rgb(95 63 179 / 10%);
+  box-shadow: none;
+  transform: none;
+}
+
+.platform-admin-topbar-icon-button:active {
+  background: rgb(95 63 179 / 16%);
+}
+
+.platform-admin-topbar-icon-button:focus-visible {
+  outline: 3px solid rgb(95 63 179 / 24%);
+  outline-offset: 2px;
+}
+
+.platform-admin-topbar-icon-button:disabled {
+  background: transparent;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.platform-admin-topbar-icon-button .platform-admin-action-glyph {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+/* FIM FE-09.A.02.2.5-B3 */
+
+/* FE-09.A.02.2.5-B4 v3 - saida compacta, avatar e registro assemblear */
+.user-area{gap:.45rem}
+.user-profile-summary{display:flex;align-items:center;gap:.65rem;min-width:0}
+.user-avatar{display:inline-flex;width:2.5rem;min-width:2.5rem;height:2.5rem;align-items:center;justify-content:center;overflow:hidden;border:1px solid rgb(20 74 62 / 16%);border-radius:50%;background:rgb(20 74 62 / 8%);font-size:.78rem;font-weight:800;line-height:1;text-transform:uppercase}
+.user-avatar img{width:100%;height:100%;object-fit:cover}
+.logout-icon-button{display:inline-flex;width:2.75rem;min-width:2.75rem;height:2.75rem;min-height:2.75rem;padding:0;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;box-shadow:none;transition:background-color 160ms ease}
+.logout-icon-button:hover{background:rgb(20 74 62 / 10%)}
+.logout-icon-button:active{background:rgb(20 74 62 / 16%)}
+.logout-icon-button:focus-visible{outline:3px solid rgb(20 74 62 / 22%);outline-offset:2px}
+.logout-icon-button:disabled{opacity:.45;cursor:not-allowed}
+.logout-icon-button svg{width:1.45rem;height:1.45rem}
+@media (max-width:760px){.user-profile-summary{gap:.5rem}.user-avatar{width:2.25rem;min-width:2.25rem;height:2.25rem}.logout-icon-button{width:2.5rem;min-width:2.5rem;height:2.5rem;min-height:2.5rem}}
+/* FIM FE-09.A.02.2.5-B4 v3 */
+
+/* FE-09.A.02.2.5-B5 - cabecalho responsivo e icones */
+.user-area {
+  margin-left: auto !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  gap: 0.5rem !important;
+}
+
+.user-profile-summary {
+  justify-content: flex-end;
+  flex: 0 1 auto;
+}
+
+.user-avatar,
+.platform-admin-topbar-icon-button,
+.logout-icon-button {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-height: 2.75rem !important;
+}
+
+.platform-admin-topbar-icon-button .platform-admin-action-glyph,
+.logout-icon-button svg {
+  width: 1.7rem !important;
+  height: 1.7rem !important;
+}
+
+@media (max-width: 900px) {
+  .user-area {
+    margin-left: auto !important;
+    width: auto !important;
+    max-width: 62%;
+    justify-content: flex-end !important;
+  }
+
+  .user-profile-summary {
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .user-identification {
+    min-width: 0;
+    text-align: right;
+  }
+
+  .user-identification strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 680px) {
+  .user-area {
+    max-width: 70%;
+    gap: 0.35rem !important;
+  }
+
+  .user-identification {
+    max-width: 12rem;
+  }
+}
+/* FIM FE-09.A.02.2.5-B5 APP */
+
+/* FE-09.A.02.2.5-B5.1.4 — tipografia responsiva e contenção inteligente */
+.organization-grid {
+  grid-template-columns:
+    repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+.organization-card {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.organization-card-header {
+  min-width: 0;
+}
+
+.organization-card-header > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.organization-card-header h2 {
+  max-width: 100%;
+  margin: 0;
+  font-size: clamp(1.05rem, 6.9cqi, 1.55rem);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+.organization-access-badges {
+  flex: 0 0 auto;
+  max-width: 38%;
+}
+
+@container (max-width: 295px) {
+  .organization-card-header {
+    gap: 0.65rem;
+  }
+
+  .organization-card-header h2 {
+    font-size: clamp(0.98rem, 6.5cqi, 1.35rem);
+    letter-spacing: -0.035em;
+  }
+
+  .organization-access-badges {
+    max-width: 34%;
+  }
+}
+
+@container (max-width: 250px) {
+  .organization-card-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .organization-access-badges {
+    max-width: 100%;
+    justify-self: start;
+  }
+
+  .organization-card-header h2 {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 720px) {
+  .organization-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .organization-card-header h2 {
+    font-size: clamp(1.15rem, 5.8vw, 1.55rem);
+  }
+}
+/* FE-09.A.02.2.5-B5.1.7 — identidade visual nos cards das organizações */
+.organization-card-branding {
+  min-height: 108px;
+  margin: 1rem 0 0;
+  padding: 0.9rem 0.75rem 1rem;
+  display: grid;
+  place-items: center;
+  border-top: 1px solid rgba(31, 73, 59, 0.1);
+  border-bottom: 1px solid rgba(31, 73, 59, 0.1);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(247, 251, 249, 0.55),
+      rgba(255, 255, 255, 0.92)
+    );
+}
+
+.organization-card-branding > * {
+  max-width: min(100%, 220px);
+}
+
+.organization-card-branding img {
+  display: block;
+  width: auto;
+  max-width: min(100%, 210px);
+  height: auto;
+  max-height: 78px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.organization-card-branding + dl {
+  margin-top: 0;
+  padding-top: 1rem;
+}
+
+@container (max-width: 295px) {
+  .organization-card-branding {
+    min-height: 92px;
+    padding-inline: 0.45rem;
+  }
+
+  .organization-card-branding img {
+    max-width: min(100%, 176px);
+    max-height: 64px;
+  }
+}
+
+@media (max-width: 720px) {
+  .organization-card-branding {
+    min-height: 96px;
+  }
+
+  .organization-card-branding img {
+    max-width: min(100%, 190px);
+    max-height: 68px;
+  }
+}
+
+/* FE-09.A.02.2.5-B5.1.9 — card de acesso integralmente clicável */
+.platform-admin-entry[role='button'] {
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.platform-admin-entry[role='button']:hover {
+  transform: translateY(-2px);
+  border-color: rgba(23, 122, 90, 0.45);
+  background: rgba(247, 251, 249, 0.96);
+  box-shadow: 0 14px 34px rgba(31, 45, 61, 0.1);
+}
+
+.platform-admin-entry[role='button']:focus-visible {
+  outline: 3px solid rgba(23, 122, 90, 0.28);
+  outline-offset: 4px;
+  border-color: rgba(23, 122, 90, 0.55);
+}
+
+.platform-admin-entry[role='button']:active {
+  transform: translateY(0);
+}
+
+.platform-admin-entry[role='button']
+  .platform-admin-entry-icon-button {
+  pointer-events: none;
+}
+
+.platform-admin-entry[role='button']
+  .platform-admin-entry-content {
+  pointer-events: none;
+}
+
+/* FE-09.A.03.2 - Header e footer transversais + UX-T04.2 */
+.platform-shell {
+  --platform-bg: #f4f6f8;
+  --platform-surface: #ffffff;
+  --platform-surface-soft: #eef5f2;
+  --platform-border: #dce4e1;
+  --platform-text: #17202a;
+  --platform-muted: #68757c;
+  --platform-accent: #176b53;
+  --platform-shadow: 0 8px 24px rgba(31, 45, 61, 0.05);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 100vh;
+  background: var(--platform-bg);
+  color: var(--platform-text);
+}
+
+.platform-theme-dark {
+  --platform-bg: #111916;
+  --platform-surface: #18231f;
+  --platform-surface-soft: #21302a;
+  --platform-border: #32443d;
+  --platform-text: #edf5f1;
+  --platform-muted: #a8b8b1;
+  --platform-accent: #62b895;
+  --platform-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
+  color-scheme: dark;
+}
+
+.platform-shell .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-width: 0;
+  border-color: var(--platform-border);
+  background: var(--platform-surface);
+  color: var(--platform-text);
+  box-shadow: 0 3px 16px rgba(22, 52, 42, 0.06);
+}
+
+.platform-shell .brand-name,
+.platform-shell .user-identification strong {
+  color: var(--platform-text);
+}
+
+.platform-shell .brand-caption,
+.platform-shell .supporting-text {
+  color: var(--platform-muted);
+}
+
+.topbar-context-summary {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+  padding: 0.45rem 0.75rem;
+  border-left: 1px solid var(--platform-border);
+}
+
+.topbar-context-summary span {
+  color: var(--platform-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.topbar-context-summary strong {
+  max-width: 260px;
+  overflow: hidden;
+  color: var(--platform-text);
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.platform-theme-button {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  min-width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 1px solid var(--platform-border);
+  border-radius: 50%;
+  background: var(--platform-surface-soft);
+  color: var(--platform-text);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.platform-theme-button:hover,
+.platform-theme-button:focus-visible {
+  border-color: var(--platform-accent);
+  background: var(--platform-surface);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.platform-theme-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.platform-shell .platform-content {
+  width: min(1220px, calc(100% - 2rem));
+  min-width: 0;
+  margin: 0 auto;
+  padding: 2.5rem 0 3rem;
+}
+
+.platform-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 44px;
+  padding: 0.75rem 2rem;
+  border-top: 1px solid var(--platform-border);
+  background: var(--platform-surface);
+  color: var(--platform-muted);
+  font-size: 0.78rem;
+}
+
+.platform-footer strong {
+  color: var(--platform-text);
+}
+
+.platform-shell .module-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  min-height: 0;
+  padding: 1.2rem;
+  background: var(--platform-surface);
+  color: var(--platform-text);
+  box-shadow: var(--platform-shadow);
+}
+
+.platform-shell .module-card-content {
+  min-width: 0;
+}
+
+.platform-shell .module-card-interactive {
+  cursor: pointer;
+}
+
+.platform-shell .module-card-interactive:focus-visible {
+  border-color: var(--platform-accent);
+  outline: 3px solid rgba(23, 107, 83, 0.22);
+  outline-offset: 2px;
+}
+
+.platform-theme-dark .organization-card,
+.platform-theme-dark .module-card,
+.platform-theme-dark .state-card,
+.platform-theme-dark .network-dashboard,
+.platform-theme-dark .network-summary-card,
+.platform-theme-dark .network-table-wrap,
+.platform-theme-dark .organization-summary span,
+.platform-theme-dark .primary-list-toolbar,
+.platform-theme-dark .organization-table-card {
+  border-color: var(--platform-border);
+  background: var(--platform-surface);
+  color: var(--platform-text);
+}
+
+.platform-theme-dark input,
+.platform-theme-dark select,
+.platform-theme-dark textarea {
+  border-color: var(--platform-border);
+  background: var(--platform-surface);
+  color: var(--platform-text);
+}
+
+@media (max-width: 980px) {
+  .topbar-context-summary {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .platform-shell .topbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 0.85rem 1rem;
+  }
+
+  .platform-shell .user-area {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .platform-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0.85rem 1rem;
+  }
+
+  .platform-shell .module-card {
+    grid-template-columns: 1fr;
   }
 }

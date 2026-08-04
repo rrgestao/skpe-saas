@@ -1,0 +1,64 @@
+﻿.organization-branding-logo {
+  display: block;
+  max-width: 240px;
+  width: auto;
+  height: 46px;
+  object-fit: contain;
+}
+
+.organization-branding-fallback {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(15, 118, 93, 0.2);
+  border-radius: 12px;
+  background: rgba(236, 253, 245, 0.85);
+  color: #0f766e;
+  font-weight: 800;
+}
+
+@media (max-width: 860px) {
+  .organization-branding-logo {
+    max-width: 150px;
+    height: 36px;
+  }
+
+  .organization-branding-fallback {
+    min-width: 36px;
+    height: 36px;
+  }
+}
+
+/* FE09A02.2.1 - restore prominent professional header logo */
+.organization-branding-logo,
+.organization-branding-logo img,
+img.organization-branding-logo,
+[class*="organization-branding"] img {
+  width: auto;
+  height: auto;
+  max-width: min(240px, 28vw) !important;
+  max-height: 58px;
+  object-fit: contain;
+}
+
+@media (max-width: 900px) {
+  .organization-branding-logo,
+  .organization-branding-logo img,
+  img.organization-branding-logo,
+  [class*="organization-branding"] img {
+    max-width: min(190px, 34vw) !important;
+    max-height: 50px;
+  }
+}
+
+@media (max-width: 640px) {
+  .organization-branding-logo,
+  .organization-branding-logo img,
+  img.organization-branding-logo,
+  [class*="organization-branding"] img {
+    max-width: min(150px, 42vw) !important;
+    max-height: 44px;
+  }
+}

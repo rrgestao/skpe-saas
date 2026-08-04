@@ -1,0 +1,289 @@
+﻿.application-shell {
+  --application-shell-header-height: 78px;
+  --application-shell-sidebar-width: 280px;
+  --application-shell-sidebar-collapsed-width: 76px;
+  --application-shell-footer-height: 42px;
+
+  display: grid;
+  grid-template-columns:
+    var(--application-shell-sidebar-width)
+    minmax(0, 1fr);
+  grid-template-rows:
+    var(--application-shell-header-height)
+    minmax(0, 1fr)
+    var(--application-shell-footer-height);
+  grid-template-areas:
+    'header header'
+    'sidebar content'
+    'sidebar footer';
+  width: 100%;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background: #f4f6f8;
+}
+
+.application-shell-collapsed {
+  grid-template-columns:
+    var(--application-shell-sidebar-collapsed-width)
+    minmax(0, 1fr);
+}
+
+.application-shell-header {
+  position: relative;
+  z-index: 40;
+  grid-area: header;
+  display: grid;
+  grid-template-columns: minmax(220px, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 0;
+  padding: 0.8rem 1.5rem;
+  border-bottom: 1px solid #dce4e1;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(26, 49, 41, 0.04);
+}
+
+.application-shell-brand,
+.application-shell-user {
+  min-width: 0;
+}
+
+.application-shell-context {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.application-shell-context-item {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(31, 73, 59, 0.12);
+  border-radius: 10px;
+  background: rgba(247, 251, 249, 0.92);
+}
+
+.application-shell-context-item span {
+  color: #68757c;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.application-shell-context-item strong {
+  overflow: hidden;
+  color: #173d32;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.application-shell-sidebar {
+  position: relative;
+  z-index: 30;
+  grid-area: sidebar;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid #dce4e1;
+  background: #fff;
+}
+
+.application-shell-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(31, 73, 59, 0.08);
+}
+
+.application-shell-collapse-button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid rgba(31, 73, 59, 0.14);
+  border-radius: 8px;
+  background: #fff;
+  color: #176b53;
+  cursor: pointer;
+}
+
+.application-shell-navigation {
+  display: grid;
+  gap: 0.35rem;
+  max-height: calc(100vh - var(--application-shell-header-height) - 58px);
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.application-shell-navigation-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #35443f;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 720;
+  text-align: left;
+}
+
+.application-shell-navigation-item:hover,
+.application-shell-navigation-item:focus-visible {
+  border-color: rgba(23, 122, 90, 0.16);
+  background: rgba(23, 122, 90, 0.07);
+  color: #176b53;
+}
+
+.application-shell-navigation-item.active {
+  border-color: rgba(23, 122, 90, 0.24);
+  background: rgba(23, 122, 90, 0.12);
+  color: #155c46;
+}
+
+.application-shell-navigation-item:focus-visible {
+  outline: 3px solid rgba(23, 122, 90, 0.2);
+  outline-offset: 2px;
+}
+
+.application-shell-navigation-icon {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  min-width: 1.5rem;
+}
+
+.application-shell-collapsed
+  .application-shell-sidebar-header
+  strong,
+.application-shell-collapsed
+  .application-shell-navigation-label {
+  display: none;
+}
+
+.application-shell-collapsed
+  .application-shell-sidebar-header {
+  justify-content: center;
+}
+
+.application-shell-collapsed
+  .application-shell-navigation-item {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding-inline: 0.5rem;
+}
+
+.application-shell-content {
+  grid-area: content;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: #f4f6f8;
+}
+
+.application-shell-footer {
+  grid-area: footer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding: 0.55rem 1.25rem;
+  border-top: 1px solid #dce4e1;
+  background: #fff;
+  color: #68757c;
+  font-size: 0.72rem;
+}
+
+.application-shell-mobile-backdrop {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .application-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'header'
+      'content'
+      'footer';
+  }
+
+  .application-shell-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .application-shell-context {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    order: 3;
+  }
+
+  .application-shell-sidebar {
+    position: fixed;
+    top: var(--application-shell-header-height);
+    bottom: 0;
+    left: 0;
+    z-index: 80;
+    width: min(320px, 86vw);
+    transform: translateX(-104%);
+    transition: transform 180ms ease;
+    box-shadow: 18px 0 50px rgba(12, 28, 23, 0.2);
+  }
+
+  .application-shell-mobile-open
+    .application-shell-sidebar {
+    transform: translateX(0);
+  }
+
+  .application-shell-mobile-backdrop {
+    position: fixed;
+    inset: var(--application-shell-header-height) 0 0;
+    z-index: 70;
+    display: block;
+    border: 0;
+    background: rgba(12, 28, 23, 0.5);
+  }
+
+  .application-shell-footer {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .application-shell {
+    --application-shell-header-height: auto;
+    --application-shell-footer-height: auto;
+    height: 100dvh;
+  }
+
+  .application-shell-header {
+    gap: 0.65rem;
+    padding: 0.7rem 0.8rem;
+  }
+
+  .application-shell-context-item {
+    min-width: max-content;
+  }
+
+  .application-shell-footer {
+    padding: 0.45rem 0.75rem;
+  }
+}

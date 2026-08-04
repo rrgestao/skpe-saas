@@ -1,0 +1,149 @@
+﻿.pa-admin-avatar-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: #177a5a;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.pa-admin-avatar-trigger img,
+.pa-admin-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pa-admin-avatar-trigger small {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.2rem;
+  background: rgba(7, 35, 28, 0.8);
+  color: #fff;
+  font-size: 0.55rem;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: 160ms ease;
+}
+
+.pa-admin-avatar-trigger:hover small,
+.pa-admin-avatar-trigger:focus-visible small {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pa-admin-avatar-trigger:focus-visible {
+  outline: 3px solid rgba(23, 122, 90, 0.28);
+  outline-offset: 3px;
+}
+
+.pa-admin-avatar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(12, 28, 23, 0.62);
+}
+
+.pa-admin-avatar-dialog {
+  width: min(520px, 100%);
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(12, 28, 23, 0.32);
+}
+
+.pa-admin-avatar-dialog header,
+.pa-admin-avatar-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid #dfe7e4;
+}
+
+.pa-admin-avatar-dialog footer {
+  justify-content: flex-end;
+  border-top: 1px solid #dfe7e4;
+  border-bottom: 0;
+}
+
+.pa-admin-avatar-dialog h3,
+.pa-admin-avatar-dialog p {
+  margin: 0;
+}
+
+.pa-admin-avatar-dialog header > button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+
+.pa-admin-avatar-body {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 1.2rem;
+}
+
+.pa-admin-avatar-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 124px;
+  height: 124px;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid rgba(23, 122, 90, 0.26);
+  border-radius: 50%;
+  background: rgba(23, 122, 90, 0.1);
+  color: #176b53;
+  cursor: pointer;
+  font: inherit;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.pa-admin-avatar-preview small {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.45rem;
+  background: rgba(7, 35, 28, 0.8);
+  color: #fff;
+  font-size: 0.7rem;
+}
+
+.pa-admin-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.pa-admin-avatar-body label {
+  display: grid;
+  width: 100%;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.pa-admin-avatar-body textarea {
+  width: 100%;
+}
+
+.pa-admin-avatar-dialog button {
+  cursor: pointer;
+}

@@ -1,0 +1,337 @@
+﻿/* FE-09.A.02.2.4 - Estabilizacao responsiva, tipografica e de overflow */
+:root {
+  --sparks-readable-body: 15px;
+  --sparks-readable-small: 12.5px;
+  --sparks-readable-label: 13px;
+  --sparks-content-gutter: clamp(14px, 2.2vw, 34px);
+}
+
+html {
+  font-size: 16px;
+  text-size-adjust: 100%;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-size: var(--sparks-readable-body);
+  line-height: 1.45;
+}
+
+small,
+.skpe-sidebar-area-label,
+.skpe-domain-menu small,
+.skpe-domain-values small,
+.pa-eyebrow,
+.pa-field-help,
+.pa-field-hint,
+.pa-record-card small,
+.skpe-user-table-header p,
+.skpe-user-table th,
+.skpe-data-grid th,
+.skpe-artifacts-table-wrap th {
+  font-size: var(--sparks-readable-small) !important;
+  line-height: 1.35;
+}
+
+label,
+legend,
+.skpe-governance-form label > span,
+.skpe-cnae-search label > span,
+.skpe-cnae-source-grid label > span {
+  font-size: var(--sparks-readable-label) !important;
+}
+
+.platform-shell,
+.platform-content,
+.app-shell,
+.pa-layout,
+.pa-content,
+.skpe-shell,
+.skpe-main,
+.skpe-main-content,
+.skpe-admin-content,
+.skpe-artifacts-page {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.platform-content,
+.pa-content,
+.skpe-main,
+.skpe-main-content,
+.skpe-admin-content,
+.skpe-artifacts-page {
+  padding-inline: var(--sparks-content-gutter) !important;
+}
+
+.skpe-main-content > *,
+.skpe-admin-content > *,
+.pa-content > *,
+.platform-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pa-card-grid,
+.pa-related-grid,
+.skpe-area-card-grid,
+.skpe-governance-card-grid,
+.skpe-artifacts-grid,
+.skpe-artifacts-summary,
+.skpe-hierarchy-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
+}
+
+.pa-form-grid,
+.skpe-governance-form,
+.skpe-contact-form,
+.skpe-hierarchy-form-grid,
+.skpe-artifact-modal form {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
+}
+
+.pa-form-grid > *,
+.skpe-governance-form > *,
+.skpe-contact-form > *,
+.skpe-hierarchy-form-grid > *,
+.skpe-artifact-modal form > * {
+  min-width: 0;
+}
+
+/* Mantem a rolagem horizontal dentro do frame visivel e limita tabelas longas. */
+.pa-table-card,
+.pa-table-wrap,
+.skpe-user-table-wrapper,
+.skpe-data-grid-wrapper,
+.skpe-hierarchy-table-wrap,
+.skpe-initiative-table-wrapper,
+.skpe-artifacts-table-wrap,
+.network-table-wrap,
+.organization-table-card,
+[class*="table-wrap"],
+[class*="table-card"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  max-height: max(420px, calc(100vh - 250px));
+  position: relative;
+}
+
+.pa-table-card table,
+.pa-table-wrap table,
+.skpe-user-table,
+.skpe-data-grid,
+.skpe-hierarchy-table-wrap table,
+.skpe-initiative-table,
+.skpe-artifacts-table-wrap table,
+.network-table,
+.organization-table,
+[class*="table-wrap"] table,
+[class*="table-card"] table {
+  width: max-content !important;
+  min-width: 100% !important;
+  max-width: none !important;
+  table-layout: auto;
+}
+
+.pa-table-card thead,
+.pa-table-wrap thead,
+.skpe-user-table thead,
+.skpe-data-grid thead,
+.skpe-hierarchy-table-wrap thead,
+.skpe-initiative-table thead,
+.skpe-artifacts-table-wrap thead,
+[class*="table-wrap"] thead,
+[class*="table-card"] thead {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.pa-table-card th,
+.pa-table-card td,
+.pa-table-wrap th,
+.pa-table-wrap td,
+.skpe-user-table th,
+.skpe-user-table td,
+.skpe-data-grid th,
+.skpe-data-grid td,
+.skpe-hierarchy-table-wrap th,
+.skpe-hierarchy-table-wrap td,
+.skpe-initiative-table th,
+.skpe-initiative-table td,
+.skpe-artifacts-table-wrap th,
+.skpe-artifacts-table-wrap td {
+  font-size: 14px !important;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+/* Evita colunas e textos ultrapassando os paineis. */
+.pa-record-card,
+.pa-related-card,
+.skpe-user-table-card,
+.skpe-admin-state-card,
+.skpe-domain-values article,
+.skpe-governance-card-grid article,
+.skpe-journey-item,
+.skpe-phase-card,
+.skpe-stage-card {
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+
+.pa-heading,
+.pa-section-heading,
+.skpe-admin-heading,
+.skpe-page-heading,
+.skpe-artifacts-header,
+.skpe-user-table-header,
+.skpe-list-toolbar,
+.skpe-primary-list-toolbar {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.pa-heading > *,
+.pa-section-heading > *,
+.skpe-admin-heading > *,
+.skpe-page-heading > *,
+.skpe-artifacts-header > *,
+.skpe-user-table-header > *,
+.skpe-list-toolbar > *,
+.skpe-primary-list-toolbar > * {
+  min-width: 0;
+}
+
+/* Corrige o efeito de compressao excessiva dos cards de jornada. */
+.skpe-journey-item,
+.skpe-phase-card,
+.skpe-stage-card {
+  padding: clamp(16px, 2vw, 26px) !important;
+}
+
+.skpe-journey-item h2,
+.skpe-phase-card h2,
+.skpe-stage-card h2,
+.skpe-main-content h2 {
+  font-size: clamp(1.15rem, 1.25vw, 1.55rem) !important;
+  line-height: 1.2;
+}
+
+.skpe-journey-item p,
+.skpe-phase-card p,
+.skpe-stage-card p {
+  font-size: 0.95rem !important;
+  line-height: 1.5;
+}
+
+/* Desktop intermediario: aproveita a largura sem sacrificar leitura. */
+@media (max-width: 1366px) {
+  :root {
+    --sparks-content-gutter: clamp(12px, 1.7vw, 24px);
+  }
+
+  .skpe-shell {
+    grid-template-columns: minmax(190px, 220px) minmax(0, 1fr) !important;
+  }
+
+  .skpe-sidebar {
+    width: auto !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .pa-layout,
+  .skpe-user-management-layout,
+  .skpe-domain-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pa-sidebar,
+  .skpe-user-detail-panel,
+  .skpe-domain-menu {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .skpe-domain-menu {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --sparks-readable-body: 16px;
+    --sparks-readable-small: 13px;
+    --sparks-readable-label: 13.5px;
+  }
+
+  .skpe-shell {
+    display: block !important;
+  }
+
+  .skpe-sidebar {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .pa-table-card,
+  .pa-table-wrap,
+  .skpe-user-table-wrapper,
+  .skpe-data-grid-wrapper,
+  .skpe-hierarchy-table-wrap,
+  .skpe-initiative-table-wrapper,
+  .skpe-artifacts-table-wrap,
+  [class*="table-wrap"],
+  [class*="table-card"] {
+    max-height: calc(100vh - 180px);
+  }
+}
+
+@media (max-width: 680px) {
+  .platform-content,
+  .pa-content,
+  .skpe-main,
+  .skpe-main-content,
+  .skpe-admin-content,
+  .skpe-artifacts-page {
+    padding-inline: 12px !important;
+  }
+
+  .pa-section-heading,
+  .skpe-admin-heading,
+  .skpe-page-heading,
+  .skpe-artifacts-header,
+  .skpe-user-table-header {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .pa-heading-actions,
+  .skpe-heading-actions,
+  .skpe-panel-actions,
+  .skpe-modal-actions,
+  .pa-form-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .pa-heading-actions > *,
+  .skpe-heading-actions > *,
+  .skpe-panel-actions > *,
+  .skpe-modal-actions > *,
+  .pa-form-actions > * {
+    flex: 1 1 100%;
+  }
+}

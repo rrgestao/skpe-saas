@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import type {
   AuthChangeEvent,
@@ -6,13 +6,22 @@ import type {
 } from '@supabase/supabase-js'
 
 import { supabase } from './lib/supabase'
-import { SkpeCockpit } from './modules/skpe/SkpeCockpit'
+import { useLocation, useNavigate } from 'react-router-dom'
+
+import { SkpeWorkspace } from './modules/skpe/app/SkpeWorkspace'
+import {
+  parsePlatformRoute,
+  platformRoutes,
+} from './modules/skpe/app/skpeRoutes'
 import { PlatformAdmin } from './modules/platform-admin/PlatformAdmin'
+import { OrganizationBrandingLogo } from './components/organization-branding/OrganizationBrandingLogo'
+import { UserProfileDialog } from './components/user-profile/UserProfileDialog'
 
 import './App.css'
 
 const LAST_SUCCESSFUL_EMAIL_KEY =
   'skpe:last-successful-email'
+const PLATFORM_THEME_KEY = 'sparks:platform-theme'
 
 type MessageType = 'info' | 'success' | 'error'
 
@@ -30,6 +39,13 @@ type Organization = {
   source_organization_name: string | null
   hierarchy_depth: number | null
   can_manage_organization: boolean
+}
+
+type OrganizationHierarchyNode = {
+  organization_id: string
+  parent_organization_id: string | null
+  hierarchy_depth: number
+  hierarchy_path: string[]
 }
 
 type PlatformModule = {
@@ -96,8 +112,28 @@ function getOrganizationLevelLabel(value: string) {
   return ORGANIZATION_LEVEL_LABELS[value] ?? value
 }
 
-function getMembershipStatusLabel(value: string) {
-  return MEMBERSHIP_STATUS_LABELS[value] ?? value
+function getOrganizationMembershipStatusLabel(
+  organization: Organization,
+) {
+  const normalized = organization.membership_status?.trim()
+
+  if (normalized && MEMBERSHIP_STATUS_LABELS[normalized]) {
+    return MEMBERSHIP_STATUS_LABELS[normalized]
+  }
+
+  // access_origin/access_mode nao sao situacoes de vinculo.
+  // Quando uma RPC legada devolver a modalidade no campo de status,
+  // preservamos a semantica do vinculo direto ativo na interface.
+  if (
+    normalized === 'hierarchical' ||
+    normalized === 'hierarchical_management' ||
+    normalized === 'direct_membership' ||
+    normalized === 'direct'
+  ) {
+    return 'Ativo'
+  }
+
+  return normalized || 'Nao informado'
 }
 
 function isHierarchicalReadOnlyAccess(
@@ -109,19 +145,6 @@ function isHierarchicalReadOnlyAccess(
   )
 }
 
-function getOrganizationAccessLabel(
-  organization: Organization,
-) {
-  if (isHierarchicalReadOnlyAccess(organization)) {
-    return organization.source_organization_name
-      ? `Gestão sistêmica via ${organization.source_organization_name}`
-      : 'Acesso hierárquico — somente leitura'
-  }
-
-  return getMembershipStatusLabel(
-    organization.membership_status,
-  )
-}
 
 function getOrganizationProfileLabel(
   organization: Organization,
@@ -214,6 +237,31 @@ function EyeOffIcon() {
   )
 }
 
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M20 15.2A8.4 8.4 0 118.8 4a7 7 0 0011.2 11.2z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 00-1.88-.34 1.7 1.7 0 00-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 00-1.03-1.56 1.7 1.7 0 00-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 007 15a1.7 1.7 0 00-1.56-1.03h-.08v-3h.08A1.7 1.7 0 007 9a1.7 1.7 0 00-.34-1.88l-.06-.06 2.12-2.12.06.06A1.7 1.7 0 0010.68 5 1.7 1.7 0 0011.7 3.44v-.08h3v.08A1.7 1.7 0 0015.74 5a1.7 1.7 0 001.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0019.4 9a1.7 1.7 0 001.56 1.03h.08v3h-.08A1.7 1.7 0 0019.4 15z" fill="none" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function SearchIcon() {
   return (
     <svg
@@ -236,6 +284,28 @@ function SearchIcon() {
         strokeWidth="1.8"
         strokeLinecap="round"
       />
+    </svg>
+  )
+}
+
+function CardsViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="13.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="13.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  )
+}
+
+function RowsViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 6h11M9 12h11M9 18h11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="5" cy="6" r="1" fill="currentColor" />
+      <circle cx="5" cy="12" r="1" fill="currentColor" />
+      <circle cx="5" cy="18" r="1" fill="currentColor" />
     </svg>
   )
 }
@@ -269,6 +339,25 @@ function ArrowRightIcon() {
   )
 }
 
+function HierarchyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="15" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 7v5M6 17v-3h12v3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 3.5h9.5v17H4z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M13.5 12H21M18 9l3 3-3 3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 12h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  )
+}
 function StrategyIcon() {
   return (
     <svg
@@ -337,9 +426,35 @@ function PasswordVisibilityButton({
 }
 
 function App() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
   const [session, setSession] =
     useState<Session | null>(null)
 
+  const [userProfileOpen, setUserProfileOpen] =
+    useState(false)
+
+  const [userAvatarUrl, setUserAvatarUrl] =
+    useState<string | null>(null)
+
+  const [userDisplayName, setUserDisplayName] =
+    useState('')
+
+  const [userProfileRefresh, setUserProfileRefresh] =
+    useState(0)
+
+  const [platformTheme, setPlatformTheme] = useState<'light' | 'dark'>(() => {
+    const savedTheme = localStorage.getItem(PLATFORM_THEME_KEY)
+
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      return savedTheme
+    }
+
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light'
+  })
   const [email, setEmail] = useState(() => {
     return (
       localStorage.getItem(
@@ -358,6 +473,9 @@ function App() {
   const [organizations, setOrganizations] =
     useState<Organization[]>([])
 
+  const [organizationHierarchy, setOrganizationHierarchy] =
+    useState<OrganizationHierarchyNode[]>([])
+
   const [platformAdminOpen, setPlatformAdminOpen] =
     useState(false)
 
@@ -365,7 +483,7 @@ function App() {
     useState(false)
 
   const [organizationViewMode, setOrganizationViewMode] =
-    useState<'cards' | 'grid'>('cards')
+    useState<'cards' | 'grid' | 'hierarchy'>('cards')
 
   const [organizationSearch, setOrganizationSearch] =
     useState('')
@@ -394,6 +512,52 @@ function App() {
         return organizationSortDirection === 'asc' ? comparison : -comparison
       })
   }, [organizations, organizationSearch, organizationSortDirection])
+
+  const hierarchicalVisibleOrganizations = useMemo(() => {
+    if (organizationHierarchy.length === 0) {
+      return visibleOrganizations
+    }
+
+    const hierarchyByOrganization = new Map(
+      organizationHierarchy.map((node) => [
+        node.organization_id,
+        node,
+      ]),
+    )
+
+    return [...visibleOrganizations].sort((first, second) => {
+      const firstNode = hierarchyByOrganization.get(
+        first.organization_id,
+      )
+      const secondNode = hierarchyByOrganization.get(
+        second.organization_id,
+      )
+
+      const firstPath = firstNode?.hierarchy_path.join('/') ?? first.organization_id
+      const secondPath = secondNode?.hierarchy_path.join('/') ?? second.organization_id
+
+      const pathComparison = firstPath.localeCompare(
+        secondPath,
+        'pt-BR',
+      )
+
+      if (pathComparison !== 0) {
+        return pathComparison
+      }
+
+      const firstName =
+        first.trade_name ??
+        first.legal_name ??
+        first.organization_code
+      const secondName =
+        second.trade_name ??
+        second.legal_name ??
+        second.organization_code
+
+      return firstName.localeCompare(secondName, 'pt-BR')
+    })
+  }, [organizationHierarchy, visibleOrganizations])
+
 
   const [modules, setModules] =
     useState<PlatformModule[]>([])
@@ -482,6 +646,76 @@ function App() {
   }
 
   useEffect(() => {
+    if (!session?.user.id) {
+      setUserAvatarUrl(null)
+      setUserDisplayName('')
+      return
+    }
+
+    let active = true
+
+    const loadTransversalProfile = async () => {
+      const { data, error } = await supabase.rpc(
+        'get_my_transversal_profile',
+      )
+
+      if (!active || error) {
+        if (error) {
+          console.error('Erro ao carregar perfil transversal', error)
+        }
+        return
+      }
+
+      const profile = ((data ?? [])[0] ?? null) as {
+        full_name: string | null
+        display_name: string | null
+        avatar_storage_path: string | null
+      } | null
+
+      if (!profile) {
+        return
+      }
+
+      setUserDisplayName(
+        profile.display_name ??
+          profile.full_name ??
+          session.user.email ??
+          'Usuário',
+      )
+
+      if (!profile.avatar_storage_path) {
+        setUserAvatarUrl(null)
+        return
+      }
+
+      const { data: signedData, error: signedError } =
+        await supabase.storage
+          .from('user-avatars')
+          .createSignedUrl(
+            profile.avatar_storage_path,
+            60 * 60,
+          )
+
+      if (!active) {
+        return
+      }
+
+      if (signedError) {
+        setUserAvatarUrl(null)
+        return
+      }
+
+      setUserAvatarUrl(signedData.signedUrl)
+    }
+
+    void loadTransversalProfile()
+
+    return () => {
+      active = false
+    }
+  }, [session?.user.id, session?.user.email, userProfileRefresh])
+
+  useEffect(() => {
     let mounted = true
 
     const loadInitialSession = async () => {
@@ -535,6 +769,7 @@ function App() {
           setShowPassword(false)
           setPasswordFieldReady(false)
           setOrganizations([])
+          setOrganizationHierarchy([])
           setModules([])
           setPlatformRoles([])
           setSelectedOrganization(null)
@@ -558,6 +793,7 @@ function App() {
       async () => {
         if (!session || passwordRecoveryMode) {
           setOrganizations([])
+          setOrganizationHierarchy([])
           setPlatformRoles([])
           return
         }
@@ -568,9 +804,11 @@ function App() {
         const [
           organizationsResponse,
           platformRolesResponse,
+          hierarchyResponse,
         ] = await Promise.all([
           supabase.rpc('get_my_organizations_v2'),
           supabase.rpc('get_my_platform_roles'),
+          supabase.rpc('get_my_organization_hierarchy_v1'),
         ])
 
         if (!mounted) {
@@ -588,6 +826,19 @@ function App() {
           setOrganizations(
             (organizationsResponse.data ??
               []) as Organization[],
+          )
+        }
+
+        if (hierarchyResponse.error) {
+          console.error(
+            'Não foi possível carregar a hierarquia organizacional canônica:',
+            hierarchyResponse.error,
+          )
+
+          setOrganizationHierarchy([])
+        } else {
+          setOrganizationHierarchy(
+            (hierarchyResponse.data ?? []) as OrganizationHierarchyNode[],
           )
         }
 
@@ -617,6 +868,7 @@ function App() {
 
   const handleSelectOrganization = async (
     organization: Organization,
+    preserveRoute = false,
   ) => {
     setPlatformAdminOpen(false)
     setOrganizationAdminOpen(false)
@@ -627,6 +879,14 @@ function App() {
     setLoadingModules(true)
     setLoadingOrganizationNetwork(true)
     clearMessage()
+
+    if (!preserveRoute) {
+      navigate(
+        platformRoutes.organization(
+          organization.organization_id,
+        ),
+      )
+    }
 
     const [modulesResponse, networkResponse] = await Promise.all([
       supabase.rpc('get_my_modules', {
@@ -668,6 +928,7 @@ function App() {
     setOrganizationNetwork([])
     setLoadingOrganizationNetwork(false)
     clearMessage()
+    navigate(platformRoutes.home())
   }
 
   const handleOpenPlatformAdmin = () => {
@@ -677,11 +938,13 @@ function App() {
     setOpenedModule(null)
     setModules([])
     clearMessage()
+    navigate(platformRoutes.platformAdmin())
   }
 
   const handleClosePlatformAdmin = () => {
     setPlatformAdminOpen(false)
     clearMessage()
+    navigate(platformRoutes.home())
   }
   const handleOpenOrganizationAdmin = () => {
     if (!selectedOrganization) {
@@ -706,16 +969,35 @@ function App() {
     setOrganizationAdminOpen(true)
     setOpenedModule(null)
     clearMessage()
+    navigate(
+      platformRoutes.organizationAdmin(
+        selectedOrganization.organization_id,
+      ),
+    )
   }
 
   const handleCloseOrganizationAdmin = () => {
     setOrganizationAdminOpen(false)
     clearMessage()
+    navigate(
+      selectedOrganization
+        ? platformRoutes.organization(
+            selectedOrganization.organization_id,
+          )
+        : platformRoutes.home(),
+    )
   }
 
   const handleReturnToModules = () => {
     setOpenedModule(null)
     clearMessage()
+    navigate(
+      selectedOrganization
+        ? platformRoutes.organization(
+            selectedOrganization.organization_id,
+          )
+        : platformRoutes.home(),
+    )
   }
 
   const handleOpenModule = (
@@ -724,6 +1006,14 @@ function App() {
     if (module.module_code === 'SK-PE') {
       setOpenedModule(module)
       clearMessage()
+      if (selectedOrganization) {
+        navigate(
+          platformRoutes.module(
+            selectedOrganization.organization_id,
+            module.module_code,
+          ),
+        )
+      }
       return
     }
 
@@ -938,9 +1228,178 @@ function App() {
       (role) =>
         role.role_code === 'super_admin',
     )
+
+  const currentRoute = useMemo(
+    () => parsePlatformRoute(location.pathname),
+    [location.pathname],
+  )
+
+  useEffect(() => {
+    if (!session || passwordRecoveryMode || loading) {
+      return
+    }
+
+    if (
+      currentRoute.kind === 'home' ||
+      currentRoute.kind === 'workspace'
+    ) {
+      if (
+        platformAdminOpen ||
+        organizationAdminOpen ||
+        selectedOrganization ||
+        openedModule
+      ) {
+        setPlatformAdminOpen(false)
+        setOrganizationAdminOpen(false)
+        setSelectedOrganization(null)
+        setOpenedModule(null)
+        setModules([])
+        setOrganizationNetwork([])
+      }
+      return
+    }
+
+    if (currentRoute.kind === 'platform-admin') {
+      if (!isPlatformSuperAdmin) {
+        clearMessage()
+        setPlatformAdminOpen(false)
+        setOrganizationAdminOpen(false)
+        setSelectedOrganization(null)
+        setOpenedModule(null)
+        setModules([])
+        setOrganizationNetwork([])
+        navigate(platformRoutes.home(), { replace: true })
+        return
+      }
+
+      setPlatformAdminOpen(true)
+      setOrganizationAdminOpen(false)
+      setSelectedOrganization(null)
+      setOpenedModule(null)
+      setModules([])
+      return
+    }
+
+    if (currentRoute.kind === 'unknown') {
+      showMessage(
+        'A rota informada não é reconhecida. Retornamos ao início da plataforma.',
+        'error',
+      )
+      navigate(platformRoutes.home(), { replace: true })
+      return
+    }
+
+    const routeOrganization = organizations.find(
+      (organization) =>
+        organization.organization_id ===
+        currentRoute.organizationId,
+    )
+
+    if (!routeOrganization) {
+      if (organizations.length > 0) {
+        showMessage(
+          'A organização indicada na rota não está disponível para o seu usuário.',
+          'error',
+        )
+        navigate(platformRoutes.home(), { replace: true })
+      }
+      return
+    }
+
+    if (
+      selectedOrganization?.organization_id !==
+      routeOrganization.organization_id
+    ) {
+      void handleSelectOrganization(
+        routeOrganization,
+        true,
+      )
+      return
+    }
+
+    setPlatformAdminOpen(false)
+
+    if (currentRoute.kind === 'organization') {
+      setOrganizationAdminOpen(false)
+      setOpenedModule(null)
+      return
+    }
+
+    if (currentRoute.kind === 'organization-admin') {
+      const canManageOrganization =
+        routeOrganization.is_organization_admin ||
+        isPlatformSuperAdmin
+
+      if (!canManageOrganization) {
+        showMessage(
+          'Seu perfil não possui permissão para administrar esta organização.',
+          'error',
+        )
+        navigate(
+          platformRoutes.organization(
+            routeOrganization.organization_id,
+          ),
+          { replace: true },
+        )
+        return
+      }
+
+      setOrganizationAdminOpen(true)
+      setOpenedModule(null)
+      return
+    }
+
+    setOrganizationAdminOpen(false)
+
+    if (loadingModules) {
+      return
+    }
+
+    const requestedModuleCode =
+      currentRoute.kind === 'skpe'
+        ? 'SK-PE'
+        : currentRoute.moduleCode.toUpperCase()
+
+    const requestedModule = modules.find(
+      (module) =>
+        module.module_code.toUpperCase() ===
+        requestedModuleCode,
+    )
+
+    if (requestedModule) {
+      setOpenedModule(requestedModule)
+      return
+    }
+
+    showMessage(
+      'O módulo indicado na rota não está disponível para esta organização.',
+      'error',
+    )
+    navigate(
+      platformRoutes.organization(
+        routeOrganization.organization_id,
+      ),
+      { replace: true },
+    )
+  }, [
+    currentRoute,
+    isPlatformSuperAdmin,
+    loading,
+    loadingModules,
+    modules,
+    navigate,
+    openedModule,
+    organizationAdminOpen,
+    organizations,
+    passwordRecoveryMode,
+    platformAdminOpen,
+    selectedOrganization,
+    session,
+  ])
+
   if (organizationAdminOpen && selectedOrganization) {
     return (
-      <SkpeCockpit
+      <SkpeWorkspace
         mode="organization-admin"
         initialSection="organization"
         organizationId={
@@ -965,13 +1424,18 @@ function App() {
         onReturnToModules={
           handleCloseOrganizationAdmin
         }
+        userDisplayName={userDisplayName || session?.user.email || 'Usuário'}
+        userEmail={session?.user.email ?? ''}
+        userAvatarUrl={userAvatarUrl}
+        onOpenPlatformAdmin={handleOpenPlatformAdmin}
+        onOpenUserProfile={() => setUserProfileOpen(true)}
       />
     )
   }
 
   if (openedModule && selectedOrganization) {
     return (
-      <SkpeCockpit
+      <SkpeWorkspace
         organizationId={
           selectedOrganization.organization_id
         }
@@ -993,6 +1457,11 @@ function App() {
         onReturnToModules={
           handleReturnToModules
         }
+        userDisplayName={userDisplayName || session?.user.email || 'Usuário'}
+        userEmail={session?.user.email ?? ''}
+        userAvatarUrl={userAvatarUrl}
+        onOpenPlatformAdmin={handleOpenPlatformAdmin}
+        onOpenUserProfile={() => setUserProfileOpen(true)}
       />
     )
   }
@@ -1290,7 +1759,7 @@ function App() {
   }
 
   return (
-    <main className="platform-shell">
+    <main className={`platform-shell platform-theme-${platformTheme}`}>
       <header className="topbar">
         <div className="brand-area">
           <span className="brand-symbol" aria-hidden="true">
@@ -1309,49 +1778,124 @@ function App() {
           </div>
         </div>
 
-        <div className="user-area">
-          <div className="user-identification">
-            <strong>
-              {session.user.email}
-            </strong>
-
-            <div className="user-badges">
-              {isPlatformSuperAdmin && (
-                <span className="badge badge-platform">
-                  SUPER-ADMIN
-                </span>
-              )}
-
-              {selectedOrganization
-                ?.is_organization_admin && (
-                <span className="badge badge-organization">
-                  ADMIN DA ORGANIZAÇÃO
-                </span>
-              )}
-            </div>
-          </div>
-
+        <div className="topbar-organization-branding">
+          <OrganizationBrandingLogo
+            organizationId={selectedOrganization?.organization_id ?? null}
+            organizationName={
+              selectedOrganization?.trade_name ??
+              selectedOrganization?.legal_name ??
+              null
+            }
+          />
+        </div>
+        <div className="topbar-context-summary" aria-label="Contexto atual">
+          <span>{openedModule ? 'Módulo atual' : 'Contexto atual'}</span>
+          <strong>
+            {openedModule?.module_name ??
+              selectedOrganization?.trade_name ??
+              selectedOrganization?.legal_name ??
+              'Portal da Plataforma'}
+          </strong>
+        </div>        <div className="user-area">
+          <button
+            type="button"
+            className="platform-theme-button"
+            onClick={() => {
+              const nextTheme = platformTheme === 'dark' ? 'light' : 'dark'
+              setPlatformTheme(nextTheme)
+              localStorage.setItem(PLATFORM_THEME_KEY, nextTheme)
+            }}
+            aria-label={
+              platformTheme === 'dark'
+                ? 'Ativar modo claro'
+                : 'Ativar modo escuro'
+            }
+            title={
+              platformTheme === 'dark'
+                ? 'Modo claro'
+                : 'Modo escuro'
+            }
+          >
+            {platformTheme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
           {isPlatformSuperAdmin && (
             <button
-              type="button"
-              className="platform-admin-topbar-button"
-              onClick={handleOpenPlatformAdmin}
-              disabled={loading}
-            >
-              Administração da Plataforma
-            </button>
+            type="button"
+            className="platform-admin-topbar-icon-button"
+            onClick={handleOpenPlatformAdmin}
+            disabled={loading}
+            aria-label="Administração da Plataforma"
+            title="Administração da Plataforma"
+          >
+            <span className="platform-admin-action-glyph" aria-hidden="true">
+              <SettingsIcon />
+            </span>
+          </button>
           )}
 
           <button
             type="button"
-            className="secondary-button"
+            className="user-profile-summary user-profile-trigger"
+            onClick={() => setUserProfileOpen(true)}
+            aria-label="Abrir meu perfil"
+            title="Meu perfil"
+          >
+            <div className="user-avatar" aria-hidden="true">
+              {userAvatarUrl ? (
+                <img src={userAvatarUrl} alt="" />
+              ) : (
+                (userDisplayName || session.user.email || 'U')
+                  .slice(0, 2)
+                  .toUpperCase()
+              )}
+            </div>
+
+            <div className="user-identification">
+              <strong>
+                {userDisplayName || session.user.email}
+              </strong>
+
+              <div className="user-badges">
+                {isPlatformSuperAdmin && (
+                  <span className="badge badge-platform">
+                    SUPER-ADMIN
+                  </span>
+                )}
+
+                {selectedOrganization
+                  ?.is_organization_admin && (
+                  <span className="badge badge-organization">
+                    ADMIN DA ORGANIZAÇÃO
+                  </span>
+                )}
+              </div>
+            </div>
+          </button>
+
+
+
+          <button
+            type="button"
+            className="logout-icon-button"
             onClick={handleLogout}
             disabled={loading}
+            aria-label={loading ? 'Saindo da Plataforma' : 'Sair da Plataforma'}
+            title={loading ? 'Saindo...' : 'Sair da Plataforma'}
           >
-            {loading ? 'Saindo...' : 'Sair'}
+            <LogoutIcon />
           </button>
         </div>
       </header>
+
+      <UserProfileDialog
+        open={userProfileOpen}
+        userId={session.user.id}
+        email={session.user.email ?? ''}
+        onClose={() => setUserProfileOpen(false)}
+        onSaved={() => {
+          setUserProfileRefresh((current) => current + 1)
+        }}
+      />
 
       <div className="platform-content">
         {platformAdminOpen && isPlatformSuperAdmin ? (
@@ -1399,8 +1943,8 @@ function App() {
                 <span>
                   Vínculo:{' '}
                   {
-                    getMembershipStatusLabel(
-                      selectedOrganization.membership_status,
+                    getOrganizationMembershipStatusLabel(
+                      selectedOrganization,
                     )
                   }
                 </span>
@@ -1409,21 +1953,24 @@ function App() {
             {(selectedOrganization.is_organization_admin ||
               isPlatformSuperAdmin) && (
               <section className="platform-admin-entry organization-admin-entry">
-                <div
-                  className="platform-admin-entry-icon"
-                  aria-hidden="true"
+                <button
+                  type="button"
+                  className="platform-admin-entry-icon-button"
+                  onClick={handleOpenOrganizationAdmin}
+                  aria-label="Acessar Administração da Organização"
+                  title="Acessar Administração da Organização"
                 >
-                  ⚙
-                </div>
+                  <span className="platform-admin-action-glyph" aria-hidden="true">
+                    <SettingsIcon />
+                  </span>
+                </button>
 
                 <div className="platform-admin-entry-content">
                   <p className="eyebrow">
                     Escopo organizacional
                   </p>
 
-                  <h2>
-                    Administração da Organização
-                  </h2>
+                  <h2>Administração da Organização</h2>
 
                   <p>
                     Gerencie cadastro institucional, usuários,
@@ -1432,15 +1979,6 @@ function App() {
                     organização, sem entrar em um módulo.
                   </p>
                 </div>
-
-                <button
-                  type="button"
-                  className="platform-admin-entry-button"
-                  onClick={handleOpenOrganizationAdmin}
-                >
-                  Acessar administração
-                  <ArrowRightIcon />
-                </button>
               </section>
             )}
 
@@ -1589,17 +2127,7 @@ function App() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      className="module-access-button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        handleOpenModule(module)
-                      }}
-                    >
-                      Acessar módulo
-                      <ArrowRightIcon />
-                    </button>
+
                   </article>
                 ))}
               </section>
@@ -1625,8 +2153,28 @@ function App() {
             </section>
 
             {isPlatformSuperAdmin && (
-              <section className="platform-admin-entry">
-                <div className="platform-admin-entry-icon" aria-hidden="true">⚙</div>
+              <section
+                className="platform-admin-entry"
+                role="button"
+                tabIndex={0}
+                onClick={handleOpenPlatformAdmin}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleOpenPlatformAdmin()
+                  }
+                }}
+                aria-label="Acessar Administração da Plataforma"
+                title="Acessar Administração da Plataforma"
+              >
+                <span
+                  className="platform-admin-entry-icon-button"
+                  aria-hidden="true"
+                >
+                  <span className="platform-admin-action-glyph">
+                    <SettingsIcon />
+                  </span>
+                </span>
                 <div className="platform-admin-entry-content">
                   <p className="eyebrow">Acesso global</p>
                   <h2>Administração da Plataforma</h2>
@@ -1636,14 +2184,6 @@ function App() {
                     precisar selecionar uma organização.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="platform-admin-entry-button"
-                  onClick={handleOpenPlatformAdmin}
-                >
-                  Acessar administração
-                  <ArrowRightIcon />
-                </button>
               </section>
             )}
 
@@ -1684,11 +2224,61 @@ function App() {
                     {organizationSortDirection === 'asc' ? 'A → Z' : 'Z → A'}
                   </button>
                   <div className="primary-list-view-toggle" aria-label="Modo de visualização">
-                    <button type="button" className={organizationViewMode === 'cards' ? 'active' : ''} onClick={() => setOrganizationViewMode('cards')} title="Visualizar em cards">▦</button>
-                    <button type="button" className={organizationViewMode === 'grid' ? 'active' : ''} onClick={() => setOrganizationViewMode('grid')} title="Visualizar em linhas">☷</button>
+                    <button type="button" className={organizationViewMode === 'cards' ? 'active' : ''} onClick={() => setOrganizationViewMode('cards')} title="Visualizar em cards"><CardsViewIcon /></button>
+                    <button type="button" className={organizationViewMode === 'grid' ? 'active' : ''} onClick={() => setOrganizationViewMode('grid')} title="Visualizar em linhas"><RowsViewIcon /></button>
+                  <button
+                    type="button"
+                    className={organizationViewMode === 'hierarchy' ? 'active' : ''}
+                    onClick={() => setOrganizationViewMode('hierarchy')}
+                    aria-label="Visualizar organizações por hierarquia"
+                    title="Hierarquia"
+                  >
+                    <HierarchyIcon />
+                  </button>
                   </div>
                 </section>
-                {organizationViewMode === 'cards' ? (
+                {organizationViewMode === 'hierarchy' ? (
+                  <section className="organization-hierarchy-view" aria-label="Hierarquia das organizações">
+                    {hierarchicalVisibleOrganizations.map((organization) => {
+                      const canonicalNode = organizationHierarchy.find(
+                        (node) =>
+                          node.organization_id ===
+                          organization.organization_id,
+                      )
+                      const depth = Math.max(
+                        0,
+                        Number(
+                          canonicalNode?.hierarchy_depth ??
+                            organization.hierarchy_depth ??
+                            0,
+                        ),
+                      )
+                      const accessType = isHierarchicalReadOnlyAccess(organization) ? 'Hierárquico' : 'Direto'
+                      return (
+                        <article
+                          key={organization.organization_id}
+                          className="organization-hierarchy-row"
+                          style={{ marginLeft: `${Math.min(depth, 6) * 28}px` }}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => void handleSelectOrganization(organization)}
+                          onKeyDown={(event) => activateWithKeyboard(event, () => void handleSelectOrganization(organization))}
+                        >
+                          <span className="organization-hierarchy-branch" aria-hidden="true">{depth > 0 ? '└─' : '●'}</span>
+                          <div className="organization-hierarchy-main">
+                            <strong>{organization.trade_name ?? organization.legal_name}</strong>
+                            <small>{organization.organization_code}</small>
+                          </div>
+                          <span>{getOrganizationLevelLabel(organization.organization_level)}</span>
+                          <span>Tipo de acesso: {accessType}</span>
+                          <span>Status do vínculo: {getOrganizationMembershipStatusLabel(organization)}</span>
+                          <span>Perfil: {getOrganizationProfileLabel(organization)}</span>
+                          <ArrowRightIcon />
+                        </article>
+                      )
+                    })}
+                  </section>
+                ) : organizationViewMode === 'cards' ? (
               <section className="organization-grid">
                 {visibleOrganizations.map(
                   (organization) => (
@@ -1736,6 +2326,19 @@ function App() {
                         </div>
                       </div>
 
+                      <div
+                        className="organization-card-branding"
+                        aria-label={`Identidade visual de ${organization.trade_name ?? organization.legal_name}`}
+                      >
+                        <OrganizationBrandingLogo
+                          organizationId={organization.organization_id}
+                          organizationName={
+                            organization.trade_name ??
+                            organization.legal_name
+                          }
+                        />
+                      </div>
+
                       <dl>
                         <div>
                           <dt>Nível</dt>
@@ -1749,28 +2352,18 @@ function App() {
                           </dd>
                         </div>
 
-                        <div>
-                          <dt>Vínculo</dt>
+                                                <div>
+                          <dt>Acesso</dt>
 
                           <dd>
                             {
-                              getOrganizationAccessLabel(organization)
+                              isHierarchicalReadOnlyAccess(organization) ? 'Hierárquico' : 'Direto'
                             }
                           </dd>
                         </div>
                       </dl>
 
-                      <button
-                        type="button"
-                        className="organization-access-button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          void handleSelectOrganization(organization)
-                        }}
-                      >
-                        Acessar organização
-                        <ArrowRightIcon />
-                      </button>
+
                     </article>
                   ),
                 )}
@@ -1778,7 +2371,7 @@ function App() {
                 ) : (
                   <section className="organization-table-card">
                     <table className="organization-table">
-                      <thead><tr><th onClick={() => setOrganizationSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Código</th><th>Nível</th><th>Vínculo</th><th>Perfil</th><th>Ações</th></tr></thead>
+                      <thead><tr><th onClick={() => setOrganizationSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Código</th><th>Nível</th><th>Tipo de acesso</th><th>Status do vínculo</th><th>Perfil</th><th>Ações</th></tr></thead>
                       <tbody>{visibleOrganizations.map((organization) => (
                         <tr
                           key={organization.organization_id}
@@ -1796,7 +2389,8 @@ function App() {
                           <td><strong>{organization.trade_name ?? organization.legal_name}</strong></td>
                           <td>{organization.organization_code}</td>
                           <td>{getOrganizationLevelLabel(organization.organization_level)}</td>
-                          <td>{getOrganizationAccessLabel(organization)}</td>
+                          <td>{isHierarchicalReadOnlyAccess(organization) ? 'Hierárquico' : 'Direto'}</td>
+                          <td>{getOrganizationMembershipStatusLabel(organization)}</td>
                           <td>{getOrganizationProfileLabel(organization)}</td>
                           <td><button type="button" title="Acessar organização" onClick={(event) => { event.stopPropagation(); void handleSelectOrganization(organization) }}>→</button></td>
                         </tr>
@@ -1809,7 +2403,10 @@ function App() {
           </>
         )}
       </div>
-    </main>
+      <footer className="platform-footer">
+        <strong>Plataforma SPARKs</strong>
+        <span>© SPARKOOP — Todos os direitos reservados</span>
+      </footer>    </main>
   )
 }
 
