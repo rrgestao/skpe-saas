@@ -1,4 +1,4 @@
-﻿import {
+import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
@@ -12,6 +12,7 @@ import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR
 
 import './SkpeCockpit.css'
 import { MethodologyArtifactsSection } from './MethodologyArtifactsSection'
+import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 
 type CockpitSection =
   | 'overview'
@@ -1086,6 +1087,11 @@ function OverviewSection({
   organizationCode,
   projectContext,
   canManageJourney,
+  canViewOverview,
+  canViewJourney,
+  canViewInitiatives,
+  canViewArtifacts,
+  canViewGovernance,
   startingProject,
   onStartProject,
   onNavigate,
@@ -1094,171 +1100,58 @@ function OverviewSection({
   organizationCode: string
   projectContext: StrategicProjectContext | null
   canManageJourney: boolean
+  canViewOverview: boolean
+  canViewJourney: boolean
+  canViewInitiatives: boolean
+  canViewArtifacts: boolean
+  canViewGovernance: boolean
   startingProject: boolean
   onStartProject: () => void
   onNavigate: (section: CockpitSection) => void
 }) {
-  if (!projectContext) {
-    const currentYear = new Date().getFullYear()
-
-    return (
-      <>
-        <section className="skpe-page-heading">
-          <div>
-            <p className="skpe-eyebrow">Planejamento Estratégico da organização</p>
-            <h1>Jornada ainda não iniciada</h1>
-            <p>
-              O módulo está habilitado para <strong>{organizationName}</strong>, mas não existe
-              um projeto estratégico próprio desta organização. Nenhum dado de outra organização
-              será utilizado como preenchimento alternativo.
-            </p>
-          </div>
-
-          <div className="skpe-heading-status-group">
-            <div className="skpe-horizon-chip">Horizonte sugerido: {currentYear}–{currentYear + 4}</div>
-            <div className="skpe-status-chip skpe-status-chip-neutral">
-              <span className="skpe-status-dot" />
-              Não iniciado
-            </div>
-          </div>
-        </section>
-
-        <section className="skpe-onboarding-panel" aria-label="Início do Planejamento Estratégico">
-          <div className="skpe-onboarding-icon"><GovernanceIcon /></div>
-          <div className="skpe-onboarding-content">
-            <p className="skpe-card-code">PEM-00</p>
-            <h2>Metafase de Governança e Preparação</h2>
-            <p>
-              A jornada começa pela formalização do mandato, definição da governança, caracterização
-              da organização, organização das evidências, avaliação de prontidão e autorização para o diagnóstico.
-            </p>
-
-            <div className="skpe-onboarding-steps">
-              <article><strong>1</strong><span>Formalizar abertura, mandato e escopo.</span></article>
-              <article><strong>2</strong><span>Definir patrocinadores, papéis, ritos e decisões.</span></article>
-              <article><strong>3</strong><span>Estruturar evidências, pendências e prontidão.</span></article>
-            </div>
-
-            <div className="skpe-onboarding-actions">
-              {canManageJourney ? (
-                <button
-                  type="button"
-                  className="skpe-primary-action-button"
-                  onClick={onStartProject}
-                  disabled={startingProject}
-                >
-                  {startingProject ? 'Iniciando jornada...' : 'Iniciar Planejamento Estratégico'}
-                </button>
-              ) : (
-                <p className="skpe-onboarding-readonly">
-                  Solicite a um administrador ou gestor autorizado que inicie a jornada desta organização.
-                </p>
-              )}
-
-              <button
-                type="button"
-                className="skpe-secondary-action-button"
-                onClick={() => onNavigate('governance')}
-              >
-                Conhecer a governança metodológica
-              </button>
-            </div>
-
-            <small>Organização: {organizationCode} · contexto local e exclusivo.</small>
-          </div>
-        </section>
-      </>
-    )
-  }
-
-  const strategicHorizon = formatStrategicHorizon(projectContext)
-  const currentPhaseCode = projectContext.current_phase_code ?? 'A definir'
-  const projectStatusLabel = publicLabel(projectContext.project_status)
-
   return (
-    <>
-      <section className="skpe-page-heading">
-        <div>
-          <p className="skpe-eyebrow">Visão executiva</p>
-          <h1>Cockpit Estratégico</h1>
-          <p>
-            Acompanhamento integrado da jornada de planejamento estratégico da{' '}
-            <strong>{organizationName}</strong> para o horizonte{' '}
-            <strong>{strategicHorizon}</strong>.
-          </p>
-        </div>
-
-        <div className="skpe-heading-status-group">
-
-          <div className="skpe-status-chip">
-            <span className="skpe-status-dot" />
-            {projectStatusLabel}
-          </div>
-        </div>
-      </section>
-
-      <section className="skpe-kpi-grid" aria-label="Indicadores executivos">
-        <article className="skpe-kpi-card skpe-clickable-card" role="button" tabIndex={0} onClick={() => onNavigate('journey')} onKeyDown={(event) => activateRecordWithKeyboard(event, () => onNavigate('journey'))}>
-          <span>Avanço geral estimado</span>
-          <strong>{Number(projectContext.project_progress ?? 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</strong>
-          <small>Abrir Jornada Estratégica</small>
-        </article>
-
-        <article className="skpe-kpi-card skpe-clickable-card" role="button" tabIndex={0} onClick={() => onNavigate('journey')} onKeyDown={(event) => activateRecordWithKeyboard(event, () => onNavigate('journey'))}>
-          <span>Projeto estratégico</span>
-          <strong>{projectContext.project_code}</strong>
-          <small>{projectContext.project_name}</small>
-        </article>
-
-        <article className="skpe-kpi-card skpe-clickable-card" role="button" tabIndex={0} onClick={() => onNavigate('journey')} onKeyDown={(event) => activateRecordWithKeyboard(event, () => onNavigate('journey'))}>
-          <span>Etapa atual</span>
-          <strong>{currentPhaseCode}</strong>
-          <small>Abrir etapa na jornada</small>
-        </article>
-
-        <article className="skpe-kpi-card skpe-clickable-card" role="button" tabIndex={0} onClick={() => onNavigate('governance')} onKeyDown={(event) => activateRecordWithKeyboard(event, () => onNavigate('governance'))}>
-          <span>Horizonte estratégico</span>
-          <strong>{strategicHorizon}</strong>
-          <small>{projectContext.review_cycle ?? 'Ciclo de revisão a definir'}</small>
-        </article>
-      </section>
-
-      <section className="skpe-dashboard-grid">
-        <article className="skpe-dashboard-card skpe-current-phase-card skpe-clickable-card" role="button" tabIndex={0} onClick={() => onNavigate('journey')} onKeyDown={(event) => activateRecordWithKeyboard(event, () => onNavigate('journey'))}>
-          <div className="skpe-card-heading">
-            <div>
-              <p className="skpe-card-code">{currentPhaseCode}</p>
-              <h2>Etapa atual da jornada</h2>
-            </div>
-            <span className="skpe-pill skpe-pill-progress">{projectStatusLabel}</span>
-          </div>
-
-          <p className="skpe-card-description">
-            Consulte a estrutura metodológica própria de {organizationName}, seus itens, responsáveis,
-            evidências, validações e gates.
-          </p>
-
-          <div className="skpe-progress-block">
-            <div><span>Progresso estimado</span><strong>{Number(projectContext.project_progress ?? 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</strong></div>
-            <div className="skpe-progress-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(projectContext.project_progress ?? 0)))}%` }} /></div>
-          </div>
-        </article>
-
-        <article className="skpe-dashboard-card skpe-clickable-card" role="button" tabIndex={0} onClick={() => onNavigate('governance')} onKeyDown={(event) => activateRecordWithKeyboard(event, () => onNavigate('governance'))}>
-          <div className="skpe-card-heading"><div><p className="skpe-card-code">Governança</p><h2>Controles e decisões</h2></div></div>
-          <p className="skpe-card-description">Acesse os controles de governança, papéis, decisões, evidências e validações da organização selecionada.</p>
-          <div className="skpe-decision-box"><strong>Contexto protegido</strong><span>Os registros apresentados pertencem exclusivamente a {organizationName}.</span></div>
-        </article>
-
-        <article className="skpe-dashboard-card skpe-clickable-card" role="button" tabIndex={0} onClick={() => onNavigate('initiatives')} onKeyDown={(event) => activateRecordWithKeyboard(event, () => onNavigate('initiatives'))}>
-          <div className="skpe-card-heading"><div><p className="skpe-card-code">Execução</p><h2>Iniciativas estratégicas</h2></div></div>
-          <p className="skpe-card-description">Abra o portfólio de iniciativas e acompanhe responsáveis, entregas, progresso, riscos e evidências.</p>
-        </article>
-      </section>
-    </>
+    <MyWorkspacePage
+      organizationName={organizationName}
+      organizationCode={organizationCode}
+      project={
+        projectContext
+          ? {
+              code: projectContext.project_code,
+              name: projectContext.project_name,
+              statusLabel: publicLabel(projectContext.project_status),
+              progress: Number(projectContext.project_progress ?? 0),
+              currentPhaseCode:
+                projectContext.current_phase_code ?? 'A definir',
+              strategicHorizon: formatStrategicHorizon(projectContext),
+              reviewCycle:
+                projectContext.review_cycle ??
+                'Ciclo de revisÃ£o a definir',
+            }
+          : null
+      }
+      availableContext={{
+        organization: true,
+        project: Boolean(projectContext),
+        formulation: false,
+        cycle: false,
+        user: true,
+      }}
+      capabilities={{
+        can_view_overview: canViewOverview,
+        can_view_journey: canViewJourney,
+        can_view_initiatives: canViewInitiatives,
+        can_view_artifacts: canViewArtifacts,
+        can_view_governance: canViewGovernance,
+        can_manage_journey: canManageJourney,
+      }}
+      isReadOnly={!canManageJourney}
+      canStartProject={canManageJourney}
+      startingProject={startingProject}
+      onStartProject={onStartProject}
+      onNavigate={onNavigate}
+    />
   )
 }
-
 type JourneySectionProps = {
   organizationId: string
   canManageJourney: boolean
@@ -6717,6 +6610,11 @@ export function SkpeCockpit({
             organizationCode={organizationCode}
             projectContext={projectContext}
             canManageJourney={canManageJourney}
+            canViewOverview={canViewOverview}
+            canViewJourney={canViewJourney}
+            canViewInitiatives={canViewInitiatives}
+            canViewArtifacts={canViewArtifacts}
+            canViewGovernance={canViewGovernance}
             startingProject={startingProject}
             onStartProject={() => void startStrategicProject()}
             onNavigate={setActiveSection}
