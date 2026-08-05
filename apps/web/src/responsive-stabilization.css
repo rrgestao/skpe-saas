@@ -357,3 +357,112 @@ legend,
 .skpe-sidebar {
   overscroll-behavior-y: auto !important;
 }
+/*
+ * FE-09.A.04.2 - Cabecalho e portal inicial responsivos
+ *
+ * Evita que o cabeçalho da plataforma se transforme em uma coluna
+ * excessivamente alta em tablets e celulares.
+ */
+@media (max-width: 760px) {
+  .topbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    min-height: 64px !important;
+    padding: 0.65rem 0.8rem !important;
+  }
+
+  .brand-area {
+    min-width: 0;
+    gap: 0.65rem !important;
+  }
+
+  .brand-symbol {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    font-size: 1.15rem !important;
+  }
+
+  .brand-area > div {
+    min-width: 0;
+  }
+
+  .brand-name,
+  .brand-caption {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .brand-name {
+    font-size: 0.95rem !important;
+  }
+
+  .brand-caption {
+    font-size: 0.74rem !important;
+  }
+
+  .user-area {
+    display: flex !important;
+    width: auto !important;
+    min-width: 0;
+    align-items: center !important;
+    justify-content: flex-end;
+    flex-direction: row !important;
+    gap: 0.4rem !important;
+  }
+
+  .user-identification {
+    display: none !important;
+  }
+
+  .user-area .secondary-button,
+  .user-area button {
+    width: auto !important;
+    min-width: 38px;
+    min-height: 38px;
+    padding: 0.45rem !important;
+  }
+
+  .platform-content {
+    width: 100% !important;
+    padding: 1.25rem 12px 3rem !important;
+  }
+
+  .page-heading {
+    gap: 0.75rem !important;
+  }
+
+  .page-heading h1 {
+    font-size: clamp(1.65rem, 7vw, 2.15rem) !important;
+  }
+
+  .organization-grid,
+  .module-grid {
+    margin-top: 1.25rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    padding: 0.55rem 0.65rem !important;
+  }
+
+  .brand-caption {
+    display: none;
+  }
+
+  .brand-symbol {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+  }
+
+  .platform-content {
+    padding-inline: 10px !important;
+  }
+}
