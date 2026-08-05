@@ -55,12 +55,22 @@ type ResolvedDashboard = {
   reason: string | null
 }
 
+type DashboardPresentation = {
+  statusLabel: string
+  actionLabel: string
+  isCurrent: boolean
+}
+
 const dashboardNavigation: Partial<
   Record<WorkspaceDashboardDefinition['id'], WorkspaceNavigationSection>
 > = {
   portfolio: 'initiatives',
   governance: 'governance',
 }
+
+const currentDashboardIds = new Set<
+  WorkspaceDashboardDefinition['id']
+>(['my-work', 'executive'])
 
 function activateWithKeyboard(
   event: KeyboardEvent<HTMLElement>,
@@ -153,6 +163,40 @@ function getAvailabilityLabel(
   }
 
   return labels[availability]
+}
+
+function getDashboardPresentation(
+  definition: WorkspaceDashboardDefinition,
+  availability: WorkspaceDashboardAvailability,
+  reason: string | null,
+  canOpen: boolean,
+): DashboardPresentation {
+  const isCurrent =
+    availability === 'enabled' && currentDashboardIds.has(definition.id)
+
+  if (isCurrent) {
+    return {
+      statusLabel: 'Atual',
+      actionLabel: 'Você já está neste espaço de trabalho.',
+      isCurrent: true,
+    }
+  }
+
+  if (canOpen) {
+    return {
+      statusLabel: getAvailabilityLabel(availability),
+      actionLabel: 'Abrir painel',
+      isCurrent: false,
+    }
+  }
+
+  return {
+    statusLabel: getAvailabilityLabel(availability),
+    actionLabel:
+      reason ??
+      'Este painel ainda não possui acesso operacional nesta entrega.',
+    isCurrent: false,
+  }
 }
 
 export function MyWorkspacePage({
@@ -299,7 +343,7 @@ export function MyWorkspacePage({
         <div className="skpe-card-heading">
           <div>
             <p className="skpe-card-code">Acessos contextuais</p>
-            <h2 id="workspace-panels-title">Painéis disponíveis</h2>
+            <h2 id="workspace-panels-title">Painéis do contexto atual</h2>
           </div>
         </div>
 
@@ -310,6 +354,12 @@ export function MyWorkspacePage({
               availability === 'enabled' &&
               definition.supportsDrillDown &&
               Boolean(destination)
+            const presentation = getDashboardPresentation(
+              definition,
+              availability,
+              reason,
+              canOpen,
+            )
 
             return (
               <article
@@ -319,7 +369,10 @@ export function MyWorkspacePage({
                 }`}
                 role={canOpen ? 'button' : undefined}
                 tabIndex={canOpen ? 0 : undefined}
-                aria-disabled={!canOpen}
+                aria-current={presentation.isCurrent ? 'page' : undefined}
+                aria-disabled={
+                  !canOpen && !presentation.isCurrent ? true : undefined
+                }
                 onClick={
                   canOpen && destination
                     ? () => onNavigate(destination)
@@ -337,7 +390,7 @@ export function MyWorkspacePage({
                 <div className="skpe-card-heading">
                   <div>
                     <p className="skpe-card-code">
-                      {getAvailabilityLabel(availability)}
+                      {presentation.statusLabel}
                     </p>
                     <h3>{definition.label}</h3>
                   </div>
@@ -347,12 +400,7 @@ export function MyWorkspacePage({
                   {definition.description}
                 </p>
 
-                <small>
-                  {reason ??
-                    (canOpen
-                      ? 'Abrir painel'
-                      : 'Painel sem destino operacional nesta entrega.')}
-                </small>
+                <small>{presentation.actionLabel}</small>
               </article>
             )
           })}
