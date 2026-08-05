@@ -96,7 +96,7 @@ function resolveDashboard(
     return {
       definition,
       availability: 'forbidden',
-      reason: 'VocÃª nÃ£o possui permissÃ£o para acessar este painel.',
+      reason: 'Você não possui permissão para acessar este painel.',
     }
   }
 
@@ -117,11 +117,11 @@ function resolveDashboard(
 
 function getMissingContextMessage(context: WorkspaceRequiredContext) {
   const messages: Record<WorkspaceRequiredContext, string> = {
-    organization: 'Selecione uma organizaÃ§Ã£o para acessar este painel.',
-    project: 'Este painel depende de um projeto estratÃ©gico ativo.',
-    formulation: 'Este painel depende de uma FormulaÃ§Ã£o selecionada.',
+    organization: 'Selecione uma organização para acessar este painel.',
+    project: 'Este painel depende de um projeto estratégico ativo.',
+    formulation: 'Este painel depende de uma Formulação selecionada.',
     cycle: 'Este painel depende de um ciclo de monitoramento selecionado.',
-    user: 'Este painel depende de um usuÃ¡rio autenticado.',
+    user: 'Este painel depende de um usuário autenticado.',
   }
 
   return messages[context]
@@ -132,10 +132,10 @@ function getAvailabilityMessage(
 ) {
   const messages: Record<WorkspaceDashboardAvailability, string> = {
     enabled: '',
-    disabled: 'Este painel estÃ¡ temporariamente indisponÃ­vel.',
-    'coming-soon': 'Este painel serÃ¡ disponibilizado em uma prÃ³xima entrega.',
+    disabled: 'Este painel está temporariamente indisponível.',
+    'coming-soon': 'Este painel será disponibilizado em uma próxima entrega.',
     'requires-context': 'Este painel depende de contexto adicional.',
-    forbidden: 'VocÃª nÃ£o possui permissÃ£o para acessar este painel.',
+    forbidden: 'Você não possui permissão para acessar este painel.',
   }
 
   return messages[availability]
@@ -145,11 +145,11 @@ function getAvailabilityLabel(
   availability: WorkspaceDashboardAvailability,
 ) {
   const labels: Record<WorkspaceDashboardAvailability, string> = {
-    enabled: 'DisponÃ­vel',
-    disabled: 'IndisponÃ­vel',
+    enabled: 'Disponível',
+    disabled: 'Indisponível',
     'coming-soon': 'Em breve',
     'requires-context': 'Requer contexto',
-    forbidden: 'Sem permissÃ£o',
+    forbidden: 'Sem permissão',
   }
 
   return labels[availability]
@@ -175,12 +175,12 @@ export function MyWorkspacePage({
     <>
       <section className="skpe-page-heading">
         <div>
-          <p className="skpe-eyebrow">Meu EspaÃ§o de Trabalho</p>
-          <h1>VisÃ£o integrada do Planejamento EstratÃ©gico</h1>
+          <p className="skpe-eyebrow">Meu Espaço de Trabalho</p>
+          <h1>Visão integrada do Planejamento Estratégico</h1>
           <p>
             Acompanhe o contexto atual da <strong>{organizationName}</strong>{' '}
-            e acesse as Ã¡reas disponÃ­veis conforme suas responsabilidades e
-            permissÃµes.
+            e acesse as áreas disponíveis conforme suas responsabilidades e
+            permissões.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export function MyWorkspacePage({
       {project ? (
         <section
           className="skpe-kpi-grid"
-          aria-label="SÃ­ntese do projeto estratÃ©gico"
+          aria-label="Síntese do projeto estratégico"
         >
           <article
             className="skpe-kpi-card skpe-clickable-card"
@@ -210,14 +210,14 @@ export function MyWorkspacePage({
               activateWithKeyboard(event, () => onNavigate('journey'))
             }
           >
-            <span>AvanÃ§o geral estimado</span>
+            <span>Avanço geral estimado</span>
             <strong>
               {project.progress.toLocaleString('pt-BR', {
                 maximumFractionDigits: 1,
               })}
               %
             </strong>
-            <small>Abrir Jornada EstratÃ©gica</small>
+            <small>Abrir Jornada Estratégica</small>
           </article>
 
           <article
@@ -229,7 +229,7 @@ export function MyWorkspacePage({
               activateWithKeyboard(event, () => onNavigate('journey'))
             }
           >
-            <span>Projeto estratÃ©gico</span>
+            <span>Projeto estratégico</span>
             <strong>{project.code}</strong>
             <small>{project.name}</small>
           </article>
@@ -257,7 +257,7 @@ export function MyWorkspacePage({
               activateWithKeyboard(event, () => onNavigate('governance'))
             }
           >
-            <span>Horizonte estratÃ©gico</span>
+            <span>Horizonte estratégico</span>
             <strong>{project.strategicHorizon}</strong>
             <small>{project.reviewCycle}</small>
           </article>
@@ -265,18 +265,18 @@ export function MyWorkspacePage({
       ) : (
         <section
           className="skpe-onboarding-panel"
-          aria-label="Projeto estratÃ©gico nÃ£o disponÃ­vel"
+          aria-label="Projeto estratégico não disponível"
         >
           <div className="skpe-onboarding-content">
-            <p className="skpe-card-code">Contexto da organizaÃ§Ã£o</p>
-            <h2>Jornada ainda nÃ£o iniciada</h2>
+            <p className="skpe-card-code">Contexto da organização</p>
+            <h2>Jornada ainda não iniciada</h2>
             <p>
-              NÃ£o existe um projeto estratÃ©gico ativo para esta organizaÃ§Ã£o.
-              Nenhum dado de outra organizaÃ§Ã£o serÃ¡ utilizado como
+              Não existe um projeto estratégico ativo para esta organização.
+              Nenhum dado de outra organização será utilizado como
               preenchimento alternativo.
             </p>
             <small>
-              OrganizaÃ§Ã£o: {organizationCode} Â· contexto local e exclusivo.
+              Organização: {organizationCode} · contexto local e exclusivo.
             </small>
 
             {canStartProject && (
@@ -288,7 +288,7 @@ export function MyWorkspacePage({
               >
                 {startingProject
                   ? 'Iniciando jornada...'
-                  : 'Iniciar Jornada EstratÃ©gica'}
+                  : 'Iniciar Jornada Estratégica'}
               </button>
             )}
           </div>
@@ -299,7 +299,7 @@ export function MyWorkspacePage({
         <div className="skpe-card-heading">
           <div>
             <p className="skpe-card-code">Acessos contextuais</p>
-            <h2 id="workspace-panels-title">PainÃ©is disponÃ­veis</h2>
+            <h2 id="workspace-panels-title">Painéis disponíveis</h2>
           </div>
         </div>
 
