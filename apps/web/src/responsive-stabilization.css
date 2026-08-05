@@ -1,4 +1,4 @@
-﻿/* FE-09.A.02.2.4 - Estabilizacao responsiva, tipografica e de overflow */
+/* FE-09.A.02.2.4 - Estabilizacao responsiva, tipografica e de overflow */
 :root {
   --sparks-readable-body: 15px;
   --sparks-readable-small: 12.5px;
@@ -103,6 +103,11 @@ legend,
 }
 
 /* Mantem a rolagem horizontal dentro do frame visivel e limita tabelas longas. */
+/*
+ * FE-09.A.04.1-B
+ * As tabelas podem possuir rolagem horizontal própria, mas a rolagem
+ * vertical permanece sob responsabilidade do conteúdo principal do shell.
+ */
 .pa-table-card,
 .pa-table-wrap,
 .skpe-user-table-wrapper,
@@ -112,15 +117,13 @@ legend,
 .skpe-artifacts-table-wrap,
 .network-table-wrap,
 .organization-table-card,
-[class*="table-wrap"],
-[class*="table-card"] {
+[class*="table-wrap"] {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  overflow: auto !important;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable both-edges;
-  max-height: max(420px, calc(100vh - 250px));
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-gutter: stable;
   position: relative;
 }
 
@@ -133,8 +136,7 @@ legend,
 .skpe-artifacts-table-wrap table,
 .network-table,
 .organization-table,
-[class*="table-wrap"] table,
-[class*="table-card"] table {
+[class*="table-wrap"] table {
   width: max-content !important;
   min-width: 100% !important;
   max-width: none !important;
@@ -148,8 +150,7 @@ legend,
 .skpe-hierarchy-table-wrap thead,
 .skpe-initiative-table thead,
 .skpe-artifacts-table-wrap thead,
-[class*="table-wrap"] thead,
-[class*="table-card"] thead {
+[class*="table-wrap"] thead {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -286,17 +287,7 @@ legend,
     max-height: none !important;
   }
 
-  .pa-table-card,
-  .pa-table-wrap,
-  .skpe-user-table-wrapper,
-  .skpe-data-grid-wrapper,
-  .skpe-hierarchy-table-wrap,
-  .skpe-initiative-table-wrapper,
-  .skpe-artifacts-table-wrap,
-  [class*="table-wrap"],
-  [class*="table-card"] {
-    max-height: calc(100vh - 180px);
-  }
+
 }
 
 @media (max-width: 680px) {
@@ -334,4 +325,35 @@ legend,
   .pa-form-actions > * {
     flex: 1 1 100%;
   }
+}
+/*
+ * FE-09.A.04.1-C - Normalizacao da rolagem do Modulo de Planejamento
+ *
+ * O ApplicationShell permanece como controlador da rolagem vertical.
+ * As estruturas internas do SK-PE não devem formar um segundo viewport.
+ */
+.skpe-shell,
+.skpe-main,
+.skpe-main-content,
+.skpe-admin-content,
+.skpe-artifacts-page {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow-y: visible !important;
+  overscroll-behavior-y: auto !important;
+}
+
+.skpe-main,
+.skpe-main-content,
+.skpe-admin-content {
+  overflow-x: visible !important;
+}
+
+/*
+ * Mantém rolagem própria somente onde ela é funcionalmente necessária:
+ * navegação lateral e tabelas horizontalmente extensas.
+ */
+.skpe-sidebar {
+  overscroll-behavior-y: auto !important;
 }
