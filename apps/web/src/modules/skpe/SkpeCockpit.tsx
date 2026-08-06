@@ -1083,6 +1083,7 @@ function getJourneyStatusIcon(
 
 
 function OverviewSection({
+  organizationId,
   organizationName,
   organizationCode,
   projectContext,
@@ -1096,6 +1097,7 @@ function OverviewSection({
   onStartProject,
   onNavigate,
 }: {
+  organizationId: string
   organizationName: string
   organizationCode: string
   projectContext: StrategicProjectContext | null
@@ -1111,6 +1113,7 @@ function OverviewSection({
 }) {
   return (
     <MyWorkspacePage
+      organizationId={organizationId}
       organizationName={organizationName}
       organizationCode={organizationCode}
       project={
@@ -6274,9 +6277,7 @@ export function SkpeCockpit({
           <img className="skpe-platform-mascot" src="/sparkoop-mascot.png" alt="Mascote da SPARKOOP" />
           <div className="skpe-sidebar-brand-text">
             <strong>Plataforma SPARKs</strong>
-            <span className="skpe-sidebar-user-role">{userRoleName}</span>
-
-          </div>
+</div>
           <button type="button" className="skpe-sidebar-icon-button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'} title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}>☰</button>
         </div>
 
@@ -6478,13 +6479,7 @@ export function SkpeCockpit({
         </nav>
 
         <div className="skpe-sidebar-footer">
-          {isPlatformSuperAdmin && (
-            <small className="skpe-platform-role-label">
-              SUPER-ADMIN da Plataforma
-            </small>
-          )}
-
-          <button
+<button
             type="button"
             onClick={onReturnToModules}
           >
@@ -6606,6 +6601,7 @@ export function SkpeCockpit({
         {activeSection ===
           'overview' && (
           <OverviewSection
+            organizationId={organizationId}
             organizationName={organizationProfile?.trade_name ?? organizationName}
             organizationCode={organizationCode}
             projectContext={projectContext}

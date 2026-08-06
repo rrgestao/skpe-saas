@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import type {
   AuthChangeEvent,
@@ -1486,9 +1486,16 @@ function App() {
     return (
       <main className="app-shell">
         <section className="panel login-panel">
-          <p className="eyebrow">
-            Plataforma SPARKs
-          </p>
+          <div className="login-brand">
+            <img
+              src="/sparkoop-mascot.png"
+              alt="Mascote da Plataforma SPARKs"
+            />
+
+            <p className="eyebrow">
+              Plataforma SPARKs
+            </p>
+          </div>
 
           <h1>Definir nova senha</h1>
 
@@ -1603,9 +1610,16 @@ function App() {
     return (
       <main className="app-shell">
         <section className="panel login-panel">
-          <p className="eyebrow">
-            Plataforma SPARKs
-          </p>
+          <div className="login-brand">
+            <img
+              src="/sparkoop-mascot.png"
+              alt="Mascote da Plataforma SPARKs"
+            />
+
+            <p className="eyebrow">
+              Plataforma SPARKs
+            </p>
+          </div>
 
           <h1>
             {forgotPasswordMode

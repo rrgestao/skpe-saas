@@ -48,6 +48,8 @@ export type WorkspaceDashboardDefinition = {
   requiredCapability: SkpeWorkspaceCapability | null
   defaultAvailability: WorkspaceDashboardAvailability
   supportsDrillDown: boolean
+  eligibleAsPrimary: boolean
+  fallbackPriority: number | null
 }
 
 export const WORKSPACE_DASHBOARDS = [
@@ -61,6 +63,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: 'can_view_overview',
     defaultAvailability: 'enabled',
     supportsDrillDown: true,
+    eligibleAsPrimary: true,
+    fallbackPriority: 1,
   },
   {
     id: 'executive',
@@ -72,6 +76,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: 'can_view_overview',
     defaultAvailability: 'enabled',
     supportsDrillDown: true,
+    eligibleAsPrimary: true,
+    fallbackPriority: 2,
   },
   {
     id: 'organization',
@@ -83,6 +89,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: null,
     defaultAvailability: 'disabled',
     supportsDrillDown: false,
+    eligibleAsPrimary: false,
+    fallbackPriority: null,
   },
   {
     id: 'formulation',
@@ -94,6 +102,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: null,
     defaultAvailability: 'coming-soon',
     supportsDrillDown: true,
+    eligibleAsPrimary: false,
+    fallbackPriority: null,
   },
   {
     id: 'indicators',
@@ -105,6 +115,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: null,
     defaultAvailability: 'coming-soon',
     supportsDrillDown: true,
+    eligibleAsPrimary: false,
+    fallbackPriority: null,
   },
   {
     id: 'okrs',
@@ -116,6 +128,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: null,
     defaultAvailability: 'coming-soon',
     supportsDrillDown: true,
+    eligibleAsPrimary: false,
+    fallbackPriority: null,
   },
   {
     id: 'portfolio',
@@ -127,6 +141,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: 'can_view_initiatives',
     defaultAvailability: 'enabled',
     supportsDrillDown: true,
+    eligibleAsPrimary: true,
+    fallbackPriority: null,
   },
   {
     id: 'monitoring',
@@ -138,6 +154,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: null,
     defaultAvailability: 'coming-soon',
     supportsDrillDown: true,
+    eligibleAsPrimary: false,
+    fallbackPriority: null,
   },
   {
     id: 'governance',
@@ -149,6 +167,8 @@ export const WORKSPACE_DASHBOARDS = [
     requiredCapability: 'can_view_governance',
     defaultAvailability: 'enabled',
     supportsDrillDown: true,
+    eligibleAsPrimary: true,
+    fallbackPriority: null,
   },
 ] as const satisfies readonly WorkspaceDashboardDefinition[]
 
@@ -166,4 +186,13 @@ export function getWorkspaceDashboard(
   }
 
   return dashboard
+}
+
+export function isWorkspaceDashboardId(
+  value: unknown,
+): value is WorkspaceDashboardId {
+  return (
+    typeof value === 'string' &&
+    WORKSPACE_DASHBOARDS.some((dashboard) => dashboard.id === value)
+  )
 }

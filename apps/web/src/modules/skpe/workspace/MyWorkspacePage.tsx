@@ -1,10 +1,13 @@
-import type { KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import { supabase } from '../../../lib/supabase'
 import {
   WORKSPACE_DASHBOARDS,
+  isWorkspaceDashboardId,
   type SkpeWorkspaceCapability,
   type WorkspaceDashboardAvailability,
   type WorkspaceDashboardDefinition,
+  type WorkspaceDashboardId,
   type WorkspaceRequiredContext,
 } from './workspaceDashboards'
 
@@ -37,6 +40,7 @@ type WorkspaceNavigationSection =
   | 'artifacts'
 
 type MyWorkspacePageProps = {
+  organizationId: string
   organizationName: string
   organizationCode: string
   project: WorkspaceProjectSummary | null
@@ -53,33 +57,34 @@ type ResolvedDashboard = {
   definition: WorkspaceDashboardDefinition
   availability: WorkspaceDashboardAvailability
   reason: string | null
+  canOpen: boolean
+  canBePrimary: boolean
 }
 
-type DashboardPresentation = {
-  statusLabel: string
-  actionLabel: string
-  isCurrent: boolean
+type PrimaryPreferenceStatus =
+  | 'loading'
+  | 'absent'
+  | 'valid'
+  | 'invalid'
+  | 'read-error'
+
+type PreferenceFeedback = {
+  type: 'success' | 'error'
+  text: string
+} | null
+
+type PreferenceRow = {
+  preference_value: unknown
 }
+
+const PRIMARY_DASHBOARD_KEY = 'workspace.primary_dashboard'
+const MODULE_CODE = 'SK-PE'
 
 const dashboardNavigation: Partial<
-  Record<WorkspaceDashboardDefinition['id'], WorkspaceNavigationSection>
+  Record<WorkspaceDashboardId, WorkspaceNavigationSection>
 > = {
   portfolio: 'initiatives',
   governance: 'governance',
-}
-
-const currentDashboardIds = new Set<
-  WorkspaceDashboardDefinition['id']
->(['my-work', 'executive'])
-
-function activateWithKeyboard(
-  event: KeyboardEvent<HTMLElement>,
-  action: () => void,
-) {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    action()
-  }
 }
 
 function resolveDashboard(
@@ -96,6 +101,8 @@ function resolveDashboard(
       definition,
       availability: 'requires-context',
       reason: getMissingContextMessage(missingContext),
+      canOpen: false,
+      canBePrimary: false,
     }
   }
 
@@ -107,6 +114,8 @@ function resolveDashboard(
       definition,
       availability: 'forbidden',
       reason: 'Você não possui permissão para acessar este painel.',
+      canOpen: false,
+      canBePrimary: false,
     }
   }
 
@@ -115,13 +124,22 @@ function resolveDashboard(
       definition,
       availability: definition.defaultAvailability,
       reason: getAvailabilityMessage(definition.defaultAvailability),
+      canOpen: false,
+      canBePrimary: false,
     }
   }
+
+  const destination = dashboardNavigation[definition.id]
+  const canOpen =
+    definition.supportsDrillDown &&
+    (definition.section === 'overview' || Boolean(destination))
 
   return {
     definition,
     availability: 'enabled',
     reason: null,
+    canOpen,
+    canBePrimary: definition.eligibleAsPrimary && canOpen,
   }
 }
 
@@ -165,41 +183,21 @@ function getAvailabilityLabel(
   return labels[availability]
 }
 
-function getDashboardPresentation(
-  definition: WorkspaceDashboardDefinition,
-  availability: WorkspaceDashboardAvailability,
-  reason: string | null,
-  canOpen: boolean,
-): DashboardPresentation {
-  const isCurrent =
-    availability === 'enabled' && currentDashboardIds.has(definition.id)
-
-  if (isCurrent) {
-    return {
-      statusLabel: 'Atual',
-      actionLabel: 'Você já está neste espaço de trabalho.',
-      isCurrent: true,
-    }
+function getPreferenceDashboardId(value: unknown): unknown {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('dashboard_id' in value)
+  ) {
+    return null
   }
 
-  if (canOpen) {
-    return {
-      statusLabel: getAvailabilityLabel(availability),
-      actionLabel: 'Abrir painel',
-      isCurrent: false,
-    }
-  }
-
-  return {
-    statusLabel: getAvailabilityLabel(availability),
-    actionLabel:
-      reason ??
-      'Este painel ainda não possui acesso operacional nesta entrega.',
-    isCurrent: false,
-  }
+  return value.dashboard_id
 }
 
+
 export function MyWorkspacePage({
+  organizationId,
   organizationName,
   organizationCode,
   project,
@@ -211,9 +209,244 @@ export function MyWorkspacePage({
   onStartProject,
   onNavigate,
 }: MyWorkspacePageProps) {
-  const dashboards = WORKSPACE_DASHBOARDS.map((definition) =>
-    resolveDashboard(definition, availableContext, capabilities),
+  const [persistedPrimaryId, setPersistedPrimaryId] =
+    useState<WorkspaceDashboardId | null>(null)
+  const [preferenceStatus, setPreferenceStatus] =
+    useState<PrimaryPreferenceStatus>('loading')
+  const [savingDashboardId, setSavingDashboardId] =
+    useState<WorkspaceDashboardId | null>(null)
+  const [removingPreference, setRemovingPreference] = useState(false)
+  const [feedback, setFeedback] = useState<PreferenceFeedback>(null)
+
+  const dashboards = useMemo(
+    () =>
+      WORKSPACE_DASHBOARDS.map((definition) =>
+        resolveDashboard(definition, availableContext, capabilities),
+      ),
+    [availableContext, capabilities],
   )
+
+  const eligibleDashboards = useMemo(
+    () => dashboards.filter((dashboard) => dashboard.canBePrimary),
+    [dashboards],
+  )
+
+  const persistedDashboardIsEligible =
+    persistedPrimaryId !== null &&
+    eligibleDashboards.some(
+      ({ definition }) => definition.id === persistedPrimaryId,
+    )
+
+  const fallbackDashboardId = useMemo(() => {
+    const fallback = eligibleDashboards
+      .filter(
+        ({ definition }) => definition.fallbackPriority !== null,
+      )
+      .sort(
+        (first, second) =>
+          (first.definition.fallbackPriority ?? Number.MAX_SAFE_INTEGER) -
+          (second.definition.fallbackPriority ?? Number.MAX_SAFE_INTEGER),
+      )[0]
+
+    return fallback?.definition.id ?? null
+  }, [eligibleDashboards])
+
+  const effectivePrimaryId = persistedDashboardIsEligible
+    ? persistedPrimaryId
+    : fallbackDashboardId
+
+  const effectivePrimaryDashboard = effectivePrimaryId
+    ? WORKSPACE_DASHBOARDS.find(
+        (dashboard) => dashboard.id === effectivePrimaryId,
+      ) ?? null
+    : null
+
+  const orderedDashboards = useMemo(() => {
+    if (!effectivePrimaryId) return dashboards
+
+    return [...dashboards].sort((first, second) => {
+      if (first.definition.id === effectivePrimaryId) return -1
+      if (second.definition.id === effectivePrimaryId) return 1
+      return 0
+    })
+  }, [dashboards, effectivePrimaryId])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadPrimaryPreference() {
+      setPreferenceStatus('loading')
+      setPersistedPrimaryId(null)
+      setFeedback(null)
+
+      const { data, error } = await supabase.rpc(
+        'get_my_module_preference',
+        {
+          input_organization_id: organizationId,
+          input_module_code: MODULE_CODE,
+          input_preference_key: PRIMARY_DASHBOARD_KEY,
+        },
+      )
+
+      if (!active) return
+
+      if (error) {
+        setPreferenceStatus('read-error')
+        setFeedback({
+          type: 'error',
+          text: `Não foi possível carregar o Painel Principal: ${error.message}`,
+        })
+        return
+      }
+
+      const row = ((data ?? [])[0] ?? null) as PreferenceRow | null
+
+      if (!row) {
+        setPreferenceStatus('absent')
+        return
+      }
+
+      const dashboardId = getPreferenceDashboardId(row.preference_value)
+
+      if (!isWorkspaceDashboardId(dashboardId)) {
+        setPreferenceStatus('invalid')
+        return
+      }
+
+      setPersistedPrimaryId(dashboardId)
+      setPreferenceStatus('valid')
+    }
+
+    void loadPrimaryPreference()
+
+    return () => {
+      active = false
+    }
+  }, [organizationId])
+
+  useEffect(() => {
+    if (
+      preferenceStatus === 'valid' &&
+      persistedPrimaryId &&
+      !persistedDashboardIsEligible
+    ) {
+      setPreferenceStatus('invalid')
+    }
+  }, [
+    persistedDashboardIsEligible,
+    persistedPrimaryId,
+    preferenceStatus,
+  ])
+
+  async function savePrimaryDashboard(
+    dashboardId: WorkspaceDashboardId,
+  ) {
+    const dashboard = eligibleDashboards.find(
+      ({ definition }) => definition.id === dashboardId,
+    )
+
+    if (!dashboard) {
+      setFeedback({
+        type: 'error',
+        text: 'Este painel não está elegível como Painel Principal no contexto atual.',
+      })
+      return
+    }
+
+    setSavingDashboardId(dashboardId)
+    setFeedback(null)
+
+    const { error } = await supabase.rpc(
+      'set_my_module_preference',
+      {
+        input_organization_id: organizationId,
+        input_module_code: MODULE_CODE,
+        input_preference_key: PRIMARY_DASHBOARD_KEY,
+        input_preference_value: {
+          dashboard_id: dashboardId,
+          schema_version: 1,
+        },
+        change_reason:
+          'Painel Principal alterado pelo Meu Espaço de Trabalho.',
+      },
+    )
+
+    if (error) {
+      setFeedback({
+        type: 'error',
+        text: `Não foi possível salvar o Painel Principal: ${error.message}`,
+      })
+      setSavingDashboardId(null)
+      return
+    }
+
+    setPersistedPrimaryId(dashboardId)
+    setPreferenceStatus('valid')
+    setFeedback({
+      type: 'success',
+      text: `${dashboard.definition.label} foi definido como seu Painel Principal nesta organização.`,
+    })
+    setSavingDashboardId(null)
+  }
+
+  async function removePrimaryPreference() {
+    setRemovingPreference(true)
+    setFeedback(null)
+
+    const { data, error } = await supabase.rpc(
+      'delete_my_module_preference',
+      {
+        input_organization_id: organizationId,
+        input_module_code: MODULE_CODE,
+        input_preference_key: PRIMARY_DASHBOARD_KEY,
+        change_reason:
+          'Painel Principal redefinido para o padrão do Meu Espaço de Trabalho.',
+      },
+    )
+
+    if (error) {
+      setFeedback({
+        type: 'error',
+        text: `Não foi possível redefinir o Painel Principal: ${error.message}`,
+      })
+      setRemovingPreference(false)
+      return
+    }
+
+    setPersistedPrimaryId(null)
+    setPreferenceStatus('absent')
+    setFeedback({
+      type: 'success',
+      text:
+        data === true
+          ? 'A preferência foi removida. O painel padrão voltou a ser utilizado.'
+          : 'Nenhuma preferência salva foi encontrada. O painel padrão permanece ativo.',
+    })
+    setRemovingPreference(false)
+  }
+
+  function openDashboard(dashboard: ResolvedDashboard) {
+    if (!dashboard.canOpen) return
+
+    const destination = dashboardNavigation[dashboard.definition.id]
+
+    if (destination) {
+      onNavigate(destination)
+      return
+    }
+
+    if (dashboard.definition.section === 'overview') {
+      document
+        .querySelector<HTMLElement>('.skpe-page-heading')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  const preferenceLoading = preferenceStatus === 'loading'
+  const preferenceBusy =
+    preferenceLoading ||
+    savingDashboardId !== null ||
+    removingPreference
 
   return (
     <>
@@ -240,20 +473,72 @@ export function MyWorkspacePage({
         </div>
       </section>
 
+      <section
+        className="skpe-primary-dashboard-panel"
+        aria-labelledby="primary-dashboard-title"
+      >
+        <div>
+          <p className="skpe-card-code">Preferência pessoal</p>
+          <h2 id="primary-dashboard-title">Painel Principal</h2>
+
+          {preferenceLoading ? (
+            <p role="status">Carregando sua preferência...</p>
+          ) : effectivePrimaryDashboard ? (
+            <>
+              <p>
+                <strong>{effectivePrimaryDashboard.label}</strong>
+                {persistedDashboardIsEligible
+                  ? ' é o Painel Principal salvo para esta organização.'
+                  : ' está sendo utilizado como painel padrão neste contexto.'}
+              </p>
+
+              {preferenceStatus === 'invalid' && (
+                <p className="skpe-primary-dashboard-warning" role="status">
+                  A preferência salva não está disponível no contexto atual e
+                  não foi substituída automaticamente.
+                </p>
+              )}
+            </>
+          ) : (
+            <p>
+              Nenhum painel está elegível como principal no contexto atual.
+              O Meu Espaço de Trabalho continuará aberto sem navegação
+              automática.
+            </p>
+          )}
+        </div>
+
+        <div className="skpe-primary-dashboard-actions">
+          {persistedPrimaryId && (
+            <button
+              type="button"
+              className="skpe-secondary-button"
+              disabled={preferenceBusy}
+              onClick={() => void removePrimaryPreference()}
+            >
+              {removingPreference
+                ? 'Redefinindo...'
+                : 'Usar painel padrão'}
+            </button>
+          )}
+        </div>
+      </section>
+
+      {feedback && (
+        <div
+          className={`skpe-action-message skpe-action-message-${feedback.type}`}
+          role={feedback.type === 'error' ? 'alert' : 'status'}
+        >
+          {feedback.text}
+        </div>
+      )}
+
       {project ? (
         <section
           className="skpe-kpi-grid"
           aria-label="Síntese do projeto estratégico"
         >
-          <article
-            className="skpe-kpi-card skpe-clickable-card"
-            role="button"
-            tabIndex={0}
-            onClick={() => onNavigate('journey')}
-            onKeyDown={(event) =>
-              activateWithKeyboard(event, () => onNavigate('journey'))
-            }
-          >
+          <article className="skpe-kpi-card">
             <span>Avanço geral estimado</span>
             <strong>
               {project.progress.toLocaleString('pt-BR', {
@@ -261,49 +546,37 @@ export function MyWorkspacePage({
               })}
               %
             </strong>
-            <small>Abrir Jornada Estratégica</small>
+            <button
+              type="button"
+              className="skpe-card-link-button"
+              onClick={() => onNavigate('journey')}
+            >
+              Abrir Jornada Estratégica
+            </button>
           </article>
 
-          <article
-            className="skpe-kpi-card skpe-clickable-card"
-            role="button"
-            tabIndex={0}
-            onClick={() => onNavigate('journey')}
-            onKeyDown={(event) =>
-              activateWithKeyboard(event, () => onNavigate('journey'))
-            }
-          >
+          <article className="skpe-kpi-card">
             <span>Projeto estratégico</span>
             <strong>{project.code}</strong>
             <small>{project.name}</small>
           </article>
 
-          <article
-            className="skpe-kpi-card skpe-clickable-card"
-            role="button"
-            tabIndex={0}
-            onClick={() => onNavigate('journey')}
-            onKeyDown={(event) =>
-              activateWithKeyboard(event, () => onNavigate('journey'))
-            }
-          >
+          <article className="skpe-kpi-card">
             <span>Etapa atual</span>
             <strong>{project.currentPhaseCode}</strong>
             <small>{project.statusLabel}</small>
           </article>
 
-          <article
-            className="skpe-kpi-card skpe-clickable-card"
-            role="button"
-            tabIndex={0}
-            onClick={() => onNavigate('governance')}
-            onKeyDown={(event) =>
-              activateWithKeyboard(event, () => onNavigate('governance'))
-            }
-          >
+          <article className="skpe-kpi-card">
             <span>Horizonte estratégico</span>
             <strong>{project.strategicHorizon}</strong>
-            <small>{project.reviewCycle}</small>
+            <button
+              type="button"
+              className="skpe-card-link-button"
+              onClick={() => onNavigate('governance')}
+            >
+              {project.reviewCycle}
+            </button>
           </article>
         </section>
       ) : (
@@ -348,59 +621,95 @@ export function MyWorkspacePage({
         </div>
 
         <div className="skpe-dashboard-grid">
-          {dashboards.map(({ definition, availability, reason }) => {
-            const destination = dashboardNavigation[definition.id]
-            const canOpen =
-              availability === 'enabled' &&
-              definition.supportsDrillDown &&
-              Boolean(destination)
-            const presentation = getDashboardPresentation(
+          {orderedDashboards.map((dashboard) => {
+            const {
               definition,
               availability,
               reason,
               canOpen,
-            )
+              canBePrimary,
+            } = dashboard
+            const isEffectivePrimary =
+              definition.id === effectivePrimaryId
+            const isPersistedPrimary =
+              persistedDashboardIsEligible &&
+              definition.id === persistedPrimaryId
+            const isSaving =
+              savingDashboardId === definition.id
 
             return (
               <article
                 key={definition.id}
                 className={`skpe-dashboard-card ${
-                  canOpen ? 'skpe-clickable-card' : ''
+                  isEffectivePrimary
+                    ? 'skpe-dashboard-card-primary'
+                    : ''
                 }`}
-                role={canOpen ? 'button' : undefined}
-                tabIndex={canOpen ? 0 : undefined}
-                aria-current={presentation.isCurrent ? 'page' : undefined}
-                aria-disabled={
-                  !canOpen && !presentation.isCurrent ? true : undefined
-                }
-                onClick={
-                  canOpen && destination
-                    ? () => onNavigate(destination)
-                    : undefined
-                }
-                onKeyDown={
-                  canOpen && destination
-                    ? (event) =>
-                        activateWithKeyboard(event, () =>
-                          onNavigate(destination),
-                        )
-                    : undefined
-                }
+                aria-labelledby={`dashboard-${definition.id}-title`}
               >
                 <div className="skpe-card-heading">
                   <div>
                     <p className="skpe-card-code">
-                      {presentation.statusLabel}
+                      {isPersistedPrimary
+                        ? 'Painel Principal'
+                        : isEffectivePrimary
+                          ? 'Painel atual'
+                          : getAvailabilityLabel(availability)}
                     </p>
-                    <h3>{definition.label}</h3>
+                    <h3 id={`dashboard-${definition.id}-title`}>
+                      {definition.label}
+                    </h3>
                   </div>
+
+                  {isEffectivePrimary && (
+                    <span className="skpe-primary-dashboard-badge">
+                      Principal
+                    </span>
+                  )}
                 </div>
 
                 <p className="skpe-card-description">
                   {definition.description}
                 </p>
 
-                <small>{presentation.actionLabel}</small>
+                {!canOpen && reason && <small>{reason}</small>}
+
+                <div className="skpe-dashboard-card-actions">
+                  {canOpen && (
+                    <button
+                      type="button"
+                      className="skpe-card-link-button"
+                      onClick={() => openDashboard(dashboard)}
+                    >
+                      Abrir painel
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="skpe-secondary-button"
+                    disabled={
+                      !canBePrimary ||
+                      preferenceBusy ||
+                      isPersistedPrimary
+                    }
+                    title={
+                      canBePrimary
+                        ? undefined
+                        : reason ??
+                          'Este painel não está elegível como Painel Principal.'
+                    }
+                    onClick={() =>
+                      void savePrimaryDashboard(definition.id)
+                    }
+                  >
+                    {isSaving
+                      ? 'Salvando...'
+                      : isPersistedPrimary
+                        ? 'Painel Principal atual'
+                        : 'Definir como principal'}
+                  </button>
+                </div>
               </article>
             )
           })}
