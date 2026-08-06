@@ -1119,6 +1119,7 @@ function OverviewSection({
       project={
         projectContext
           ? {
+              id: projectContext.project_id,
               code: projectContext.project_code,
               name: projectContext.project_name,
               statusLabel: publicLabel(projectContext.project_status),

@@ -466,3 +466,80 @@ legend,
     padding-inline: 10px !important;
   }
 }
+
+/* FE-09.A.07 — EXCEÇÃO CANÔNICA DE ROLAGEM DO SK-PE
+   Mantém o cockpit limitado à viewport e somente o frame de dados rolável. */
+
+@media (min-width: 821px) {
+  .skpe-shell {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    align-items: stretch !important;
+  }
+
+  .skpe-sidebar {
+    box-sizing: border-box !important;
+    position: relative !important;
+    top: auto !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .skpe-sidebar-brand {
+    grid-row: 1 !important;
+  }
+
+  .skpe-navigation {
+    grid-row: 2 !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .skpe-sidebar-footer {
+    grid-row: 3 !important;
+    align-self: end !important;
+    width: 100% !important;
+    margin-top: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  .skpe-main {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    scrollbar-gutter: stable !important;
+  }
+}
+
+@supports (height: 100dvh) {
+  @media (min-width: 821px) {
+    .skpe-shell {
+      height: 100dvh !important;
+      max-height: 100dvh !important;
+    }
+  }
+}
+
+@media (max-width: 820px) {
+  .skpe-shell,
+  .skpe-sidebar,
+  .skpe-main {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+}

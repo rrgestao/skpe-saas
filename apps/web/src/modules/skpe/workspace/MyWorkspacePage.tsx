@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
+import { MyPendingItemsPanel } from './MyPendingItemsPanel'
 import {
   WORKSPACE_DASHBOARDS,
   isWorkspaceDashboardId,
@@ -12,6 +13,7 @@ import {
 } from './workspaceDashboards'
 
 type WorkspaceProjectSummary = {
+  id: string
   code: string
   name: string
   statusLabel: string
@@ -612,7 +614,16 @@ export function MyWorkspacePage({
         </section>
       )}
 
-      <section aria-labelledby="workspace-panels-title">
+      <MyPendingItemsPanel
+        organizationId={organizationId}
+        projectId={project?.id ?? null}
+        onNavigate={onNavigate}
+      />
+
+      <section
+        className="skpe-workspace-panels"
+        aria-labelledby="workspace-panels-title"
+      >
         <div className="skpe-card-heading">
           <div>
             <p className="skpe-card-code">Acessos contextuais</p>
