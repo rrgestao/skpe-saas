@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
+import { MyDecisionsPanel } from './MyDecisionsPanel'
 import { MyIndicatorsPanel } from './MyIndicatorsPanel'
 import { MyInitiativesPanel } from './MyInitiativesPanel'
 import { MyKeyResultsPanel } from './MyKeyResultsPanel'
@@ -633,6 +634,11 @@ export function MyWorkspacePage({
       />
 
       <MyInitiativesPanel
+        organizationId={organizationId}
+        projectId={project?.id ?? null}
+      />
+
+      <MyDecisionsPanel
         organizationId={organizationId}
         projectId={project?.id ?? null}
       />
