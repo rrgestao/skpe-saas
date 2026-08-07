@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
 import { MyIndicatorsPanel } from './MyIndicatorsPanel'
+import { MyInitiativesPanel } from './MyInitiativesPanel'
 import { MyKeyResultsPanel } from './MyKeyResultsPanel'
 import { MyPendingItemsPanel } from './MyPendingItemsPanel'
 import {
@@ -627,6 +628,11 @@ export function MyWorkspacePage({
       />
 
       <MyKeyResultsPanel
+        organizationId={organizationId}
+        projectId={project?.id ?? null}
+      />
+
+      <MyInitiativesPanel
         organizationId={organizationId}
         projectId={project?.id ?? null}
       />
