@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
+import { MyIndicatorsPanel } from './MyIndicatorsPanel'
 import { MyPendingItemsPanel } from './MyPendingItemsPanel'
 import {
   WORKSPACE_DASHBOARDS,
@@ -196,7 +197,6 @@ function getPreferenceDashboardId(value: unknown): unknown {
 
   return value.dashboard_id
 }
-
 
 export function MyWorkspacePage({
   organizationId,
@@ -618,6 +618,11 @@ export function MyWorkspacePage({
         organizationId={organizationId}
         projectId={project?.id ?? null}
         onNavigate={onNavigate}
+      />
+
+      <MyIndicatorsPanel
+        organizationId={organizationId}
+        projectId={project?.id ?? null}
       />
 
       <section
