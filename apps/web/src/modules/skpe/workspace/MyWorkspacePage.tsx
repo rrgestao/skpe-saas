@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
 import { MyIndicatorsPanel } from './MyIndicatorsPanel'
+import { MyKeyResultsPanel } from './MyKeyResultsPanel'
 import { MyPendingItemsPanel } from './MyPendingItemsPanel'
 import {
   WORKSPACE_DASHBOARDS,
@@ -621,6 +622,11 @@ export function MyWorkspacePage({
       />
 
       <MyIndicatorsPanel
+        organizationId={organizationId}
+        projectId={project?.id ?? null}
+      />
+
+      <MyKeyResultsPanel
         organizationId={organizationId}
         projectId={project?.id ?? null}
       />
