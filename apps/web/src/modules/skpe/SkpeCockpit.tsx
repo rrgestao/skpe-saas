@@ -16,7 +16,7 @@ import { MethodologyArtifactsSection } from './features/artifacts/MethodologyArt
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 
-type CockpitSection =
+export type CockpitSection =
   | 'overview'
   | 'journey'
   | 'initiatives'
@@ -43,6 +43,7 @@ type SkpeCockpitProps = {
   isPlatformSuperAdmin: boolean
   mode?: SkpeCockpitMode
   initialSection?: CockpitSection
+  onNavigateSection?: (section: CockpitSection) => void
   onReturnToModules: () => void
   userDisplayName: string
   userEmail: string
@@ -5197,6 +5198,7 @@ export function SkpeCockpit({
   isPlatformSuperAdmin,
   mode = 'module',
   initialSection,
+  onNavigateSection,
   onReturnToModules,
   userDisplayName,
   userEmail,
@@ -5211,6 +5213,15 @@ export function SkpeCockpit({
           ? 'organization'
           : 'overview'),
     )
+
+  useEffect(() => {
+    if (initialSection) setActiveSection(initialSection)
+  }, [initialSection])
+
+  const navigateToSection = (section: CockpitSection) => {
+    setActiveSection(section)
+    onNavigateSection?.(section)
+  }
 
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfileRow | null>(null)
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState<string | null>(null)
@@ -5300,7 +5311,7 @@ export function SkpeCockpit({
     }
 
     await loadStrategicProjectContext()
-    setActiveSection('journey')
+    navigateToSection('journey')
     setStartingProject(false)
   }
 
@@ -5416,7 +5427,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('overview')
+                  navigateToSection('overview')
                 }
               >
                 <DashboardIcon />
@@ -5431,7 +5442,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('journey')
+                  navigateToSection('journey')
                 }
                hidden={!canViewJourney}>
                 <JourneyIcon />
@@ -5446,7 +5457,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('initiatives')
+                  navigateToSection('initiatives')
                 }
                hidden={!canViewInitiatives}>
                 <InitiativesIcon />
@@ -5461,7 +5472,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('artifacts')
+                  navigateToSection('artifacts')
                 }
                hidden={!canViewArtifacts}>
                 <DashboardIcon />
@@ -5476,7 +5487,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('governance')
+                  navigateToSection('governance')
                 }
                hidden={!canViewGovernance}>
                 <GovernanceIcon />
@@ -5764,7 +5775,7 @@ export function SkpeCockpit({
                 'skpe:delivery-kit:macrophase-name',
                 item.item_name,
               )
-              setActiveSection('artifacts')
+              navigateToSection('artifacts')
             }}
           />
         )}
@@ -5790,7 +5801,7 @@ export function SkpeCockpit({
             projectId={projectContext?.project_id ?? ''}
             canManage={canManageArtifacts}
             canGenerateDeliveryKit={capabilities?.can_generate_delivery_kit ?? canViewArtifacts}
-            onBack={() => setActiveSection('journey')}
+            onBack={() => navigateToSection('journey')}
             backLabel="Voltar para Jornada Estratégica"
           />
         )}
