@@ -6,6 +6,7 @@ import { MyIndicatorsPanel } from './MyIndicatorsPanel'
 import { MyInitiativesPanel } from './MyInitiativesPanel'
 import { MyKeyResultsPanel } from './MyKeyResultsPanel'
 import { MyMeetingsPanel } from './MyMeetingsPanel'
+import { MyNotificationsPanel } from './MyNotificationsPanel'
 import { MyPendingItemsPanel } from './MyPendingItemsPanel'
 import {
   WORKSPACE_DASHBOARDS,
@@ -223,6 +224,7 @@ export function MyWorkspacePage({
     useState<WorkspaceDashboardId | null>(null)
   const [removingPreference, setRemovingPreference] = useState(false)
   const [feedback, setFeedback] = useState<PreferenceFeedback>(null)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
 
   const dashboards = useMemo(
     () =>
@@ -468,6 +470,36 @@ export function MyWorkspacePage({
         </div>
 
         <div className="skpe-heading-status-group">
+      <button
+        type="button"
+        className="skpe-notifications-bell"
+        aria-label={`Abrir notificações. ${unreadNotificationCount} ${
+          unreadNotificationCount === 1 ? 'não lida' : 'não lidas'
+        }`}
+        onClick={() => {
+          document
+            .getElementById('my-notifications-panel')
+            ?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+            })
+        }}
+      >
+        <span
+          className="skpe-notifications-bell-icon"
+          aria-hidden="true"
+        >
+          🔔
+        </span>
+
+        {unreadNotificationCount > 0 && (
+          <span className="skpe-notifications-bell-count">
+            {unreadNotificationCount > 99
+              ? '99+'
+              : unreadNotificationCount}
+          </span>
+        )}
+      </button>
           <div
             className={`skpe-status-chip ${
               isReadOnly ? 'skpe-status-chip-neutral' : ''
@@ -647,6 +679,12 @@ export function MyWorkspacePage({
       <MyMeetingsPanel
         organizationId={organizationId}
         projectId={project?.id ?? null}
+      />
+
+      <MyNotificationsPanel
+        organizationId={organizationId}
+        projectId={project?.id ?? null}
+        onUnreadCountChange={setUnreadNotificationCount}
       />
 
       <section
