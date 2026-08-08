@@ -4271,3 +4271,114 @@ tr.skpe-interactive-record:focus-visible {
     min-height: auto;
   }
 }
+
+/* ============================================================
+   FE-09.A.14 — FAVORITOS
+   ============================================================ */
+
+.skpe-favorite-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.skpe-favorite-button-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.skpe-favorite-button-active {
+  border-color: #d9a821;
+  background: #fff8dc;
+  color: #7a5700;
+}
+
+.skpe-favorite-button-active:hover:not(:disabled),
+.skpe-favorite-button-active:focus-visible {
+  outline-color: rgba(217, 168, 33, 0.22);
+}
+
+.skpe-theme-dark .skpe-favorite-button-active {
+  border-color: #c89d2b;
+  background: rgba(200, 157, 43, 0.12);
+  color: #f2d37a;
+}
+
+.skpe-favorites-panel {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 16px;
+  background: var(--skpe-surface, #ffffff);
+  box-shadow: 0 8px 25px rgba(25, 44, 37, 0.05);
+}
+
+.skpe-favorites-panel h2 {
+  margin: 0.15rem 0 0;
+}
+
+.skpe-favorites-panel-description {
+  margin: 0.35rem 0 0;
+  color: var(--skpe-text-muted, #64748b);
+}
+
+.skpe-favorites-empty {
+  margin: 0;
+  color: var(--skpe-text-muted, #64748b);
+}
+
+.skpe-favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 22rem), 1fr)
+  );
+  gap: 0.9rem;
+}
+
+.skpe-favorite-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 12px;
+  background: var(--skpe-surface, #ffffff);
+}
+
+.skpe-favorite-card h3 {
+  margin: 0;
+}
+
+.skpe-favorite-card p {
+  margin: 0;
+  color: var(--skpe-text-muted, #64748b);
+  line-height: 1.5;
+}
+
+.skpe-favorite-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: auto;
+}
+
+.skpe-theme-dark .skpe-favorites-panel,
+.skpe-theme-dark .skpe-favorite-card {
+  border-color: var(--skpe-border);
+  background: var(--skpe-surface);
+  color: var(--skpe-text);
+}
+
+@media (max-width: 720px) {
+  .skpe-favorite-card-actions {
+    width: 100%;
+  }
+
+  .skpe-favorite-card-actions button {
+    width: 100%;
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
+import { FavoriteButton } from './FavoriteButton'
 import { MyDecisionsPanel } from './MyDecisionsPanel'
 import { MyIndicatorsPanel } from './MyIndicatorsPanel'
 import { MyInitiativesPanel } from './MyInitiativesPanel'
@@ -69,7 +70,7 @@ type ResolvedDashboard = {
   canBePrimary: boolean
 }
 
-type PrimaryPreferenceStatus =
+type PreferenceStatus =
   | 'loading'
   | 'absent'
   | 'valid'
@@ -86,7 +87,15 @@ type PreferenceRow = {
 }
 
 const PRIMARY_DASHBOARD_KEY = 'workspace.primary_dashboard'
+const FAVORITES_KEY = 'workspace.favorites'
 const MODULE_CODE = 'SK-PE'
+
+const FAVORITABLE_DASHBOARD_IDS: readonly WorkspaceDashboardId[] = [
+  'my-work',
+  'executive',
+  'portfolio',
+  'governance',
+]
 
 const dashboardNavigation: Partial<
   Record<WorkspaceDashboardId, WorkspaceNavigationSection>
@@ -203,6 +212,41 @@ function getPreferenceDashboardId(value: unknown): unknown {
   return value.dashboard_id
 }
 
+function getFavoriteDashboardIds(
+  value: unknown,
+): WorkspaceDashboardId[] | null {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('schema_version' in value) ||
+    !('dashboard_ids' in value)
+  ) {
+    return null
+  }
+
+  if (value.schema_version !== 1 || !Array.isArray(value.dashboard_ids)) {
+    return null
+  }
+
+  const dashboardIds = value.dashboard_ids
+
+  if (
+    dashboardIds.some(
+      (dashboardId) =>
+        !isWorkspaceDashboardId(dashboardId) ||
+        !FAVORITABLE_DASHBOARD_IDS.includes(dashboardId),
+    )
+  ) {
+    return null
+  }
+
+  if (new Set(dashboardIds).size !== dashboardIds.length) {
+    return null
+  }
+
+  return dashboardIds
+}
+
 export function MyWorkspacePage({
   organizationId,
   organizationName,
@@ -219,11 +263,22 @@ export function MyWorkspacePage({
   const [persistedPrimaryId, setPersistedPrimaryId] =
     useState<WorkspaceDashboardId | null>(null)
   const [preferenceStatus, setPreferenceStatus] =
-    useState<PrimaryPreferenceStatus>('loading')
+    useState<PreferenceStatus>('loading')
   const [savingDashboardId, setSavingDashboardId] =
     useState<WorkspaceDashboardId | null>(null)
   const [removingPreference, setRemovingPreference] = useState(false)
   const [feedback, setFeedback] = useState<PreferenceFeedback>(null)
+
+  const [favoriteDashboardIds, setFavoriteDashboardIds] = useState<
+    WorkspaceDashboardId[]
+  >([])
+  const [favoritesStatus, setFavoritesStatus] =
+    useState<PreferenceStatus>('loading')
+  const [savingFavoriteId, setSavingFavoriteId] =
+    useState<WorkspaceDashboardId | null>(null)
+  const [favoritesFeedback, setFavoritesFeedback] =
+    useState<PreferenceFeedback>(null)
+
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
 
   const dashboards = useMemo(
@@ -279,6 +334,21 @@ export function MyWorkspacePage({
     })
   }, [dashboards, effectivePrimaryId])
 
+  const favoriteDashboards = useMemo(
+    () =>
+      favoriteDashboardIds
+        .map((dashboardId) =>
+          dashboards.find(
+            ({ definition }) => definition.id === dashboardId,
+          ),
+        )
+        .filter(
+          (dashboard): dashboard is ResolvedDashboard =>
+            dashboard !== undefined,
+        ),
+    [dashboards, favoriteDashboardIds],
+  )
+
   useEffect(() => {
     let active = true
 
@@ -326,6 +396,63 @@ export function MyWorkspacePage({
     }
 
     void loadPrimaryPreference()
+
+    return () => {
+      active = false
+    }
+  }, [organizationId])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadFavoritesPreference() {
+      setFavoritesStatus('loading')
+      setFavoriteDashboardIds([])
+      setFavoritesFeedback(null)
+
+      const { data, error } = await supabase.rpc(
+        'get_my_module_preference',
+        {
+          input_organization_id: organizationId,
+          input_module_code: MODULE_CODE,
+          input_preference_key: FAVORITES_KEY,
+        },
+      )
+
+      if (!active) return
+
+      if (error) {
+        setFavoritesStatus('read-error')
+        setFavoritesFeedback({
+          type: 'error',
+          text: `Não foi possível carregar seus Favoritos: ${error.message}`,
+        })
+        return
+      }
+
+      const row = ((data ?? [])[0] ?? null) as PreferenceRow | null
+
+      if (!row) {
+        setFavoritesStatus('absent')
+        return
+      }
+
+      const dashboardIds = getFavoriteDashboardIds(row.preference_value)
+
+      if (!dashboardIds) {
+        setFavoritesStatus('invalid')
+        setFavoritesFeedback({
+          type: 'error',
+          text: 'A preferência salva de Favoritos possui formato incompatível e não foi aplicada.',
+        })
+        return
+      }
+
+      setFavoriteDashboardIds(dashboardIds)
+      setFavoritesStatus('valid')
+    }
+
+    void loadFavoritesPreference()
 
     return () => {
       active = false
@@ -433,6 +560,103 @@ export function MyWorkspacePage({
     setRemovingPreference(false)
   }
 
+  async function toggleFavorite(dashboardId: WorkspaceDashboardId) {
+    const dashboard = dashboards.find(
+      ({ definition }) => definition.id === dashboardId,
+    )
+
+    if (!dashboard || !FAVORITABLE_DASHBOARD_IDS.includes(dashboardId)) {
+      setFavoritesFeedback({
+        type: 'error',
+        text: 'Este painel não está elegível para Favoritos.',
+      })
+      return
+    }
+
+    const isFavorite = favoriteDashboardIds.includes(dashboardId)
+
+    if (!isFavorite && !dashboard.canOpen) {
+      setFavoritesFeedback({
+        type: 'error',
+        text: 'Este painel não pode ser adicionado aos Favoritos no contexto atual.',
+      })
+      return
+    }
+
+    const nextFavoriteIds = isFavorite
+      ? favoriteDashboardIds.filter((id) => id !== dashboardId)
+      : [...favoriteDashboardIds, dashboardId]
+
+    setSavingFavoriteId(dashboardId)
+    setFavoritesFeedback(null)
+
+    if (nextFavoriteIds.length === 0) {
+      const { error } = await supabase.rpc(
+        'delete_my_module_preference',
+        {
+          input_organization_id: organizationId,
+          input_module_code: MODULE_CODE,
+          input_preference_key: FAVORITES_KEY,
+          change_reason:
+            'Último painel removido dos Favoritos no Meu Espaço de Trabalho.',
+        },
+      )
+
+      if (error) {
+        setFavoritesFeedback({
+          type: 'error',
+          text: `Não foi possível atualizar seus Favoritos: ${error.message}`,
+        })
+        setSavingFavoriteId(null)
+        return
+      }
+
+      setFavoriteDashboardIds([])
+      setFavoritesStatus('absent')
+      setFavoritesFeedback({
+        type: 'success',
+        text: `${dashboard.definition.label} foi removido dos seus Favoritos.`,
+      })
+      setSavingFavoriteId(null)
+      return
+    }
+
+    const { error } = await supabase.rpc(
+      'set_my_module_preference',
+      {
+        input_organization_id: organizationId,
+        input_module_code: MODULE_CODE,
+        input_preference_key: FAVORITES_KEY,
+        input_preference_value: {
+          schema_version: 1,
+          dashboard_ids: nextFavoriteIds,
+        },
+        change_reason: isFavorite
+          ? 'Painel removido dos Favoritos no Meu Espaço de Trabalho.'
+          : 'Painel adicionado aos Favoritos no Meu Espaço de Trabalho.',
+      },
+    )
+
+    if (error) {
+      setFavoritesFeedback({
+        type: 'error',
+        text: `Não foi possível atualizar seus Favoritos: ${error.message}`,
+      })
+      setSavingFavoriteId(null)
+      return
+    }
+
+    setFavoriteDashboardIds(nextFavoriteIds)
+    setFavoritesStatus('valid')
+    setFavoritesFeedback({
+      type: 'success',
+      text: isFavorite
+        ? `${dashboard.definition.label} foi removido dos seus Favoritos.`
+        : `${dashboard.definition.label} foi adicionado aos seus Favoritos.`,
+    })
+    setSavingFavoriteId(null)
+  }
+
   function openDashboard(dashboard: ResolvedDashboard) {
     if (!dashboard.canOpen) return
 
@@ -456,6 +680,9 @@ export function MyWorkspacePage({
     savingDashboardId !== null ||
     removingPreference
 
+  const favoritesLoading = favoritesStatus === 'loading'
+  const favoritesBusy = savingFavoriteId !== null
+
   return (
     <>
       <section className="skpe-page-heading">
@@ -470,42 +697,42 @@ export function MyWorkspacePage({
         </div>
 
         <div className="skpe-heading-status-group">
-      <button
-        type="button"
-        className="skpe-notifications-bell"
-        aria-label={`Abrir notificações. ${unreadNotificationCount} ${
-          unreadNotificationCount === 1 ? 'não lida' : 'não lidas'
-        }`}
-        onClick={() => {
-          document
-            .getElementById('my-notifications-panel')
-            ?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-            })
-        }}
-      >
-        <span
-          className="skpe-notifications-bell-icon"
-          aria-hidden="true"
-        >
-          🔔
-        </span>
+          <button
+            type="button"
+            className="skpe-notifications-bell"
+            aria-label={`Abrir notificações. ${unreadNotificationCount} ${
+              unreadNotificationCount === 1 ? 'não lida' : 'não lidas'
+            }`}
+            onClick={() => {
+              document
+                .getElementById('my-notifications-panel')
+                ?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start',
+                })
+            }}
+          >
+            <span
+              className="skpe-notifications-bell-icon"
+              aria-hidden="true"
+            >
+              🔔
+            </span>
 
-        {unreadNotificationCount > 0 && (
-          <span className="skpe-notifications-bell-count">
-            {unreadNotificationCount > 99
-              ? '99+'
-              : unreadNotificationCount}
-          </span>
-        )}
-      </button>
+            {unreadNotificationCount > 0 && (
+              <span className="skpe-notifications-bell-count">
+                {unreadNotificationCount > 99
+                  ? '99+'
+                  : unreadNotificationCount}
+              </span>
+            )}
+          </button>
+
           <div
             className={`skpe-status-chip ${
               isReadOnly ? 'skpe-status-chip-neutral' : ''
             }`}
           >
-            <span className="skpe-status-dot" />
             {isReadOnly ? 'Somente leitura' : 'Acesso operacional'}
           </div>
         </div>
@@ -531,7 +758,10 @@ export function MyWorkspacePage({
               </p>
 
               {preferenceStatus === 'invalid' && (
-                <p className="skpe-primary-dashboard-warning" role="status">
+                <p
+                  className="skpe-primary-dashboard-warning"
+                  role="status"
+                >
                   A preferência salva não está disponível no contexto atual e
                   não foi substituída automaticamente.
                 </p>
@@ -688,6 +918,97 @@ export function MyWorkspacePage({
       />
 
       <section
+        id="my-favorites-panel"
+        className="skpe-favorites-panel"
+        aria-labelledby="my-favorites-title"
+      >
+        <div>
+          <p className="skpe-card-code">Preferência pessoal</p>
+          <h2 id="my-favorites-title">Favoritos</h2>
+          <p className="skpe-favorites-panel-description">
+            Acesse rapidamente os painéis que você marcou como favoritos
+            nesta organização.
+          </p>
+        </div>
+
+        {favoritesFeedback && (
+          <div
+            className={`skpe-action-message skpe-action-message-${favoritesFeedback.type}`}
+            role={
+              favoritesFeedback.type === 'error' ? 'alert' : 'status'
+            }
+          >
+            {favoritesFeedback.text}
+          </div>
+        )}
+
+        {favoritesLoading ? (
+          <p className="skpe-favorites-empty" role="status">
+            Carregando seus Favoritos...
+          </p>
+        ) : favoriteDashboards.length === 0 ? (
+          <p className="skpe-favorites-empty">
+            Você ainda não possui painéis favoritos nesta organização.
+          </p>
+        ) : (
+          <div className="skpe-favorites-grid">
+            {favoriteDashboards.map((dashboard) => (
+              <article
+                key={dashboard.definition.id}
+                className="skpe-favorite-card"
+                aria-labelledby={`favorite-${dashboard.definition.id}-title`}
+              >
+                <div>
+                  <p className="skpe-card-code">
+                    {dashboard.canOpen
+                      ? 'Favorito'
+                      : getAvailabilityLabel(dashboard.availability)}
+                  </p>
+                  <h3
+                    id={`favorite-${dashboard.definition.id}-title`}
+                  >
+                    {dashboard.definition.label}
+                  </h3>
+                </div>
+
+                <p>{dashboard.definition.description}</p>
+
+                {!dashboard.canOpen && dashboard.reason && (
+                  <small>{dashboard.reason}</small>
+                )}
+
+                <div className="skpe-favorite-card-actions">
+                  <button
+                    type="button"
+                    className="skpe-card-link-button"
+                    disabled={!dashboard.canOpen}
+                    onClick={() => openDashboard(dashboard)}
+                  >
+                    Abrir painel
+                  </button>
+
+                  <FavoriteButton
+                    label={dashboard.definition.label}
+                    isFavorite
+                    busy={
+                      savingFavoriteId === dashboard.definition.id
+                    }
+                    disabled={
+                      favoritesBusy &&
+                      savingFavoriteId !== dashboard.definition.id
+                    }
+                    onToggle={() =>
+                      void toggleFavorite(dashboard.definition.id)
+                    }
+                  />
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section
         className="skpe-workspace-panels"
         aria-labelledby="workspace-panels-title"
       >
@@ -714,6 +1035,11 @@ export function MyWorkspacePage({
               definition.id === persistedPrimaryId
             const isSaving =
               savingDashboardId === definition.id
+            const isFavorite =
+              favoriteDashboardIds.includes(definition.id)
+            const canToggleFavorite =
+              FAVORITABLE_DASHBOARD_IDS.includes(definition.id) &&
+              (canOpen || isFavorite)
 
             return (
               <article
@@ -787,6 +1113,23 @@ export function MyWorkspacePage({
                         ? 'Painel Principal atual'
                         : 'Definir como principal'}
                   </button>
+
+                  {FAVORITABLE_DASHBOARD_IDS.includes(definition.id) && (
+                    <FavoriteButton
+                      label={definition.label}
+                      isFavorite={isFavorite}
+                      busy={savingFavoriteId === definition.id}
+                      disabled={
+                        !canToggleFavorite ||
+                        (favoritesBusy &&
+                          savingFavoriteId !== definition.id) ||
+                        favoritesLoading
+                      }
+                      onToggle={() =>
+                        void toggleFavorite(definition.id)
+                      }
+                    />
+                  )}
                 </div>
               </article>
             )
