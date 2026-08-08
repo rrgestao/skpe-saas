@@ -1,0 +1,398 @@
+.skpe-meetings-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--skpe-border-subtle, rgba(15, 23, 42, 0.1));
+  border-radius: 1rem;
+  background: var(--skpe-surface, #ffffff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.skpe-meetings-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-meetings-heading h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+}
+
+.skpe-meetings-heading p:not(.skpe-card-code) {
+  margin: 0.4rem 0 0;
+  max-width: 62rem;
+  color: var(--skpe-text-muted, #64748b);
+  line-height: 1.5;
+}
+
+.skpe-meetings-total {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--skpe-text, #0f172a);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.skpe-meetings-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skpe-meetings-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.72rem;
+  border: 1px solid var(--skpe-border-subtle, rgba(15, 23, 42, 0.12));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--skpe-text-muted, #64748b);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.skpe-meetings-filter:hover,
+.skpe-meetings-filter:focus-visible {
+  border-color: rgba(37, 99, 235, 0.45);
+  color: var(--skpe-text, #0f172a);
+}
+
+.skpe-meetings-filter:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.16);
+  outline-offset: 2px;
+}
+
+.skpe-meetings-filter span {
+  display: inline-grid;
+  min-width: 1.35rem;
+  min-height: 1.35rem;
+  place-items: center;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.07);
+  font-size: 0.74rem;
+}
+
+.skpe-meetings-filter-active {
+  border-color: rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+
+.skpe-meetings-state {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 5.5rem;
+  align-content: center;
+  padding: 1rem;
+  border: 1px dashed var(--skpe-border-subtle, rgba(15, 23, 42, 0.14));
+  border-radius: 0.85rem;
+  color: var(--skpe-text-muted, #64748b);
+}
+
+.skpe-meetings-state strong {
+  color: var(--skpe-text, #0f172a);
+}
+
+.skpe-meetings-error {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.04);
+  color: #b91c1c;
+}
+
+.skpe-meetings-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.skpe-meetings-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--skpe-border-subtle, rgba(15, 23, 42, 0.1));
+  border-radius: 0.9rem;
+  background: var(--skpe-surface, #ffffff);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.skpe-meetings-item:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
+}
+
+.skpe-meetings-item:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.16);
+  outline-offset: 2px;
+  border-color: rgba(37, 99, 235, 0.36);
+}
+
+.skpe-meetings-item-attention {
+  border-left: 4px solid #d97706;
+}
+
+.skpe-meetings-item-main {
+  min-width: 0;
+}
+
+.skpe-meetings-item-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.skpe-meetings-item-labels span,
+.skpe-meetings-item-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.45rem;
+  background: rgba(15, 23, 42, 0.055);
+  color: var(--skpe-text-muted, #64748b);
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.skpe-meetings-item h3 {
+  margin: 0;
+  color: var(--skpe-text, #0f172a);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.skpe-meetings-item-main > p {
+  margin: 0.4rem 0 0;
+  color: var(--skpe-text-muted, #64748b);
+  font-size: 0.88rem;
+  line-height: 1.48;
+}
+
+.skpe-meetings-governance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+}
+
+.skpe-meetings-governance-grid > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.7rem;
+  background: rgba(37, 99, 235, 0.045);
+}
+
+.skpe-meetings-governance-grid span,
+.skpe-meetings-context span {
+  color: var(--skpe-text-muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.skpe-meetings-governance-grid strong,
+.skpe-meetings-context strong {
+  color: var(--skpe-text, #0f172a);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.skpe-meetings-governance-grid small {
+  color: var(--skpe-text-muted, #64748b);
+  font-size: 0.72rem;
+}
+
+.skpe-meetings-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.skpe-meetings-kpis > div {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--skpe-border-subtle, rgba(15, 23, 42, 0.08));
+  border-radius: 0.7rem;
+}
+
+.skpe-meetings-kpis span {
+  color: var(--skpe-text-muted, #64748b);
+  font-size: 0.72rem;
+}
+
+.skpe-meetings-kpis strong {
+  overflow-wrap: anywhere;
+  color: var(--skpe-text, #0f172a);
+  font-size: 0.88rem;
+}
+
+.skpe-meetings-kpis small {
+  color: var(--skpe-text-muted, #64748b);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.skpe-meetings-value-alert {
+  color: #b91c1c !important;
+}
+
+.skpe-meetings-context {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.7rem;
+  background: rgba(15, 23, 42, 0.035);
+}
+
+.skpe-meetings-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.skpe-meetings-item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skpe-meetings-status-stack {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+}
+
+.skpe-meetings-status,
+.skpe-meetings-attention-badge,
+.skpe-meetings-today-badge,
+.skpe-meetings-ratified-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.skpe-meetings-status-draft {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+.skpe-meetings-status-scheduled {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.skpe-meetings-status-in_progress {
+  background: rgba(14, 116, 144, 0.11);
+  color: #0e7490;
+}
+
+.skpe-meetings-status-pending_ratification {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.skpe-meetings-status-ratified,
+.skpe-meetings-status-closed {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.skpe-meetings-status-cancelled {
+  background: rgba(100, 116, 139, 0.12);
+  color: #64748b;
+}
+
+.skpe-meetings-attention-badge {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.skpe-meetings-today-badge {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.skpe-meetings-ratified-badge {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+[data-theme='dark'] .skpe-meetings-panel,
+[data-theme='dark'] .skpe-meetings-item {
+  background: rgba(15, 23, 42, 0.72);
+}
+
+[data-theme='dark'] .skpe-meetings-total,
+[data-theme='dark'] .skpe-meetings-filter span,
+[data-theme='dark'] .skpe-meetings-item-labels span,
+[data-theme='dark'] .skpe-meetings-item-meta span,
+[data-theme='dark'] .skpe-meetings-context {
+  background: rgba(255, 255, 255, 0.065);
+}
+
+[data-theme='dark'] .skpe-meetings-governance-grid > div {
+  background: rgba(96, 165, 250, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .skpe-meetings-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-meetings-panel {
+    padding: 0.9rem;
+  }
+
+  .skpe-meetings-heading {
+    flex-direction: column;
+  }
+
+  .skpe-meetings-item {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-meetings-governance-grid,
+  .skpe-meetings-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-meetings-item-actions {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .skpe-meetings-status-stack {
+    justify-items: start;
+  }
+}

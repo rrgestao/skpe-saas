@@ -5,6 +5,7 @@ import { MyDecisionsPanel } from './MyDecisionsPanel'
 import { MyIndicatorsPanel } from './MyIndicatorsPanel'
 import { MyInitiativesPanel } from './MyInitiativesPanel'
 import { MyKeyResultsPanel } from './MyKeyResultsPanel'
+import { MyMeetingsPanel } from './MyMeetingsPanel'
 import { MyPendingItemsPanel } from './MyPendingItemsPanel'
 import {
   WORKSPACE_DASHBOARDS,
@@ -639,6 +640,11 @@ export function MyWorkspacePage({
       />
 
       <MyDecisionsPanel
+        organizationId={organizationId}
+        projectId={project?.id ?? null}
+      />
+
+      <MyMeetingsPanel
         organizationId={organizationId}
         projectId={project?.id ?? null}
       />
