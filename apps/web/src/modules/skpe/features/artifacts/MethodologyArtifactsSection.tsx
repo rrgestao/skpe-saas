@@ -1,8 +1,8 @@
 import { type ChangeEvent, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../../lib/supabase'
 
-import { artifactTypeLabelPtBr, eventLabelPtBr, statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
-import { DeliveryKitDialog } from './DeliveryKitDialog'
+import { artifactTypeLabelPtBr, eventLabelPtBr, statusLabelPtBr, translateBackendMessage } from '../../../../shared/i18n/ptBR'
+import { DeliveryKitDialog } from '../../DeliveryKitDialog'
 import './MethodologyArtifactsSection.css'
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
   projectId: string
   canManage: boolean
   canGenerateDeliveryKit: boolean
+  onBack?: () => void
+  backLabel?: string
 }
 
 type CatalogItem = {
@@ -117,7 +119,7 @@ const formatDate = (value: string | null | undefined) => {
 
 const safeName = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '_')
 
-export function MethodologyArtifactsSection({ organizationId, projectId, canManage, canGenerateDeliveryKit }: Props) {
+export function MethodologyArtifactsSection({ organizationId, projectId, canManage, canGenerateDeliveryKit, onBack, backLabel = 'Voltar' }: Props) {
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
@@ -319,7 +321,8 @@ export function MethodologyArtifactsSection({ organizationId, projectId, canMana
 
   return <section className="skpe-artifacts-page">
     <header className="skpe-artifacts-header">
-      <div><span>Gestão metodológica</span><h1>Artefatos e evidências</h1><p>Controle entregas, versões, validações e prontidão dos gates.</p></div>
+      <div>
+        {onBack && <button type="button" className="skpe-artifacts-secondary" onClick={onBack}>← {backLabel}</button>}<span>Gestão metodológica</span><h1>Artefatos e evidências</h1><p>Controle entregas, versões, validações e prontidão dos gates.</p></div>
       <div className="skpe-artifacts-header-actions">{canGenerateDeliveryKit && <button type="button" className="skpe-artifacts-secondary" onClick={() => setShowDeliveryKit(true)}>Kit de Entregas</button>}{canManage && <button type="button" className="skpe-artifacts-primary" onClick={() => setShowCreate(true)}>+ Novo artefato</button>}</div>
     </header>
     {showDeliveryKit && canGenerateDeliveryKit && <DeliveryKitDialog organizationId={organizationId} projectId={projectId} onClose={() => setShowDeliveryKit(false)} />}
