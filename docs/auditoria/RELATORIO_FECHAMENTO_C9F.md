@@ -1,7 +1,7 @@
 ---
 id: SKPE-AUD-C9F-FECHAMENTO
-version: 1.0.0
-status: pending_repository_sync
+version: 1.1.0
+status: approved
 domain: SK-PE
 owner: SPARKs PE
 roadmap_step: CO-IMPORT-04-C9-F
@@ -9,6 +9,7 @@ canonical_context: SK-PE-CONT-01
 created_at: 2026-08-14
 updated_at: 2026-08-14
 origin: auditoria_controlada_supabase_github
+repository_closure_commit: fda2937972f991fc15f59e0d972c435d01d9155d
 depends_on:
   - docs/auditoria/RELATORIO_FECHAMENTO_C9E.md
   - supabase/migrations/20260814142445_co_import_04_c9_e_key_result_materializer.sql
@@ -91,9 +92,17 @@ tratamento deve ocorrer em auditoria própria, sem expandir este gate.
 
 O estado funcional no Supabase é **PASS**.
 
-O fechamento integrado permanece **PENDENTE DE SINCRONIZAÇÃO COM O
-REPOSITÓRIO** até que a migration e este relatório sejam incorporados à branch
-`feature/formulacao-estrategica-operacional` e seja comprovado `Local = Remote`.
+O fechamento integrado está **APROVADO**.
 
-Após a sincronização, este documento deverá receber `status: approved` e o SHA
-do commit de fechamento, sem reaplicar a migration.
+A migration e o relatório foram incorporados à branch
+`feature/formulacao-estrategica-operacional` pelo commit:
+
+`fda2937972f991fc15f59e0d972c435d01d9155d`
+
+Mensagem:
+
+`fix(skpe): close C9-F reconciliation and hardening`
+
+A execução de `npx supabase migration list` confirmou equivalência integral
+**Local = Remote**, incluindo `20260814170231`. Nenhuma migration foi reaplicada
+durante o fechamento documental e `.mcp.json` permaneceu fora dos commits.
