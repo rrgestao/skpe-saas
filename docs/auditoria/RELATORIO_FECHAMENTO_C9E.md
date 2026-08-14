@@ -1,7 +1,7 @@
 ---
 id: SKPE-AUD-C9E-FECHAMENTO
-version: 1.0.0
-status: pending_repository_sync
+version: 1.1.0
+status: approved
 domain: SK-PE
 owner: SPARKs PE
 roadmap_step: CO-IMPORT-04-C9-E
@@ -9,6 +9,7 @@ canonical_context: SK-PE-CONT-01
 created_at: 2026-08-14
 updated_at: 2026-08-14
 origin: validacao_controlada_supabase
+repository_closure_commit: 48fc9ea7d506d00f7518d3c0d69dab70771d8f6c
 depends_on:
   - supabase/migrations/20260814142445_co_import_04_c9_e_key_result_materializer.sql
   - supabase/migrations/20260814142521_co_import_04_c9_e_key_result_dispatcher.sql
@@ -41,10 +42,23 @@ O C9-E foi implementado e validado no projeto Supabase `skpe-saas-dev`
 
 O estado funcional no Supabase é **PASS**.
 
-O fechamento integrado permanece **PENDENTE DE SINCRONIZAÇÃO COM O
-REPOSITÓRIO**, até que as duas migrations sejam commitadas na branch
-`feature/formulacao-estrategica-operacional`, tomando
-`3078d32a7949c2e370c644be3bacda1d7db64884` como baseline.
+O fechamento integrado está **APROVADO**.
 
-Após o commit e a validação `Local = Remote`, atualizar este documento para
-`status: approved` e registrar o SHA de fechamento.
+As duas migrations e este relatório foram incorporados à branch
+`feature/formulacao-estrategica-operacional` pelo commit:
+
+`48fc9ea7d506d00f7518d3c0d69dab70771d8f6c`
+
+Mensagem:
+
+`feat(skpe): close governed key result materialization C9-E`
+
+A execução de `npx supabase migration list` confirmou equivalência integral
+**Local = Remote**, incluindo:
+
+- `20260814142445` = `20260814142445`;
+- `20260814142521` = `20260814142521`.
+
+Nenhuma migration foi reaplicada durante o fechamento documental e o KR-02
+permaneceu não materializado, preservando o controle negativo
+`under_review / requires_review`.
