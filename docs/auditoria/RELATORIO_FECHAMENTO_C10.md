@@ -1,7 +1,7 @@
 ---
 id: SKPE-AUD-C10-FECHAMENTO
-version: 1.0.0
-status: pending_repository
+version: 1.1.0
+status: approved
 domain: SK-PE
 owner: SPARKs PE
 roadmap_step: CO-IMPORT-04-C10
@@ -9,6 +9,7 @@ canonical_context: SK-PE-CONT-01
 created_at: 2026-08-14
 updated_at: 2026-08-14
 origin: auditoria_controlada_supabase_github
+repository_closure_commit: caf7c07f22247630e25f0e0f78897bb2a30db96d
 depends_on:
   - docs/auditoria/RELATORIO_FECHAMENTO_C9E.md
   - docs/auditoria/RELATORIO_FECHAMENTO_C9F.md
@@ -111,8 +112,21 @@ priorizados em gate próprio, sem expansão oportunista deste fechamento.
 
 O estado funcional no Supabase é **PASS**.
 
-O fechamento de repositório permanece **PENDENTE** até incorporação dos dois
-artefatos na branch `feature/formulacao-estrategica-operacional` e confirmação
-final de GitHub e Local = Remote.
+O fechamento integrado está **APROVADO**.
 
-**GATE: CO-IMPORT-04-C10 — PASS FUNCIONAL / PENDENTE DE FECHAMENTO NO REPOSITÓRIO.**
+A migration e o relatório foram incorporados à branch
+`feature/formulacao-estrategica-operacional` pelo commit:
+
+`caf7c07f22247630e25f0e0f78897bb2a30db96d`
+
+Mensagem:
+
+`fix(skpe): close C10 integrated import reconciliation`
+
+A execução de `npx supabase migration list` confirmou equivalência integral
+**Local = Remote**, incluindo `20260814174803`. `.mcp.json` permaneceu fora dos
+commits.
+
+**GATE: CO-IMPORT-04-C10 — PASS / APPROVED.**
+
+**ROADMAP: CO-IMPORT-04 — ENCERRADO.**
