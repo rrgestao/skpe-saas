@@ -101,6 +101,66 @@ function formatDate(value?: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('pt-BR')
 }
 
+const READINESS_STATE_LABELS: Record<string, string> = {
+  blocked: 'Bloqueado',
+  ready: 'Pronto',
+}
+
+const READINESS_GATE_LABELS: Record<string, string> = {
+  BATCH_REVIEWED: 'Lote revisado',
+  NO_PENDING_MAPPING: 'Nenhum mapeamento pendente',
+  NO_BLOCKED_RECORDS: 'Nenhum registro bloqueado',
+  NO_INVALID_RECORDS: 'Nenhum registro inválido',
+  CONFLICTS_RESOLVED: 'Conflitos formalmente tratados',
+  CANONICAL_JOURNEY_PROTECTED: 'Jornada canônica protegida',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  staged: 'Em staging',
+  reviewed: 'Revisado',
+  ready: 'Pronto',
+  blocked: 'Bloqueado',
+  pending_mapping: 'Mapeamento pendente',
+  accepted_from_payload: 'Recebido do payload — aguardando confirmação',
+  approved: 'Aprovado',
+  adjusted: 'Ajustado',
+  rejected: 'Rejeitado',
+  cancelled: 'Cancelado',
+  applied: 'Aplicado',
+  rolled_back: 'Revertido',
+}
+
+const DECISION_LABELS: Record<string, string> = {
+  accept_canonical: 'Aceitar valor canônico',
+}
+
+const ENTITY_LABELS: Record<string, string> = {
+  version_control: 'Controle de versões',
+}
+
+function localizedLabel(value: unknown, labels: Record<string, string>): string {
+  const technicalValue = String(value ?? '').trim()
+  if (!technicalValue) return '—'
+  return labels[technicalValue] ?? technicalValue.replaceAll('_', ' ')
+}
+
+function readinessValueLabel(value: unknown): string {
+  if (typeof value === 'string') {
+    return localizedLabel(value, { ...STATUS_LABELS, ...DECISION_LABELS })
+  }
+  return String(value ?? '—')
+}
+
+function validationMessagesLabel(messages: unknown[] | undefined): string {
+  if (!messages?.length) return '—'
+  return messages.map((message) => {
+    if (message && typeof message === 'object' && 'message' in message) {
+      return String((message as { message?: unknown }).message ?? '—')
+    }
+    return String(message)
+  }).join(' · ')
+}
+
 export function CanonicalImportStaging({ organizations, onBackToPortal }: Props) {
   const [organizationId, setOrganizationId] = useState('')
   const [projectId, setProjectId] = useState('')
@@ -573,7 +633,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                     <tr key={item.id}>
                       <td><strong>{item.source_file ?? '—'}</strong><small>{item.id}</small></td>
                       <td>{item.schema_version ?? '—'}</td>
-                      <td><span className={`batch-status ${item.status ?? ''}`}>{item.status ?? '—'}</span></td>
+                      <td><span className={`batch-status ${item.status ?? ''}`}>{localizedLabel(item.status, STATUS_LABELS)}</span></td>
                       <td>{item.valid_record_count ?? 0}</td>
                       <td>{item.blocked_record_count ?? 0}</td>
                       <td>{item.conflict_count ?? 0}</td>
@@ -612,7 +672,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
         <div className="canonical-batch-summary">
           <div className="canonical-batch-title">
             <div><small>Lote retomado</small><h4>{batch.id}</h4><span>{batch.source_file ?? 'Arquivo não informado'}</span></div>
-            <span className={`batch-status ${batch.status ?? ''}`}>{batch.status ?? '—'}</span>
+            <span className={`batch-status ${batch.status ?? ''}`}>{localizedLabel(batch.status, STATUS_LABELS)}</span>
           </div>
           <div className="canonical-staging-kpis compact">
             <article><small>Recebidos</small><strong>{batch.staged_record_count ?? 0}</strong></article>
@@ -628,7 +688,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
               <table>
                 <thead><tr><th>Entidade</th><th>Total</th><th>Bloqueados</th><th>Quarentena</th></tr></thead>
                 <tbody>{(summary?.byEntity ?? []).map((item) => (
-                  <tr key={item.entity_code}><td>{item.entity_code}</td><td>{item.total}</td><td>{item.blocked}</td><td>{item.quarantined}</td></tr>
+                  <tr key={item.entity_code}><td>{localizedLabel(item.entity_code, ENTITY_LABELS)}</td><td>{item.total}</td><td>{item.blocked}</td><td>{item.quarantined}</td></tr>
                 ))}</tbody>
               </table>
             </div>
@@ -650,13 +710,13 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   <small>Avaliação formal</small>
                   <h4>{readiness.readyForDefinitiveLoad ? 'Lote tecnicamente apto' : 'Carga definitiva bloqueada'}</h4>
                 </div>
-                <span>{readiness.readinessState ?? '—'}</span>
+                <span>{localizedLabel(readiness.readinessState, READINESS_STATE_LABELS)}</span>
               </div>
               <div className="canonical-readiness-gates">
                 {(readiness.gates ?? []).map((gate) => (
                   <article key={gate.code} className={gate.passed ? 'passed' : 'failed'}>
                     <strong>{gate.passed ? '✓' : '!'}</strong>
-                    <div><small>{gate.code}</small><span>{gate.label}</span><em>Atual: {String(gate.actual ?? '—')} · Exigido: {String(gate.required ?? '—')}</em></div>
+                    <div><small>{localizedLabel(gate.code, READINESS_GATE_LABELS)}</small><span>{gate.label}</span><em>Atual: {readinessValueLabel(gate.actual)} · Exigido: {readinessValueLabel(gate.required)}</em></div>
                   </article>
                 ))}
               </div>
@@ -668,11 +728,11 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                       <thead><tr><th>Entidade</th><th>Chave externa</th><th>Situação</th><th>Origem</th><th>Mensagens</th><th>Ação</th></tr></thead>
                       <tbody>{(readiness.blockedRecords ?? []).map((item, index) => (
                         <tr key={item.id ?? `${item.externalKey}-${index}`}>
-                          <td>{item.entityCode ?? '—'}</td>
+                          <td>{localizedLabel(item.entityCode, ENTITY_LABELS)}</td>
                           <td><strong>{item.externalKey ?? '—'}</strong></td>
-                          <td>{item.simulationStatus ?? '—'}</td>
+                          <td>{localizedLabel(item.simulationStatus, STATUS_LABELS)}</td>
                           <td>{item.sourceSheet ?? '—'}{item.sourceRow ? ` · linha ${item.sourceRow}` : ''}</td>
-                          <td><code>{JSON.stringify(item.validationMessages ?? [])}</code></td>
+                          <td>{validationMessagesLabel(item.validationMessages)}</td>
                           <td><button type="button" className="review-blocked" onClick={() => void openBlockedReview(item.externalKey ?? '')} disabled={loadingBlockedReview}>{loadingBlockedReview ? 'Abrindo...' : 'Revisar e corrigir'}</button></td>
                         </tr>
                       ))}</tbody>
@@ -684,7 +744,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
               {(readiness.conflicts ?? []).length > 0 && (
                 <details className="canonical-conflict-review" open>
                   <summary>Tratamento assistido dos conflitos ({readiness.conflicts?.length ?? 0})</summary>
-                  <p>Todos os conflitos deste lote vieram com a decisão proposta <strong>accept_canonical</strong>. A confirmação abaixo preserva o estado canônico já validado e registra usuário, data e justificativa.</p>
+                  <p>Todos os conflitos deste lote vieram com a decisão proposta <strong>Aceitar valor canônico</strong>. A confirmação abaixo preserva o estado canônico já validado e registra usuário, data e justificativa.</p>
                   <div className="canonical-conflict-grid">
                     {(readiness.conflicts ?? []).map((conflict, index) => (
                       <article key={String(conflict.id ?? conflict.conflict_code ?? index)}>
@@ -698,8 +758,8 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                           <div><dt>Origem B</dt><dd>{String(conflict.source_b ?? '—')}</dd></div>
                           <div><dt>Valor B</dt><dd>{String(conflict.value_b ?? '—')}</dd></div>
                           <div><dt>Valor canônico</dt><dd>{String(conflict.canonical_value ?? '—')}</dd></div>
-                          <div><dt>Decisão proposta</dt><dd>{String(conflict.proposed_decision ?? '—')}</dd></div>
-                          <div><dt>Situação</dt><dd>{String(conflict.status ?? '—')}</dd></div>
+                          <div><dt>Decisão proposta</dt><dd>{localizedLabel(conflict.proposed_decision, DECISION_LABELS)}</dd></div>
+                          <div><dt>Situação</dt><dd>{localizedLabel(conflict.status, STATUS_LABELS)}</dd></div>
                         </dl>
                       </article>
                     ))}
@@ -711,7 +771,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                         <textarea
                           value={conflictNotes}
                           onChange={(event) => setConflictNotes(event.target.value)}
-                          placeholder="Ex.: Confirmo a preservação dos valores canônicos já validados e a decisão accept_canonical para os seis conflitos de reconciliação."
+                          placeholder={`Ex.: Confirmo a preservação dos valores canônicos já validados e a decisão de aceitar o valor canônico para ${readiness.conflicts?.length ?? 0} conflitos de reconciliação.`}
                         />
                       </label>
                       <button
