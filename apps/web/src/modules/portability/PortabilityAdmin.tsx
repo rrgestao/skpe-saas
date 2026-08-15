@@ -11,7 +11,10 @@ import { CanonicalImportStaging } from './CanonicalImportStaging'
 import './PortabilityAdmin.css'
 
 type OrganizationOption = { id: string; code: string; name: string }
-type Props = { organizations: OrganizationOption[] }
+type Props = {
+  organizations: OrganizationOption[]
+  fixedOrganizationId?: string
+}
 type ViewMode = 'cards' | 'grid'
 type DirectionFilter = '' | 'import' | 'export'
 type PackageStatus = '' | 'draft' | 'preparing' | 'validating' | 'ready' | 'processing' | 'completed' | 'completed_with_warnings' | 'failed' | 'cancelled' | 'archived'
@@ -95,7 +98,7 @@ function formatDateTime(value: string | null | undefined) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
 }
 
-export function PortabilityAdmin({ organizations }: Props) {
+export function PortabilityAdmin({ organizations, fixedOrganizationId }: Props) {
   const [packages, setPackages] = useState<PackageRow[]>([])
   const [layouts, setLayouts] = useState<Layout[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,10 +111,24 @@ export function PortabilityAdmin({ organizations }: Props) {
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
   const [search, setSearch] = useState('')
-  const [organizationFilter, setOrganizationFilter] = useState('')
+  const [organizationFilter, setOrganizationFilter] = useState(
+    fixedOrganizationId ?? '',
+  )
   const [directionFilter, setDirectionFilter] = useState<DirectionFilter>('')
   const [statusFilter, setStatusFilter] = useState<PackageStatus>('')
-  const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  const [form, setForm] = useState<FormState>(() => ({
+    ...EMPTY_FORM,
+    organizationId: fixedOrganizationId ?? '',
+  }))
+
+  useEffect(() => {
+    if (!fixedOrganizationId) return
+    setOrganizationFilter(fixedOrganizationId)
+    setForm((current) => ({
+      ...current,
+      organizationId: fixedOrganizationId,
+    }))
+  }, [fixedOrganizationId])
 
   const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
     setMessage(text)
@@ -123,7 +140,7 @@ export function PortabilityAdmin({ organizations }: Props) {
     const [layoutResponse, packageResponse] = await Promise.all([
       supabase.rpc('get_portability_layouts', { target_module_code: 'SK-PE', target_direction: null }),
       supabase.rpc('get_portability_packages', {
-        target_organization_id: organizationFilter || null,
+        target_organization_id: fixedOrganizationId || organizationFilter || null,
         target_direction: directionFilter || null,
         target_status: statusFilter || null,
       }),
@@ -140,7 +157,7 @@ export function PortabilityAdmin({ organizations }: Props) {
 
   useEffect(() => {
     void loadData()
-  }, [organizationFilter, directionFilter, statusFilter])
+  }, [fixedOrganizationId, organizationFilter, directionFilter, statusFilter])
 
   const availableLayouts = useMemo(
     () => layouts.filter((layout) => layout.active && (layout.direction === form.direction || layout.direction === 'both')),
@@ -458,7 +475,7 @@ export function PortabilityAdmin({ organizations }: Props) {
         <form className="portability-request-form" onSubmit={submitPackage}>
           <label>
             Organização
-            <select value={form.organizationId} onChange={(event) => setForm((current) => ({ ...current, organizationId: event.target.value }))} required>
+            <select value={form.organizationId} onChange={(event) => setForm((current) => ({ ...current, organizationId: event.target.value }))} required disabled={Boolean(fixedOrganizationId)}>
               <option value="">Selecione</option>
               {organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
             </select>
@@ -501,7 +518,7 @@ export function PortabilityAdmin({ organizations }: Props) {
           </aside>
 
           <div className="portability-request-actions">
-            <button type="button" onClick={() => setForm((current) => ({ ...EMPTY_FORM, direction: current.direction }))}>Limpar</button>
+            <button type="button" onClick={() => setForm((current) => ({ ...EMPTY_FORM, organizationId: fixedOrganizationId ?? '', direction: current.direction }))}>Limpar</button>
             <button type="submit" className="primary" disabled={saving}>{saving ? 'Registrando...' : 'Registrar solicitação'}</button>
           </div>
         </form>
@@ -520,7 +537,7 @@ export function PortabilityAdmin({ organizations }: Props) {
 
         <div className="portability-toolbar">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar pacote, organização ou leiaute" />
-          <select value={organizationFilter} onChange={(event) => setOrganizationFilter(event.target.value)}>
+          <select value={organizationFilter} onChange={(event) => setOrganizationFilter(event.target.value)} disabled={Boolean(fixedOrganizationId)}>
             <option value="">Todas as organizações</option>
             {organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
           </select>

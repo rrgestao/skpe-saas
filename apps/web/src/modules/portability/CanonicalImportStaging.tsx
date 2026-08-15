@@ -339,11 +339,26 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     setFileName('')
     try {
       await loadSummary(id)
+      const { data: readinessData, error: readinessError } = await supabase.rpc(
+        'skpe_assess_import_batch_readiness',
+        { p_batch_id: id },
+      )
+      if (readinessError) throw readinessError
+      const assessment = (readinessData ?? null) as ReadinessAssessment | null
       setBatchId(id)
-      setReadiness(null)
+      setReadiness(assessment)
       window.localStorage.setItem(`skpe.import.batch.${organizationId}.${projectId}`, id)
-      setMessage('Lote retomado com sucesso. A simulação será executada pela sessão autenticada da aplicação.')
-      setMessageType('success')
+      setMessage(assessment?.readyForDefinitiveLoad
+        ? 'Lote retomado e avaliado. Nenhuma carga definitiva foi executada.'
+        : 'Lote retomado. Consulte abaixo os impedimentos e conflitos identificados.')
+      setMessageType(assessment?.readyForDefinitiveLoad ? 'success' : 'info')
+    } catch (error) {
+      setBatchId('')
+      setReadiness(null)
+      setMessage(error instanceof Error
+        ? `Não foi possível retomar e avaliar o lote: ${error.message}`
+        : 'Não foi possível retomar e avaliar o lote.')
+      setMessageType('error')
     } finally {
       setOpeningBatchId('')
     }

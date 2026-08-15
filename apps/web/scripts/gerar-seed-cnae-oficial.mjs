@@ -2,10 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { createRequire } from 'node:module'
-
-const require = createRequire(import.meta.url)
-const XLSX = require('xlsx')
+import ExcelJS from 'exceljs'
 
 const SOURCE_URL =
   'https://www.ibge.gov.br/estatisticas/metodos-e-classificacoes/classificacoes-e-listas-estatisticas/9078-classificacao-nacional-de-atividades-economicas.html'
@@ -95,17 +92,60 @@ function findColumn(headers, candidates) {
   )
 }
 
+function cellText(cell) {
+  const value = cell.value
+
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  if (value instanceof Date) {
+    const day = String(value.getDate()).padStart(2, '0')
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    return `${day}/${month}/${value.getFullYear()}`
+  }
+
+  if (typeof value === 'object') {
+    if ('result' in value && value.result !== null && value.result !== undefined) {
+      return text(value.result)
+    }
+
+    if ('richText' in value && Array.isArray(value.richText)) {
+      return text(value.richText.map((part) => part.text ?? '').join(''))
+    }
+
+    if ('text' in value && typeof value.text === 'string') {
+      return text(value.text)
+    }
+
+    return ''
+  }
+
+  return text(cell.text || value)
+}
+
+function sheetRows(worksheet) {
+  const rows = []
+
+  worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const values = []
+
+    for (let column = 1; column <= row.cellCount; column += 1) {
+      values.push(cellText(row.getCell(column)))
+    }
+
+    rows[rowNumber - 1] = values
+  })
+
+  return rows.map((row) => row ?? [])
+}
+
 function chooseSheet(workbook) {
   let selected = null
 
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName]
-    const rows = XLSX.utils.sheet_to_json(sheet, {
-      header: 1,
-      raw: false,
-      defval: '',
-      blankrows: true,
-    })
+  for (const worksheet of workbook.worksheets) {
+    const sheetName = worksheet.name
+    const rows = sheetRows(worksheet)
 
     try {
       const header = locateHeader(rows)
@@ -508,7 +548,7 @@ const [, , inputArg, outputArg] = process.argv
 
 if (!inputArg) {
   console.error(
-    'Uso: node gerar-seed-cnae-oficial.mjs <arquivo-oficial.xls|xlsx> [saida.sql]',
+    'Uso: node gerar-seed-cnae-oficial.mjs <arquivo-oficial.xlsx> [saida.sql]',
   )
   process.exit(1)
 }
@@ -523,10 +563,16 @@ if (!fs.existsSync(inputPath)) {
   process.exit(1)
 }
 
-const workbook = XLSX.readFile(inputPath, {
-  cellDates: false,
-  cellText: true,
-  cellNF: true,
+if (path.extname(inputPath).toLowerCase() !== '.xlsx') {
+  console.error(
+    `Formato não suportado: ${path.extname(inputPath) || 'sem extensão'}. Use o arquivo oficial em formato .xlsx.`,
+  )
+  process.exit(1)
+}
+
+const workbook = new ExcelJS.Workbook()
+await workbook.xlsx.readFile(inputPath, {
+  ignoreNodes: ['drawing', 'legacyDrawing'],
 })
 const selected = chooseSheet(workbook)
 const records = parseCatalog(selected.rows, selected.header)

@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import JSZip from 'jszip'
 
 export type ReconciliationConflict = {
   id: string
@@ -120,7 +121,8 @@ const ENTITY_BY_SHEET: Record<string, { code: string; name: string }> = {
   '32_Gestao_Evidencias': { code: 'evidence_management', name: 'Gestão de evidências' },
   '33_Maturidade_Processos': { code: 'process_maturity', name: 'Maturidade de processos' },
   '34_PMVV_Validacao': { code: 'pmvv_validation', name: 'Validação PMVV' },
-  '35_Valores_Vivos': { code: 'living_value', name: 'Valores vivos' },
+  '35_Valores': { code: 'living_value', name: 'Valores' },
+  '35_Valores_Vivos': { code: 'living_value', name: 'Valores' },
   '36_PMVV_5W2H': { code: 'pmvv_institutionalization', name: 'Institucionalização do PMVV' },
   '37_Portfolio_Projetos': { code: 'project_portfolio', name: 'Portfólio de projetos' },
   '38_Resultados_KPI': { code: 'kpi_result', name: 'Resultados KPI' },
@@ -142,6 +144,33 @@ function normalize(value: unknown): string {
   return String(value).replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+function formatBrazilianDate(value: Date): string {
+  const day = String(value.getUTCDate()).padStart(2, '0')
+  const month = String(value.getUTCMonth() + 1).padStart(2, '0')
+  return `${day}/${month}/${value.getUTCFullYear()}`
+}
+
+function excelValueText(value: ExcelJS.CellValue): string {
+  if (value == null) return ''
+  if (value instanceof Date) return formatBrazilianDate(value)
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return normalize(value)
+  if (typeof value !== 'object') return normalize(value)
+
+  if ('result' in value) {
+    if (value.result != null) return excelValueText(value.result as ExcelJS.CellValue)
+    if ('formula' in value && typeof value.formula === 'string') return normalize(`=${value.formula}`)
+    if ('sharedFormula' in value && typeof value.sharedFormula === 'string') return normalize(`=${value.sharedFormula}`)
+    return ''
+  }
+  if ('richText' in value && Array.isArray(value.richText)) {
+    return normalize(value.richText.map((part) => part.text).join(''))
+  }
+  if ('text' in value && typeof value.text === 'string') return normalize(value.text)
+  if ('error' in value && typeof value.error === 'string') return normalize(value.error)
+
+  return ''
+}
+
 function slug(value: string): string {
   return normalize(value)
     .normalize('NFD')
@@ -160,15 +189,18 @@ function hashText(value: string): string {
   return (hash >>> 0).toString(16).padStart(8, '0')
 }
 
-function sheetMatrix(sheet: XLSX.WorkSheet | undefined): Matrix {
+function sheetMatrix(sheet: ExcelJS.Worksheet | undefined): Matrix {
   if (!sheet) return []
-  return XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-    header: 1,
-    raw: false,
-    defval: '',
-    blankrows: false,
-    dateNF: 'dd/mm/yyyy',
-  }).map((row) => row.map(normalize))
+  const rows: Matrix = []
+  sheet.eachRow({ includeEmpty: false }, (row) => {
+    const values: string[] = []
+    for (let column = 1; column <= row.cellCount; column += 1) {
+      const cell = row.getCell(column)
+      values.push(cell.isMerged && cell.master.address !== cell.address ? '' : excelValueText(cell.value))
+    }
+    rows.push(values)
+  })
+  return rows
 }
 
 function findValue(rows: Matrix, label: string): string {
@@ -329,29 +361,156 @@ function extractEntityPayload(
   return { entityCode: definition.code, entityName: definition.name, sourceSheet: sheetName, headerRow, records }
 }
 
-function readWorkbook(buffer: ArrayBuffer): XLSX.WorkBook {
-  return XLSX.read(buffer, {
-    type: 'array',
-    cellDates: true,
-    cellFormula: true,
-    cellText: true,
-    cellNF: false,
-    dense: false,
-    bookVBA: false,
-    bookFiles: false,
-  })
+const SUPPORTED_MIME_TYPES = new Set([
+  '',
+  'application/octet-stream',
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+])
+
+const REQUIRED_CANONICAL_SHEETS = ['01_Projeto', '02_Fases'] as const
+
+function validateFileMetadata(file: File): void {
+  const extension = file.name.toLocaleLowerCase('pt-BR').split('.').pop()
+  if (extension !== 'xlsx') {
+    throw new Error('Formato não suportado. Selecione uma Planilha Mestre no formato .xlsx.')
+  }
+  if (file.type && !SUPPORTED_MIME_TYPES.has(file.type)) {
+    throw new Error(`Formato não suportado. O arquivo possui extensão .xlsx, mas o navegador informou o tipo “${file.type}”.`)
+  }
+}
+
+function hasZipSignature(buffer: ArrayBuffer): boolean {
+  const signature = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 4))
+  return signature.length >= 4 && signature[0] === 0x50 && signature[1] === 0x4b && (
+    (signature[2] === 0x03 && signature[3] === 0x04)
+    || (signature[2] === 0x05 && signature[3] === 0x06)
+    || (signature[2] === 0x07 && signature[3] === 0x08)
+  )
+}
+
+async function normalizeOoxmlForTabularRead(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+  const zip = await JSZip.loadAsync(buffer)
+  const spreadsheetNamespace = 'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir) continue
+
+    if (path.startsWith('xl/worksheets/_rels/') && path.endsWith('.rels')) {
+      const relationships = (await entry.async('string'))
+        .replace(/<Relationship\b(?=[^>]*\bType="[^"]*\/(?:comments|vmlDrawing|drawing|table)")[^>]*\/>/gi, '')
+        .replace(/Target="\/xl\//g, 'Target="../')
+      zip.file(path, relationships)
+      continue
+    }
+
+    if (!path.endsWith('.xml')) continue
+    const xml = await entry.async('string')
+    if (!xml.includes(spreadsheetNamespace)) continue
+    zip.file(path, xml.replace(/<(\/?)x:/g, '<$1').replace(/xmlns:x=/g, 'xmlns='))
+  }
+
+  return zip.generateAsync({ type: 'arraybuffer' })
+}
+
+async function loadWorkbook(buffer: ArrayBuffer): Promise<ExcelJS.Workbook> {
+  const workbook = new ExcelJS.Workbook()
+  try {
+    await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer, {
+      ignoreNodes: ['drawing', 'legacyDrawing', 'tableParts'],
+    })
+    return workbook
+  } catch {
+    const normalizedBuffer = await normalizeOoxmlForTabularRead(buffer)
+    const normalizedWorkbook = new ExcelJS.Workbook()
+    await normalizedWorkbook.xlsx.load(normalizedBuffer as unknown as ExcelJS.Buffer, {
+      ignoreNodes: ['drawing', 'legacyDrawing', 'tableParts'],
+    })
+    return normalizedWorkbook
+  }
+}
+
+function tableRecords(rows: Matrix): Record<string, string>[] {
+  const headerRow = findHeaderRow(rows)
+  const headers = uniqueHeaders(rows[headerRow - 1] ?? [])
+  return rows.slice(headerRow)
+    .filter((row) => row.some((value) => normalize(value) !== ''))
+    .map((row) => Object.fromEntries(headers.map((header, index) => [header, normalize(row[index])])))
+}
+
+function recordValue(rows: Matrix, key: string, expected: string, field: string): string {
+  const record = tableRecords(rows).find((item) => normalize(item[key]).toLocaleUpperCase('pt-BR') === expected.toLocaleUpperCase('pt-BR'))
+  return normalize(record?.[field])
+}
+
+function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number): ReconciliationConflict[] {
+  const decisionRows = sheetMatrix(workbook.getWorksheet('18_Decisoes'))
+  const pmvvRows = sheetMatrix(workbook.getWorksheet('34_PMVV_Validacao'))
+  const gateRows = sheetMatrix(workbook.getWorksheet('31_Gate_Deliberativo'))
+  const pem0204Rows = sheetMatrix(workbook.getWorksheet('51_Validacao_PEM0204'))
+  const pmvvDecision = recordValue(decisionRows, 'codigo', 'DEC-02.03', 'decisao') || 'Não informada'
+  const pmvvDate = recordValue(decisionRows, 'codigo', 'DEC-02.03', 'data') || 'Data não informada'
+  const pmvvStatus = recordValue(pmvvRows, 'elemento', 'Propósito', 'status_pos_reuniao') || 'Não informado'
+  const valuesDecision = recordValue(decisionRows, 'codigo', 'DEC-02.04', 'decisao') || 'Não informada'
+  const riskDecision = recordValue(gateRows, 'codigo', 'RIS-01', 'situacao') || 'Não informada'
+  const riskCondition = recordValue(gateRows, 'codigo', 'RIS-01', 'justificativa_condicao') || 'Sem condição registrada'
+  const pem0204Decisions = tableRecords(pem0204Rows).map((item) => item.decisao).filter(Boolean)
+  const pem0204State = pem0204Decisions.length ? `${pem0204Decisions.length} decisões registradas` : 'Nenhuma deliberação registrada'
+
+  return [
+    {
+      id: 'REC-001', severity: 'critical', topic: 'PMVV',
+      sourceA: '18_Decisoes / DEC-02.03', valueA: `${pmvvDecision} em ${pmvvDate}`,
+      sourceB: '34_PMVV_Validacao', valueB: pmvvStatus,
+      canonicalValue: 'PMVV aprovado pela Direção em 30/07/2026; institucionalização em andamento.',
+      rule: 'Decisão formal, data, evidência e status pós-reunião devem ser interpretados em conjunto.', decision: 'accept_canonical',
+    },
+    {
+      id: 'REC-002', severity: 'high', topic: 'Valores',
+      sourceA: '18_Decisoes / DEC-02.04', valueA: valuesDecision,
+      sourceB: '35_Valores ou alias legado', valueB: `${valuesCount} Valores reconhecidos`,
+      canonicalValue: 'Sete Valores aprovados; institucionalização e medição permanecem em andamento.',
+      rule: 'A aprovação do conteúdo não equivale à conclusão da institucionalização.', decision: 'accept_canonical',
+    },
+    {
+      id: 'REC-003', severity: 'high', topic: 'Riscos estratégicos',
+      sourceA: '31_Gate_Deliberativo / RIS-01', valueA: riskDecision,
+      sourceB: 'Condição de tratamento', valueB: riskCondition,
+      canonicalValue: 'Riscos reconhecidos e aceitos; tratamento previsto para o Ciclo 1.',
+      rule: 'Aceite do risco não elimina o tratamento, o acompanhamento nem as evidências.', decision: 'accept_canonical',
+    },
+    {
+      id: 'REC-004', severity: 'critical', topic: 'PEM-02.04',
+      sourceA: '51_Validacao_PEM0204', valueA: pem0204State,
+      sourceB: '50_Temas_Perspectivas / 09_Objetivos_Estrategicos', valueB: 'Conteúdos preparados para validação',
+      canonicalValue: 'PEM-02.04 em pré-validação; Temas, Perspectivas e Objetivos Estratégicos — OKRs permanecem como propostas não deliberadas.',
+      rule: 'Conteúdo preparado não equivale a conteúdo deliberado ou aprovado.', decision: 'accept_canonical',
+    },
+  ]
 }
 
 export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImportPreview> {
-  let workbook: XLSX.WorkBook
+  validateFileMetadata(file)
   const fileBuffer = await file.arrayBuffer()
-  try { workbook = readWorkbook(fileBuffer) }
-  catch (reason) {
-    const message = reason instanceof Error ? reason.message : String(reason)
-    throw new Error(`Não foi possível ler os dados tabulares da planilha: ${message}`)
+  if (!hasZipSignature(fileBuffer)) {
+    throw new Error('Arquivo inválido ou corrompido. O conteúdo não possui uma estrutura XLSX/ZIP reconhecível.')
   }
 
-  const projectRows = sheetMatrix(workbook.Sheets['01_Projeto'])
+  let workbook: ExcelJS.Workbook
+  try { workbook = await loadWorkbook(fileBuffer) }
+  catch (reason) {
+    const message = reason instanceof Error ? reason.message : String(reason)
+    throw new Error(`Falha de leitura da Planilha Mestre. O arquivo parece ser XLSX, mas seus dados tabulares não puderam ser interpretados: ${message}`)
+  }
+
+  const missingSheets = REQUIRED_CANONICAL_SHEETS.filter((sheetName) => !workbook.getWorksheet(sheetName))
+  if (missingSheets.length) {
+    throw new Error(`Ausência de abas canônicas obrigatórias: ${missingSheets.join(', ')}.`)
+  }
+
+  const projectRows = sheetMatrix(workbook.getWorksheet('01_Projeto'))
   const organization = findValue(projectRows, 'Organização')
   if (organization.toLocaleUpperCase('pt-BR') !== 'COOTAQUARA') {
     throw new Error(`A planilha pertence a “${organization || 'organização não identificada'}”. A carga canônica inicial está bloqueada para outra organização.`)
@@ -363,8 +522,9 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
   const quarantine: QuarantinedRecord[] = []
   const usedKeys = new Set<string>()
 
-  workbook.SheetNames.forEach((sheetName) => {
-    const rows = sheetMatrix(workbook.Sheets[sheetName])
+  workbook.worksheets.forEach((worksheet) => {
+    const sheetName = worksheet.name
+    const rows = sheetMatrix(worksheet)
     const headerRow = findHeaderRow(rows)
     const headers = (rows[headerRow - 1] ?? []).map(normalize).filter(Boolean)
     const payload = extractEntityPayload(sheetName, rows, headerRow, usedKeys, issues, quarantine)
@@ -380,14 +540,11 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
     if (payload) entities.push(payload)
   })
 
-  const conflicts: ReconciliationConflict[] = [
-    { id: 'REC-001', severity: 'critical', topic: 'Status da Macrofase 1', sourceA: '00_Capa / 18_Decisoes', valueA: 'Aprovada e concluída', sourceB: '02_Fases', valueB: 'Em validação; 90%', canonicalValue: 'Concluída; 100%', rule: 'Decisões formais prevalecem sobre quadro-resumo desatualizado.', decision: 'accept_canonical' },
-    { id: 'REC-002', severity: 'critical', topic: 'Status da Macrofase 2', sourceA: '00_Capa / 18_Decisoes', valueA: 'Iniciada e em andamento', sourceB: '02_Fases', valueB: 'Não iniciado; 0%', canonicalValue: 'Em andamento', rule: 'DEC-02.01 prevalece.', decision: 'accept_canonical' },
-    { id: 'REC-003', severity: 'high', topic: 'Versão da solução', sourceA: 'Nome do arquivo', valueA: file.name.match(/v(\d+)/i)?.[1] ?? 'não identificada', sourceB: '01_Projeto / 26_Artefatos', valueB: findValue(projectRows, 'Versão da solução') || 'não informada', canonicalValue: 'Usar a versão do arquivo para a carga e preservar a versão declarada como histórico.', rule: 'Não apagar histórico de versões.', decision: 'accept_canonical' },
-    { id: 'REC-004', severity: 'high', topic: 'Handoff MF1 → MF2', sourceA: '18_Decisoes', valueA: 'MF2 aberta e aprovada', sourceB: '28_Handoff', valueB: 'Aguardando validação', canonicalValue: 'Concluído, vinculado à decisão de abertura.', rule: 'A abertura formal comprova a transição.', decision: 'accept_canonical' },
-    { id: 'REC-005', severity: 'critical', topic: 'PMVV', sourceA: '34_PMVV_Validacao / DEC-02.03', valueA: 'Em validação', sourceB: '08_Identidade', valueB: 'Textos propostos', canonicalValue: 'Proposta para validação; não institucionalizada.', rule: 'Sem decisão formal, não importar como aprovado.', decision: 'accept_canonical' },
-    { id: 'REC-006', severity: 'critical', topic: 'PEM-02.04', sourceA: '00_Capa / 27_Pendencias', valueA: 'Bloqueado por gate', sourceB: 'Estruturas futuras', valueB: 'Conteúdos já preparados', canonicalValue: 'Bloqueado para execução; importar conteúdos posteriores como proposta.', rule: 'Preparação não equivale a autorização para avanço.', decision: 'accept_canonical' },
-  ]
+  const valuesCount = entities.find((entity) => entity.entityCode === 'living_value')?.records.length ?? 0
+  const conflicts = canonicalConflicts(workbook, valuesCount)
+  const phaseRows = sheetMatrix(workbook.getWorksheet('02_Fases'))
+  const mf1Status = recordValue(phaseRows, 'codigo', 'MF1', 'status') || 'Não informado'
+  const mf2Status = recordValue(phaseRows, 'codigo', 'MF2', 'status') || 'Não informado'
 
   const validPayloadRecords = entities.reduce((total, entity) => total + entity.records.length, 0)
   const totalPayloadRecords = validPayloadRecords + quarantine.length
@@ -403,12 +560,17 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
     sourceFileFingerprint: hashText(`${file.name}:${file.size}:${file.lastModified}:${new Uint8Array(fileBuffer).byteLength}`),
     organization,
     horizon: findValue(projectRows, 'Horizonte estratégico'),
-    sheetCount: workbook.SheetNames.length,
+    sheetCount: workbook.worksheets.length,
     mappedSheetCount: entities.length,
     totalPayloadRecords,
     validPayloadRecords,
     quarantinedRecords: quarantine.length,
-    journey: { MF1: 'Concluída e aprovada', MF2: 'Em andamento', currentStage: 'PEM-02.03 — Em validação', nextStage: 'PEM-02.04 — Bloqueado pelo gate do PMVV' },
+    journey: {
+      MF1: mf1Status,
+      MF2: mf2Status,
+      currentStage: 'PEM-02.04 — Pré-validação',
+      nextStage: 'Deliberação de Temas, Perspectivas e Objetivos Estratégicos — OKRs',
+    },
     sheets,
     entities,
     quarantine,

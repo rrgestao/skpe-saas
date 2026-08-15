@@ -15,6 +15,7 @@ import type { JourneyRow } from './contracts/journey'
 import { MethodologyArtifactsSection } from './features/artifacts/MethodologyArtifactsSection'
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
+import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 
 export type CockpitSection =
   | 'overview'
@@ -907,6 +908,28 @@ function OverviewSection({
       onStartProject={onStartProject}
       onNavigate={onNavigate}
     />
+  )
+}
+
+function getSkpeRoleName(user: OrganizationUser) {
+  const skpeAccess = user.modules.find(
+    (module) => module.moduleCode.toUpperCase() === 'SK-PE',
+  )
+
+  if (
+    !skpeAccess ||
+    !skpeAccess.moduleRoleId ||
+    skpeAccess.roleCode === 'sem_papel'
+  ) {
+    return 'Não atribuído'
+  }
+
+  return skpeAccess.roleName
+}
+
+function getOtherModuleAccesses(user: OrganizationUser) {
+  return user.modules.filter(
+    (module) => module.moduleCode.toUpperCase() !== 'SK-PE',
   )
 }
 type CanvasSectionProps = {
@@ -3868,9 +3891,12 @@ type OrganizationScopeExplorerResponse = {
 }
 type AdministrationSectionProps = {
   organizationId: string
+  organizationCode: string
+  organizationName: string
   userRoleName: string
   canManageUsers: boolean
   canManageMemberships: boolean
+  canManagePortability: boolean
 }
 
 type ModuleRoleOption = {
@@ -3884,12 +3910,64 @@ type ActionMessage = {
   text: string
 }
 
+type AdministrationArea = 'users' | 'portability'
+
+type AdministrationAreaTabsProps = {
+  activeArea: AdministrationArea
+  canManageUsers: boolean
+  canManagePortability: boolean
+  onChange: (area: AdministrationArea) => void
+}
+
+function AdministrationAreaTabs({
+  activeArea,
+  canManageUsers,
+  canManagePortability,
+  onChange,
+}: AdministrationAreaTabsProps) {
+  return (
+    <nav
+      className="skpe-administration-tabs"
+      aria-label="Áreas da Administração do SK-PE"
+    >
+      {canManageUsers && (
+        <button
+          type="button"
+          className={activeArea === 'users' ? 'active' : ''}
+          aria-current={activeArea === 'users' ? 'page' : undefined}
+          onClick={() => onChange('users')}
+        >
+          Usuários e acessos
+        </button>
+      )}
+
+      {canManagePortability && (
+        <button
+          type="button"
+          className={activeArea === 'portability' ? 'active' : ''}
+          aria-current={activeArea === 'portability' ? 'page' : undefined}
+          onClick={() => onChange('portability')}
+        >
+          Portabilidade e importação
+        </button>
+      )}
+    </nav>
+  )
+}
+
 function AdministrationSection({
   organizationId,
+  organizationCode,
+  organizationName,
   userRoleName,
   canManageUsers,
   canManageMemberships,
+  canManagePortability,
 }: AdministrationSectionProps) {
+  const [activeArea, setActiveArea] = useState<AdministrationArea>(
+    canManageUsers ? 'users' : 'portability',
+  )
+
   const [rows, setRows] =
     useState<UserAccessRow[]>([])
 
@@ -4065,6 +4143,17 @@ function AdministrationSection({
       ) ?? null,
     [users, selectedUserId],
   )
+
+  useEffect(() => {
+    if (!selectedUserId) return
+
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedUserId(null)
+    }
+
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [selectedUserId])
 
   const selectedSkpeAccess =
     selectedUser?.modules.find(
@@ -4342,6 +4431,54 @@ function AdministrationSection({
     )
   }
 
+  if (activeArea === 'portability') {
+    return (
+      <>
+        <section className="skpe-page-heading skpe-administration-heading">
+          <div>
+            <p className="skpe-eyebrow">Administração do módulo</p>
+            <h1>Portabilidade e Importação</h1>
+            <p>
+              Importe, valide e exporte artefatos estratégicos da organização
+              com rastreabilidade e controles de governança.
+            </p>
+          </div>
+        </section>
+
+        <AdministrationAreaTabs
+          activeArea={activeArea}
+          canManageUsers={canManageUsers}
+          canManagePortability={canManagePortability}
+          onChange={setActiveArea}
+        />
+
+        {canManagePortability ? (
+          <PortabilityAdmin
+            fixedOrganizationId={organizationId}
+            organizations={[
+              {
+                id: organizationId,
+                code: organizationCode,
+                name: organizationName,
+              },
+            ]}
+          />
+        ) : (
+          <section className="skpe-access-denied-card">
+            <LockIcon />
+            <div>
+              <h2>Acesso administrativo necessário</h2>
+              <p>
+                Seu papel atual não possui permissão para administrar a
+                portabilidade do SK-PE nesta organização.
+              </p>
+            </div>
+          </section>
+        )}
+      </>
+    )
+  }
+
   if (!canManageUsers) {
     return (
       <>
@@ -4360,6 +4497,13 @@ function AdministrationSection({
             </p>
           </div>
         </section>
+
+        <AdministrationAreaTabs
+          activeArea={activeArea}
+          canManageUsers={canManageUsers}
+          canManagePortability={canManagePortability}
+          onChange={setActiveArea}
+        />
 
         <section className="skpe-access-denied-card">
           <LockIcon />
@@ -4412,6 +4556,13 @@ function AdministrationSection({
             : 'Atualizar dados'}
         </button>
       </section>
+
+      <AdministrationAreaTabs
+        activeArea={activeArea}
+        canManageUsers={canManageUsers}
+        canManagePortability={canManagePortability}
+        onChange={setActiveArea}
+      />
 
       <section className="skpe-admin-kpi-grid">
         <article className="skpe-admin-kpi-card">
@@ -4764,7 +4915,10 @@ function AdministrationSection({
                   <article key={user.userId} className={`skpe-interactive-record ${selectedUserId === user.userId ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Abrir acessos de ${user.displayName ?? user.email}`} onClick={() => setSelectedUserId(user.userId)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedUserId(user.userId))}>
                     <header><div><strong>{user.displayName ?? user.email}</strong><span>{user.email}</span></div><span className={`skpe-access-status skpe-access-status-${user.membershipStatus}`}>{getMembershipStatusLabel(user.membershipStatus)}</span></header>
                     <p>{user.jobTitle ?? 'Função não informada'}</p>
-                    <small>{user.isOrganizationAdmin ? 'Administrador da organização' : 'Participante'} · {user.modules.length} módulo(s)</small>
+                    <small>
+                      Papel no SK-PE: {getSkpeRoleName(user)} · {user.modules.length} módulo(s)
+                      {user.isOrganizationAdmin ? ' · Administrador da organização' : ''}
+                    </small>
                     <footer><button type="button" title="Editar acessos" onClick={(event) => { event.stopPropagation(); setSelectedUserId(user.userId) }}>✎</button><button type="button" title="Imprimir ficha" onClick={(event) => { event.stopPropagation(); window.print() }}>⎙</button></footer>
                   </article>
                 ))}
@@ -4776,9 +4930,8 @@ function AdministrationSection({
                   <tr>
                     <th>Usuário</th>
                     <th>Vínculo</th>
-                    <th>Administração</th>
-                    <th>Módulos e perfis</th>
-                    <th />
+                    <th>Papel no SK-PE</th>
+                    <th>Outros módulos e papéis</th>
                   </tr>
                 </thead>
 
@@ -4821,6 +4974,12 @@ function AdministrationSection({
                                   {user.jobTitle}
                                 </small>
                               )}
+
+                              {user.isOrganizationAdmin && (
+                                <small className="skpe-admin-badge">
+                                  ADMIN DA ORGANIZAÇÃO
+                                </small>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -4836,25 +4995,27 @@ function AdministrationSection({
                         </td>
 
                         <td>
-                          {user.isOrganizationAdmin ? (
-                            <span className="skpe-admin-badge">
-                              ADMIN
+                          {getSkpeRoleName(user) === 'Não atribuído' ? (
+                            <span className="skpe-muted-label">
+                              Não atribuído
                             </span>
                           ) : (
-                            <span className="skpe-muted-label">
-                              Participante
+                            <span className="skpe-module-role-chip">
+                              <strong>SK-PE</strong>
+                              <span>{getSkpeRoleName(user)}</span>
                             </span>
                           )}
+
                         </td>
 
                         <td>
                           <div className="skpe-module-role-list">
-                            {user.modules.length === 0 ? (
+                            {getOtherModuleAccesses(user).length === 0 ? (
                               <span className="skpe-muted-label">
-                                Sem módulo atribuído
+                                Nenhum outro módulo
                               </span>
                             ) : (
-                              user.modules.map(
+                              getOtherModuleAccesses(user).map(
                                 (module) => (
                                   <span
                                     key={
@@ -4877,19 +5038,6 @@ function AdministrationSection({
                           </div>
                         </td>
 
-                        <td>
-                          <button
-                            type="button"
-                            className="skpe-user-details-button"
-                            onClick={() =>
-                              setSelectedUserId(
-                                user.userId,
-                              )
-                            }
-                          >
-                            Gerenciar
-                          </button>
-                        </td>
                       </tr>
                     ),
                   )}
@@ -4899,9 +5047,22 @@ function AdministrationSection({
             )}
           </div>
 
-          <aside className="skpe-user-detail-card">
+          <aside
+            className={`skpe-user-detail-card ${selectedUser ? 'skpe-user-detail-card-open' : ''}`}
+            aria-label="Gestão do usuário selecionado"
+          >
             {selectedUser ? (
               <>
+                <button
+                  type="button"
+                  className="skpe-user-detail-close"
+                  onClick={() => setSelectedUserId(null)}
+                  aria-label="Fechar Gestão do Usuário"
+                  title="Fechar"
+                >
+                  ×
+                </button>
+
                 <div className="skpe-user-detail-heading">
                   <span className="skpe-user-detail-avatar">
                     <UserIcon />
@@ -5844,12 +6005,17 @@ export function SkpeCockpit({
             organizationId={
               organizationId
             }
+            organizationCode={organizationCode}
+            organizationName={organizationName}
             userRoleName={userRoleName}
             canManageUsers={
               canManageUsers
             }
             canManageMemberships={
               canManageMemberships
+            }
+            canManagePortability={
+              canManageGovernance
             }
           />
         )}
