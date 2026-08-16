@@ -716,7 +716,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                 {(readiness.gates ?? []).map((gate) => (
                   <article key={gate.code} className={gate.passed ? 'passed' : 'failed'}>
                     <strong>{gate.passed ? '✓' : '!'}</strong>
-                    <div><small>{localizedLabel(gate.code, READINESS_GATE_LABELS)}</small><span>{gate.label}</span><em>Atual: {readinessValueLabel(gate.actual)} · Exigido: {readinessValueLabel(gate.required)}</em></div>
+                    <div><span>{localizedLabel(gate.code, READINESS_GATE_LABELS)}</span><em>Atual: {readinessValueLabel(gate.actual)} · Exigido: {readinessValueLabel(gate.required)}</em></div>
                   </article>
                 ))}
               </div>
