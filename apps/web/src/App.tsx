@@ -601,6 +601,9 @@ function App() {
 
   const [loading, setLoading] = useState(true)
 
+  const [authorizationRefreshVersion, setAuthorizationRefreshVersion] =
+    useState(0)
+
   const [loadingModules, setLoadingModules] =
     useState(false)
 
@@ -787,6 +790,26 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const refreshAuthorizationContext = () => {
+      setAuthorizationRefreshVersion(
+        (current) => current + 1,
+      )
+    }
+
+    window.addEventListener(
+      'focus',
+      refreshAuthorizationContext,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'focus',
+        refreshAuthorizationContext,
+      )
+    }
+  }, [])
+
+  useEffect(() => {
     let mounted = true
 
     const loadAuthenticatedUserData =
@@ -864,7 +887,11 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [session, passwordRecoveryMode])
+  }, [
+    session,
+    passwordRecoveryMode,
+    authorizationRefreshVersion,
+  ])
 
   const handleSelectOrganization = async (
     organization: Organization,
