@@ -1802,15 +1802,7 @@ function App() {
             }
           />
         </div>
-        <div className="topbar-context-summary" aria-label="Contexto atual">
-          <span>{openedModule ? 'Módulo atual' : 'Contexto atual'}</span>
-          <strong>
-            {openedModule?.module_name ??
-              selectedOrganization?.trade_name ??
-              selectedOrganization?.legal_name ??
-              'Portal da Plataforma'}
-          </strong>
-        </div>        <div className="user-area">
+        <div className="user-area">
           <button
             type="button"
             className="platform-theme-button"
@@ -1879,7 +1871,7 @@ function App() {
                 {selectedOrganization
                   ?.is_organization_admin && (
                   <span className="badge badge-organization">
-                    ADMIN DA ORGANIZAÇÃO
+                    Admin
                   </span>
                 )}
               </div>

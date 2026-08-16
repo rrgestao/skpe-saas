@@ -1706,3 +1706,13 @@ td,
   height: 92px;
   object-fit: contain;
 }
+/* SK-PE-CONT-01 — header global simplificado */
+.platform-shell .topbar .badge-organization {
+  padding: 0.16rem 0.42rem;
+  background: rgba(23, 107, 83, 0.08);
+  color: var(--platform-muted, #68757c);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: none;
+}
