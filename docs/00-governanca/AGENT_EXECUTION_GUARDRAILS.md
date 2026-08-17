@@ -1,4 +1,4 @@
-﻿---
+---
 id: DEV-GOV-001
 title: Guardrails de Execução de Agentes
 version: 1.0.0

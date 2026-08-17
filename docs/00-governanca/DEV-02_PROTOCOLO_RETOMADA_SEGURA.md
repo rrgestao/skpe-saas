@@ -1,4 +1,4 @@
-﻿---
+---
 id: DEV-02
 title: Protocolo de Retomada Segura
 version: 1.0.0

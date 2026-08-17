@@ -1,4 +1,4 @@
-﻿---
+---
 id: DEV-01
 title: Atualização Segura do Repositório
 version: 1.0.0

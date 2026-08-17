@@ -1,4 +1,4 @@
-﻿---
+---
 id: DEV-03
 title: Padrão de Solicitação de Implementação
 version: 1.0.0
