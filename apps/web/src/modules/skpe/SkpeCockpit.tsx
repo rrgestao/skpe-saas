@@ -1,4 +1,5 @@
 import {
+  type FormEvent,
   type KeyboardEvent,
   type ReactNode,
   useEffect,
@@ -3925,6 +3926,10 @@ function AdministrationAreaTabs({
   canManagePortability,
   onChange,
 }: AdministrationAreaTabsProps) {
+  if (!(canManageUsers && canManagePortability)) {
+    return null
+  }
+
   return (
     <nav
       className="skpe-administration-tabs"
@@ -4021,6 +4026,24 @@ function AdministrationSection({
 
   const [changeReason, setChangeReason] =
     useState('')
+
+  const [userCreationOpen, setUserCreationOpen] =
+    useState(false)
+
+  const [showCreationPassword, setShowCreationPassword] =
+    useState(false)
+
+  const [userCreationForm, setUserCreationForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    jobTitle: '',
+    roleCode: '',
+    isOrganizationAdmin: false,
+    reason: '',
+  })
 
   const users = useMemo(
     () => groupUserAccessRows(rows),
@@ -4272,6 +4295,75 @@ function AdministrationSection({
     selectedSkpeAccess?.roleCode,
   ])
 
+  const hasUnsavedUserChanges =
+    Boolean(selectedUser) &&
+    (selectedRoleCode !== (selectedSkpeAccess?.roleCode ?? '') ||
+      changeReason.trim().length > 0)
+
+  const confirmUserPanelClose = () =>
+    !hasUnsavedUserChanges ||
+    window.confirm(
+      'Existem alterações não salvas. Deseja descartá-las?',
+    )
+
+  const closeUserPanel = () => {
+    if (saving || !confirmUserPanelClose()) return
+    setSelectedUserId(null)
+  }
+
+  useEffect(() => {
+    if (!selectedUser) return
+
+    const confirmDiscard = () =>
+      !hasUnsavedUserChanges ||
+      window.confirm(
+        'Existem alterações não salvas. Deseja descartá-las?',
+      )
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Element)) return
+
+      if (event.target.closest('.skpe-user-detail-card')) return
+
+      const userTrigger = event.target.closest(
+        '.skpe-interactive-record, .skpe-user-hierarchy-functional button',
+      )
+
+      if (userTrigger) {
+        if (saving || !confirmDiscard()) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        return
+      }
+
+      if (!saving && confirmDiscard()) {
+        setSelectedUserId(null)
+      }
+    }
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      if (!saving && confirmDiscard()) setSelectedUserId(null)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [
+    selectedUser,
+    selectedRoleCode,
+    selectedSkpeAccess?.roleCode,
+    changeReason,
+    hasUnsavedUserChanges,
+    saving,
+  ])
+
   const runAction = async (
     action: () => Promise<{
       error: { message: string } | null
@@ -4431,6 +4523,216 @@ function AdministrationSection({
     )
   }
 
+  const resetUserCreationForm = () => {
+    setUserCreationForm({
+      fullName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      jobTitle: '',
+      roleCode: '',
+      isOrganizationAdmin: false,
+      reason: '',
+    })
+    setShowCreationPassword(false)
+  }
+
+  const hasUserCreationDraft =
+    userCreationForm.fullName.trim().length > 0 ||
+    userCreationForm.email.trim().length > 0 ||
+    userCreationForm.phone.trim().length > 0 ||
+    userCreationForm.password.length > 0 ||
+    userCreationForm.confirmPassword.length > 0 ||
+    userCreationForm.jobTitle.trim().length > 0 ||
+    userCreationForm.roleCode.length > 0 ||
+    userCreationForm.isOrganizationAdmin ||
+    userCreationForm.reason.trim().length > 0
+
+  const requestCloseUserCreation = () => {
+    if (saving) return
+
+    if (
+      hasUserCreationDraft &&
+      !window.confirm(
+        'Existem dados de cadastro não salvos. Deseja descartá-los?',
+      )
+    ) {
+      return
+    }
+
+    setUserCreationOpen(false)
+    resetUserCreationForm()
+  }
+
+  useEffect(() => {
+    if (!userCreationOpen) return
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      if (saving) return
+
+      if (
+        hasUserCreationDraft &&
+        !window.confirm(
+          'Existem dados de cadastro não salvos. Deseja descartá-los?',
+        )
+      ) {
+        return
+      }
+
+      setUserCreationOpen(false)
+      setUserCreationForm({
+        fullName: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        jobTitle: '',
+        roleCode: '',
+        isOrganizationAdmin: false,
+        reason: '',
+      })
+      setShowCreationPassword(false)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [userCreationOpen, hasUserCreationDraft, saving])
+
+  const handleCreateOrganizationUser = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+    setActionMessage(null)
+
+    const normalizedEmail = userCreationForm.email.trim().toLowerCase()
+    const normalizedReason = userCreationForm.reason.trim()
+
+    if (!userCreationForm.fullName.trim()) {
+      setActionMessage({ type: 'error', text: 'Informe o nome completo.' })
+      return
+    }
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalizedEmail)) {
+      setActionMessage({ type: 'error', text: 'Informe um e-mail válido.' })
+      return
+    }
+
+    if (userCreationForm.password.length < 10) {
+      setActionMessage({ type: 'error', text: 'A senha inicial deve possuir pelo menos 10 caracteres.' })
+      return
+    }
+
+    if (userCreationForm.password !== userCreationForm.confirmPassword) {
+      setActionMessage({ type: 'error', text: 'A confirmação da senha não corresponde à senha inicial.' })
+      return
+    }
+
+    if (normalizedReason.length < 10) {
+      setActionMessage({ type: 'error', text: 'Informe uma justificativa com pelo menos 10 caracteres.' })
+      return
+    }
+
+    setSaving(true)
+
+    const { data, error } = await supabase.functions.invoke(
+      'create-platform-user',
+      {
+        body: {
+          email: normalizedEmail,
+          password: userCreationForm.password,
+          fullName: userCreationForm.fullName.trim(),
+          phone: userCreationForm.phone.trim() || null,
+          organizationId,
+          platformRoleIds: [],
+          moduleRoleAssignments: [],
+          isOrganizationAdmin: userCreationForm.isOrganizationAdmin,
+          jobTitle: userCreationForm.jobTitle.trim() || null,
+          changeReason: normalizedReason,
+        },
+      },
+    )
+
+    let functionError =
+      data && typeof data === 'object' && 'error' in data
+        ? String((data as { error?: unknown }).error ?? '')
+        : ''
+
+    if (!functionError && error) {
+      const errorContext = (
+        error as { context?: unknown }
+      ).context
+
+      if (errorContext instanceof Response) {
+        try {
+          const responseBody = await errorContext.clone().json() as {
+            error?: unknown
+          }
+          functionError = String(responseBody.error ?? '')
+        } catch {
+          functionError = ''
+        }
+      }
+    }
+
+    if (error || functionError) {
+      const rawMessage =
+        functionError ||
+        error?.message ||
+        'erro não identificado'
+      const friendlyMessage =
+        /already.*registered|already exists|user.*exists/i.test(rawMessage)
+          ? 'Já existe um usuário cadastrado com este e-mail.'
+          : translateBackendMessage(rawMessage)
+
+      setActionMessage({
+        type: 'error',
+        text: `Não foi possível cadastrar o usuário: ${friendlyMessage}`,
+      })
+      setSaving(false)
+      return
+    }
+
+    const createdUserId =
+      data && typeof data === 'object' && 'userId' in data
+        ? String((data as { userId?: unknown }).userId ?? '')
+        : ''
+
+    if (userCreationForm.roleCode && createdUserId) {
+      const roleResponse = await supabase.rpc(
+        'set_user_module_role',
+        {
+          target_organization_id: organizationId,
+          target_user_id: createdUserId,
+          target_module_code: 'SK-PE',
+          target_role_code: userCreationForm.roleCode,
+          change_reason: normalizedReason,
+        },
+      )
+
+      if (roleResponse.error) {
+        setActionMessage({
+          type: 'error',
+          text: `O usuário e o vínculo foram criados, mas o papel no SK-PE não pôde ser atribuído: ${translateBackendMessage(roleResponse.error.message)}`,
+        })
+        await loadUsers()
+        setSaving(false)
+        return
+      }
+    }
+
+    await loadUsers()
+    setUserCreationOpen(false)
+    resetUserCreationForm()
+    setActionMessage({
+      type: 'success',
+      text: 'Usuário cadastrado, vinculado e auditado com sucesso.',
+    })
+    setSaving(false)
+  }
+
   if (activeArea === 'portability') {
     return (
       <>
@@ -4543,18 +4845,32 @@ function AdministrationSection({
           </p>
         </div>
 
-        <button
-          type="button"
-          className="skpe-refresh-button"
-          onClick={() => void loadUsers()}
-          disabled={loading || saving}
-        >
-          <RefreshIcon />
+        <div className="skpe-heading-actions">
+          <button
+            type="button"
+            className="skpe-primary-action-button"
+            onClick={() => {
+              setActionMessage(null)
+              setUserCreationOpen(true)
+            }}
+            disabled={loading || saving}
+          >
+            + Cadastrar usuário
+          </button>
 
-          {loading
-            ? 'Atualizando...'
-            : 'Atualizar dados'}
-        </button>
+          <button
+            type="button"
+            className="skpe-refresh-button"
+            onClick={() => void loadUsers()}
+            disabled={loading || saving}
+          >
+            <RefreshIcon />
+
+            {loading
+              ? 'Atualizando...'
+              : 'Atualizar dados'}
+          </button>
+        </div>
       </section>
 
       <AdministrationAreaTabs
@@ -5056,7 +5372,7 @@ function AdministrationSection({
                 <button
                   type="button"
                   className="skpe-user-detail-close"
-                  onClick={() => setSelectedUserId(null)}
+                  onClick={closeUserPanel}
                   aria-label="Fechar Gestão do Usuário"
                   title="Fechar"
                 >
@@ -5343,6 +5659,173 @@ function AdministrationSection({
             )}
           </aside>
         </section>
+      )}
+
+      {userCreationOpen && (
+        <div
+          className="skpe-user-creation-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              requestCloseUserCreation()
+            }
+          }}
+        >
+          <aside
+            className="skpe-user-creation-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cadastrar usuário"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="skpe-panel-close"
+              onClick={requestCloseUserCreation}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+
+            <p className="skpe-eyebrow">Administração da organização</p>
+            <h2>Cadastrar usuário</h2>
+            <p>
+              O usuário será criado e vinculado exclusivamente a {organizationName}.
+            </p>
+
+            <form
+              className="skpe-governance-form"
+              onSubmit={handleCreateOrganizationUser}
+            >
+              <label>
+                <span>Nome completo *</span>
+                <input
+                  value={userCreationForm.fullName}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, fullName: event.target.value }))}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>E-mail de acesso *</span>
+                <input
+                  type="email"
+                  value={userCreationForm.email}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, email: event.target.value }))}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Telefone</span>
+                <input
+                  value={userCreationForm.phone}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, phone: event.target.value }))}
+                  placeholder="(99) 9 9999-9999"
+                />
+              </label>
+
+              <label>
+                <span>Função na organização</span>
+                <input
+                  value={userCreationForm.jobTitle}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, jobTitle: event.target.value }))}
+                />
+              </label>
+
+              <label>
+                <span>Senha inicial *</span>
+                <input
+                  type={showCreationPassword ? 'text' : 'password'}
+                  value={userCreationForm.password}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, password: event.target.value }))}
+                  minLength={10}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Confirmar senha *</span>
+                <input
+                  type={showCreationPassword ? 'text' : 'password'}
+                  value={userCreationForm.confirmPassword}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                  minLength={10}
+                  required
+                />
+              </label>
+
+              <label className="skpe-governance-check">
+                <input
+                  type="checkbox"
+                  checked={showCreationPassword}
+                  onChange={(event) => setShowCreationPassword(event.target.checked)}
+                />
+                <span>Exibir senha durante o cadastro</span>
+              </label>
+
+              <label>
+                <span>Papel inicial no SK-PE</span>
+                <select
+                  value={userCreationForm.roleCode}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, roleCode: event.target.value }))}
+                >
+                  <option value="">Sem papel inicial</option>
+                  {availableRoles.map((role) => (
+                    <option key={role.role_code} value={role.role_code}>
+                      {role.role_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="skpe-governance-check">
+                <input
+                  type="checkbox"
+                  checked={userCreationForm.isOrganizationAdmin}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, isOrganizationAdmin: event.target.checked }))}
+                />
+                <span>Administrador da organização</span>
+              </label>
+
+              <label className="skpe-form-field-wide">
+                <span>Justificativa para auditoria *</span>
+                <textarea
+                  value={userCreationForm.reason}
+                  onChange={(event) => setUserCreationForm((current) => ({ ...current, reason: event.target.value }))}
+                  minLength={10}
+                  required
+                />
+              </label>
+
+              {actionMessage && (
+                <div
+                  className={`skpe-form-field-wide skpe-action-message skpe-action-message-${actionMessage.type}`}
+                  role={actionMessage.type === 'error' ? 'alert' : 'status'}
+                >
+                  {actionMessage.text}
+                </div>
+              )}
+
+              <div className="skpe-form-field-wide skpe-modal-actions">
+                <button
+                  type="button"
+                  onClick={requestCloseUserCreation}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  className="skpe-primary-action-button"
+                  disabled={saving}
+                >
+                  {saving ? 'Cadastrando...' : 'Cadastrar usuário'}
+                </button>
+              </div>
+            </form>
+          </aside>
+        </div>
       )}
     </>
   )
@@ -5690,37 +6173,8 @@ export function SkpeCockpit({
               <button
                 type="button"
                 className={
-                  activeSection === 'administration'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  setActiveSection('administration')
-                }
-               hidden={!canOpenAdministration}>
-                <UserIcon />
-                <span>Usuários e acessos</span>
-              </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'governance-roles'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  setActiveSection('governance-roles')
-                }
-              >
-                <GovernanceIcon />
-                <span>Papéis e responsabilidades</span>
-              </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'organizational-areas'
+                  ['organizational-areas', 'organization-hierarchy', 'domains']
+                    .includes(activeSection)
                     ? 'skpe-nav-active'
                     : ''
                 }
@@ -5729,39 +6183,24 @@ export function SkpeCockpit({
                 }
               >
                 <OrganizationIcon />
-                <span>Áreas e estrutura</span>
+                <span>Estrutura organizacional</span>
               </button>
 
               <button
                 type="button"
                 className={
-                  activeSection === 'organization-hierarchy'
+                  ['administration', 'governance-roles']
+                    .includes(activeSection)
                     ? 'skpe-nav-active'
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection(
-                    'organization-hierarchy',
-                  )
+                  setActiveSection('administration')
                 }
+                hidden={!canOpenAdministration}
               >
-                <OrganizationIcon />
-                <span>Hierarquia e acessos</span>
-              </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'domains'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  setActiveSection('domains')
-                }
-              >
-                <DashboardIcon />
-                <span>Tabelas de domínio</span>
+                <UserIcon />
+                <span>Usuários</span>
               </button>
             </>
           )}
@@ -5781,7 +6220,13 @@ export function SkpeCockpit({
       </aside>
 
       <main className="skpe-main">
-        <header className="skpe-cockpit-header">
+        <header
+          className={`skpe-cockpit-header ${
+            mode === 'organization-admin'
+              ? 'skpe-cockpit-header-compact'
+              : ''
+          }`}
+        >
           <div className="skpe-cockpit-branding">
             <div className="skpe-cockpit-logo">
               {organizationLogoUrl ? (
@@ -5810,22 +6255,24 @@ export function SkpeCockpit({
             </div>
           </div>
 
-          <div className="skpe-cockpit-context" aria-label="Contexto estratégico">
-            <div>
-              <span>Projeto</span>
-              <strong>
-                {projectContext?.project_code ?? organizationCode}
-              </strong>
+          {mode === 'module' && (
+            <div className="skpe-cockpit-context" aria-label="Contexto estratégico">
+              <div>
+                <span>Projeto</span>
+                <strong>
+                  {projectContext?.project_code ?? organizationCode}
+                </strong>
+              </div>
+              <div>
+                <span>Horizonte</span>
+                <strong>{formatStrategicHorizon(projectContext)}</strong>
+              </div>
+              <div>
+                <span>Seção</span>
+                <strong>{activeSectionLabel[activeSection]}</strong>
+              </div>
             </div>
-            <div>
-              <span>Horizonte</span>
-              <strong>{formatStrategicHorizon(projectContext)}</strong>
-            </div>
-            <div>
-              <span>Seção</span>
-              <strong>{activeSectionLabel[activeSection]}</strong>
-            </div>
-          </div>
+          )}
 
           <div className="skpe-cockpit-actions">
             <button
@@ -5887,6 +6334,61 @@ export function SkpeCockpit({
 
           </div>
         </header>
+
+        {mode === 'organization-admin' &&
+          ['administration', 'governance-roles'].includes(activeSection) && (
+            <nav
+              className="skpe-organization-admin-subnav"
+              aria-label="Gestão de usuários"
+            >
+              <button
+                type="button"
+                className={activeSection === 'administration' ? 'active' : ''}
+                onClick={() => setActiveSection('administration')}
+              >
+                Usuários e acessos
+              </button>
+              <button
+                type="button"
+                className={activeSection === 'governance-roles' ? 'active' : ''}
+                onClick={() => setActiveSection('governance-roles')}
+              >
+                Papéis e responsabilidades
+              </button>
+            </nav>
+          )}
+
+        {mode === 'organization-admin' &&
+          ['organizational-areas', 'organization-hierarchy', 'domains']
+            .includes(activeSection) && (
+            <nav
+              className="skpe-organization-admin-subnav"
+              aria-label="Estrutura organizacional"
+            >
+              <button
+                type="button"
+                className={activeSection === 'organizational-areas' ? 'active' : ''}
+                onClick={() => setActiveSection('organizational-areas')}
+              >
+                Áreas e estrutura
+              </button>
+              <button
+                type="button"
+                className={activeSection === 'organization-hierarchy' ? 'active' : ''}
+                onClick={() => setActiveSection('organization-hierarchy')}
+              >
+                Hierarquia organizacional
+              </button>
+              <button
+                type="button"
+                className={activeSection === 'domains' ? 'active' : ''}
+                onClick={() => setActiveSection('domains')}
+              >
+                Tabelas de domínio
+              </button>
+            </nav>
+          )}
+
         {activeSection ===
           'overview' && (
           <OverviewSection
@@ -6015,7 +6517,7 @@ export function SkpeCockpit({
               canManageMemberships
             }
             canManagePortability={
-              canManageGovernance
+              mode === 'module' && canManageGovernance
             }
           />
         )}

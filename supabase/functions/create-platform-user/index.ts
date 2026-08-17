@@ -21,6 +21,7 @@ type CreateUserPayload = {
   moduleRoleAssignments?: ModuleRoleAssignment[]
   isOrganizationAdmin?: boolean
   jobTitle?: string | null
+  changeReason?: string | null
 }
 
 type PlatformRoleRow = {
@@ -84,20 +85,11 @@ Deno.serve(async (request) => {
     global: { headers: { Authorization: authorization } },
   })
 
-  const [
-    { data: requesterData, error: requesterError },
-    { data: isSuperAdmin, error: authorizationError },
-  ] = await Promise.all([
-    userClient.auth.getUser(),
-    userClient.rpc('is_platform_super_admin'),
-  ])
+  const { data: requesterData, error: requesterError } =
+    await userClient.auth.getUser()
 
   if (requesterError || !requesterData.user) {
     return jsonResponse({ error: 'Sessão inválida ou expirada.' }, 401)
-  }
-
-  if (authorizationError || isSuperAdmin !== true) {
-    return jsonResponse({ error: 'Acesso restrito ao SUPER-ADMIN.' }, 403)
   }
 
   let payload: CreateUserPayload
@@ -125,6 +117,38 @@ Deno.serve(async (request) => {
         }))
         .filter((assignment) => assignment.organizationModuleId && assignment.moduleRoleId)
     : []
+
+  const [superAdminResponse, organizationAdminResponse] = await Promise.all([
+    userClient.rpc('is_platform_super_admin'),
+    organizationId
+      ? userClient.rpc('is_organization_admin', {
+          target_organization_id: organizationId,
+        })
+      : Promise.resolve({ data: false, error: null }),
+  ])
+
+  if (superAdminResponse.error) {
+    return jsonResponse({ error: 'Não foi possível validar a autorização global.' }, 500)
+  }
+
+  if (organizationId && organizationAdminResponse.error) {
+    return jsonResponse({ error: 'Não foi possível validar a autorização organizacional.' }, 500)
+  }
+
+  const isSuperAdmin = superAdminResponse.data === true
+  const isOrganizationAdmin = organizationAdminResponse.data === true
+
+  if (!isSuperAdmin && !isOrganizationAdmin) {
+    return jsonResponse({ error: 'Acesso restrito a administradores autorizados.' }, 403)
+  }
+
+  if (!isSuperAdmin && !organizationId) {
+    return jsonResponse({ error: 'O administrador local deve informar sua organização.' }, 403)
+  }
+
+  if (!isSuperAdmin && platformRoleIds.length > 0) {
+    return jsonResponse({ error: 'Administradores locais não podem atribuir perfis globais.' }, 403)
+  }
 
   if (!fullName) {
     return jsonResponse({ error: 'Informe o nome completo.' }, 400)
@@ -368,8 +392,9 @@ Deno.serve(async (request) => {
         email_confirmed: true,
       },
       metadata: {
-        source: 'platform_admin',
+        source: isSuperAdmin ? 'platform_admin' : 'organization_admin',
         created_without_invitation: true,
+        change_reason: payload.changeReason?.trim() || null,
         organization_id: organizationId,
         platform_role_ids: platformRoleIds,
         platform_role_codes: selectedPlatformRoles.map((role) => role.code),
