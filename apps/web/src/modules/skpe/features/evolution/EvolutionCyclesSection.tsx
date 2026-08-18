@@ -17,6 +17,10 @@ import {
   type EvolutionOverviewData,
 } from './evolutionData'
 
+import {
+  ObjectiveEvolutionAlignmentEditor,
+} from './ObjectiveEvolutionAlignmentEditor'
+
 import './EvolutionCyclesSection.css'
 
 type EvolutionCyclesSectionProps = {
@@ -704,6 +708,23 @@ export function EvolutionCyclesSection({
           )}
         </aside>
       </div>
+
+      {currentScenario && (
+        <ObjectiveEvolutionAlignmentEditor
+          organizationId={
+            currentScenario.organization_id
+          }
+          projectId={projectId}
+          scenarioId={currentScenario.id}
+          scenarioStatus={
+            currentScenario.status
+          }
+          scenarioCycles={
+            currentScenarioCycles
+          }
+          onChanged={loadData}
+        />
+      )}
 
       <article className="skpe-evolution-readiness">
         <header>

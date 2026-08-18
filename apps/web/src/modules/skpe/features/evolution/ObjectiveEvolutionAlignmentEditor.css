@@ -1,0 +1,248 @@
+.skpe-evolution-alignment-editor {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #e4e7ec);
+  border-radius: 1rem;
+  background: var(--surface-color, #fff);
+}
+
+.skpe-evolution-alignment-editor-header,
+.skpe-evolution-alignment-current-header,
+.skpe-evolution-alignment-form > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-evolution-alignment-editor h3,
+.skpe-evolution-alignment-editor h4 {
+  margin: 0;
+}
+
+.skpe-evolution-alignment-editor-header p {
+  max-width: 52rem;
+  margin: 0.45rem 0 0;
+  color: var(--text-secondary, #667085);
+  line-height: 1.5;
+}
+
+.skpe-evolution-alignment-rule {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed var(--border-color, #d0d5dd);
+  border-radius: 0.8rem;
+  background: var(--surface-muted, #f8fafc);
+}
+
+.skpe-evolution-alignment-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(14rem, 0.8fr)
+    minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.skpe-evolution-alignment-cycles,
+.skpe-evolution-alignment-current,
+.skpe-evolution-alignment-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.skpe-evolution-alignment-cycle-list,
+.skpe-evolution-alignment-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.skpe-evolution-alignment-cycle {
+  display: grid;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.8rem;
+  text-align: left;
+  border: 1px solid var(--border-color, #d0d5dd);
+  border-radius: 0.8rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.skpe-evolution-alignment-cycle:hover,
+.skpe-evolution-alignment-cycle.is-selected {
+  border-color: currentColor;
+}
+
+.skpe-evolution-alignment-cycle span,
+.skpe-evolution-alignment-cycle small,
+.skpe-evolution-alignment-current-header span {
+  color: var(--text-secondary, #667085);
+}
+
+.skpe-evolution-alignment-card {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto
+    auto;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.8rem;
+  border: 1px solid var(--border-color, #e4e7ec);
+  border-radius: 0.8rem;
+}
+
+.skpe-evolution-alignment-card > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.skpe-evolution-alignment-card > div:first-child span {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #667085);
+}
+
+.skpe-evolution-alignment-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.skpe-evolution-alignment-card-meta span {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-muted, #f2f4f7);
+  font-size: 0.75rem;
+}
+
+.skpe-evolution-alignment-form {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e4e7ec);
+}
+
+.skpe-evolution-alignment-fields {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.skpe-evolution-alignment-fields label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.skpe-evolution-alignment-fields label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.skpe-evolution-alignment-fields label > span {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.skpe-evolution-alignment-fields input,
+.skpe-evolution-alignment-fields select,
+.skpe-evolution-alignment-fields textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--border-color, #d0d5dd);
+  border-radius: 0.7rem;
+  background: var(--surface-color, #fff);
+  color: inherit;
+  font: inherit;
+}
+
+.skpe-evolution-alignment-fields textarea {
+  resize: vertical;
+}
+
+.skpe-evolution-alignment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.skpe-evolution-alignment-primary,
+.skpe-evolution-alignment-secondary,
+.skpe-evolution-alignment-danger {
+  min-height: 2.4rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.skpe-evolution-alignment-primary {
+  border: 1px solid currentColor;
+  background: currentColor;
+}
+
+.skpe-evolution-alignment-primary::first-line {
+  color: var(--surface-color, #fff);
+}
+
+.skpe-evolution-alignment-secondary {
+  border: 1px solid var(--border-color, #d0d5dd);
+  background: transparent;
+  color: inherit;
+}
+
+.skpe-evolution-alignment-danger {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+}
+
+.skpe-evolution-alignment-primary:disabled,
+.skpe-evolution-alignment-secondary:disabled,
+.skpe-evolution-alignment-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.skpe-evolution-alignment-message {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid currentColor;
+  border-radius: 0.7rem;
+}
+
+.skpe-evolution-alignment-message.is-error {
+  border-style: dashed;
+}
+
+@media (max-width: 900px) {
+  .skpe-evolution-alignment-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-evolution-alignment-fields {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .skpe-evolution-alignment-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .skpe-evolution-alignment-editor-header,
+  .skpe-evolution-alignment-current-header,
+  .skpe-evolution-alignment-form > header {
+    display: grid;
+  }
+
+  .skpe-evolution-alignment-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-evolution-alignment-fields label.is-wide {
+    grid-column: auto;
+  }
+}
