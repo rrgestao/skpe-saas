@@ -8,6 +8,7 @@ export type SkpeRouteSection =
   | 'strategic-map'
   | 'indicators'
   | 'okrs'
+  | 'evolution-cycles'
   | 'initiatives'
   | 'monitoring'
   | 'governance'
@@ -43,6 +44,7 @@ const SKPE_SECTIONS = new Set<SkpeRouteSection>([
   'strategic-map',
   'indicators',
   'okrs',
+  'evolution-cycles',
   'initiatives',
   'monitoring',
   'governance',
@@ -65,12 +67,21 @@ export const platformRoutes = {
   home: () => '/',
   workspace: () => '/workspace',
   platformAdmin: () => '/platform-admin',
+
   organization: (organizationId: string) =>
     `/organizations/${encode(organizationId)}`,
+
   organizationAdmin: (organizationId: string) =>
     `/organizations/${encode(organizationId)}/admin`,
-  module: (organizationId: string, moduleCode: string) =>
-    `/organizations/${encode(organizationId)}/modules/${encode(moduleCode)}`,
+
+  module: (
+    organizationId: string,
+    moduleCode: string,
+  ) =>
+    `/organizations/${encode(
+      organizationId,
+    )}/modules/${encode(moduleCode)}`,
+
   skpe: ({
     organizationId,
     projectId,
@@ -82,14 +93,29 @@ export const platformRoutes = {
     formulationId: string
     section?: SkpeRouteSection
   }) =>
-    `/organizations/${encode(organizationId)}/skpe/projects/${encode(projectId)}/formulations/${encode(formulationId)}/${section}`,
+    `/organizations/${encode(
+      organizationId,
+    )}/skpe/projects/${encode(
+      projectId,
+    )}/formulations/${encode(
+      formulationId,
+    )}/${section}`,
 }
 
-export function parsePlatformRoute(pathname: string): PlatformRoute {
-  const normalizedPath = pathname.replace(/\/+$/, '') || '/'
+export function parsePlatformRoute(
+  pathname: string,
+): PlatformRoute {
+  const normalizedPath =
+    pathname.replace(/\/+$/, '') || '/'
 
-  if (normalizedPath === '/') return { kind: 'home' }
-  if (normalizedPath === '/workspace') return { kind: 'workspace' }
+  if (normalizedPath === '/') {
+    return { kind: 'home' }
+  }
+
+  if (normalizedPath === '/workspace') {
+    return { kind: 'workspace' }
+  }
+
   if (normalizedPath === '/platform-admin') {
     return { kind: 'platform-admin' }
   }
@@ -97,10 +123,17 @@ export function parsePlatformRoute(pathname: string): PlatformRoute {
   const skpeMatch = normalizedPath.match(
     /^\/organizations\/([^/]+)\/skpe\/projects\/([^/]+)\/formulations\/([^/]+)(?:\/([^/]+))?$/,
   )
+
   if (skpeMatch) {
-    const sectionCandidate = (skpeMatch[4] ?? 'overview') as SkpeRouteSection
+    const sectionCandidate =
+      (skpeMatch[4] ??
+        'overview') as SkpeRouteSection
+
     if (!SKPE_SECTIONS.has(sectionCandidate)) {
-      return { kind: 'unknown', pathname: normalizedPath }
+      return {
+        kind: 'unknown',
+        pathname: normalizedPath,
+      }
     }
 
     return {
@@ -112,19 +145,24 @@ export function parsePlatformRoute(pathname: string): PlatformRoute {
     }
   }
 
-  const organizationAdminMatch = normalizedPath.match(
-    /^\/organizations\/([^/]+)\/admin$/,
-  )
+  const organizationAdminMatch =
+    normalizedPath.match(
+      /^\/organizations\/([^/]+)\/admin$/,
+    )
+
   if (organizationAdminMatch) {
     return {
       kind: 'organization-admin',
-      organizationId: decode(organizationAdminMatch[1]),
+      organizationId: decode(
+        organizationAdminMatch[1],
+      ),
     }
   }
 
   const moduleMatch = normalizedPath.match(
     /^\/organizations\/([^/]+)\/modules\/([^/]+)$/,
   )
+
   if (moduleMatch) {
     return {
       kind: 'module',
@@ -133,15 +171,22 @@ export function parsePlatformRoute(pathname: string): PlatformRoute {
     }
   }
 
-  const organizationMatch = normalizedPath.match(
-    /^\/organizations\/([^/]+)$/,
-  )
+  const organizationMatch =
+    normalizedPath.match(
+      /^\/organizations\/([^/]+)$/,
+    )
+
   if (organizationMatch) {
     return {
       kind: 'organization',
-      organizationId: decode(organizationMatch[1]),
+      organizationId: decode(
+        organizationMatch[1],
+      ),
     }
   }
 
-  return { kind: 'unknown', pathname: normalizedPath }
+  return {
+    kind: 'unknown',
+    pathname: normalizedPath,
+  }
 }

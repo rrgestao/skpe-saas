@@ -14,6 +14,7 @@ import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR
 import './SkpeCockpit.css'
 import type { JourneyRow } from './contracts/journey'
 import { MethodologyArtifactsSection } from './features/artifacts/MethodologyArtifactsSection'
+import { EvolutionCyclesSection } from './features/evolution/EvolutionCyclesSection'
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
@@ -21,6 +22,7 @@ import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 export type CockpitSection =
   | 'overview'
   | 'journey'
+  | 'evolution-cycles'
   | 'initiatives'
   | 'artifacts'
   | 'governance'
@@ -5997,6 +5999,11 @@ export function SkpeCockpit({
 
   const canViewOverview = capabilities?.can_view_overview ?? legacyCanView
   const canViewJourney = capabilities?.can_view_journey ?? legacyCanView
+
+  // Ciclos de Evolução pertencem à Jornada Estratégica.
+  // O backend governa sua leitura por can_view_skpe_journey.
+  const canViewEvolution = canViewJourney
+
   const canViewInitiatives = capabilities?.can_view_initiatives ?? legacyCanView
   const canViewArtifacts = capabilities?.can_view_artifacts ?? legacyCanView
   const canViewGovernance = capabilities?.can_view_governance ?? legacyCanView
@@ -6021,17 +6028,19 @@ export function SkpeCockpit({
     const allowedBySection: Partial<Record<CockpitSection, boolean>> = {
       overview: canViewOverview,
       journey: canViewJourney,
+      'evolution-cycles': canViewEvolution,
       initiatives: canViewInitiatives,
       artifacts: canViewArtifacts,
       governance: canViewGovernance,
       administration: canOpenAdministration,
     }
     if (allowedBySection[activeSection] === false) setActiveSection('overview')
-  }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewArtifacts, canViewGovernance, canViewInitiatives, canViewJourney, canViewOverview, mode])
+  }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewArtifacts, canViewEvolution, canViewGovernance, canViewInitiatives, canViewJourney, canViewOverview, mode])
 
   const activeSectionLabel: Record<CockpitSection, string> = {
     overview: 'Visão Geral',
     journey: 'Jornada Estratégica',
+    'evolution-cycles': 'Ciclos de Evolução',
     initiatives: 'Iniciativas',
     artifacts: 'Artefatos e evidências',
     governance: 'Governança',
@@ -6091,6 +6100,21 @@ export function SkpeCockpit({
                hidden={!canViewJourney}>
                 <JourneyIcon />
                 Jornada Estratégica
+              </button>
+              <button
+                type="button"
+                className={
+                  activeSection === 'evolution-cycles'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  navigateToSection('evolution-cycles')
+                }
+                hidden={!canViewEvolution}
+              >
+                <JourneyIcon />
+                Ciclos de Evolução
               </button>
 
               <button
@@ -6443,6 +6467,23 @@ export function SkpeCockpit({
           />
         )}
 
+        {activeSection ===
+          'evolution-cycles' && canViewEvolution && (
+          projectContext?.project_id ? (
+            <EvolutionCyclesSection
+              projectId={projectContext.project_id}
+            />
+          ) : (
+            <section className="skpe-empty-state">
+              <strong>
+                Planejamento Estratégico ainda não iniciado.
+              </strong>
+              <span>
+                Os Ciclos de Evolução ficam disponíveis após a criação do projeto estratégico.
+              </span>
+            </section>
+          )
+        )}
         {activeSection ===
           'initiatives' && canViewInitiatives && (
           <InitiativesSection
