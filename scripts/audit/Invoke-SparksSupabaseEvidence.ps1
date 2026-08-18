@@ -79,9 +79,42 @@ function Invoke-SupabaseCapture {
     $stdoutPath = Join-Path $OutputDirectory $StdoutFile
     $stderrPath = Join-Path $OutputDirectory $StderrFile
 
-    & npx @Arguments 1> $stdoutPath 2> $stderrPath
+    $npxCommand = Get-Command "npx.cmd" -ErrorAction Stop
 
-    $exitCode = $LASTEXITCODE
+    try {
+        $process = Start-Process `
+            -FilePath $npxCommand.Source `
+            -ArgumentList $Arguments `
+            -NoNewWindow `
+            -Wait `
+            -PassThru `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath
+
+        $exitCode = $process.ExitCode
+    }
+    catch {
+        $message = @(
+            "Falha ao iniciar processo nativo."
+            "Comando: npx $($Arguments -join ' ')"
+            "Erro: $($_.Exception.Message)"
+        ) -join [Environment]::NewLine
+
+        Set-Content `
+            -Path $stderrPath `
+            -Value $message `
+            -Encoding UTF8
+
+        if (-not (Test-Path $stdoutPath)) {
+            New-Item `
+                -ItemType File `
+                -Path $stdoutPath `
+                -Force |
+                Out-Null
+        }
+
+        $exitCode = 9001
+    }
 
     return [PSCustomObject]@{
         name        = $Name
