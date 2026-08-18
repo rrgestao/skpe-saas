@@ -16,3 +16,6 @@ supabase/.temp/
 *atual_v*.txt
 
 /temp/
+
+# Evidencias tecnicas locais - podem conter achados de seguranca
+/_audit/
