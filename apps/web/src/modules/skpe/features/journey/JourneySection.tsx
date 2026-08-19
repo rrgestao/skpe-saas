@@ -2,9 +2,16 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
 import { statusLabelPtBr, translateBackendMessage } from '../../../../shared/i18n/ptBR'
-import type { JourneyRow, JourneyStatus } from '../../contracts/journey'
+import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
+import type {
+  JourneyRow,
+  JourneyStatus,
+  JourneyTemporalReadRow,
+  JourneyTemporalRow,
+  JourneyTemporalState,
+} from '../../contracts/journey'
 
-type JourneyItem = JourneyRow & {
+type JourneyItem = JourneyTemporalRow & {
   children: JourneyItem[]
 }
 
@@ -23,7 +30,6 @@ function ChevronDownIcon() {
   )
 }
 
-
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -39,7 +45,6 @@ function CheckIcon() {
   )
 }
 
-
 function ClockIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -51,7 +56,6 @@ function ClockIcon() {
         stroke="currentColor"
         strokeWidth="1.7"
       />
-
       <path
         d="M12 8v5l3 2"
         fill="none"
@@ -63,35 +67,52 @@ function ClockIcon() {
   )
 }
 
-
 function methodologyTextPtBr(value: string | null | undefined) {
   if (!value) return ''
+
   const exactLabels: Record<string, string> = {
     'Diagnostico e Entendimento Estrategico': 'Diagnóstico e Entendimento Estratégico',
     'Formulacao Estrategica': 'Formulação Estratégica',
     'Abertura da Formulacao Estrategica': 'Abertura da Formulação Estratégica',
     'Direcionadores Estrategicos': 'Direcionadores Estratégicos',
   }
+
   const exact = exactLabels[value.trim()]
   if (exact) return exact
+
   const replacements: Array<[RegExp, string]> = [
-    [/\bDiagnostico\b/g, 'Diagnóstico'], [/\bFormulacao\b/g, 'Formulação'],
-    [/\bEstrategico\b/g, 'Estratégico'], [/\bEstrategica\b/g, 'Estratégica'],
-    [/\bProposito\b/g, 'Propósito'], [/\bMissao\b/g, 'Missão'], [/\bVisao\b/g, 'Visão'],
-    [/\bValidacao\b/g, 'Validação'], [/\bOrganizacao\b/g, 'Organização'],
-    [/\bAdministracao\b/g, 'Administração'], [/\bConfiguracao\b/g, 'Configuração'],
-    [/\bInformacao\b/g, 'Informação'], [/\bGovernanca\b/g, 'Governança'],
-    [/\bExecucao\b/g, 'Execução'], [/\bAvaliacao\b/g, 'Avaliação'], [/\bConcluida\b/g, 'Concluída'],
-    [/\bcriterios\b/g, 'critérios'], [/\borganizacao\b/g, 'organização'],
-    [/\bformulacao\b/g, 'formulação'], [/\bproposito\b/g, 'propósito'],
-    [/\bmissao\b/g, 'missão'], [/\bvisao\b/g, 'visão'], [/\bprincipios\b/g, 'princípios'],
+    [/\bDiagnostico\b/g, 'Diagnóstico'],
+    [/\bFormulacao\b/g, 'Formulação'],
+    [/\bEstrategico\b/g, 'Estratégico'],
+    [/\bEstrategica\b/g, 'Estratégica'],
+    [/\bProposito\b/g, 'Propósito'],
+    [/\bMissao\b/g, 'Missão'],
+    [/\bVisao\b/g, 'Visão'],
+    [/\bValidacao\b/g, 'Validação'],
+    [/\bOrganizacao\b/g, 'Organização'],
+    [/\bAdministracao\b/g, 'Administração'],
+    [/\bConfiguracao\b/g, 'Configuração'],
+    [/\bInformacao\b/g, 'Informação'],
+    [/\bGovernanca\b/g, 'Governança'],
+    [/\bExecucao\b/g, 'Execução'],
+    [/\bAvaliacao\b/g, 'Avaliação'],
+    [/\bConcluida\b/g, 'Concluída'],
+    [/\bcriterios\b/g, 'critérios'],
+    [/\borganizacao\b/g, 'organização'],
+    [/\bformulacao\b/g, 'formulação'],
+    [/\bproposito\b/g, 'propósito'],
+    [/\bmissao\b/g, 'missão'],
+    [/\bvisao\b/g, 'visão'],
+    [/\bprincipios\b/g, 'princípios'],
   ]
-  return replacements.reduce((current, [pattern, replacement]) => current.replace(pattern, replacement), value)
+
+  return replacements.reduce(
+    (current, [pattern, replacement]) => current.replace(pattern, replacement),
+    value,
+  )
 }
 
-function getStatusLabel(
-  status: JourneyStatus,
-) {
+function getStatusLabel(status: JourneyStatus) {
   const labels: Record<JourneyStatus, string> = {
     not_started: 'Não iniciada',
     in_progress: 'Em andamento',
@@ -104,10 +125,7 @@ function getStatusLabel(
   return labels[status]
 }
 
-
-function getProjectStatusLabel(
-  status: string,
-) {
+function getProjectStatusLabel(status: string) {
   const labels: Record<string, string> = {
     draft: 'Rascunho',
     active: 'Ativo',
@@ -120,17 +138,12 @@ function getProjectStatusLabel(
   return labels[status] ?? status
 }
 
-
-function getItemTypeLabel(
-  itemType: JourneyRow['item_type'],
-) {
-  const labels: Record<
-    JourneyRow['item_type'],
-    string
-  > = {
+function getItemTypeLabel(itemType: JourneyRow['item_type']) {
+  const labels: Record<JourneyRow['item_type'], string> = {
     macrophase: 'Macrofase',
     phase: 'Fase',
     stage: 'Etapa',
+    meta_stage: 'Metaetapa',
     activity: 'Atividade',
     deliverable: 'Entregável',
     gate: 'Gate de validação',
@@ -139,14 +152,47 @@ function getItemTypeLabel(
   return labels[itemType]
 }
 
+function getTemporalStateLabel(state: JourneyTemporalState) {
+  const labels: Record<JourneyTemporalState, string> = {
+    cancelled: 'Cancelado',
+    unscheduled: 'Sem programação institucional',
+    completed_without_actual_end: 'Concluído sem data real de término',
+    completed_on_time: 'Concluído no prazo',
+    completed_late: 'Concluído com atraso',
+    blocked: 'Bloqueado',
+    completion_overdue: 'Conclusão em atraso',
+    start_overdue: 'Início em atraso',
+    on_schedule: 'No prazo',
+  }
 
-function buildJourneyTree(
-  rows: JourneyRow[],
-): JourneyItem[] {
-  const itemMap = new Map<
-    string,
-    JourneyItem
-  >()
+  return labels[state]
+}
+
+function getPlanKindLabel(kind: JourneyTemporalRow['current_plan_kind']) {
+  if (kind === 'baseline') return 'Baseline'
+  if (kind === 'rebaseline') return 'Rebaseline'
+  return 'Sem plano aprovado'
+}
+
+function formatVariance(value: number | null) {
+  if (value === null) return 'Não aplicável'
+  if (value === 0) return 'Sem variação'
+  return value > 0 ? `+${value} dias` : `${value} dias`
+}
+
+function formatPeriod(
+  start: string | null,
+  end: string | null,
+  formatDate: (value: string | null) => string,
+) {
+  if (!start && !end) return 'Não programado'
+  if (start && end) return `${formatDate(start)} a ${formatDate(end)}`
+  if (start) return `A partir de ${formatDate(start)}`
+  return `Até ${formatDate(end)}`
+}
+
+function buildJourneyTree(rows: JourneyTemporalRow[]): JourneyItem[] {
+  const itemMap = new Map<string, JourneyItem>()
 
   for (const row of rows) {
     itemMap.set(row.item_id, {
@@ -158,25 +204,17 @@ function buildJourneyTree(
   const roots: JourneyItem[] = []
 
   for (const item of itemMap.values()) {
-    if (
-      item.parent_item_id &&
-      itemMap.has(item.parent_item_id)
-    ) {
-      itemMap
-        .get(item.parent_item_id)
-        ?.children.push(item)
+    if (item.parent_item_id && itemMap.has(item.parent_item_id)) {
+      itemMap.get(item.parent_item_id)?.children.push(item)
     } else {
       roots.push(item)
     }
   }
 
-  const sortItems = (
-    items: JourneyItem[],
-  ) => {
+  const sortItems = (items: JourneyItem[]) => {
     items.sort(
       (firstItem, secondItem) =>
-        firstItem.display_order -
-        secondItem.display_order,
+        firstItem.display_order - secondItem.display_order,
     )
 
     for (const item of items) {
@@ -185,37 +223,24 @@ function buildJourneyTree(
   }
 
   sortItems(roots)
-
   return roots
 }
 
-
-function countJourneyDescendants(
-  item: JourneyItem,
-): number {
+function countJourneyDescendants(item: JourneyItem): number {
   return item.children.reduce(
-    (total, child) =>
-      total +
-      1 +
-      countJourneyDescendants(child),
+    (total, child) => total + 1 + countJourneyDescendants(child),
     0,
   )
 }
 
-
 function buildJourneyBreadcrumb(
-  rows: JourneyRow[],
+  rows: JourneyTemporalRow[],
   selectedItemId: string | null,
 ) {
-  if (!selectedItemId) {
-    return [] as JourneyRow[]
-  }
+  if (!selectedItemId) return [] as JourneyTemporalRow[]
 
-  const rowMap = new Map(
-    rows.map((row) => [row.item_id, row]),
-  )
-
-  const breadcrumb: JourneyRow[] = []
+  const rowMap = new Map(rows.map((row) => [row.item_id, row]))
+  const breadcrumb: JourneyTemporalRow[] = []
   let current = rowMap.get(selectedItemId)
 
   while (current) {
@@ -228,26 +253,18 @@ function buildJourneyBreadcrumb(
   return breadcrumb
 }
 
-
 function getJourneyStatusIcon(
   status: JourneyStatus,
   LockIcon: () => ReactNode,
 ) {
-  if (status === 'completed') {
-    return <CheckIcon />
-  }
+  if (status === 'completed') return <CheckIcon />
 
-  if (
-    status === 'in_progress' ||
-    status === 'pending_validation'
-  ) {
+  if (status === 'in_progress' || status === 'pending_validation') {
     return <ClockIcon />
   }
 
   return <LockIcon />
 }
-
-
 
 type JourneySectionProps = {
   organizationId: string
@@ -270,59 +287,58 @@ export function JourneySection({
   canGenerateDeliverables,
   onGenerateDeliverables,
 }: JourneySectionProps) {
-  const [rows, setRows] =
-    useState<JourneyRow[]>([])
+  const workspace = useSkpeWorkspace()
+  const [rows, setRows] = useState<JourneyTemporalRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [savingItemId, setSavingItemId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
-  const [loading, setLoading] =
-    useState(true)
-
-  const [savingItemId, setSavingItemId] =
-    useState<string | null>(null)
-
-  const [errorMessage, setErrorMessage] =
-    useState('')
-
-  const [expandedItems, setExpandedItems] =
-    useState<Set<string>>(new Set())
-
-  const [selectedItemId, setSelectedItemId] =
-    useState<string | null>(null)
-
-  const journeyTree = useMemo(
-    () => buildJourneyTree(rows),
-    [rows],
-  )
-
+  const journeyTree = useMemo(() => buildJourneyTree(rows), [rows])
   const project = rows[0] ?? null
 
-
   const selectedItem = useMemo(
-    () =>
-      rows.find(
-        (row) =>
-          row.item_id === selectedItemId,
-      ) ?? null,
+    () => rows.find((row) => row.item_id === selectedItemId) ?? null,
     [rows, selectedItemId],
   )
 
   const selectedBreadcrumb = useMemo(
-    () =>
-      buildJourneyBreadcrumb(
-        rows,
-        selectedItemId,
-      ),
+    () => buildJourneyBreadcrumb(rows, selectedItemId),
     [rows, selectedItemId],
   )
+
+  const temporalSummary = useMemo(() => {
+    const mandatoryRows = rows.filter((row) => row.is_mandatory)
+    const planRow = rows.find((row) => row.has_approved_plan) ?? null
+    const forecastRow = rows.find((row) => row.has_active_forecast) ?? null
+
+    return {
+      mandatoryCount: mandatoryRows.length,
+      overdueCount: mandatoryRows.filter(
+        (row) => row.is_start_overdue || row.is_completion_overdue,
+      ).length,
+      unscheduledCount: mandatoryRows.filter(
+        (row) => row.temporal_state === 'unscheduled',
+      ).length,
+      blockedCount: mandatoryRows.filter(
+        (row) => row.temporal_state === 'blocked',
+      ).length,
+      planRow,
+      forecastRow,
+    }
+  }, [rows])
 
   const loadJourney = async () => {
     setLoading(true)
     setErrorMessage('')
 
     const { data, error } = await supabase.rpc(
-      'get_skpe_journey',
+      'get_skpe_journey_temporal_read_model',
       {
-        target_organization_id:
-          organizationId,
+        target_organization_id: organizationId,
+        target_project_id: workspace.route.projectId,
+        target_as_of_date: null,
       },
     )
 
@@ -333,8 +349,13 @@ export function JourneySection({
       return
     }
 
-    const journeyRows =
-      (data ?? []) as JourneyRow[]
+    const journeyRows = ((data ?? []) as JourneyTemporalReadRow[]).map(
+      (row): JourneyTemporalRow => ({
+        ...row,
+        planned_start_date: row.current_plan_start_date,
+        planned_end_date: row.current_plan_end_date,
+      }),
+    )
 
     setRows(journeyRows)
 
@@ -343,29 +364,18 @@ export function JourneySection({
         journeyRows
           .filter(
             (row) =>
-              row.item_type ===
-                'macrophase' &&
-              (row.is_current ||
-                row.item_status ===
-                  'in_progress'),
+              row.item_type === 'macrophase' &&
+              (row.is_current || row.item_status === 'in_progress'),
           )
           .map((row) => row.item_id),
       ),
     )
 
     setSelectedItemId((current) =>
-      journeyRows.some(
-        (row) => row.item_id === current,
-      )
+      journeyRows.some((row) => row.item_id === current)
         ? current
-        : journeyRows.find(
-            (row) => row.is_current,
-          )?.item_id ??
-          journeyRows.find(
-            (row) =>
-              row.item_type ===
-              'macrophase',
-          )?.item_id ??
+        : journeyRows.find((row) => row.is_current)?.item_id ??
+          journeyRows.find((row) => row.item_type === 'macrophase')?.item_id ??
           null,
     )
 
@@ -374,7 +384,7 @@ export function JourneySection({
 
   useEffect(() => {
     void loadJourney()
-  }, [organizationId])
+  }, [organizationId, workspace.route.projectId])
 
   const updateJourneyItem = async (
     item: JourneyItem,
@@ -392,28 +402,21 @@ export function JourneySection({
       `Informe a justificativa para ${actionLabel} "${item.item_name}".`,
     )
 
-    if (!reason) {
-      return
-    }
+    if (!reason) return
 
     if (reason.trim().length < 10) {
-      window.alert(
-        'A justificativa deve ter pelo menos 10 caracteres.',
-      )
+      window.alert('A justificativa deve ter pelo menos 10 caracteres.')
       return
     }
 
     setSavingItemId(item.item_id)
 
-    const { error } = await supabase.rpc(
-      'set_skpe_journey_item_status',
-      {
-        target_item_id: item.item_id,
-        target_status: targetStatus,
-        target_progress: targetProgress,
-        change_reason: reason.trim(),
-      },
-    )
+    const { error } = await supabase.rpc('set_skpe_journey_item_status', {
+      target_item_id: item.item_id,
+      target_status: targetStatus,
+      target_progress: targetProgress,
+      change_reason: reason.trim(),
+    })
 
     if (error) {
       window.alert(translateBackendMessage(error.message))
@@ -425,91 +428,57 @@ export function JourneySection({
     setSavingItemId(null)
   }
 
-  const toggleExpanded = (
-    itemId: string,
-  ) => {
+  const toggleExpanded = (itemId: string) => {
     setExpandedItems((current) => {
       const next = new Set(current)
-
-      if (next.has(itemId)) {
-        next.delete(itemId)
-      } else {
-        next.add(itemId)
-      }
-
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
       return next
     })
   }
 
-  const renderJourneyItem = (
-    item: JourneyItem,
-    level = 0,
-  ) => {
-    const hasChildren =
-      item.children.length > 0
-
-    const isExpanded =
-      expandedItems.has(item.item_id)
+  const renderJourneyItem = (item: JourneyItem, level = 0) => {
+    const hasChildren = item.children.length > 0
+    const isExpanded = expandedItems.has(item.item_id)
 
     return (
       <article
         key={item.item_id}
         className={[
           'skpe-journey-tree-item',
-          `skpe-journey-level-${Math.min(
-            level,
-            4,
-          )}`,
-          item.is_current
-            ? 'skpe-phase-current'
-            : '',
-          selectedItemId === item.item_id
-            ? 'skpe-journey-item-selected'
-            : '',
-          hasChildren
-            ? 'skpe-journey-item-drillable'
-            : '',
+          `skpe-journey-level-${Math.min(level, 4)}`,
+          item.is_current ? 'skpe-phase-current' : '',
+          selectedItemId === item.item_id ? 'skpe-journey-item-selected' : '',
+          hasChildren ? 'skpe-journey-item-drillable' : '',
         ]
           .filter(Boolean)
           .join(' ')}
         onClick={() => {
           setSelectedItemId(item.item_id)
-
-          if (hasChildren) {
-            toggleExpanded(item.item_id)
-          }
+          if (hasChildren) toggleExpanded(item.item_id)
         }}
       >
         <div className="skpe-journey-item-main">
-          <div
-            className={`skpe-phase-marker skpe-phase-${item.item_status}`}
-          >
-            {getJourneyStatusIcon(
-              item.item_status,
-              LockIcon,
-            )}
+          <div className={`skpe-phase-marker skpe-phase-${item.item_status}`}>
+            {getJourneyStatusIcon(item.item_status, LockIcon)}
           </div>
 
           <div className="skpe-journey-item-content">
             <div className="skpe-phase-heading">
               <div>
                 <p>
-                  {getItemTypeLabel(
-                    item.item_type,
-                  )}{' '}
-                  · {item.item_code}
+                  {getItemTypeLabel(item.item_type)} · {item.item_code}
                 </p>
-
                 <h2>{methodologyTextPtBr(item.item_name)}</h2>
               </div>
 
               <div className="skpe-journey-heading-actions">
-                <span
-                  className={`skpe-pill skpe-pill-${item.item_status}`}
-                >
-                  {getStatusLabel(
-                    item.item_status,
-                  )}
+                <span className={`skpe-pill skpe-pill-${item.item_status}`}>
+                  {getStatusLabel(item.item_status)}
+                </span>
+
+                <span className="skpe-pill">
+                  {getTemporalStateLabel(item.temporal_state)}
                 </span>
 
                 {hasChildren && (
@@ -517,20 +486,14 @@ export function JourneySection({
                     type="button"
                     className={[
                       'skpe-tree-toggle-button',
-                      isExpanded
-                        ? 'skpe-tree-toggle-expanded'
-                        : '',
+                      isExpanded ? 'skpe-tree-toggle-expanded' : '',
                     ]
                       .filter(Boolean)
                       .join(' ')}
                     onClick={(event) => {
                       event.stopPropagation()
-                      setSelectedItemId(
-                        item.item_id,
-                      )
-                      toggleExpanded(
-                        item.item_id,
-                      )
+                      setSelectedItemId(item.item_id)
+                      toggleExpanded(item.item_id)
                     }}
                     aria-expanded={isExpanded}
                     title={
@@ -539,12 +502,7 @@ export function JourneySection({
                         : 'Abrir fases, etapas e atividades'
                     }
                   >
-                    <span>
-                      {countJourneyDescendants(
-                        item,
-                      )}{' '}
-                      itens
-                    </span>
+                    <span>{countJourneyDescendants(item)} itens</span>
                     <ChevronDownIcon />
                   </button>
                 )}
@@ -558,24 +516,42 @@ export function JourneySection({
             <div className="skpe-journey-meta">
               {item.responsible_name && (
                 <span>
-                  Responsável:{' '}
+                  Responsável: <strong>{item.responsible_name}</strong>
+                </span>
+              )}
+
+              <span>
+                Plano vigente:{' '}
+                <strong>
+                  {formatPeriod(
+                    item.current_plan_start_date,
+                    item.current_plan_end_date,
+                    formatDate,
+                  )}
+                </strong>
+              </span>
+
+              {item.has_active_forecast && (
+                <span>
+                  Forecast:{' '}
                   <strong>
-                    {item.responsible_name}
+                    {formatPeriod(
+                      item.forecast_start_date,
+                      item.forecast_end_date,
+                      formatDate,
+                    )}
                   </strong>
                 </span>
               )}
 
-              {(item.planned_start_date ||
-                item.planned_end_date) && (
+              {(item.actual_start_date || item.actual_end_date) && (
                 <span>
-                  Período:{' '}
+                  Realizado:{' '}
                   <strong>
-                    {formatDate(
-                      item.planned_start_date,
-                    )}{' '}
-                    a{' '}
-                    {formatDate(
-                      item.planned_end_date,
+                    {formatPeriod(
+                      item.actual_start_date,
+                      item.actual_end_date,
+                      formatDate,
                     )}
                   </strong>
                 </span>
@@ -584,115 +560,84 @@ export function JourneySection({
               {item.validation_required && (
                 <span>
                   Validação:{' '}
-                  <strong>
-                    {statusLabelPtBr(item.validation_status)}
-                  </strong>
+                  <strong>{statusLabelPtBr(item.validation_status)}</strong>
                 </span>
               )}
             </div>
 
-            {item.blocked &&
-              item.blocking_reason && (
-                <div className="skpe-journey-blocked-message">
-                  {item.blocking_reason}
-                </div>
-              )}
+            {!item.plan_projection_consistent && (
+              <div className="skpe-journey-blocked-message">
+                Divergência detectada entre o plano institucional vigente e a projeção materializada da jornada.
+              </div>
+            )}
+
+            {item.blocked && item.blocking_reason && (
+              <div className="skpe-journey-blocked-message">
+                {item.blocking_reason}
+              </div>
+            )}
 
             <div className="skpe-phase-progress">
               <div className="skpe-progress-track">
-                <span
-                  style={{
-                    width: `${item.item_progress}%`,
-                  }}
-                />
+                <span style={{ width: `${item.item_progress}%` }} />
               </div>
-
-              <strong>
-                {item.item_progress}%
-              </strong>
+              <strong>{item.item_progress}%</strong>
             </div>
 
             {canManageJourney && (
               <div
                 className="skpe-journey-quick-actions"
-                onClick={(event) =>
-                  event.stopPropagation()
-                }
+                onClick={(event) => event.stopPropagation()}
               >
-                {item.item_status ===
-                  'not_started' && (
+                {item.item_status === 'not_started' && (
                   <button
                     type="button"
                     onClick={() =>
                       void updateJourneyItem(
                         item,
                         'in_progress',
-                        Math.max(
-                          item.item_progress,
-                          1,
-                        ),
+                        Math.max(item.item_progress, 1),
                       )
                     }
-                    disabled={
-                      savingItemId ===
-                      item.item_id
-                    }
+                    disabled={savingItemId === item.item_id}
                   >
                     Iniciar
                   </button>
                 )}
 
-                {item.item_status !==
-                  'completed' && (
+                {item.item_status !== 'completed' && (
                   <button
                     type="button"
                     onClick={() =>
-                      void updateJourneyItem(
-                        item,
-                        'completed',
-                        100,
-                      )
+                      void updateJourneyItem(item, 'completed', 100)
                     }
-                    disabled={
-                      savingItemId ===
-                      item.item_id
-                    }
+                    disabled={savingItemId === item.item_id}
                   >
                     Concluir
                   </button>
                 )}
 
-                {item.item_status ===
-                  'completed' && (
+                {item.item_status === 'completed' && (
                   <button
                     type="button"
                     onClick={() =>
                       void updateJourneyItem(
                         item,
                         'in_progress',
-                        Math.min(
-                          item.item_progress,
-                          99,
-                        ),
+                        Math.min(item.item_progress, 99),
                       )
                     }
-                    disabled={
-                      savingItemId ===
-                      item.item_id
-                    }
+                    disabled={savingItemId === item.item_id}
                   >
                     Reabrir
                   </button>
                 )}
 
-                {level === 0 &&
-                  canGenerateDeliverables && (
+                {level === 0 && canGenerateDeliverables && (
                   <button
                     type="button"
                     className="skpe-generate-deliverables-button"
-                    onClick={() =>
-                      onGenerateDeliverables(item)
-                    }
+                    onClick={() => onGenerateDeliverables(item)}
                   >
                     Gerar entregáveis
                   </button>
@@ -704,12 +649,7 @@ export function JourneySection({
 
         {hasChildren && isExpanded && (
           <div className="skpe-journey-children">
-            {item.children.map((child) =>
-              renderJourneyItem(
-                child,
-                level + 1,
-              ),
-            )}
+            {item.children.map((child) => renderJourneyItem(child, level + 1))}
           </div>
         )}
       </article>
@@ -720,16 +660,10 @@ export function JourneySection({
     <>
       <section className="skpe-page-heading skpe-administration-heading">
         <div>
-          <p className="skpe-eyebrow">
-            Metodologia de Planejamento Estratégico
-          </p>
-
+          <p className="skpe-eyebrow">Metodologia de Planejamento Estratégico</p>
           <h1>Jornada Estratégica</h1>
-
           <p>
-            Estrutura real do projeto, carregada
-            do banco, com macrofases, fases,
-            entregáveis e gates de validação.
+            Execução, compromisso institucional e previsão operacional da jornada em uma única leitura temporal governada.
           </p>
         </div>
 
@@ -745,29 +679,76 @@ export function JourneySection({
       </section>
 
       {project && (
-        <section className="skpe-project-context-card">
-          <div>
-            <span>Projeto estratégico</span>
-            <strong>
-              {project.project_name}
-            </strong>
-            <small>
-              {project.project_code}
-            </small>
-          </div>
+        <>
+          <section className="skpe-project-context-card">
+            <div>
+              <span>Projeto estratégico</span>
+              <strong>{project.project_name}</strong>
+              <small>{project.project_code}</small>
+            </div>
 
-          <div>
-            <span>Progresso geral</span>
-            <strong>
-              {project.project_progress}%
-            </strong>
-            <small>
-              Situação: {getProjectStatusLabel(
-                project.project_status,
-              )}
-            </small>
-          </div>
-        </section>
+            <div>
+              <span>Progresso geral</span>
+              <strong>{project.project_progress}%</strong>
+              <small>
+                Situação: {getProjectStatusLabel(project.project_status)}
+              </small>
+            </div>
+
+            <div>
+              <span>Data de referência</span>
+              <strong>{formatDate(project.reference_date)}</strong>
+              <small>{project.organization_timezone}</small>
+            </div>
+          </section>
+
+          <section className="skpe-admin-kpi-grid" aria-label="Resumo temporal da jornada">
+            <article className="skpe-admin-kpi-card">
+              <span>Plano institucional</span>
+              <strong>
+                {temporalSummary.planRow?.current_plan_version_number
+                  ? `v${temporalSummary.planRow.current_plan_version_number}`
+                  : '—'}
+              </strong>
+              <small>
+                {temporalSummary.planRow
+                  ? getPlanKindLabel(temporalSummary.planRow.current_plan_kind)
+                  : 'Sem baseline/rebaseline aprovado'}
+              </small>
+            </article>
+
+            <article className="skpe-admin-kpi-card">
+              <span>Forecast operacional</span>
+              <strong>
+                {temporalSummary.forecastRow?.current_forecast_version_number
+                  ? `v${temporalSummary.forecastRow.current_forecast_version_number}`
+                  : '—'}
+              </strong>
+              <small>
+                {temporalSummary.forecastRow
+                  ? 'Previsão operacional ativa'
+                  : 'Sem forecast ativo'}
+              </small>
+            </article>
+
+            <article className="skpe-admin-kpi-card">
+              <span>Obrigatórios em atraso</span>
+              <strong>{temporalSummary.overdueCount}</strong>
+              <small>
+                de {temporalSummary.mandatoryCount} itens obrigatórios
+                {temporalSummary.blockedCount > 0
+                  ? ` · ${temporalSummary.blockedCount} bloqueados`
+                  : ''}
+              </small>
+            </article>
+
+            <article className="skpe-admin-kpi-card">
+              <span>Obrigatórios sem programação</span>
+              <strong>{temporalSummary.unscheduledCount}</strong>
+              <small>Estado calculado pelo backend</small>
+            </article>
+          </section>
+        </>
       )}
 
       {errorMessage && (
@@ -778,56 +759,35 @@ export function JourneySection({
 
       {loading ? (
         <section className="skpe-admin-state-card">
-          <p>
-            Carregando a Jornada Estratégica...
-          </p>
+          <p>Carregando a Jornada Estratégica...</p>
         </section>
       ) : journeyTree.length === 0 ? (
         <section className="skpe-admin-state-card">
-          <h2>
-            Nenhuma jornada encontrada
-          </h2>
-          <p>
-            Verifique se o projeto estratégico
-            foi criado para esta organização.
-          </p>
+          <h2>Nenhuma jornada encontrada</h2>
+          <p>Verifique se o projeto estratégico foi criado para esta organização.</p>
         </section>
       ) : (
         <div className="skpe-journey-workspace">
           <section className="skpe-journey-tree">
-            {journeyTree.map((item) =>
-              renderJourneyItem(item),
-            )}
+            {journeyTree.map((item) => renderJourneyItem(item))}
           </section>
 
           <aside className="skpe-journey-detail-panel">
             {selectedItem ? (
               <>
                 <div className="skpe-journey-breadcrumb">
-                  {selectedBreadcrumb.map(
-                    (breadcrumbItem, index) => (
-                      <span
-                        key={
-                          breadcrumbItem.item_id
-                        }
-                      >
-                        {index > 0 && (
-                          <b>›</b>
-                        )}
-                        {breadcrumbItem.item_code}
-                      </span>
-                    ),
-                  )}
+                  {selectedBreadcrumb.map((breadcrumbItem, index) => (
+                    <span key={breadcrumbItem.item_id}>
+                      {index > 0 && <b>›</b>}
+                      {breadcrumbItem.item_code}
+                    </span>
+                  ))}
                 </div>
 
                 <p className="skpe-eyebrow">
-                  {getItemTypeLabel(
-                    selectedItem.item_type,
-                  )}
+                  {getItemTypeLabel(selectedItem.item_type)}
                 </p>
-
                 <h2>{methodologyTextPtBr(selectedItem.item_name)}</h2>
-
                 <p>
                   {selectedItem.item_description ??
                     'Não há descrição complementar cadastrada.'}
@@ -835,29 +795,102 @@ export function JourneySection({
 
                 <dl className="skpe-journey-detail-list">
                   <div>
-                    <dt>Situação</dt>
+                    <dt>Situação da execução</dt>
+                    <dd>{getStatusLabel(selectedItem.item_status)}</dd>
+                  </div>
+                  <div>
+                    <dt>Estado temporal</dt>
+                    <dd>{getTemporalStateLabel(selectedItem.temporal_state)}</dd>
+                  </div>
+                  <div>
+                    <dt>Progresso</dt>
+                    <dd>{selectedItem.item_progress}%</dd>
+                  </div>
+                  <div>
+                    <dt>Responsável</dt>
+                    <dd>{selectedItem.responsible_name ?? 'Não definido'}</dd>
+                  </div>
+                  <div>
+                    <dt>Baseline original</dt>
                     <dd>
-                      {getStatusLabel(
-                        selectedItem.item_status,
+                      {selectedItem.baseline_version_number
+                        ? `v${selectedItem.baseline_version_number} · `
+                        : ''}
+                      {formatPeriod(
+                        selectedItem.baseline_start_date,
+                        selectedItem.baseline_end_date,
+                        formatDate,
                       )}
                     </dd>
                   </div>
-
                   <div>
-                    <dt>Progresso</dt>
+                    <dt>Plano institucional vigente</dt>
                     <dd>
-                      {selectedItem.item_progress}%
+                      {selectedItem.current_plan_version_number
+                        ? `v${selectedItem.current_plan_version_number} · ${getPlanKindLabel(selectedItem.current_plan_kind)} · `
+                        : ''}
+                      {formatPeriod(
+                        selectedItem.current_plan_start_date,
+                        selectedItem.current_plan_end_date,
+                        formatDate,
+                      )}
                     </dd>
                   </div>
-
                   <div>
-                    <dt>Responsável</dt>
+                    <dt>Forecast operacional</dt>
                     <dd>
-                      {selectedItem.responsible_name ??
-                        'Não definido'}
+                      {selectedItem.current_forecast_version_number
+                        ? `v${selectedItem.current_forecast_version_number} · `
+                        : ''}
+                      {formatPeriod(
+                        selectedItem.forecast_start_date,
+                        selectedItem.forecast_end_date,
+                        formatDate,
+                      )}
                     </dd>
                   </div>
-
+                  <div>
+                    <dt>Realizado</dt>
+                    <dd>
+                      {formatPeriod(
+                        selectedItem.actual_start_date,
+                        selectedItem.actual_end_date,
+                        formatDate,
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Plano × baseline</dt>
+                    <dd>
+                      {formatVariance(
+                        selectedItem.current_plan_end_variance_vs_baseline_days,
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Forecast × plano</dt>
+                    <dd>
+                      {formatVariance(
+                        selectedItem.forecast_end_variance_vs_current_plan_days,
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Realizado início × plano</dt>
+                    <dd>
+                      {formatVariance(
+                        selectedItem.actual_start_variance_vs_current_plan_days,
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Realizado fim × plano</dt>
+                    <dd>
+                      {formatVariance(
+                        selectedItem.actual_end_variance_vs_current_plan_days,
+                      )}
+                    </dd>
+                  </div>
                   <div>
                     <dt>Validação</dt>
                     <dd>
@@ -868,12 +901,18 @@ export function JourneySection({
                   </div>
                 </dl>
 
-                {selectedItem.item_type ===
-                  'macrophase' && (
+                {(selectedItem.is_start_overdue ||
+                  selectedItem.is_completion_overdue) && (
                   <div className="skpe-journey-detail-hint">
-                    Clique novamente no cartão ou no
-                    ícone de expansão para navegar pelos
-                    níveis subordinados.
+                    {selectedItem.is_completion_overdue
+                      ? `Conclusão em atraso há ${selectedItem.days_completion_overdue} dias na data de referência.`
+                      : `Início em atraso há ${selectedItem.days_start_overdue} dias na data de referência.`}
+                  </div>
+                )}
+
+                {selectedItem.item_type === 'macrophase' && (
+                  <div className="skpe-journey-detail-hint">
+                    Clique novamente no cartão ou no ícone de expansão para navegar pelos níveis subordinados.
                   </div>
                 )}
               </>
@@ -881,10 +920,7 @@ export function JourneySection({
               <div className="skpe-user-detail-empty">
                 <JourneyIcon />
                 <h2>Selecione um item</h2>
-                <p>
-                  Consulte seus detalhes e navegue pela
-                  estrutura metodológica.
-                </p>
+                <p>Consulte seus detalhes e navegue pela estrutura metodológica.</p>
               </div>
             )}
           </aside>
