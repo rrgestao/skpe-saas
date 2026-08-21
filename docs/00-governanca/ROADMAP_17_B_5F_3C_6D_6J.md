@@ -1,6 +1,6 @@
 ---
 id: SKPE-ROADMAP-17-B-5F-3C-6D-6J
-version: 1.1.0
+version: 1.2.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
@@ -9,7 +9,7 @@ created_at: 2026-08-21
 updated_at: 2026-08-21
 starts_after: 17-B.5F.3C.6C
 ends_at: 17-B.5F.3C.6J
-remaining_gates: 6
+remaining_gates: 5
 ---
 
 # Roadmap Governado 17-B.5F.3C.6D–6J — Operação e Visões Transversais de Iniciativas
@@ -49,6 +49,12 @@ Inclui: integração com `sparks_responsibility_assignments`; papéis de respons
 Não inclui: engine genérico de RH ou workflow de aprovação.
 
 Critério de saída: atribuição e remoção governadas, integridade organizacional, RLS comportamental e ausência de fonte de verdade concorrente.
+
+**Status: PASS / CLOSED em 2026-08-21.**
+
+Commit técnico: `c38ac2e513aff98463d33dfe77edc1ab56e103ff`.
+
+Evidência documental: `docs/auditoria/RELATORIO_FECHAMENTO_17_B_5F_3C_6E.md`.
 
 ### 17-B.5F.3C.6F — Roll-up Governado de Progresso e Saúde
 
@@ -118,14 +124,13 @@ Dependências principais:
 
 ## 4. Contagem congelada
 
-Após o fechamento do `17-B.5F.3C.6D`, restam **6 gates** nesta trilha:
+Após o fechamento do `17-B.5F.3C.6E`, restam **5 gates** nesta trilha:
 
-1. `17-B.5F.3C.6E`
-2. `17-B.5F.3C.6F`
-3. `17-B.5F.3C.6G`
-4. `17-B.5F.3C.6H`
-5. `17-B.5F.3C.6I`
-6. `17-B.5F.3C.6J`
+1. `17-B.5F.3C.6F`
+2. `17-B.5F.3C.6G`
+3. `17-B.5F.3C.6H`
+4. `17-B.5F.3C.6I`
+5. `17-B.5F.3C.6J`
 
 A criação de subgates de hardening, testes ou reconciliação não altera esta contagem funcional; subgates existem para controle de implementação e não para expandir o roadmap funcional.
 
@@ -137,4 +142,4 @@ Projeções de UX devem consumir autoridades existentes, nunca criar fontes de v
 
 Qualquer necessidade nova que não se encaixe claramente em `6D–6J` deve ser registrada como proposta separada e não incorporada silenciosamente a esta trilha.
 
-**ROADMAP 17-B.5F.3C.6D–6J — 6D CLOSED / 6 GATES RESTANTES.**
+**ROADMAP 17-B.5F.3C.6D–6J — 6E CLOSED / 5 GATES RESTANTES.**
