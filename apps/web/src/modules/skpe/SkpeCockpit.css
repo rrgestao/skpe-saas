@@ -4536,3 +4536,53 @@ tr.skpe-interactive-record:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+.skpe-initiative-view-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.skpe-initiative-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border-color, #dfe3e8);
+  border-radius: 0.75rem;
+  background: var(--surface-subtle, #f7f8fa);
+}
+
+.skpe-initiative-view-toggle button {
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.skpe-initiative-view-toggle
+  .skpe-initiative-view-toggle-active {
+  background: var(--surface, #ffffff);
+  font-weight: 700;
+}
+
+.skpe-initiative-kanban-host {
+  display: grid;
+  gap: 1rem;
+}
+
+.skpe-initiative-kanban-context {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.skpe-initiative-kanban-context span {
+  font-size: 0.75rem;
+}
+
+.skpe-initiative-kanban-context strong {
+  font-size: 1rem;
+}

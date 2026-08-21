@@ -18,6 +18,7 @@ import { EvolutionCyclesSection } from './features/evolution/EvolutionCyclesSect
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
+import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
 
 export type CockpitSection =
   | 'overview'
@@ -1833,6 +1834,10 @@ function InitiativesSection({
   const [validationNotes, setValidationNotes] = useState('')
   const [validationReason, setValidationReason] = useState('')
   const [quickFilter, setQuickFilter] = useState('all')
+  const [initiativeViewMode, setInitiativeViewMode] =
+    useState<'portfolio' | 'kanban'>('portfolio')
+  const [kanbanInitiativeId, setKanbanInitiativeId] =
+    useState<string | null>(null)
 
   const emptyForm: InitiativeFormState = {
     code: '', name: '', description: '', initiativeType: 'strategic_project',
@@ -2042,6 +2047,15 @@ function InitiativesSection({
     setShowInstrument(true)
   }
 
+  const openInitiativeKanban = (
+    initiative: InitiativeRow,
+  ) => {
+    setKanbanInitiativeId(
+      initiative.initiative_id,
+    )
+    setInitiativeViewMode('kanban')
+  }
+
   const validateInitiative = async (initiative: InitiativeRow, targetStatus: string) => {
     if (validationReason.trim().length < 10) {
       window.alert('Informe uma justificativa com pelo menos 10 caracteres.')
@@ -2159,14 +2173,138 @@ function InitiativesSection({
       <section id="skpe-initiative-results" className="skpe-initiative-results-heading">
         <div>
           <p className="skpe-card-code">Painel analítico</p>
-          <h2>Iniciativas sinalizadas</h2>
-          <span>{filteredInitiatives.length} iniciativa{filteredInitiatives.length === 1 ? '' : 's'} encontrada{filteredInitiatives.length === 1 ? '' : 's'}</span>
+          <h2>
+            {initiativeViewMode === 'portfolio'
+              ? 'Iniciativas sinalizadas'
+              : 'Kanban da iniciativa'}
+          </h2>
+          <span>
+            {initiativeViewMode === 'portfolio' ? (
+              <>
+                {filteredInitiatives.length}{' '}
+                iniciativa
+                {filteredInitiatives.length === 1 ? '' : 's'}{' '}
+                encontrada
+                {filteredInitiatives.length === 1 ? '' : 's'}
+              </>
+            ) : (
+              'Execução transversal das ações da iniciativa selecionada'
+            )}
+          </span>
         </div>
-        {quickFilter !== 'all' && <button type="button" className="skpe-user-details-button" onClick={() => setQuickFilter('all')}>Limpar filtro do cartão</button>}
+
+        <div className="skpe-initiative-view-actions">
+          <div
+            className="skpe-initiative-view-toggle"
+            role="group"
+            aria-label="Visualização de iniciativas"
+          >
+            <button
+              type="button"
+              className={
+                initiativeViewMode === 'portfolio'
+                  ? 'skpe-initiative-view-toggle-active'
+                  : ''
+              }
+              onClick={() =>
+                setInitiativeViewMode('portfolio')
+              }
+            >
+              Portfólio
+            </button>
+
+            <button
+              type="button"
+              className={
+                initiativeViewMode === 'kanban'
+                  ? 'skpe-initiative-view-toggle-active'
+                  : ''
+              }
+              onClick={() =>
+                setInitiativeViewMode('kanban')
+              }
+            >
+              Kanban
+            </button>
+          </div>
+
+          {quickFilter !== 'all' &&
+            initiativeViewMode === 'portfolio' && (
+              <button
+                type="button"
+                className="skpe-user-details-button"
+                onClick={() =>
+                  setQuickFilter('all')
+                }
+              >
+                Limpar filtro do cartão
+              </button>
+            )}
+        </div>
       </section>
 
-      {errorMessage && <div className="skpe-admin-message skpe-admin-message-error">{errorMessage}</div>}
-      {loading ? <section className="skpe-admin-state-card"><p>Carregando iniciativas...</p></section> : filteredInitiatives.length === 0 ? <section className="skpe-admin-state-card"><h2>Nenhuma iniciativa encontrada</h2><p>Cadastre, importe ou ajuste os filtros.</p></section> : (
+      {errorMessage && (
+        <div className="skpe-admin-message skpe-admin-message-error">
+          {errorMessage}
+        </div>
+      )}
+
+      {initiativeViewMode === 'kanban' ? (
+        kanbanInitiativeId ? (
+          <section className="skpe-initiative-kanban-host">
+            <div className="skpe-initiative-kanban-context">
+              <span>Iniciativa selecionada</span>
+              <strong>
+                {
+                  initiatives.find(
+                    (initiative) =>
+                      initiative.initiative_id ===
+                      kanbanInitiativeId,
+                  )?.initiative_code
+                }
+                {' — '}
+                {
+                  initiatives.find(
+                    (initiative) =>
+                      initiative.initiative_id ===
+                      kanbanInitiativeId,
+                  )?.initiative_name
+                }
+              </strong>
+            </div>
+
+            <InitiativeKanbanBoard
+              initiativeId={kanbanInitiativeId}
+            />
+          </section>
+        ) : (
+          <section className="skpe-admin-state-card">
+            <h2>Selecione uma iniciativa</h2>
+            <p>
+              Abra o Portfólio e escolha a iniciativa
+              cujas ações deseja acompanhar no Kanban.
+            </p>
+            <button
+              type="button"
+              className="skpe-primary-action-button"
+              onClick={() =>
+                setInitiativeViewMode('portfolio')
+              }
+            >
+              Ir para o Portfólio
+            </button>
+          </section>
+        )
+      ) : loading ? (
+        <section className="skpe-admin-state-card">
+          <p>Carregando iniciativas...</p>
+        </section>
+      ) : filteredInitiatives.length === 0 ? (
+        <section className="skpe-admin-state-card">
+          <h2>Nenhuma iniciativa encontrada</h2>
+          <p>Cadastre, importe ou ajuste os filtros.</p>
+        </section>
+      ) : (
         <section className="skpe-initiative-list">
           {filteredInitiatives.map((initiative) => (
             <article key={initiative.initiative_id} className={`skpe-initiative-card ${initiative.instruments?.length > 0 ? 'skpe-interactive-record' : ''}`} role={initiative.instruments?.length > 0 ? 'button' : undefined} tabIndex={initiative.instruments?.length > 0 ? 0 : undefined} aria-label={initiative.instruments?.length > 0 ? `Abrir instrumento de ${initiative.initiative_name}` : undefined} onClick={() => { if (initiative.instruments?.length > 0) openInstrument(initiative) }} onKeyDown={(event) => { if (initiative.instruments?.length > 0) activateRecordWithKeyboard(event, () => openInstrument(initiative)) }}>
@@ -2186,6 +2324,17 @@ function InitiativesSection({
                 {(initiative.strategic_objectives?.length > 0 || initiative.key_results?.length > 0) && <div className="skpe-initiative-links"><strong>Conexão estratégica</strong>{initiative.strategic_objectives?.map((o) => <span key={o.id}>{o.code} — {o.name}</span>)}{initiative.key_results?.map((kr) => <span key={kr.id}>{kr.code} — {kr.name}</span>)}</div>}
               </div>
               <aside className="skpe-initiative-actions" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+                <button
+                  type="button"
+                  className="skpe-user-details-button"
+                  onClick={() =>
+                    openInitiativeKanban(
+                      initiative,
+                    )
+                  }
+                >
+                  Abrir Kanban
+                </button>
                 {initiative.instruments?.length > 0 && <button type="button" className="skpe-primary-action-button" onClick={() => openInstrument(initiative)}>Abrir instrumento</button>}
                 {canManageInitiatives && initiative.validation_status === 'pending_validation' && <div className="skpe-validation-panel"><textarea value={validationNotes} onChange={(e) => setValidationNotes(e.target.value)} placeholder="Observações da validação" /><textarea value={validationReason} onChange={(e) => setValidationReason(e.target.value)} placeholder="Justificativa para auditoria" /><button type="button" onClick={() => void validateInitiative(initiative, 'under_review')}>Colocar em análise</button><button type="button" onClick={() => void validateInitiative(initiative, 'validated')}>Validar</button><button type="button" onClick={() => void validateInitiative(initiative, 'validated_with_adjustments')}>Validar com ajustes</button><button type="button" onClick={() => void validateInitiative(initiative, 'rejected')}>Rejeitar</button></div>}
               </aside>
