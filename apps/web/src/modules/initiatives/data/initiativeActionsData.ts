@@ -3,7 +3,7 @@ import { supabase } from '../../../lib/supabase'
 import {
   initiativeKanbanStatuses,
   initiativeKanbanStatusLabels,
-  type InitiativeActionRollupRow,
+  type InitiativeActionBoardRow,
   type InitiativeKanbanCardModel,
   type InitiativeKanbanColumnModel,
   type InitiativeKanbanStatus,
@@ -25,8 +25,8 @@ function normalizeProgress(value: unknown) {
   return Math.min(100, Math.max(0, parsed))
 }
 
-function mapRollupRow(
-  row: InitiativeActionRollupRow,
+function mapBoardRow(
+  row: InitiativeActionBoardRow,
 ): InitiativeKanbanCardModel | null {
   if (!isKanbanStatus(row.status)) {
     return null
@@ -44,15 +44,34 @@ function mapRollupRow(
     actionId: row.action_id,
     parentActionId: row.parent_action_id,
     depth: row.depth,
+
+    code: row.code,
+    name: row.name,
+    description: row.description,
+
     actionType: row.action_type,
     status: row.status,
+    priority: row.priority,
+
     officialProgress,
     calculatedProgress,
     displayProgress:
       calculatedProgress ?? officialProgress,
+
     isRoot: row.is_root,
     hasEligibleChildren:
       row.has_eligible_children,
+
+    responsibleAreaId:
+      row.responsible_area_id,
+
+    plannedStartDate:
+      row.planned_start_date,
+    plannedDueDate:
+      row.planned_due_date,
+
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
   }
 }
 
@@ -60,7 +79,7 @@ export async function loadInitiativeActionBoard(
   initiativeId: string,
 ): Promise<InitiativeKanbanColumnModel[]> {
   const { data, error } = await supabase.rpc(
-    'get_sparks_initiative_action_rollup',
+    'get_sparks_initiative_action_board',
     {
       target_initiative_id: initiativeId,
     },
@@ -73,9 +92,9 @@ export async function loadInitiativeActionBoard(
   }
 
   const cards = (
-    (data ?? []) as InitiativeActionRollupRow[]
+    (data ?? []) as InitiativeActionBoardRow[]
   )
-    .map(mapRollupRow)
+    .map(mapBoardRow)
     .filter(
       (
         item,

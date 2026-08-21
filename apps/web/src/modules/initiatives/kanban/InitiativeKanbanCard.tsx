@@ -1,5 +1,6 @@
-import type {
-  InitiativeKanbanCardModel,
+import {
+  initiativeActionPriorityLabels,
+  type InitiativeKanbanCardModel,
 } from '../contracts/initiativeActions'
 
 type InitiativeKanbanCardProps = {
@@ -12,13 +13,25 @@ function formatProgress(value: number) {
   }).format(value)}%`
 }
 
-function shortActionId(actionId: string) {
-  return actionId.slice(0, 8)
+function formatDate(value: string | null) {
+  if (!value) return null
+
+  const [year, month, day] =
+    value.slice(0, 10).split('-')
+
+  if (!year || !month || !day) {
+    return value
+  }
+
+  return `${day}/${month}/${year}`
 }
 
 export function InitiativeKanbanCard({
   card,
 }: InitiativeKanbanCardProps) {
+  const plannedDueDate =
+    formatDate(card.plannedDueDate)
+
   return (
     <article
       className="initiative-kanban-card"
@@ -30,6 +43,12 @@ export function InitiativeKanbanCard({
           {card.actionType === 'milestone'
             ? 'Marco'
             : 'Ação'}
+          {' · '}
+          {
+            initiativeActionPriorityLabels[
+              card.priority
+            ]
+          }
         </span>
 
         {card.depth > 0 ? (
@@ -40,8 +59,14 @@ export function InitiativeKanbanCard({
       </div>
 
       <strong className="initiative-kanban-card__title">
-        Ação {shortActionId(card.actionId)}
+        {card.code} — {card.name}
       </strong>
+
+      {plannedDueDate ? (
+        <span className="initiative-kanban-card__children">
+          Prazo planejado: {plannedDueDate}
+        </span>
+      ) : null}
 
       <div className="initiative-kanban-card__progress">
         <div className="initiative-kanban-card__progress-copy">
