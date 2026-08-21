@@ -105,3 +105,192 @@
       repeat(5, minmax(14rem, 18rem));
   }
 }
+.initiative-kanban-card {
+  cursor: grab;
+}
+
+.initiative-kanban-card:active {
+  cursor: grabbing;
+}
+
+.initiative-kanban-card__open {
+  width: 100%;
+  border: 1px solid var(--border-color, #dfe3e8);
+  border-radius: 0.55rem;
+  background: transparent;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.initiative-kanban-column[data-drop-allowed='true'] {
+  outline: 1px dashed var(--border-color, #dfe3e8);
+  outline-offset: -0.35rem;
+}
+
+.initiative-kanban-column[data-drop-active='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: -0.35rem;
+}
+
+.initiative-action-drawer-backdrop,
+.initiative-action-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgb(15 23 42 / 32%);
+}
+
+.initiative-action-drawer-backdrop {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.initiative-action-drawer {
+  width: min(32rem, 94vw);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--surface, #ffffff);
+  padding: 1.25rem;
+  box-shadow: -0.5rem 0 2rem rgb(15 23 42 / 18%);
+}
+
+.initiative-action-drawer__header,
+.initiative-action-dialog__header,
+.initiative-action-dialog__actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.initiative-action-drawer__header h2,
+.initiative-action-dialog__header h3 {
+  margin: 0.2rem 0 0;
+}
+
+.initiative-action-drawer__header span,
+.initiative-action-dialog__header span {
+  font-size: 0.75rem;
+}
+
+.initiative-action-drawer__description {
+  margin-block: 1rem;
+}
+
+.initiative-action-drawer__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.initiative-action-drawer__facts div {
+  border: 1px solid var(--border-color, #dfe3e8);
+  border-radius: 0.65rem;
+  padding: 0.65rem;
+}
+
+.initiative-action-drawer__facts dt {
+  font-size: 0.72rem;
+}
+
+.initiative-action-drawer__facts dd {
+  margin: 0.25rem 0 0;
+  font-weight: 700;
+}
+
+.initiative-action-drawer__section {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-color, #dfe3e8);
+  padding-block: 1rem;
+}
+
+.initiative-action-drawer__section h3,
+.initiative-action-drawer__section p {
+  margin: 0;
+}
+
+.initiative-action-drawer__note {
+  border-radius: 0.65rem;
+  background: var(--surface-subtle, #f7f8fa);
+  padding: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.initiative-action-field {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+}
+
+.initiative-action-field span {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.initiative-action-field input,
+.initiative-action-field select,
+.initiative-action-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.initiative-action-message {
+  margin-top: 0.75rem;
+  border-radius: 0.65rem;
+  padding: 0.7rem;
+}
+
+.initiative-action-message--error {
+  border: 1px solid currentColor;
+}
+
+.initiative-action-transition-summary {
+  display: grid;
+  gap: 0.4rem;
+  border-radius: 0.7rem;
+  background: var(--surface-subtle, #f7f8fa);
+  padding: 0.8rem;
+}
+
+.initiative-action-transition-summary span,
+.initiative-action-transition-summary p {
+  font-size: 0.78rem;
+}
+
+.initiative-action-transition-summary p {
+  margin: 0;
+}
+
+.initiative-action-dialog-backdrop {
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.initiative-action-dialog {
+  width: min(32rem, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 0.9rem;
+  background: var(--surface, #ffffff);
+  padding: 1.1rem;
+  box-shadow: 0 1rem 3rem rgb(15 23 42 / 24%);
+}
+
+.initiative-action-dialog__actions {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .initiative-action-drawer__facts {
+    grid-template-columns: 1fr;
+  }
+}

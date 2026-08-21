@@ -1,20 +1,36 @@
 import {
+  useCallback,
   useEffect,
   useState,
 } from 'react'
 
 import type {
+  InitiativeKanbanCardModel,
   InitiativeKanbanColumnModel,
+  InitiativeKanbanStatus,
 } from '../contracts/initiativeActions'
 import {
   loadInitiativeActionBoard,
 } from '../data/initiativeActionsData'
-import { InitiativeKanbanColumn } from './InitiativeKanbanColumn'
+import {
+  InitiativeActionDrawer,
+} from './InitiativeActionDrawer'
+import {
+  InitiativeKanbanColumn,
+} from './InitiativeKanbanColumn'
+import {
+  InitiativeLifecycleDialog,
+} from './InitiativeLifecycleDialog'
 
 import './InitiativeKanbanBoard.css'
 
 type InitiativeKanbanBoardProps = {
   initiativeId: string
+}
+
+type PendingTransition = {
+  card: InitiativeKanbanCardModel
+  targetStatus: InitiativeKanbanStatus
 }
 
 export function InitiativeKanbanBoard({
@@ -23,48 +39,72 @@ export function InitiativeKanbanBoard({
   const [columns, setColumns] = useState<
     InitiativeKanbanColumnModel[]
   >([])
+  const [selectedCard, setSelectedCard] =
+    useState<InitiativeKanbanCardModel | null>(
+      null,
+    )
+  const [draggingCard, setDraggingCard] =
+    useState<InitiativeKanbanCardModel | null>(
+      null,
+    )
+  const [
+    pendingTransition,
+    setPendingTransition,
+  ] = useState<PendingTransition | null>(null)
+
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
-  useEffect(() => {
-    let active = true
+  const loadBoard = useCallback(async () => {
+    setLoading(true)
+    setErrorMessage(null)
 
-    async function loadBoard() {
-      setLoading(true)
-      setErrorMessage(null)
-
-      try {
-        const nextColumns =
-          await loadInitiativeActionBoard(
-            initiativeId,
-          )
-
-        if (!active) return
-
-        setColumns(nextColumns)
-      } catch (error) {
-        if (!active) return
-
-        setColumns([])
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'Não foi possível carregar o Kanban.',
+    try {
+      const nextColumns =
+        await loadInitiativeActionBoard(
+          initiativeId,
         )
-      } finally {
-        if (active) {
-          setLoading(false)
-        }
-      }
-    }
 
-    void loadBoard()
-
-    return () => {
-      active = false
+      setColumns(nextColumns)
+    } catch (error) {
+      setColumns([])
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível carregar o Kanban.',
+      )
+    } finally {
+      setLoading(false)
     }
   }, [initiativeId])
+
+  useEffect(() => {
+    void loadBoard()
+  }, [loadBoard])
+
+  useEffect(() => {
+    setSelectedCard(null)
+    setDraggingCard(null)
+    setPendingTransition(null)
+  }, [initiativeId])
+
+  async function handleActionChanged() {
+    await loadBoard()
+    setSelectedCard(null)
+    setPendingTransition(null)
+  }
+
+  function requestTransition(
+    card: InitiativeKanbanCardModel,
+    targetStatus: InitiativeKanbanStatus,
+  ) {
+    setDraggingCard(null)
+    setPendingTransition({
+      card,
+      targetStatus,
+    })
+  }
 
   if (loading) {
     return (
@@ -86,16 +126,50 @@ export function InitiativeKanbanBoard({
   }
 
   return (
-    <div
-      className="initiative-kanban-board"
-      aria-label="Kanban de ações da iniciativa"
-    >
-      {columns.map((column) => (
-        <InitiativeKanbanColumn
-          key={column.status}
-          column={column}
+    <>
+      <div
+        className="initiative-kanban-board"
+        aria-label="Kanban de ações da iniciativa"
+      >
+        {columns.map((column) => (
+          <InitiativeKanbanColumn
+            key={column.status}
+            column={column}
+            draggingCard={draggingCard}
+            onOpenCard={setSelectedCard}
+            onDragStart={setDraggingCard}
+            onDragEnd={() =>
+              setDraggingCard(null)
+            }
+            onRequestTransition={
+              requestTransition
+            }
+          />
+        ))}
+      </div>
+
+      {selectedCard ? (
+        <InitiativeActionDrawer
+          card={selectedCard}
+          onClose={() =>
+            setSelectedCard(null)
+          }
+          onChanged={handleActionChanged}
         />
-      ))}
-    </div>
+      ) : null}
+
+      {pendingTransition ? (
+        <InitiativeLifecycleDialog
+          card={pendingTransition.card}
+          requestedStatus={
+            pendingTransition.targetStatus
+          }
+          onClose={() =>
+            setPendingTransition(null)
+          }
+          onChanged={handleActionChanged}
+        />
+      ) : null}
+    </>
   )
 }

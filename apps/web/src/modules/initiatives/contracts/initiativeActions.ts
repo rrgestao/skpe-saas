@@ -112,6 +112,17 @@ export const initiativeKanbanStatusLabels:
     completed: 'Concluído',
   }
 
+export const initiativeActionLifecycleLabels:
+  Record<InitiativeActionLifecycle, string> = {
+    planned: 'Planejado',
+    in_progress: 'Em execução',
+    on_hold: 'Em espera',
+    blocked: 'Bloqueado',
+    completed: 'Concluído',
+    cancelled: 'Cancelado',
+    archived: 'Arquivado',
+  }
+
 export const initiativeActionPriorityLabels:
   Record<InitiativeActionPriority, string> = {
     low: 'Baixa',
@@ -119,3 +130,71 @@ export const initiativeActionPriorityLabels:
     high: 'Alta',
     critical: 'Crítica',
   }
+
+export const initiativeActionAllowedTransitions:
+  Record<
+    InitiativeActionLifecycle,
+    readonly InitiativeActionLifecycle[]
+  > = {
+    planned: [
+      'in_progress',
+      'blocked',
+      'cancelled',
+    ],
+    in_progress: [
+      'on_hold',
+      'blocked',
+      'completed',
+      'cancelled',
+    ],
+    on_hold: [
+      'in_progress',
+      'blocked',
+      'cancelled',
+    ],
+    blocked: [
+      'in_progress',
+      'on_hold',
+      'cancelled',
+    ],
+    completed: ['archived'],
+    cancelled: ['archived'],
+    archived: [],
+  }
+
+export function getAllowedInitiativeActionTransitions(
+  card: InitiativeKanbanCardModel,
+): readonly InitiativeActionLifecycle[] {
+  const transitions =
+    initiativeActionAllowedTransitions[card.status]
+
+  if (
+    card.status === 'blocked' &&
+    card.startedAt === null
+  ) {
+    return transitions.filter(
+      (status) => status !== 'on_hold',
+    )
+  }
+
+  return transitions
+}
+
+export function canTransitionInitiativeActionTo(
+  card: InitiativeKanbanCardModel,
+  targetStatus: InitiativeActionLifecycle,
+) {
+  return getAllowedInitiativeActionTransitions(
+    card,
+  ).includes(targetStatus)
+}
+
+export function canUpdateInitiativeActionProgress(
+  status: InitiativeActionLifecycle,
+) {
+  return (
+    status === 'in_progress' ||
+    status === 'on_hold' ||
+    status === 'blocked'
+  )
+}

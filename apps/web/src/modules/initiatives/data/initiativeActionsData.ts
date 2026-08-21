@@ -4,6 +4,7 @@ import {
   initiativeKanbanStatuses,
   initiativeKanbanStatusLabels,
   type InitiativeActionBoardRow,
+  type InitiativeActionLifecycle,
   type InitiativeKanbanCardModel,
   type InitiativeKanbanColumnModel,
   type InitiativeKanbanStatus,
@@ -111,4 +112,50 @@ export async function loadInitiativeActionBoard(
       ),
     }),
   )
+}
+
+export async function transitionInitiativeAction(
+  actionId: string,
+  targetStatus: InitiativeActionLifecycle,
+  changeReason: string,
+) {
+  const { data, error } = await supabase.rpc(
+    'transition_sparks_initiative_action_lifecycle',
+    {
+      target_action_id: actionId,
+      target_status: targetStatus,
+      change_reason: changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível alterar a situação da ação: ${error.message}`,
+    )
+  }
+
+  return data
+}
+
+export async function updateInitiativeActionProgress(
+  actionId: string,
+  progress: number,
+  changeReason: string,
+) {
+  const { data, error } = await supabase.rpc(
+    'update_sparks_initiative_action_execution',
+    {
+      target_action_id: actionId,
+      target_progress: progress,
+      change_reason: changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível atualizar o progresso da ação: ${error.message}`,
+    )
+  }
+
+  return data
 }

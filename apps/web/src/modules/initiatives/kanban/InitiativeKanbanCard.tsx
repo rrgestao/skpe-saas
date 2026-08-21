@@ -5,6 +5,13 @@ import {
 
 type InitiativeKanbanCardProps = {
   card: InitiativeKanbanCardModel
+  onOpen: (
+    card: InitiativeKanbanCardModel,
+  ) => void
+  onDragStart: (
+    card: InitiativeKanbanCardModel,
+  ) => void
+  onDragEnd: () => void
 }
 
 function formatProgress(value: number) {
@@ -28,6 +35,9 @@ function formatDate(value: string | null) {
 
 export function InitiativeKanbanCard({
   card,
+  onOpen,
+  onDragStart,
+  onDragEnd,
 }: InitiativeKanbanCardProps) {
   const plannedDueDate =
     formatDate(card.plannedDueDate)
@@ -37,6 +47,16 @@ export function InitiativeKanbanCard({
       className="initiative-kanban-card"
       data-status={card.status}
       data-action-id={card.actionId}
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData(
+          'text/plain',
+          card.actionId,
+        )
+        onDragStart(card)
+      }}
+      onDragEnd={onDragEnd}
     >
       <div className="initiative-kanban-card__header">
         <span className="initiative-kanban-card__type">
@@ -101,6 +121,14 @@ export function InitiativeKanbanCard({
           Consolida ações subordinadas
         </span>
       ) : null}
+
+      <button
+        type="button"
+        className="initiative-kanban-card__open"
+        onClick={() => onOpen(card)}
+      >
+        Detalhes e ações
+      </button>
     </article>
   )
 }
