@@ -1,6 +1,6 @@
 ---
 id: SKPE-ROADMAP-17-B-5F-3C-6D-6J
-version: 1.0.0
+version: 1.1.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
@@ -9,7 +9,7 @@ created_at: 2026-08-21
 updated_at: 2026-08-21
 starts_after: 17-B.5F.3C.6C
 ends_at: 17-B.5F.3C.6J
-remaining_gates: 7
+remaining_gates: 6
 ---
 
 # Roadmap Governado 17-B.5F.3C.6D–6J — Operação e Visões Transversais de Iniciativas
@@ -33,6 +33,12 @@ Inclui: criação governada; edição permitida; transições de lifecycle; prog
 Não inclui: roll-up para iniciativa, atribuição pessoal, Kanban, Gantt ou calendário.
 
 Critério de saída: RPCs/contratos operacionais seguros, matriz de transições validada, testes positivos/negativos de autorização e ausência de mutação direta.
+
+**Status: PASS / CLOSED em 2026-08-21.**
+
+Commit técnico: `c3e2f07c01aac190da1e6e2526a7614d8034d0c0`.
+
+Evidência documental: `docs/auditoria/RELATORIO_FECHAMENTO_17_B_5F_3C_6D.md`.
 
 ### 17-B.5F.3C.6E — Responsabilidades Governadas em Ações
 
@@ -112,15 +118,14 @@ Dependências principais:
 
 ## 4. Contagem congelada
 
-Após o fechamento do `17-B.5F.3C.6C`, restam **7 gates** nesta trilha:
+Após o fechamento do `17-B.5F.3C.6D`, restam **6 gates** nesta trilha:
 
-1. `17-B.5F.3C.6D`
-2. `17-B.5F.3C.6E`
-3. `17-B.5F.3C.6F`
-4. `17-B.5F.3C.6G`
-5. `17-B.5F.3C.6H`
-6. `17-B.5F.3C.6I`
-7. `17-B.5F.3C.6J`
+1. `17-B.5F.3C.6E`
+2. `17-B.5F.3C.6F`
+3. `17-B.5F.3C.6G`
+4. `17-B.5F.3C.6H`
+5. `17-B.5F.3C.6I`
+6. `17-B.5F.3C.6J`
 
 A criação de subgates de hardening, testes ou reconciliação não altera esta contagem funcional; subgates existem para controle de implementação e não para expandir o roadmap funcional.
 
@@ -132,4 +137,4 @@ Projeções de UX devem consumir autoridades existentes, nunca criar fontes de v
 
 Qualquer necessidade nova que não se encaixe claramente em `6D–6J` deve ser registrada como proposta separada e não incorporada silenciosamente a esta trilha.
 
-**ROADMAP 17-B.5F.3C.6D–6J — BASELINE GOVERNADA / 7 GATES RESTANTES.**
+**ROADMAP 17-B.5F.3C.6D–6J — 6D CLOSED / 6 GATES RESTANTES.**
