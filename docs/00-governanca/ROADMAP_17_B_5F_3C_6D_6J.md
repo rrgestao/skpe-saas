@@ -1,6 +1,6 @@
 ---
 id: SKPE-ROADMAP-17-B-5F-3C-6D-6J
-version: 1.2.0
+version: 1.3.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
@@ -9,7 +9,7 @@ created_at: 2026-08-21
 updated_at: 2026-08-21
 starts_after: 17-B.5F.3C.6C
 ends_at: 17-B.5F.3C.6J
-remaining_gates: 5
+remaining_gates: 4
 ---
 
 # Roadmap Governado 17-B.5F.3C.6D–6J — Operação e Visões Transversais de Iniciativas
@@ -65,6 +65,12 @@ Inclui: política explícita de agregação; tratamento de milestones; pesos qua
 Não inclui: cálculo metodológico automático de objetivos do SK-PE.
 
 Critério de saída: algoritmo determinístico, casos-limite validados, não regressão do lifecycle da iniciativa e rastreabilidade do valor agregado.
+
+**Status: PASS / CLOSED em 2026-08-21.**
+
+Commit técnico: `d1ffe7225bd80d31785b66a8d1a9d3c942ab6e72`.
+
+Evidência documental: `docs/auditoria/RELATORIO_FECHAMENTO_17_B_5F_3C_6F.md`.
 
 ### 17-B.5F.3C.6G — Projeção Kanban Transversal
 
@@ -124,13 +130,12 @@ Dependências principais:
 
 ## 4. Contagem congelada
 
-Após o fechamento do `17-B.5F.3C.6E`, restam **5 gates** nesta trilha:
+Após o fechamento do `17-B.5F.3C.6F`, restam **4 gates** nesta trilha:
 
-1. `17-B.5F.3C.6F`
-2. `17-B.5F.3C.6G`
-3. `17-B.5F.3C.6H`
-4. `17-B.5F.3C.6I`
-5. `17-B.5F.3C.6J`
+1. `17-B.5F.3C.6G`
+2. `17-B.5F.3C.6H`
+3. `17-B.5F.3C.6I`
+4. `17-B.5F.3C.6J`
 
 A criação de subgates de hardening, testes ou reconciliação não altera esta contagem funcional; subgates existem para controle de implementação e não para expandir o roadmap funcional.
 
@@ -142,4 +147,4 @@ Projeções de UX devem consumir autoridades existentes, nunca criar fontes de v
 
 Qualquer necessidade nova que não se encaixe claramente em `6D–6J` deve ser registrada como proposta separada e não incorporada silenciosamente a esta trilha.
 
-**ROADMAP 17-B.5F.3C.6D–6J — 6E CLOSED / 5 GATES RESTANTES.**
+**ROADMAP 17-B.5F.3C.6D–6J — 6F CLOSED / 4 GATES RESTANTES — 6G OPEN.**
