@@ -1,0 +1,107 @@
+.initiative-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(15rem, 1fr));
+  gap: 1rem;
+  overflow-x: auto;
+  padding-block: 0.25rem 1rem;
+}
+
+.initiative-kanban-column {
+  min-width: 15rem;
+  border: 1px solid var(--border-color, #dfe3e8);
+  border-radius: 0.875rem;
+  background: var(--surface-subtle, #f7f8fa);
+  padding: 0.75rem;
+}
+
+.initiative-kanban-column__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.initiative-kanban-column__header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.initiative-kanban-column__header span {
+  min-width: 1.75rem;
+  border-radius: 999px;
+  background: var(--surface, #ffffff);
+  padding: 0.2rem 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.initiative-kanban-column__cards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.initiative-kanban-card {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid var(--border-color, #dfe3e8);
+  border-radius: 0.75rem;
+  background: var(--surface, #ffffff);
+  padding: 0.8rem;
+}
+
+.initiative-kanban-card__header,
+.initiative-kanban-card__progress-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.initiative-kanban-card__type,
+.initiative-kanban-card__depth,
+.initiative-kanban-card__children {
+  font-size: 0.72rem;
+}
+
+.initiative-kanban-card__title {
+  font-size: 0.9rem;
+}
+
+.initiative-kanban-card__progress {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.initiative-kanban-card__progress progress {
+  width: 100%;
+}
+
+.initiative-kanban-card__progress-copy,
+.initiative-kanban-card__rollup {
+  font-size: 0.75rem;
+}
+
+.initiative-kanban-card__rollup {
+  margin: 0;
+}
+
+.initiative-kanban-column__empty,
+.initiative-kanban-state {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.85rem;
+}
+
+.initiative-kanban-state--error {
+  border: 1px solid currentColor;
+  border-radius: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .initiative-kanban-board {
+    grid-template-columns:
+      repeat(5, minmax(14rem, 18rem));
+  }
+}
