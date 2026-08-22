@@ -19,6 +19,11 @@ import { JourneySection as JourneyFeatureSection } from './features/journey/Jour
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
+import type {
+  InitiativePortfolioDashboardRow,
+  InitiativePortfolioRow,
+} from '../initiatives/contracts/initiativePortfolio'
+import { loadInitiativePortfolio } from '../initiatives/data/initiativePortfolioData'
 
 export type CockpitSection =
   | 'overview'
@@ -1619,96 +1624,6 @@ function formatStrategicHorizon(context: StrategicProjectContext | null) {
   return `${start}–${end}`
 }
 
-type InitiativeDashboardRow = {
-  total_initiatives: number
-  proposed_count: number
-  in_progress_count: number
-  completed_count: number
-  delayed_count: number
-  blocked_count: number
-  critical_count: number
-  without_owner_count: number
-  without_recent_update_count: number
-  with_instrument_count: number
-  without_instrument_count: number
-  average_progress: number
-  planned_cost: number
-  actual_cost: number
-  planned_benefit: number
-  realized_benefit: number
-}
-
-type InitiativeObjective = {
-  id: string
-  code: string
-  name: string
-  management_model: string
-  contribution_type: string
-  contribution_weight: number
-}
-
-type InitiativeKeyResult = {
-  id: string
-  code: string
-  name: string
-  status: string
-  progress: number
-  contribution_type: string
-  contribution_weight: number | null
-}
-
-type InitiativeInstrument = {
-  id: string
-  type: string
-  reference_id: string | null
-  code: string | null
-  status: string
-  is_primary: boolean
-}
-
-type InitiativeRow = {
-  initiative_id: string
-  project_id: string | null
-  project_code: string | null
-  initiative_code: string
-  initiative_name: string
-  initiative_description: string | null
-  initiative_type: string
-  initiative_status: string
-  priority: string
-  responsible_area: string | null
-  owner_user_id: string | null
-  owner_name: string | null
-  start_date: string | null
-  due_date: string | null
-  progress: number
-  planned_cost: number | null
-  actual_cost: number | null
-  planned_benefit: number | null
-  realized_benefit: number | null
-  risk_level: string
-  health_status: string
-  last_update_at: string | null
-  delayed: boolean
-  proposal_origin: string
-  proposal_source_reference: string | null
-  validation_status: string
-  validation_notes: string | null
-  validated_at: string | null
-  validated_by_name: string | null
-  what_text: string
-  why_text: string
-  where_text: string
-  when_text: string
-  who_text: string
-  how_text: string
-  how_much_text: string
-  five_w_two_h_completion: number
-  strategic_objectives: InitiativeObjective[]
-  key_results: InitiativeKeyResult[]
-  instruments: InitiativeInstrument[]
-}
-
 type InitiativeFormState = {
   code: string
   name: string
@@ -1746,13 +1661,12 @@ type InitiativesSectionProps = {
   canManageInitiatives: boolean
 }
 
-function getInitiativeTypeLabel(value: string) {
+function getInitiativeClassLabel(value: string) {
   const labels: Record<string, string> = {
-    strategic_project: 'Projeto Estratégico',
-    operational_improvement: 'Melhoria Operacional',
-    process_initiative: 'Iniciativa de Processo',
-    simple_action: 'Ação Simples',
-    strategic_program: 'Programa Estratégico',
+    program: 'Programa',
+    project: 'Projeto',
+    initiative: 'Iniciativa',
+    structuring_action: 'Ação estruturante',
   }
   return labels[value] ?? value
 }
@@ -1773,71 +1687,31 @@ function getInitiativeStatusLabel(value: string) {
   return labels[value] ?? value
 }
 
-function getProposalOriginLabel(value: string) {
-  const labels: Record<string, string> = {
-    sparks_suggestion: 'Sugerida pela SPARKs',
-    organization: 'Criada pela organização',
-    joint_construction: 'Construída conjuntamente',
-    previous_plan: 'Importada de plano anterior',
-    assessment: 'Originada de diagnóstico',
-    action_plan: 'Originada de plano de ação',
-    bmc_vpc: 'Originada de BMC/VPC',
-    benchmark: 'Originada de benchmark',
-  }
-  return labels[value] ?? value
-}
-
-function getValidationStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    pending_validation: 'Pendente de validação',
-    under_review: 'Em análise',
-    validated: 'Validada',
-    validated_with_adjustments: 'Validada com ajustes',
-    rejected: 'Rejeitada',
-    replaced: 'Substituída',
-    not_required: 'Validação não necessária',
-  }
-  return labels[value] ?? value
-}
-
-function formatCurrency(value: number | null | undefined) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  }).format(value ?? 0)
-}
-
 function InitiativesSection({
   organizationId,
   canManageCanvas,
   canManageInitiatives,
 }: InitiativesSectionProps) {
-  const [dashboard, setDashboard] = useState<InitiativeDashboardRow | null>(null)
-  const [initiatives, setInitiatives] = useState<InitiativeRow[]>([])
+  const [dashboard, setDashboard] = useState<InitiativePortfolioDashboardRow | null>(null)
+  const [initiatives, setInitiatives] = useState<InitiativePortfolioRow[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [areaFilter, setAreaFilter] = useState('all')
-  const [objectiveFilter, setObjectiveFilter] = useState('all')
-  const [originFilter, setOriginFilter] = useState('all')
-  const [validationFilter, setValidationFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedInitiative, setSelectedInitiative] = useState<InitiativeRow | null>(null)
-  const [showInstrument, setShowInstrument] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [savingInitiative, setSavingInitiative] = useState(false)
   const [journeyRows, setJourneyRows] = useState<JourneyRow[]>([])
   const [ownerOptions, setOwnerOptions] = useState<InitiativeOwnerOption[]>([])
   const [formMessage, setFormMessage] = useState<ActionMessage | null>(null)
-  const [validationNotes, setValidationNotes] = useState('')
-  const [validationReason, setValidationReason] = useState('')
   const [quickFilter, setQuickFilter] = useState('all')
   const [initiativeViewMode, setInitiativeViewMode] =
     useState<'portfolio' | 'kanban'>('portfolio')
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
+
+  const legacyInitiativeWriteSurfaceEnabled = false
 
   const emptyForm: InitiativeFormState = {
     code: '', name: '', description: '', initiativeType: 'strategic_project',
@@ -1970,7 +1844,7 @@ function InitiativesSection({
       Array.from(
         new Set<string>(
           initiatives
-            .map((initiative) => initiative.responsible_area)
+            .map((initiative) => initiative.responsible_area_name)
             .filter(
               (value): value is string => Boolean(value),
             ),
@@ -1981,100 +1855,110 @@ function InitiativesSection({
     [initiatives],
   )
 
-  const objectives = useMemo(() => {
-    const map = new Map<string, InitiativeObjective>()
-    for (const initiative of initiatives) for (const objective of initiative.strategic_objectives ?? []) map.set(objective.id, objective)
-    return Array.from(map.values()).sort((a, b) => a.code.localeCompare(b.code, 'pt-BR'))
-  }, [initiatives])
-
   const filteredInitiatives = useMemo(() => {
-    const normalized = searchTerm.trim().toLowerCase()
+    const normalized =
+      searchTerm.trim().toLowerCase()
+
     return initiatives.filter((initiative) => {
-      const matchesSearch = !normalized || initiative.initiative_name.toLowerCase().includes(normalized) ||
-        initiative.initiative_code.toLowerCase().includes(normalized) || (initiative.owner_name ?? '').toLowerCase().includes(normalized)
+      const matchesSearch =
+        !normalized ||
+        initiative.initiative_name
+          .toLowerCase()
+          .includes(normalized) ||
+        initiative.initiative_code
+          .toLowerCase()
+          .includes(normalized) ||
+        (initiative.responsible_area_name ?? '')
+          .toLowerCase()
+          .includes(normalized) ||
+        (initiative.category_name ?? '')
+          .toLowerCase()
+          .includes(normalized)
+
       const matchesQuickFilter =
         quickFilter === 'all' ||
-        (quickFilter === 'in_progress' && initiative.initiative_status === 'in_progress') ||
-        (quickFilter === 'delayed' && initiative.delayed) ||
-        (quickFilter === 'critical' && initiative.priority === 'critical') ||
-        (quickFilter === 'without_owner' && !initiative.owner_user_id) ||
-        (quickFilter === 'with_instrument' && (initiative.instruments?.length ?? 0) > 0)
-      return matchesSearch && matchesQuickFilter && (typeFilter === 'all' || initiative.initiative_type === typeFilter) &&
-        (areaFilter === 'all' || initiative.responsible_area === areaFilter) &&
-        (statusFilter === 'all' || initiative.initiative_status === statusFilter) &&
-        (originFilter === 'all' || initiative.proposal_origin === originFilter) &&
-        (validationFilter === 'all' || initiative.validation_status === validationFilter) &&
-        (objectiveFilter === 'all' || (initiative.strategic_objectives ?? []).some((o) => o.id === objectiveFilter))
-    })
-  }, [initiatives, searchTerm, typeFilter, areaFilter, statusFilter, objectiveFilter, originFilter, validationFilter, quickFilter])
+        (
+          quickFilter === 'in_progress' &&
+          initiative.initiative_status ===
+            'in_progress'
+        ) ||
+        (
+          quickFilter === 'blocked' &&
+          initiative.initiative_status ===
+            'blocked'
+        ) ||
+        (
+          quickFilter === 'completed' &&
+          initiative.initiative_status ===
+            'completed'
+        )
 
+      return (
+        matchesSearch &&
+        matchesQuickFilter &&
+        (
+          areaFilter === 'all' ||
+          initiative.responsible_area_name ===
+            areaFilter
+        )
+      )
+    })
+  }, [
+    initiatives,
+    searchTerm,
+    areaFilter,
+    quickFilter,
+  ])
   const loadInitiatives = async () => {
     setLoading(true)
     setErrorMessage('')
-    const dashboardFilters = {
-      target_organization_id: organizationId,
-      target_project_id: null,
-      target_initiative_type: typeFilter === 'all' ? null : typeFilter,
-      target_responsible_area: areaFilter === 'all' ? null : areaFilter,
-      target_strategic_objective_id: objectiveFilter === 'all' ? null : objectiveFilter,
-      target_status: statusFilter === 'all' ? null : statusFilter,
-    }
-    const listFilters = {
-      ...dashboardFilters,
-      target_key_result_id: null,
-      target_validation_status: validationFilter === 'all' ? null : validationFilter,
-      target_proposal_origin: originFilter === 'all' ? null : originFilter,
-    }
-    const [dashboardResponse, initiativesResponse] = await Promise.all([
-      supabase.rpc('get_skpe_initiatives_dashboard', dashboardFilters),
-      supabase.rpc('get_skpe_initiatives_v2', listFilters),
-    ])
-    if (dashboardResponse.error || initiativesResponse.error) {
-      setErrorMessage((dashboardResponse.error ?? initiativesResponse.error)?.message ?? 'Não foi possível carregar as iniciativas.')
+
+    try {
+      const result = await loadInitiativePortfolio(
+        organizationId,
+        {
+          status:
+            statusFilter === 'all'
+              ? null
+              : statusFilter,
+          initiativeClass:
+            typeFilter === 'all'
+              ? null
+              : typeFilter,
+        },
+      )
+
+      setDashboard(result.dashboard)
+      setInitiatives(result.initiatives)
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível carregar o portfólio transversal.',
+      )
+    } finally {
       setLoading(false)
-      return
     }
-    setDashboard(((dashboardResponse.data ?? [])[0] ?? null) as InitiativeDashboardRow | null)
-    setInitiatives((initiativesResponse.data ?? []) as InitiativeRow[])
-    setLoading(false)
   }
 
-  useEffect(() => { void loadInitiativeSupportData() }, [organizationId])
-  useEffect(() => { void loadInitiatives() }, [organizationId, typeFilter, areaFilter, objectiveFilter, statusFilter, originFilter, validationFilter])
+  useEffect(() => {
+    void loadInitiativeSupportData()
+  }, [organizationId])
 
-  const openInstrument = (initiative: InitiativeRow) => {
-    setSelectedInitiative(initiative)
-    setShowInstrument(true)
-  }
-
+  useEffect(() => {
+    void loadInitiatives()
+  }, [
+    organizationId,
+    typeFilter,
+    statusFilter,
+  ])
   const openInitiativeKanban = (
-    initiative: InitiativeRow,
+    initiative: InitiativePortfolioRow,
   ) => {
     setKanbanInitiativeId(
       initiative.initiative_id,
     )
     setInitiativeViewMode('kanban')
-  }
-
-  const validateInitiative = async (initiative: InitiativeRow, targetStatus: string) => {
-    if (validationReason.trim().length < 10) {
-      window.alert('Informe uma justificativa com pelo menos 10 caracteres.')
-      return
-    }
-    const { error } = await supabase.rpc('validate_skpe_initiative', {
-      target_initiative_id: initiative.initiative_id,
-      target_validation_status: targetStatus,
-      validation_notes: validationNotes.trim() || null,
-      replacement_initiative_id: null,
-      change_reason: validationReason.trim(),
-    })
-    if (error) {
-      window.alert(translateBackendMessage(error.message))
-      return
-    }
-    setValidationNotes('')
-    setValidationReason('')
-    await loadInitiatives()
   }
 
   const applyQuickFilter = (filter: string) => {
@@ -2086,14 +1970,21 @@ function InitiativesSection({
 
   return (
     <>
+      {legacyInitiativeWriteSurfaceEnabled && (
+        <CanvasSection
+          organizationId={organizationId}
+          canManageCanvas={canManageCanvas}
+        />
+      )}
+
       <section className="skpe-page-heading skpe-administration-heading">
         <div>
           <p className="skpe-eyebrow">Execução da estratégia</p>
           <h1>Painel de Iniciativas</h1>
-          <p>Acompanhe desempenho, origem, validação, 5W2H e vínculos com Objetivos Estratégicos — OKRs.</p>
+          <p>Acompanhe o portfólio transversal governado de programas, projetos, iniciativas e ações estruturantes.</p>
         </div>
         <div className="skpe-heading-actions">
-          {canManageInitiatives && (
+          {legacyInitiativeWriteSurfaceEnabled && canManageInitiatives && (
             <button type="button" className="skpe-primary-action-button skpe-new-initiative-button" onClick={() => { resetInitiativeForm(); setShowCreateForm(true) }}>
               Nova iniciativa
             </button>
@@ -2104,7 +1995,7 @@ function InitiativesSection({
         </div>
       </section>
 
-      {showCreateForm && (
+      {legacyInitiativeWriteSurfaceEnabled && showCreateForm && (
         <section className="skpe-initiative-form-card">
           <div className="skpe-card-heading">
             <div><p className="skpe-card-code">Cadastro assistido</p><h2>Nova iniciativa com 5W2H</h2></div>
@@ -2148,28 +2039,156 @@ function InitiativesSection({
       )}
 
       {dashboard && (
-        <section className="skpe-initiative-kpi-grid" aria-label="Filtros rápidos de iniciativas">
-          <button type="button" className={quickFilter === 'all' ? 'skpe-initiative-kpi-active' : ''} onClick={() => applyQuickFilter('all')}><span>Total</span><strong>{dashboard.total_initiatives}</strong><small>Clique para ver todas</small></button>
-          <button type="button" className={quickFilter === 'in_progress' ? 'skpe-initiative-kpi-active' : ''} onClick={() => applyQuickFilter('in_progress')}><span>Em execução</span><strong>{dashboard.in_progress_count}</strong><small>Clique para filtrar</small></button>
-          <button type="button" className={quickFilter === 'delayed' ? 'skpe-initiative-kpi-active' : ''} onClick={() => applyQuickFilter('delayed')}><span>Atrasadas</span><strong>{dashboard.delayed_count}</strong><small>Clique para filtrar</small></button>
-          <button type="button" className={quickFilter === 'critical' ? 'skpe-initiative-kpi-active' : ''} onClick={() => applyQuickFilter('critical')}><span>Críticas</span><strong>{dashboard.critical_count}</strong><small>Clique para filtrar</small></button>
-          <button type="button" className={quickFilter === 'without_owner' ? 'skpe-initiative-kpi-active' : ''} onClick={() => applyQuickFilter('without_owner')}><span>Sem responsável</span><strong>{dashboard.without_owner_count}</strong><small>Clique para filtrar</small></button>
-          <button type="button" className={quickFilter === 'with_instrument' ? 'skpe-initiative-kpi-active' : ''} onClick={() => applyQuickFilter('with_instrument')}><span>Com instrumento</span><strong>{dashboard.with_instrument_count}</strong><small>Clique para filtrar</small></button>
-          <button type="button" onClick={() => applyQuickFilter('all')}><span>Progresso médio</span><strong>{dashboard.average_progress}%</strong><small>Ver painel completo</small></button>
-          <button type="button" onClick={() => applyQuickFilter('all')}><span>Custo planejado</span><strong>{formatCurrency(dashboard.planned_cost)}</strong><small>Ver painel completo</small></button>
+        <section
+          className="skpe-initiative-kpi-grid"
+          aria-label="Visão consolidada do portfólio transversal"
+        >
+          <button
+            type="button"
+            className={
+              quickFilter === 'all'
+                ? 'skpe-initiative-kpi-active'
+                : ''
+            }
+            onClick={() => applyQuickFilter('all')}
+          >
+            <span>Total</span>
+            <strong>{dashboard.total_initiatives}</strong>
+            <small>Ver todas</small>
+          </button>
+
+          <button
+            type="button"
+            className={
+              quickFilter === 'in_progress'
+                ? 'skpe-initiative-kpi-active'
+                : ''
+            }
+            onClick={() =>
+              applyQuickFilter('in_progress')
+            }
+          >
+            <span>Em execução</span>
+            <strong>
+              {dashboard.in_progress_count}
+            </strong>
+            <small>Filtrar portfólio</small>
+          </button>
+
+          <button
+            type="button"
+            className={
+              quickFilter === 'blocked'
+                ? 'skpe-initiative-kpi-active'
+                : ''
+            }
+            onClick={() =>
+              applyQuickFilter('blocked')
+            }
+          >
+            <span>Bloqueadas</span>
+            <strong>{dashboard.blocked_count}</strong>
+            <small>Filtrar portfólio</small>
+          </button>
+
+          <button
+            type="button"
+            className={
+              quickFilter === 'completed'
+                ? 'skpe-initiative-kpi-active'
+                : ''
+            }
+            onClick={() =>
+              applyQuickFilter('completed')
+            }
+          >
+            <span>Concluídas</span>
+            <strong>{dashboard.completed_count}</strong>
+            <small>Filtrar portfólio</small>
+          </button>
+
+          <button type="button" disabled>
+            <span>Críticas</span>
+            <strong>{dashboard.critical_count}</strong>
+            <small>Visão consolidada</small>
+          </button>
+
+          <button type="button" disabled>
+            <span>Progresso médio</span>
+            <strong>
+              {dashboard.average_progress}%
+            </strong>
+            <small>Visão consolidada</small>
+          </button>
         </section>
       )}
-
       <section className="skpe-initiative-filters">
-        <div className="skpe-admin-search"><SearchIcon /><input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar iniciativa" /></div>
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}><option value="all">Todos os tipos</option><option value="strategic_project">Projetos Estratégicos</option><option value="operational_improvement">Melhorias Operacionais</option><option value="process_initiative">Iniciativas de Processo</option><option value="simple_action">Ações Simples</option><option value="strategic_program">Programas Estratégicos</option></select>
-        <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)}><option value="all">Todas as origens</option><option value="sparks_suggestion">Sugeridas pela SPARKs</option><option value="organization">Criadas pela organização</option><option value="joint_construction">Construídas conjuntamente</option><option value="assessment">Originadas de diagnóstico</option><option value="bmc_vpc">Originadas de BMC/VPC</option><option value="benchmark">Originadas de benchmark</option></select>
-        <select value={validationFilter} onChange={(e) => setValidationFilter(e.target.value)}><option value="all">Todas as validações</option><option value="pending_validation">Pendentes de validação</option><option value="under_review">Em análise</option><option value="validated">Validadas</option><option value="validated_with_adjustments">Validadas com ajustes</option><option value="rejected">Rejeitadas</option></select>
-        <select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)}><option value="all">Todas as áreas</option>{areas.map((area) => <option key={area} value={area}>{area}</option>)}</select>
-        <select value={objectiveFilter} onChange={(e) => setObjectiveFilter(e.target.value)}><option value="all">Todos os Objetivos Estratégicos — OKRs</option>{objectives.map((objective) => <option key={objective.id} value={objective.id}>{objective.code} — {objective.name}</option>)}</select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="all">Todas as situações</option><option value="proposed">Propostas</option><option value="in_progress">Em execução</option><option value="blocked">Bloqueadas</option><option value="completed">Concluídas</option></select>
-      </section>
+        <div className="skpe-admin-search">
+          <SearchIcon />
+          <input
+            value={searchTerm}
+            onChange={(e) =>
+              setSearchTerm(e.target.value)
+            }
+            placeholder="Buscar no portfólio"
+          />
+        </div>
 
+        <select
+          value={typeFilter}
+          onChange={(e) =>
+            setTypeFilter(e.target.value)
+          }
+        >
+          <option value="all">
+            Todas as classes
+          </option>
+          <option value="program">Programas</option>
+          <option value="project">Projetos</option>
+          <option value="initiative">Iniciativas</option>
+          <option value="structuring_action">
+            Ações estruturantes
+          </option>
+        </select>
+
+        <select
+          value={areaFilter}
+          onChange={(e) =>
+            setAreaFilter(e.target.value)
+          }
+        >
+          <option value="all">Todas as áreas</option>
+          {areas.map((area) => (
+            <option key={area} value={area}>
+              {area}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) =>
+            setStatusFilter(e.target.value)
+          }
+        >
+          <option value="all">
+            Todas as situações
+          </option>
+          <option value="proposed">Propostas</option>
+          <option value="under_analysis">
+            Em análise
+          </option>
+          <option value="approved">Aprovadas</option>
+          <option value="planned">Planejadas</option>
+          <option value="in_progress">
+            Em execução
+          </option>
+          <option value="on_hold">Em espera</option>
+          <option value="blocked">Bloqueadas</option>
+          <option value="completed">Concluídas</option>
+          <option value="cancelled">Canceladas</option>
+        </select>
+      </section>
       <section id="skpe-initiative-results" className="skpe-initiative-results-heading">
         <div>
           <p className="skpe-card-code">Painel analítico</p>
@@ -2307,45 +2326,119 @@ function InitiativesSection({
       ) : (
         <section className="skpe-initiative-list">
           {filteredInitiatives.map((initiative) => (
-            <article key={initiative.initiative_id} className={`skpe-initiative-card ${initiative.instruments?.length > 0 ? 'skpe-interactive-record' : ''}`} role={initiative.instruments?.length > 0 ? 'button' : undefined} tabIndex={initiative.instruments?.length > 0 ? 0 : undefined} aria-label={initiative.instruments?.length > 0 ? `Abrir instrumento de ${initiative.initiative_name}` : undefined} onClick={() => { if (initiative.instruments?.length > 0) openInstrument(initiative) }} onKeyDown={(event) => { if (initiative.instruments?.length > 0) activateRecordWithKeyboard(event, () => openInstrument(initiative)) }}>
+            <article
+              key={initiative.initiative_id}
+              className="skpe-initiative-card"
+            >
               <div className="skpe-initiative-card-main">
                 <div className="skpe-initiative-card-heading">
-                  <div><p>{initiative.initiative_code}</p><h2>{initiative.initiative_name}</h2></div>
+                  <div>
+                    <p>{initiative.initiative_code}</p>
+                    <h2>{initiative.initiative_name}</h2>
+                  </div>
+
                   <div className="skpe-initiative-badges">
-                    <span className={`skpe-origin-badge skpe-origin-${initiative.proposal_origin}`}>{getProposalOriginLabel(initiative.proposal_origin)}</span>
-                    <span className={`skpe-validation-badge skpe-validation-${initiative.validation_status}`}>{getValidationStatusLabel(initiative.validation_status)}</span>
+                    <span>
+                      {getInitiativeStatusLabel(
+                        initiative.initiative_status,
+                      )}
+                    </span>
                   </div>
                 </div>
-                <p className="skpe-initiative-description">{initiative.initiative_description ?? initiative.what_text}</p>
-                <div className="skpe-initiative-meta"><span>{getInitiativeTypeLabel(initiative.initiative_type)}</span><span>{getInitiativeStatusLabel(initiative.initiative_status)}</span><span>Responsável: {initiative.owner_name ?? 'Não definido'}</span><span>Área: {initiative.responsible_area ?? 'Não definida'}</span></div>
-                <div className="skpe-initiative-progress"><div className="skpe-progress-track"><span style={{ width: `${initiative.progress}%` }} /></div><strong>{initiative.progress}%</strong></div>
-                <div className="skpe-fivew2h-summary"><strong>5W2H completo</strong><span>{initiative.five_w_two_h_completion}%</span></div>
-                <details className="skpe-fivew2h-details"><summary>Consultar 5W2H</summary><dl><div><dt>O quê</dt><dd>{initiative.what_text}</dd></div><div><dt>Por quê</dt><dd>{initiative.why_text}</dd></div><div><dt>Onde</dt><dd>{initiative.where_text}</dd></div><div><dt>Quando</dt><dd>{initiative.when_text}</dd></div><div><dt>Quem</dt><dd>{initiative.who_text}</dd></div><div><dt>Como</dt><dd>{initiative.how_text}</dd></div><div><dt>Quanto</dt><dd>{initiative.how_much_text}</dd></div></dl></details>
-                {(initiative.strategic_objectives?.length > 0 || initiative.key_results?.length > 0) && <div className="skpe-initiative-links"><strong>Conexão estratégica</strong>{initiative.strategic_objectives?.map((o) => <span key={o.id}>{o.code} — {o.name}</span>)}{initiative.key_results?.map((kr) => <span key={kr.id}>{kr.code} — {kr.name}</span>)}</div>}
+
+                {initiative.initiative_description && (
+                  <p className="skpe-initiative-description">
+                    {initiative.initiative_description}
+                  </p>
+                )}
+
+                <div className="skpe-initiative-meta">
+                  <span>
+                    {getInitiativeClassLabel(
+                      initiative.initiative_class,
+                    )}
+                  </span>
+
+                  <span>
+                    Categoria: {initiative.category_name}
+                  </span>
+
+                  <span>
+                    Área:{' '}
+                    {initiative.responsible_area_name ??
+                      'Não definida'}
+                  </span>
+
+                  <span>
+                    Origem técnica:{' '}
+                    {initiative.source_module_code}
+                  </span>
+                </div>
+
+                <div className="skpe-initiative-progress">
+                  <div className="skpe-progress-track">
+                    <span
+                      style={{
+                        width: `${initiative.progress}%`,
+                      }}
+                    />
+                  </div>
+                  <strong>{initiative.progress}%</strong>
+                </div>
+
+                <div className="skpe-initiative-links">
+                  {initiative.strategic_theme && (
+                    <span>
+                      Tema estratégico —{' '}
+                      {initiative.strategic_theme}
+                    </span>
+                  )}
+
+                  {initiative.start_date && (
+                    <span>
+                      Início — {initiative.start_date}
+                    </span>
+                  )}
+
+                  {initiative.target_end_date && (
+                    <span>
+                      Término-alvo —{' '}
+                      {initiative.target_end_date}
+                    </span>
+                  )}
+
+                  <span>
+                    Saúde —{' '}
+                    {statusLabelPtBr(
+                      initiative.health_status,
+                    )}
+                  </span>
+
+                  <span>
+                    Risco —{' '}
+                    {statusLabelPtBr(
+                      initiative.risk_level,
+                    )}
+                  </span>
+                </div>
               </div>
-              <aside className="skpe-initiative-actions" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+
+              <aside className="skpe-initiative-actions">
                 <button
                   type="button"
                   className="skpe-user-details-button"
                   onClick={() =>
-                    openInitiativeKanban(
-                      initiative,
-                    )
+                    openInitiativeKanban(initiative)
                   }
                 >
                   Abrir Kanban
                 </button>
-                {initiative.instruments?.length > 0 && <button type="button" className="skpe-primary-action-button" onClick={() => openInstrument(initiative)}>Abrir instrumento</button>}
-                {canManageInitiatives && initiative.validation_status === 'pending_validation' && <div className="skpe-validation-panel"><textarea value={validationNotes} onChange={(e) => setValidationNotes(e.target.value)} placeholder="Observações da validação" /><textarea value={validationReason} onChange={(e) => setValidationReason(e.target.value)} placeholder="Justificativa para auditoria" /><button type="button" onClick={() => void validateInitiative(initiative, 'under_review')}>Colocar em análise</button><button type="button" onClick={() => void validateInitiative(initiative, 'validated')}>Validar</button><button type="button" onClick={() => void validateInitiative(initiative, 'validated_with_adjustments')}>Validar com ajustes</button><button type="button" onClick={() => void validateInitiative(initiative, 'rejected')}>Rejeitar</button></div>}
               </aside>
             </article>
           ))}
         </section>
       )}
 
-      {showInstrument && selectedInitiative && selectedInitiative.instruments?.[0]?.reference_id && (
-        <div className="skpe-initiative-instrument-modal"><div className="skpe-initiative-instrument-modal-content"><button type="button" className="skpe-user-details-button" onClick={() => setShowInstrument(false)}>Fechar</button><CanvasSection organizationId={organizationId} canManageCanvas={canManageCanvas} /></div></div>
-      )}
     </>
   )
 }
