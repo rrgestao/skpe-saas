@@ -23,6 +23,8 @@ import type {
   InitiativePortfolioDashboardRow,
   InitiativePortfolioRow,
 } from '../initiatives/contracts/initiativePortfolio'
+import type { InitiativeCreationKind } from '../initiatives/contracts/initiativeCreation'
+import { createInitiative } from '../initiatives/data/initiativeCreationData'
 import { loadInitiativePortfolio } from '../initiatives/data/initiativePortfolioData'
 
 export type CockpitSection =
@@ -1628,33 +1630,24 @@ type InitiativeFormState = {
   code: string
   name: string
   description: string
-  initiativeType: string
+  initiativeType: InitiativeCreationKind
   priority: string
+  criticality: string
   proposalOrigin: string
   proposalSourceReference: string
-  responsibleArea: string
-  ownerUserId: string
+  responsibleAreaId: string
+  parentInitiativeId: string
   startDate: string
-  dueDate: string
-  plannedCost: string
-  plannedBenefit: string
+  targetEndDate: string
   strategicTheme: string
-  whatText: string
-  whyText: string
-  whereText: string
-  whenText: string
-  whoText: string
-  howText: string
-  howMuchText: string
   changeReason: string
-  createInstrument: boolean
 }
 
-type InitiativeOwnerOption = {
-  userId: string
-  label: string
+type InitiativeAreaOption = {
+  area_id: string
+  area_code: string
+  area_name: string
 }
-
 type InitiativesSectionProps = {
   organizationId: string
   canManageCanvas: boolean
@@ -1702,8 +1695,7 @@ function InitiativesSection({
   const [searchTerm, setSearchTerm] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [savingInitiative, setSavingInitiative] = useState(false)
-  const [journeyRows, setJourneyRows] = useState<JourneyRow[]>([])
-  const [ownerOptions, setOwnerOptions] = useState<InitiativeOwnerOption[]>([])
+  const [areaOptions, setAreaOptions] = useState<InitiativeAreaOption[]>([])
   const [formMessage, setFormMessage] = useState<ActionMessage | null>(null)
   const [quickFilter, setQuickFilter] = useState('all')
   const [initiativeViewMode, setInitiativeViewMode] =
@@ -1711,42 +1703,48 @@ function InitiativesSection({
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
 
-  const legacyInitiativeWriteSurfaceEnabled = false
+  const legacyCanvasSurfaceEnabled = false
 
   const emptyForm: InitiativeFormState = {
-    code: '', name: '', description: '', initiativeType: 'strategic_project',
-    priority: 'medium', proposalOrigin: 'sparks_suggestion',
-    proposalSourceReference: '', responsibleArea: '', ownerUserId: '',
-    startDate: '', dueDate: '', plannedCost: '', plannedBenefit: '',
-    strategicTheme: '', whatText: '', whyText: '', whereText: '',
-    whenText: '', whoText: '', howText: '', howMuchText: '',
-    changeReason: '', createInstrument: true,
+    code: '',
+    name: '',
+    description: '',
+    initiativeType: 'strategic_project',
+    priority: 'medium',
+    criticality: 'medium',
+    proposalOrigin: 'sparks_suggestion',
+    proposalSourceReference: '',
+    responsibleAreaId: '',
+    parentInitiativeId: '',
+    startDate: '',
+    targetEndDate: '',
+    strategicTheme: '',
+    changeReason: '',
   }
   const [initiativeForm, setInitiativeForm] = useState<InitiativeFormState>(emptyForm)
 
   const loadInitiativeSupportData = async () => {
-    const [journeyResponse, usersResponse] = await Promise.all([
-      supabase.rpc('get_skpe_journey', { target_organization_id: organizationId }),
-      supabase.rpc('get_organization_user_access', { target_organization_id: organizationId }),
-    ])
-    if (!journeyResponse.error) setJourneyRows((journeyResponse.data ?? []) as JourneyRow[])
-    if (!usersResponse.error) {
-      const groupedUsers = groupUserAccessRows((usersResponse.data ?? []) as UserAccessRow[])
-      setOwnerOptions(groupedUsers.filter((user) => user.membershipStatus === 'active' && user.userActive)
-        .map((user) => ({ userId: user.userId, label: user.displayName ?? user.email })))
-    }
-  }
+    const { data, error } = await supabase.rpc(
+      'get_skpe_organizational_areas',
+      {
+        target_organization_id: organizationId,
+        include_inactive: false,
+      },
+    )
 
+    if (error) {
+      console.error(
+        'Não foi possível carregar as áreas organizacionais:',
+        error,
+      )
+      setAreaOptions([])
+      return
+    }
+
+    setAreaOptions((data ?? []) as InitiativeAreaOption[])
+  }
   const updateInitiativeForm = <K extends keyof InitiativeFormState>(field: K, value: InitiativeFormState[K]) => {
     setInitiativeForm((current) => ({ ...current, [field]: value }))
-  }
-
-  const getRecommendedInstrumentType = (initiativeType: string) => {
-    if (initiativeType === 'strategic_project' || initiativeType === 'operational_improvement') return 'project_canvas'
-    if (initiativeType === 'process_initiative') return 'sipoc_canvas'
-    if (initiativeType === 'simple_action') return 'action_plan'
-    if (initiativeType === 'strategic_program') return 'program_canvas'
-    return null
   }
 
   const resetInitiativeForm = () => {
@@ -1755,90 +1753,73 @@ function InitiativesSection({
   }
 
   const handleCreateInitiative = async () => {
-    const projectId = journeyRows[0]?.project_id
-    if (!projectId) {
-      setFormMessage({ type: 'error', text: 'Projeto estratégico não encontrado para esta organização.' })
-      return
-    }
     if (!initiativeForm.code.trim() || !initiativeForm.name.trim()) {
-      setFormMessage({ type: 'error', text: 'Informe o código e o nome da iniciativa.' })
+      setFormMessage({
+        type: 'error',
+        text: 'Informe o código e o nome da iniciativa.',
+      })
       return
     }
-    const required5w2h = [
-      initiativeForm.whatText, initiativeForm.whyText, initiativeForm.whereText,
-      initiativeForm.whenText, initiativeForm.whoText, initiativeForm.howText,
-      initiativeForm.howMuchText,
-    ]
-    if (required5w2h.some((value) => value.trim().length < 3)) {
-      setFormMessage({ type: 'error', text: 'Preencha todos os sete campos do 5W2H.' })
-      return
-    }
+
     if (initiativeForm.changeReason.trim().length < 10) {
-      setFormMessage({ type: 'error', text: 'Informe uma justificativa com pelo menos 10 caracteres.' })
+      setFormMessage({
+        type: 'error',
+        text: 'Informe uma justificativa com pelo menos 10 caracteres.',
+      })
       return
     }
-    if (initiativeForm.startDate && initiativeForm.dueDate && initiativeForm.dueDate < initiativeForm.startDate) {
-      setFormMessage({ type: 'error', text: 'A data de término não pode ser anterior à data de início.' })
+
+    if (
+      initiativeForm.startDate &&
+      initiativeForm.targetEndDate &&
+      initiativeForm.targetEndDate < initiativeForm.startDate
+    ) {
+      setFormMessage({
+        type: 'error',
+        text: 'A data-alvo não pode ser anterior à data de início.',
+      })
       return
     }
 
     setSavingInitiative(true)
     setFormMessage(null)
-    const { data, error } = await supabase.rpc('create_skpe_initiative_v2', {
-      target_project_id: projectId,
-      initiative_code: initiativeForm.code.trim(),
-      initiative_name: initiativeForm.name.trim(),
-      initiative_description: initiativeForm.description.trim() || null,
-      initiative_type: initiativeForm.initiativeType,
-      initiative_priority: initiativeForm.priority,
-      proposal_origin: initiativeForm.proposalOrigin,
-      proposal_source_reference: initiativeForm.proposalSourceReference.trim() || null,
-      responsible_area: initiativeForm.responsibleArea.trim() || null,
-      owner_user_id: initiativeForm.ownerUserId || null,
-      sponsor_user_id: null,
-      start_date: initiativeForm.startDate || null,
-      due_date: initiativeForm.dueDate || null,
-      planned_cost: initiativeForm.plannedCost ? Number(initiativeForm.plannedCost.replace(',', '.')) : null,
-      planned_benefit: initiativeForm.plannedBenefit ? Number(initiativeForm.plannedBenefit.replace(',', '.')) : null,
-      strategic_theme: initiativeForm.strategicTheme.trim() || null,
-      what_text: initiativeForm.whatText.trim(),
-      why_text: initiativeForm.whyText.trim(),
-      where_text: initiativeForm.whereText.trim(),
-      when_text: initiativeForm.whenText.trim(),
-      who_text: initiativeForm.whoText.trim(),
-      how_text: initiativeForm.howText.trim(),
-      how_much_text: initiativeForm.howMuchText.trim(),
-      linked_journey_item_id: null,
-      parent_initiative_id: null,
-      change_reason: initiativeForm.changeReason.trim(),
-    })
-    if (error) {
-      setFormMessage({ type: 'error', text: error.message })
-      setSavingInitiative(false)
-      return
-    }
-    const initiativeId = data as string
-    const instrumentType = getRecommendedInstrumentType(initiativeForm.initiativeType)
-    if (initiativeForm.createInstrument && instrumentType) {
-      const instrumentResponse = await supabase.rpc('create_skpe_initiative_instrument', {
-        target_initiative_id: initiativeId,
-        target_instrument_type: instrumentType,
-        target_instrument_code: `${initiativeForm.code.trim()}-${instrumentType.toUpperCase()}`,
-        change_reason: initiativeForm.changeReason.trim(),
-      })
-      if (instrumentResponse.error) {
-        setFormMessage({ type: 'error', text: 'A iniciativa foi criada, mas o instrumento não pôde ser criado: ' + instrumentResponse.error.message })
-        await loadInitiatives()
-        setSavingInitiative(false)
-        return
-      }
-    }
-    await loadInitiatives()
-    resetInitiativeForm()
-    setShowCreateForm(false)
-    setSavingInitiative(false)
-  }
 
+    try {
+      await createInitiative({
+        organizationId,
+        kind: initiativeForm.initiativeType,
+        code: initiativeForm.code.trim(),
+        name: initiativeForm.name.trim(),
+        description: initiativeForm.description.trim() || null,
+        priority: initiativeForm.priority,
+        criticality: initiativeForm.criticality,
+        responsibleAreaId: initiativeForm.responsibleAreaId || null,
+        parentInitiativeId: initiativeForm.parentInitiativeId || null,
+        proposalOrigin: initiativeForm.proposalOrigin,
+        sourceModuleCode: 'skpe',
+        proposalSourceReference:
+          initiativeForm.proposalSourceReference.trim() || null,
+        strategicTheme: initiativeForm.strategicTheme.trim() || null,
+        startDate: initiativeForm.startDate || null,
+        targetEndDate: initiativeForm.targetEndDate || null,
+        changeReason: initiativeForm.changeReason.trim(),
+      })
+
+      await loadInitiatives()
+      resetInitiativeForm()
+      setShowCreateForm(false)
+    } catch (error) {
+      setFormMessage({
+        type: 'error',
+        text:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível criar a iniciativa.',
+      })
+    } finally {
+      setSavingInitiative(false)
+    }
+  }
   const areas = useMemo(
     () =>
       Array.from(
@@ -1970,7 +1951,7 @@ function InitiativesSection({
 
   return (
     <>
-      {legacyInitiativeWriteSurfaceEnabled && (
+      {legacyCanvasSurfaceEnabled && (
         <CanvasSection
           organizationId={organizationId}
           canManageCanvas={canManageCanvas}
@@ -1984,7 +1965,7 @@ function InitiativesSection({
           <p>Acompanhe o portfólio transversal governado de programas, projetos, iniciativas e ações estruturantes.</p>
         </div>
         <div className="skpe-heading-actions">
-          {legacyInitiativeWriteSurfaceEnabled && canManageInitiatives && (
+          {canManageInitiatives && (
             <button type="button" className="skpe-primary-action-button skpe-new-initiative-button" onClick={() => { resetInitiativeForm(); setShowCreateForm(true) }}>
               Nova iniciativa
             </button>
@@ -1995,49 +1976,245 @@ function InitiativesSection({
         </div>
       </section>
 
-      {legacyInitiativeWriteSurfaceEnabled && showCreateForm && (
+      {showCreateForm && (
         <section className="skpe-initiative-form-card">
           <div className="skpe-card-heading">
-            <div><p className="skpe-card-code">Cadastro assistido</p><h2>Nova iniciativa com 5W2H</h2></div>
-            <button type="button" className="skpe-user-details-button" onClick={() => { resetInitiativeForm(); setShowCreateForm(false) }} disabled={savingInitiative}>Fechar</button>
-          </div>
-          <div className="skpe-initiative-form-grid">
-            <label><span>Código *</span><input value={initiativeForm.code} onChange={(e) => updateInitiativeForm('code', e.target.value)} placeholder="Ex.: IE-01" /></label>
-            <label className="skpe-form-field-wide"><span>Nome da iniciativa *</span><input value={initiativeForm.name} onChange={(e) => updateInitiativeForm('name', e.target.value)} /></label>
-            <label><span>Tipo *</span><select value={initiativeForm.initiativeType} onChange={(e) => updateInitiativeForm('initiativeType', e.target.value)}><option value="strategic_project">Projeto Estratégico</option><option value="operational_improvement">Melhoria Operacional</option><option value="process_initiative">Iniciativa de Processo</option><option value="simple_action">Ação Simples</option><option value="strategic_program">Programa Estratégico</option></select></label>
-            <label><span>Origem *</span><select value={initiativeForm.proposalOrigin} onChange={(e) => updateInitiativeForm('proposalOrigin', e.target.value)}><option value="sparks_suggestion">Sugerida pela SPARKs</option><option value="organization">Criada pela organização</option><option value="joint_construction">Construída conjuntamente</option><option value="previous_plan">Importada de plano anterior</option><option value="assessment">Originada de diagnóstico</option><option value="action_plan">Originada de plano de ação</option><option value="bmc_vpc">Originada de BMC/VPC</option><option value="benchmark">Originada de benchmark</option></select></label>
-            <label><span>Referência da origem</span><input value={initiativeForm.proposalSourceReference} onChange={(e) => updateInitiativeForm('proposalSourceReference', e.target.value)} placeholder="Ex.: DA 2026 — Critério 3.2" /></label>
-            <label><span>Prioridade</span><select value={initiativeForm.priority} onChange={(e) => updateInitiativeForm('priority', e.target.value)}><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="critical">Crítica</option></select></label>
-            <label className="skpe-form-field-full"><span>Descrição</span><textarea value={initiativeForm.description} onChange={(e) => updateInitiativeForm('description', e.target.value)} /></label>
-            <label><span>Área responsável</span><input value={initiativeForm.responsibleArea} onChange={(e) => updateInitiativeForm('responsibleArea', e.target.value)} /></label>
-            <label><span>Responsável</span><select value={initiativeForm.ownerUserId} onChange={(e) => updateInitiativeForm('ownerUserId', e.target.value)}><option value="">Definir posteriormente</option>{ownerOptions.map((owner) => <option key={owner.userId} value={owner.userId}>{owner.label}</option>)}</select></label>
-            <label><span>Data de início</span><input type="date" value={initiativeForm.startDate} onChange={(e) => updateInitiativeForm('startDate', e.target.value)} /></label>
-            <label><span>Data de término</span><input type="date" value={initiativeForm.dueDate} onChange={(e) => updateInitiativeForm('dueDate', e.target.value)} /></label>
-            <label><span>Custo planejado (R$)</span><input inputMode="decimal" value={initiativeForm.plannedCost} onChange={(e) => updateInitiativeForm('plannedCost', e.target.value)} /></label>
-            <label><span>Benefício planejado (R$)</span><input inputMode="decimal" value={initiativeForm.plannedBenefit} onChange={(e) => updateInitiativeForm('plannedBenefit', e.target.value)} /></label>
-            <label className="skpe-form-field-wide"><span>Tema estratégico</span><input value={initiativeForm.strategicTheme} onChange={(e) => updateInitiativeForm('strategicTheme', e.target.value)} /></label>
-          </div>
-          <div className="skpe-fivew2h-section">
-            <div><p className="skpe-card-code">Padrão obrigatório</p><h3>5W2H da iniciativa</h3></div>
-            <div className="skpe-fivew2h-grid">
-              <label><span>O que será feito? *</span><textarea value={initiativeForm.whatText} onChange={(e) => updateInitiativeForm('whatText', e.target.value)} /></label>
-              <label><span>Por que será feito? *</span><textarea value={initiativeForm.whyText} onChange={(e) => updateInitiativeForm('whyText', e.target.value)} /></label>
-              <label><span>Onde será realizado? *</span><textarea value={initiativeForm.whereText} onChange={(e) => updateInitiativeForm('whereText', e.target.value)} /></label>
-              <label><span>Quando será realizado? *</span><textarea value={initiativeForm.whenText} onChange={(e) => updateInitiativeForm('whenText', e.target.value)} /></label>
-              <label><span>Quem será responsável? *</span><textarea value={initiativeForm.whoText} onChange={(e) => updateInitiativeForm('whoText', e.target.value)} /></label>
-              <label><span>Como será realizado? *</span><textarea value={initiativeForm.howText} onChange={(e) => updateInitiativeForm('howText', e.target.value)} /></label>
-              <label className="skpe-form-field-full"><span>Quanto custará e quais recursos serão necessários? *</span><textarea value={initiativeForm.howMuchText} onChange={(e) => updateInitiativeForm('howMuchText', e.target.value)} /></label>
+            <div>
+              <p className="skpe-card-code">Cadastro governado</p>
+              <h2>Nova iniciativa transversal</h2>
             </div>
+            <button
+              type="button"
+              className="skpe-user-details-button"
+              onClick={() => {
+                resetInitiativeForm()
+                setShowCreateForm(false)
+              }}
+              disabled={savingInitiative}
+            >
+              Fechar
+            </button>
           </div>
+
           <div className="skpe-initiative-form-grid">
-            <label className="skpe-form-field-full"><span>Justificativa para auditoria *</span><textarea value={initiativeForm.changeReason} onChange={(e) => updateInitiativeForm('changeReason', e.target.value)} /></label>
-            <label className="skpe-initiative-checkbox skpe-form-field-full"><input type="checkbox" checked={initiativeForm.createInstrument} onChange={(e) => updateInitiativeForm('createInstrument', e.target.checked)} /><span>Criar também o instrumento recomendado para este tipo de iniciativa.</span></label>
+            <label>
+              <span>Código *</span>
+              <input
+                value={initiativeForm.code}
+                onChange={(event) =>
+                  updateInitiativeForm('code', event.target.value)
+                }
+                placeholder="Ex.: IE-01"
+              />
+            </label>
+
+            <label className="skpe-form-field-wide">
+              <span>Nome da iniciativa *</span>
+              <input
+                value={initiativeForm.name}
+                onChange={(event) =>
+                  updateInitiativeForm('name', event.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              <span>Tipo *</span>
+              <select
+                value={initiativeForm.initiativeType}
+                onChange={(event) =>
+                  updateInitiativeForm(
+                    'initiativeType',
+                    event.target.value as InitiativeCreationKind,
+                  )
+                }
+              >
+                <option value="strategic_project">Projeto Estratégico</option>
+                <option value="strategic_program">Programa Estratégico</option>
+                <option value="operational_improvement">Melhoria Operacional</option>
+                <option value="process_initiative">Iniciativa de Processo</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Origem *</span>
+              <select
+                value={initiativeForm.proposalOrigin}
+                onChange={(event) =>
+                  updateInitiativeForm('proposalOrigin', event.target.value)
+                }
+              >
+                <option value="sparks_suggestion">Sugerida pela SPARKs</option>
+                <option value="organization">Criada pela organização</option>
+                <option value="joint_construction">Construída conjuntamente</option>
+                <option value="previous_plan">Importada de plano anterior</option>
+                <option value="assessment">Originada de diagnóstico</option>
+                <option value="action_plan">Originada de plano de ação</option>
+                <option value="bmc_vpc">Originada de BMC/VPC</option>
+                <option value="benchmark">Originada de benchmark</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Referência da origem</span>
+              <input
+                value={initiativeForm.proposalSourceReference}
+                onChange={(event) =>
+                  updateInitiativeForm(
+                    'proposalSourceReference',
+                    event.target.value,
+                  )
+                }
+                placeholder="Ex.: DA 2026 — Critério 3.2"
+              />
+            </label>
+
+            <label>
+              <span>Prioridade</span>
+              <select
+                value={initiativeForm.priority}
+                onChange={(event) =>
+                  updateInitiativeForm('priority', event.target.value)
+                }
+              >
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+                <option value="critical">Crítica</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Criticidade</span>
+              <select
+                value={initiativeForm.criticality}
+                onChange={(event) =>
+                  updateInitiativeForm('criticality', event.target.value)
+                }
+              >
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+                <option value="critical">Crítica</option>
+              </select>
+            </label>
+
+            <label className="skpe-form-field-full">
+              <span>Descrição</span>
+              <textarea
+                value={initiativeForm.description}
+                onChange={(event) =>
+                  updateInitiativeForm('description', event.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              <span>Área responsável</span>
+              <select
+                value={initiativeForm.responsibleAreaId}
+                onChange={(event) =>
+                  updateInitiativeForm(
+                    'responsibleAreaId',
+                    event.target.value,
+                  )
+                }
+              >
+                <option value="">Definir posteriormente</option>
+                {areaOptions.map((area) => (
+                  <option key={area.area_id} value={area.area_id}>
+                    {area.area_code} — {area.area_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Iniciativa pai</span>
+              <select
+                value={initiativeForm.parentInitiativeId}
+                onChange={(event) =>
+                  updateInitiativeForm(
+                    'parentInitiativeId',
+                    event.target.value,
+                  )
+                }
+              >
+                <option value="">Sem iniciativa pai</option>
+                {initiatives.map((initiative) => (
+                  <option
+                    key={initiative.initiative_id}
+                    value={initiative.initiative_id}
+                  >
+                    {initiative.initiative_code} — {initiative.initiative_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Data de início</span>
+              <input
+                type="date"
+                value={initiativeForm.startDate}
+                onChange={(event) =>
+                  updateInitiativeForm('startDate', event.target.value)
+                }
+              />
+            </label>
+
+            <label>
+              <span>Data-alvo de término</span>
+              <input
+                type="date"
+                value={initiativeForm.targetEndDate}
+                onChange={(event) =>
+                  updateInitiativeForm('targetEndDate', event.target.value)
+                }
+              />
+            </label>
+
+            <label className="skpe-form-field-wide">
+              <span>Tema estratégico</span>
+              <input
+                value={initiativeForm.strategicTheme}
+                onChange={(event) =>
+                  updateInitiativeForm('strategicTheme', event.target.value)
+                }
+              />
+            </label>
+
+            <label className="skpe-form-field-full">
+              <span>Justificativa para auditoria *</span>
+              <textarea
+                value={initiativeForm.changeReason}
+                onChange={(event) =>
+                  updateInitiativeForm('changeReason', event.target.value)
+                }
+              />
+            </label>
           </div>
-          {formMessage && <div className={`skpe-action-message skpe-action-message-${formMessage.type}`}>{formMessage.text}</div>}
-          <div className="skpe-initiative-form-actions"><button type="button" className="skpe-primary-action-button" onClick={() => void handleCreateInitiative()} disabled={savingInitiative}>{savingInitiative ? 'Salvando...' : 'Salvar iniciativa'}</button></div>
+
+          {formMessage && (
+            <div
+              className={`skpe-action-message skpe-action-message-${formMessage.type}`}
+            >
+              {formMessage.text}
+            </div>
+          )}
+
+          <div className="skpe-initiative-form-actions">
+            <button
+              type="button"
+              className="skpe-primary-action-button"
+              onClick={() => void handleCreateInitiative()}
+              disabled={savingInitiative}
+            >
+              {savingInitiative ? 'Salvando...' : 'Salvar iniciativa'}
+            </button>
+          </div>
         </section>
       )}
-
       {dashboard && (
         <section
           className="skpe-initiative-kpi-grid"
