@@ -159,3 +159,66 @@ export async function updateInitiativeActionProgress(
 
   return data
 }
+export type CreateInitiativeActionCommand = {
+  initiativeId: string
+  code: string
+  name: string
+  description: string | null
+  actionType: 'action' | 'milestone'
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  changeReason: string
+}
+
+export async function createInitiativeAction(
+  command: CreateInitiativeActionCommand,
+) {
+  const { data, error } = await supabase.rpc(
+    'create_sparks_initiative_action',
+    {
+      target_initiative_id: command.initiativeId,
+      action_payload: {
+        code: command.code,
+        name: command.name,
+        description: command.description,
+        actionType: command.actionType,
+        priority: command.priority,
+      },
+      change_reason: command.changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível criar a ação: ${error.message}`,
+    )
+  }
+
+  return data
+}
+export type CancelledInitiativeAction = {
+  id: string
+  code: string
+  name: string
+  status: 'cancelled'
+  progress: number
+}
+
+export async function loadCancelledInitiativeActions(
+  initiativeId: string,
+): Promise<CancelledInitiativeAction[]> {
+  const { data, error } = await supabase
+    .from('sparks_initiative_actions')
+    .select('id,code,name,status,progress')
+    .eq('initiative_id', initiativeId)
+    .eq('status', 'cancelled')
+    .is('archived_at', null)
+    .order('code', { ascending: true })
+
+  if (error) {
+    throw new Error(
+      `Não foi possível carregar as ações canceladas: ${error.message}`,
+    )
+  }
+
+  return (data ?? []) as CancelledInitiativeAction[]
+}

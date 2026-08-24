@@ -2555,6 +2555,7 @@ function InitiativesSection({
 
             <InitiativeKanbanBoard
               initiativeId={kanbanInitiativeId}
+              canManageInitiatives={canManageInitiatives}
             />
           </section>
         ) : (

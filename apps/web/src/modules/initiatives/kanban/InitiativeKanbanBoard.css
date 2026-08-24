@@ -294,3 +294,8 @@
     grid-template-columns: 1fr;
   }
 }
+.initiative-kanban-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}

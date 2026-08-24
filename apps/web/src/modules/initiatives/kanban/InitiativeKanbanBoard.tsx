@@ -16,6 +16,12 @@ import {
   InitiativeActionDrawer,
 } from './InitiativeActionDrawer'
 import {
+  InitiativeActionCreateDialog,
+} from './InitiativeActionCreateDialog'
+import {
+  InitiativeClosedActionsPanel,
+} from './InitiativeClosedActionsPanel'
+import {
   InitiativeKanbanColumn,
 } from './InitiativeKanbanColumn'
 import {
@@ -26,6 +32,7 @@ import './InitiativeKanbanBoard.css'
 
 type InitiativeKanbanBoardProps = {
   initiativeId: string
+  canManageInitiatives: boolean
 }
 
 type PendingTransition = {
@@ -35,6 +42,7 @@ type PendingTransition = {
 
 export function InitiativeKanbanBoard({
   initiativeId,
+  canManageInitiatives,
 }: InitiativeKanbanBoardProps) {
   const [columns, setColumns] = useState<
     InitiativeKanbanColumnModel[]
@@ -53,6 +61,8 @@ export function InitiativeKanbanBoard({
   ] = useState<PendingTransition | null>(null)
 
   const [loading, setLoading] = useState(true)
+  const [showCreateDialog, setShowCreateDialog] =
+    useState(false)
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
@@ -87,6 +97,7 @@ export function InitiativeKanbanBoard({
     setSelectedCard(null)
     setDraggingCard(null)
     setPendingTransition(null)
+    setShowCreateDialog(false)
   }, [initiativeId])
 
   async function handleActionChanged() {
@@ -127,6 +138,19 @@ export function InitiativeKanbanBoard({
 
   return (
     <>
+      {canManageInitiatives ? (
+        <div className="initiative-kanban-toolbar">
+          <button
+            type="button"
+            onClick={() =>
+              setShowCreateDialog(true)
+            }
+          >
+            Nova ação
+          </button>
+        </div>
+      ) : null}
+
       <div
         className="initiative-kanban-board"
         aria-label="Kanban de ações da iniciativa"
@@ -168,6 +192,22 @@ export function InitiativeKanbanBoard({
             setPendingTransition(null)
           }
           onChanged={handleActionChanged}
+        />
+      ) : null}
+
+      {showCreateDialog ? (
+        <InitiativeActionCreateDialog
+          initiativeId={initiativeId}
+          onClose={() =>
+            setShowCreateDialog(false)
+          }
+          onChanged={loadBoard}
+        />
+      ) : null}
+      {canManageInitiatives ? (
+        <InitiativeClosedActionsPanel
+          initiativeId={initiativeId}
+          onChanged={loadBoard}
         />
       ) : null}
     </>
