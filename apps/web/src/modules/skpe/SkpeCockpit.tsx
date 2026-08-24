@@ -25,6 +25,10 @@ import type {
 } from '../initiatives/contracts/initiativePortfolio'
 import type { InitiativeCreationKind } from '../initiatives/contracts/initiativeCreation'
 import { createInitiative } from '../initiatives/data/initiativeCreationData'
+import {
+  transitionInitiativeLifecycle,
+  type InitiativeLifecycleTarget,
+} from '../initiatives/data/initiativeLifecycleData'
 import { loadInitiativePortfolio } from '../initiatives/data/initiativePortfolioData'
 
 export type CockpitSection =
@@ -1702,6 +1706,14 @@ function InitiativesSection({
     useState<'portfolio' | 'kanban'>('portfolio')
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
+  const [lifecycleInitiativeId, setLifecycleInitiativeId] =
+    useState<string | null>(null)
+  const [lifecycleTargetStatus, setLifecycleTargetStatus] =
+    useState<InitiativeLifecycleTarget | null>(null)
+  const [lifecycleReason, setLifecycleReason] = useState('')
+  const [savingLifecycle, setSavingLifecycle] = useState(false)
+  const [lifecycleMessage, setLifecycleMessage] =
+    useState<ActionMessage | null>(null)
 
   const legacyCanvasSurfaceEnabled = false
 
@@ -1933,6 +1945,67 @@ function InitiativesSection({
     typeFilter,
     statusFilter,
   ])
+  const openLifecycleAction = (
+    initiativeId: string,
+    targetStatus: InitiativeLifecycleTarget,
+  ) => {
+    setLifecycleInitiativeId(initiativeId)
+    setLifecycleTargetStatus(targetStatus)
+    setLifecycleReason('')
+    setLifecycleMessage(null)
+  }
+
+  const closeLifecycleAction = () => {
+    if (savingLifecycle) {
+      return
+    }
+
+    setLifecycleInitiativeId(null)
+    setLifecycleTargetStatus(null)
+    setLifecycleReason('')
+    setLifecycleMessage(null)
+  }
+
+  const handleLifecycleTransition = async () => {
+    if (!lifecycleInitiativeId || !lifecycleTargetStatus) {
+      return
+    }
+
+    if (lifecycleReason.trim().length < 10) {
+      setLifecycleMessage({
+        type: 'error',
+        text: 'Informe uma justificativa com pelo menos 10 caracteres.',
+      })
+      return
+    }
+
+    setSavingLifecycle(true)
+    setLifecycleMessage(null)
+
+    try {
+      await transitionInitiativeLifecycle({
+        initiativeId: lifecycleInitiativeId,
+        targetStatus: lifecycleTargetStatus,
+        changeReason: lifecycleReason.trim(),
+      })
+
+      await loadInitiatives()
+      setLifecycleInitiativeId(null)
+      setLifecycleTargetStatus(null)
+      setLifecycleReason('')
+      setLifecycleMessage(null)
+    } catch (error) {
+      setLifecycleMessage({
+        type: 'error',
+        text:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível alterar o ciclo de vida da iniciativa.',
+      })
+    } finally {
+      setSavingLifecycle(false)
+    }
+  }
   const openInitiativeKanban = (
     initiative: InitiativePortfolioRow,
   ) => {
@@ -2610,6 +2683,98 @@ function InitiativesSection({
                 >
                   Abrir Kanban
                 </button>
+
+                {canManageInitiatives &&
+                  initiative.initiative_status === 'proposed' && (
+                    <button
+                      type="button"
+                      className="skpe-user-details-button"
+                      onClick={() =>
+                        openLifecycleAction(
+                          initiative.initiative_id,
+                          'cancelled',
+                        )
+                      }
+                    >
+                      Cancelar iniciativa
+                    </button>
+                  )}
+
+                {canManageInitiatives &&
+                  (
+                    initiative.initiative_status === 'cancelled' ||
+                    initiative.initiative_status === 'completed'
+                  ) && (
+                    <button
+                      type="button"
+                      className="skpe-user-details-button"
+                      onClick={() =>
+                        openLifecycleAction(
+                          initiative.initiative_id,
+                          'archived',
+                        )
+                      }
+                    >
+                      Arquivar iniciativa
+                    </button>
+                  )}
+
+                {lifecycleInitiativeId ===
+                  initiative.initiative_id &&
+                  lifecycleTargetStatus && (
+                    <div className="skpe-action-message">
+                      <strong>
+                        {lifecycleTargetStatus === 'cancelled'
+                          ? 'Cancelar iniciativa'
+                          : 'Arquivar iniciativa'}
+                      </strong>
+
+                      <label>
+                        <span>Justificativa para auditoria *</span>
+                        <textarea
+                          value={lifecycleReason}
+                          onChange={(event) =>
+                            setLifecycleReason(event.target.value)
+                          }
+                          disabled={savingLifecycle}
+                        />
+                      </label>
+
+                      {lifecycleMessage && (
+                        <div
+                          className={`skpe-action-message skpe-action-message-${lifecycleMessage.type}`}
+                        >
+                          {lifecycleMessage.text}
+                        </div>
+                      )}
+
+                      <div className="skpe-initiative-form-actions">
+                        <button
+                          type="button"
+                          className="skpe-primary-action-button"
+                          onClick={() =>
+                            void handleLifecycleTransition()
+                          }
+                          disabled={savingLifecycle}
+                        >
+                          {savingLifecycle
+                            ? 'Salvando...'
+                            : lifecycleTargetStatus === 'cancelled'
+                              ? 'Confirmar cancelamento'
+                              : 'Confirmar arquivamento'}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="skpe-user-details-button"
+                          onClick={closeLifecycleAction}
+                          disabled={savingLifecycle}
+                        >
+                          Voltar
+                        </button>
+                      </div>
+                    </div>
+                  )}
               </aside>
             </article>
           ))}
