@@ -24,7 +24,9 @@ import type {
   InitiativePortfolioRow,
 } from '../initiatives/contracts/initiativePortfolio'
 import type { InitiativeCreationKind } from '../initiatives/contracts/initiativeCreation'
+import type { InitiativeParentCandidate } from '../initiatives/contracts/initiativeParentCandidates'
 import { createInitiative } from '../initiatives/data/initiativeCreationData'
+import { loadInitiativeParentCandidates } from '../initiatives/data/initiativeParentCandidatesData'
 import {
   transitionInitiativeLifecycle,
   type InitiativeLifecycleTarget,
@@ -1700,6 +1702,8 @@ function InitiativesSection({
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [savingInitiative, setSavingInitiative] = useState(false)
   const [areaOptions, setAreaOptions] = useState<InitiativeAreaOption[]>([])
+  const [parentCandidates, setParentCandidates] =
+    useState<InitiativeParentCandidate[]>([])
   const [formMessage, setFormMessage] = useState<ActionMessage | null>(null)
   const [quickFilter, setQuickFilter] = useState('all')
   const [initiativeViewMode, setInitiativeViewMode] =
@@ -1736,24 +1740,31 @@ function InitiativesSection({
   const [initiativeForm, setInitiativeForm] = useState<InitiativeFormState>(emptyForm)
 
   const loadInitiativeSupportData = async () => {
-    const { data, error } = await supabase.rpc(
-      'get_skpe_organizational_areas',
-      {
-        target_organization_id: organizationId,
-        include_inactive: false,
-      },
-    )
+    const [areasResponse, parentCandidateResult] =
+      await Promise.all([
+        supabase.rpc(
+          'get_skpe_organizational_areas',
+          {
+            target_organization_id: organizationId,
+            include_inactive: false,
+          },
+        ),
+        loadInitiativeParentCandidates(organizationId),
+      ])
 
-    if (error) {
+    if (areasResponse.error) {
       console.error(
         'Não foi possível carregar as áreas organizacionais:',
-        error,
+        areasResponse.error,
       )
       setAreaOptions([])
-      return
+    } else {
+      setAreaOptions(
+        (areasResponse.data ?? []) as InitiativeAreaOption[],
+      )
     }
 
-    setAreaOptions((data ?? []) as InitiativeAreaOption[])
+    setParentCandidates(parentCandidateResult)
   }
   const updateInitiativeForm = <K extends keyof InitiativeFormState>(field: K, value: InitiativeFormState[K]) => {
     setInitiativeForm((current) => ({ ...current, [field]: value }))
@@ -2214,7 +2225,7 @@ function InitiativesSection({
                 }
               >
                 <option value="">Sem iniciativa pai</option>
-                {initiatives.map((initiative) => (
+                {parentCandidates.map((initiative) => (
                   <option
                     key={initiative.initiative_id}
                     value={initiative.initiative_id}
