@@ -1796,7 +1796,7 @@ function InitiativesSection({
         responsibleAreaId: initiativeForm.responsibleAreaId || null,
         parentInitiativeId: initiativeForm.parentInitiativeId || null,
         proposalOrigin: initiativeForm.proposalOrigin,
-        sourceModuleCode: 'skpe',
+        sourceModuleCode: 'SK-PE',
         proposalSourceReference:
           initiativeForm.proposalSourceReference.trim() || null,
         strategicTheme: initiativeForm.strategicTheme.trim() || null,

@@ -1049,6 +1049,44 @@ function App() {
       'info',
     )
   }
+  const handleOpenOrganizationSummary = (
+    label: string,
+  ) => {
+    if (label === 'Iniciativas') {
+      const skpeModule = modules.find(
+        (module) =>
+          module.module_code.toUpperCase() === 'SK-PE',
+      )
+
+      if (!skpeModule || !selectedOrganization) {
+        showMessage(
+          'O módulo de Planejamento Estratégico não está disponível para esta organização.',
+          'info',
+        )
+        return
+      }
+
+      setOpenedModule(skpeModule)
+      clearMessage()
+
+      navigate({
+        pathname: platformRoutes.module(
+          selectedOrganization.organization_id,
+          skpeModule.module_code,
+        ),
+        search: '?section=initiatives',
+      })
+
+      return
+    }
+
+    document
+      .getElementById('network-organization-details')
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+  }
 
   const handleLogin = async (
     event: FormEvent<HTMLFormElement>,
@@ -2054,8 +2092,8 @@ function App() {
                       className="network-summary-card network-interactive-record"
                       role="button"
                       tabIndex={0}
-                      onClick={() => document.getElementById('network-organization-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                      onKeyDown={(event) => activateWithKeyboard(event, () => document.getElementById('network-organization-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))}
+                      onClick={() => handleOpenOrganizationSummary(String(label))}
+                      onKeyDown={(event) => activateWithKeyboard(event, () => handleOpenOrganizationSummary(String(label)))}
                     >
                       <span>{label}</span><strong>{value}</strong><small>{detail}</small>
                     </article>
