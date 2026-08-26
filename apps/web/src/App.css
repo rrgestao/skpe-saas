@@ -873,6 +873,7 @@ h2 {
 .network-summary-grid strong {
   color: #176b53;
   font-size: 1.75rem;
+  text-align: center;
 }
 
 .network-table-wrap {
@@ -913,6 +914,17 @@ h2 {
 
 .network-table td:first-child small {
   color: #74827d;
+}
+/* SK-PE-CONT-01 - numeric presentation contract for network dashboard */
+.network-table th:nth-child(4),
+.network-table th:nth-child(5),
+.network-table th:nth-child(6),
+.network-table th:nth-child(7),
+.network-table td:nth-child(4),
+.network-table td:nth-child(5),
+.network-table td:nth-child(6),
+.network-table td:nth-child(7) {
+  text-align: center;
 }
 
 .network-table tbody tr:hover {

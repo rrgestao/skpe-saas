@@ -1985,11 +1985,15 @@ function App() {
 
             <section className="page-heading">
               <div>
-                <p className="eyebrow">
-                  {
-                    selectedOrganization.organization_code
-                  }
-                </p>
+                {selectedOrganization.organization_code.trim().toLocaleLowerCase('pt-BR') !==
+  (selectedOrganization.trade_name ?? selectedOrganization.legal_name)
+    .trim()
+    .toLocaleLowerCase('pt-BR') && (
+    <p className="eyebrow">
+      {selectedOrganization.organization_code}
+    </p>
+  )}
+
 
                 <h1>
                   {selectedOrganization.trade_name ??
@@ -2123,7 +2127,19 @@ function App() {
                             onClick={openOrganization}
                             onKeyDown={(event) => activateWithKeyboard(event, openOrganization)}
                           >
-                            <td><span style={{ paddingLeft: `${Math.min(Number(row.hierarchy_depth ?? 0), 5) * 14}px` }}><strong>{row.organization_name}</strong><small>{row.organization_code}</small></span></td>
+                            <td>
+                              <span
+                                style={{
+                                  paddingLeft: `${Math.min(Number(row.hierarchy_depth ?? 0), 5) * 14}px`,
+                                }}
+                              >
+                                <strong>{row.organization_name}</strong>
+                                {row.organization_code.trim().toLocaleLowerCase('pt-BR') !==
+                                  row.organization_name.trim().toLocaleLowerCase('pt-BR') && (
+                                    <small>{row.organization_code}</small>
+                                  )}
+                              </span>
+                            </td>
                             <td>{getOrganizationLevelLabel(row.organization_level)}</td>
                             <td>{row.module_enabled ? 'Habilitado' : 'Não habilitado'}</td>
                             <td>{row.active_projects}</td>
