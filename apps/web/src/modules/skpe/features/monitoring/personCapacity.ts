@@ -31,6 +31,15 @@ export type PersonCapacityPeriod = {
   notes: string | null
 }
 
+export type PersonCapacityAuditEntry = {
+  auditId: string
+  actionCode: string
+  changeReason: string
+  occurredAt: string
+  previousData: Record<string, unknown> | null
+  newData: Record<string, unknown> | null
+}
+
 type PersonCandidateRow = {
   organization_person_id: string
   full_name: string
@@ -105,6 +114,15 @@ type PersonCapacityNotesRow = {
   notes: string | null
 }
 
+type PersonCapacityAuditRow = {
+  id: string
+  action_code: string
+  change_reason: string
+  occurred_at: string
+  previous_data: Record<string, unknown> | null
+  new_data: Record<string, unknown> | null
+}
+
 export async function loadPersonCapacityPeriods(
   organizationId: string,
   organizationPersonId: string,
@@ -173,6 +191,39 @@ export async function loadPersonCapacityPeriods(
       notesByPeriodId.get(row.capacity_period_id) ??
       null,
   }))
+}
+
+export async function loadPersonCapacityAudit(
+  organizationId: string,
+  capacityPeriodId: string,
+): Promise<PersonCapacityAuditEntry[]> {
+  const { data, error } = await supabase
+    .from('sparks_capacity_audit')
+    .select(
+      'id, action_code, change_reason, occurred_at, previous_data, new_data',
+    )
+    .eq('organization_id', organizationId)
+    .eq('entity_type', 'capacity_period')
+    .eq('entity_id', capacityPeriodId)
+    .order('occurred_at', { ascending: false })
+    .limit(20)
+
+  if (error) {
+    throw new Error(
+      `Não foi possível carregar o histórico de capacidade: ${error.message}`,
+    )
+  }
+
+  return ((data ?? []) as PersonCapacityAuditRow[]).map(
+    (row) => ({
+      auditId: row.id,
+      actionCode: row.action_code,
+      changeReason: row.change_reason,
+      occurredAt: row.occurred_at,
+      previousData: row.previous_data,
+      newData: row.new_data,
+    }),
+  )
 }
 
 export async function createPersonCapacityPeriod(
