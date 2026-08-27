@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   formatInitiativeActionCapacityAuditAction,
+  formatInitiativeActionCapacityAuditActor,
   summarizeInitiativeActionCapacityAuditChange,
 } from '../src/modules/initiatives/contracts/initiativeActionCapacityAudit.ts'
 
@@ -62,5 +63,35 @@ test('traduz ações canônicas da auditoria de alocação', () => {
   assert.equal(
     formatInitiativeActionCapacityAuditAction('custom.action'),
     'custom.action',
+  )
+})
+
+test('formata ator resolvido da auditoria de alocação', () => {
+  assert.equal(
+    formatInitiativeActionCapacityAuditActor({
+      actorUserId: 'user-1',
+      actorName: 'Ricardo Rodrigues',
+    }),
+    'Ricardo Rodrigues',
+  )
+})
+
+test('expõe fallback quando usuário não possui nome organizacional resolvido', () => {
+  assert.equal(
+    formatInitiativeActionCapacityAuditActor({
+      actorUserId: 'user-1',
+      actorName: null,
+    }),
+    'Usuário identificado sem nome organizacional disponível',
+  )
+})
+
+test('expõe fallback para sistema ou automação sem ator de usuário', () => {
+  assert.equal(
+    formatInitiativeActionCapacityAuditActor({
+      actorUserId: null,
+      actorName: null,
+    }),
+    'Sistema ou automação',
   )
 })
