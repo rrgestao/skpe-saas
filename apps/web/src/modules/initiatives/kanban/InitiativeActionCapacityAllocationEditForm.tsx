@@ -13,6 +13,7 @@ type InitiativeActionCapacityAllocationEditFormProps = {
   allocation: InitiativeActionCapacityAllocation
   disabled: boolean
   onChanged: () => Promise<void>
+  onSavingChange: (saving: boolean) => void
 }
 
 export function InitiativeActionCapacityAllocationEditForm({
@@ -21,6 +22,7 @@ export function InitiativeActionCapacityAllocationEditForm({
   allocation,
   disabled,
   onChanged,
+  onSavingChange,
 }: InitiativeActionCapacityAllocationEditFormProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -68,6 +70,7 @@ export function InitiativeActionCapacityAllocationEditForm({
     }
 
     setSaving(true)
+    onSavingChange(true)
     setError(null)
 
     try {
@@ -88,6 +91,7 @@ export function InitiativeActionCapacityAllocationEditForm({
       )
     } finally {
       setSaving(false)
+      onSavingChange(false)
     }
   }
 

@@ -276,6 +276,10 @@ export function InitiativeActionDrawer({
     transitioningAllocationId,
     setTransitioningAllocationId,
   ] = useState<string | null>(null)
+  const [
+    savingCapacityAllocationEdit,
+    setSavingCapacityAllocationEdit,
+  ] = useState(false)
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
@@ -302,6 +306,7 @@ export function InitiativeActionDrawer({
     savingEconomics ||
     savingResponsibility ||
     savingCapacityAllocation ||
+    savingCapacityAllocationEdit ||
     transitioningAllocationId !== null ||
     endingAssignmentId !== null
 
@@ -1257,6 +1262,9 @@ export function InitiativeActionDrawer({
                             actionId={card.actionId}
                             allocation={allocation}
                             disabled={saving}
+                            onSavingChange={
+                              setSavingCapacityAllocationEdit
+                            }
                             onChanged={async () => {
                               await reloadCapacityAllocations()
 
