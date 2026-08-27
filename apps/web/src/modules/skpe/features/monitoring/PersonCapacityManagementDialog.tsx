@@ -5,11 +5,15 @@ import {
   createPersonCapacityPeriod,
   loadPersonCapacityCandidates,
   loadPersonCapacityPeriods,
+  transitionPersonCapacityPeriod,
   type PersonCapacityCandidate,
   type PersonCapacityPeriod,
 } from './personCapacity'
 import {
+  getAllowedPersonCapacityPeriodTransitions,
   validatePersonCapacityPeriodCreation,
+  validatePersonCapacityPeriodTransition,
+  type PersonCapacityPeriodStatus,
 } from './personCapacityValidation'
 
 type PersonCapacityManagementDialogProps = {
@@ -33,6 +37,13 @@ const unitLabels: Record<string, string> = {
   custom: 'Personalizada',
 }
 
+const statusLabels: Record<PersonCapacityPeriodStatus, string> = {
+  planned: 'Planejada',
+  active: 'Ativa',
+  closed: 'Encerrada',
+  cancelled: 'Cancelada',
+}
+
 export function PersonCapacityManagementDialog({
   organizationId,
   onClose,
@@ -50,6 +61,11 @@ export function PersonCapacityManagementDialog({
   >([])
   const [loadingPeriods, setLoadingPeriods] =
     useState(false)
+  const [selectedPeriodId, setSelectedPeriodId] =
+    useState('')
+  const [targetStatus, setTargetStatus] = useState('')
+  const [transitionReason, setTransitionReason] =
+    useState('')
 
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
@@ -75,6 +91,25 @@ export function PersonCapacityManagementDialog({
           selectedPersonId,
       ) ?? null,
     [candidates, selectedPersonId],
+  )
+
+  const selectedPeriod = useMemo(
+    () =>
+      periods.find(
+        (period) =>
+          period.capacityPeriodId === selectedPeriodId,
+      ) ?? null,
+    [periods, selectedPeriodId],
+  )
+
+  const allowedTransitions = useMemo(
+    () =>
+      selectedPeriod
+        ? getAllowedPersonCapacityPeriodTransitions(
+            selectedPeriod.capacityStatus,
+          )
+        : [],
+    [selectedPeriod],
   )
 
   useEffect(() => {
@@ -112,6 +147,10 @@ export function PersonCapacityManagementDialog({
 
   useEffect(() => {
     let active = true
+
+    setSelectedPeriodId('')
+    setTargetStatus('')
+    setTransitionReason('')
 
     if (!selectedPersonId) {
       setPeriods([])
@@ -216,6 +255,49 @@ export function PersonCapacityManagementDialog({
     }
   }
 
+  async function handleTransition() {
+    if (!selectedPeriod || !selectedPersonId) {
+      setErrorMessage('Selecione um período de capacidade.')
+      return
+    }
+
+    const validation =
+      validatePersonCapacityPeriodTransition({
+        currentStatus: selectedPeriod.capacityStatus,
+        targetStatus,
+        currentAllocationCount:
+          selectedPeriod.currentAllocationCount,
+        changeReason: transitionReason,
+      })
+
+    if (!validation.ok) {
+      setErrorMessage(validation.message)
+      return
+    }
+
+    setSaving(true)
+    setErrorMessage(null)
+
+    try {
+      await transitionPersonCapacityPeriod(
+        organizationId,
+        selectedPersonId,
+        selectedPeriod,
+        validation.value,
+      )
+      onSaved()
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? translateBackendMessage(
+              error.message,
+            )
+          : 'Não foi possível alterar a situação do período de capacidade.',
+      )
+      setSaving(false)
+    }
+  }
+
   return (
     <div
       className="skpe-economic-dialog-backdrop"
@@ -241,7 +323,7 @@ export function PersonCapacityManagementDialog({
               Capacidade transversal de pessoas
             </span>
             <h2 id="skpe-person-capacity-dialog-title">
-              Registrar período de capacidade
+              Gerenciar períodos de capacidade
             </h2>
           </div>
           <button
@@ -335,42 +417,133 @@ export function PersonCapacityManagementDialog({
                   cadastrado para esta pessoa.
                 </p>
               ) : (
-                periods.map((period) => (
-                  <p
-                    key={
-                      period.capacityPeriodId
-                    }
-                  >
-                    {period.periodStart}
-                    {' — '}
-                    {period.periodEnd}
-                    {' · '}
-                    {formatNumber(
-                      period.capacityAmount,
-                    )}{' '}
-                    {unitLabels[
-                      period.capacityUnit
-                    ] ?? period.capacityUnit}
-                    {' · '}
-                    {period.capacityStatus}
-                    {' · alocado '}
-                    {formatNumber(
-                      period.allocatedCurrentAmount,
-                    )}
-                    {' · disponível '}
-                    {formatNumber(
-                      period.availableAmount,
-                    )}
-                    {period.isOverallocated
-                      ? ` · SOBREALOCAÇÃO ${formatNumber(
-                          period.overallocationAmount,
-                        )}`
-                      : ''}
-                  </p>
-                ))
+                <>
+                  <label className="is-wide">
+                    <span>Período para transição</span>
+                    <select
+                      value={selectedPeriodId}
+                      onChange={(event) => {
+                        setSelectedPeriodId(event.target.value)
+                        setTargetStatus('')
+                        setTransitionReason('')
+                      }}
+                      disabled={saving}
+                    >
+                      <option value="">Selecione</option>
+                      {periods.map((period) => (
+                        <option
+                          key={period.capacityPeriodId}
+                          value={period.capacityPeriodId}
+                        >
+                          {period.periodStart} — {period.periodEnd}
+                          {' · '}
+                          {formatNumber(period.capacityAmount)}{' '}
+                          {unitLabels[period.capacityUnit] ?? period.capacityUnit}
+                          {' · '}
+                          {statusLabels[period.capacityStatus]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {selectedPeriod ? (
+                    <div className="is-wide skpe-economic-dialog-note">
+                      <strong>
+                        {selectedPeriod.periodStart} — {selectedPeriod.periodEnd}
+                      </strong>
+                      {' · '}
+                      {formatNumber(selectedPeriod.capacityAmount)}{' '}
+                      {unitLabels[selectedPeriod.capacityUnit] ?? selectedPeriod.capacityUnit}
+                      {' · '}
+                      {statusLabels[selectedPeriod.capacityStatus]}
+                      {' · alocado '}
+                      {formatNumber(selectedPeriod.allocatedCurrentAmount)}
+                      {' · disponível '}
+                      {formatNumber(selectedPeriod.availableAmount)}
+                      {' · alocações abertas '}
+                      {selectedPeriod.currentAllocationCount}
+                      {selectedPeriod.isOverallocated
+                        ? ` · SOBREALOCAÇÃO ${formatNumber(
+                            selectedPeriod.overallocationAmount,
+                          )}`
+                        : ''}
+                      {selectedPeriod.notes ? (
+                        <>
+                          <br />
+                          <small>
+                            Observações preservadas: {selectedPeriod.notes}
+                          </small>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {selectedPeriod && allowedTransitions.length > 0 ? (
+                    <>
+                      <label>
+                        <span>Nova situação *</span>
+                        <select
+                          value={targetStatus}
+                          onChange={(event) =>
+                            setTargetStatus(event.target.value)
+                          }
+                          disabled={saving}
+                        >
+                          <option value="">Selecione</option>
+                          {allowedTransitions.map((candidateStatus) => (
+                            <option
+                              key={candidateStatus}
+                              value={candidateStatus}
+                            >
+                              {statusLabels[candidateStatus]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="is-wide">
+                        <span>Justificativa da transição *</span>
+                        <textarea
+                          rows={3}
+                          value={transitionReason}
+                          onChange={(event) =>
+                            setTransitionReason(event.target.value)
+                          }
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <div className="is-wide skpe-economic-dialog-note">
+                        <small>
+                          Este gate altera somente o status. Datas, quantidade, unidade e observações são preservadas integralmente.
+                        </small>
+                      </div>
+
+                      <div className="is-wide">
+                        <button
+                          type="button"
+                          onClick={() => void handleTransition()}
+                          disabled={saving}
+                        >
+                          {saving ? 'Atualizando...' : 'Aplicar transição'}
+                        </button>
+                      </div>
+                    </>
+                  ) : selectedPeriod ? (
+                    <div className="is-wide skpe-economic-dialog-note">
+                      <small>
+                        Este período está em situação terminal e não pode ser reaberto ou modificado.
+                      </small>
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
           ) : null}
+
+          <div className="is-wide skpe-economic-dialog-note">
+            <strong>Novo período de capacidade</strong>
+          </div>
 
           <label>
             <span>Início *</span>
