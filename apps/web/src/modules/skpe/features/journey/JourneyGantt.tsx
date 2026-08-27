@@ -39,11 +39,55 @@ type JourneyEventRow = {
   current_user_role: string | null
 }
 
+type InitiativeTemporalRow = {
+  entity_type: 'initiative' | 'action'
+  entity_id: string
+  organization_id: string
+  initiative_id: string
+  parent_action_id: string | null
+  code: string
+  name: string
+  lifecycle_status: string
+  priority: string
+  organization_timezone: string
+  reference_date: string
+  baseline_start_date: string | null
+  baseline_end_date: string | null
+  current_plan_start_date: string | null
+  current_plan_end_date: string | null
+  forecast_start_date: string | null
+  forecast_end_date: string | null
+  actual_start_date: string | null
+  actual_end_date: string | null
+  current_plan_start_variance_vs_baseline_days: number | null
+  current_plan_end_variance_vs_baseline_days: number | null
+  forecast_start_variance_vs_current_plan_days: number | null
+  forecast_end_variance_vs_current_plan_days: number | null
+  actual_start_variance_vs_current_plan_days: number | null
+  actual_end_variance_vs_current_plan_days: number | null
+  is_start_overdue: boolean
+  days_start_overdue: number
+  is_completion_overdue: boolean
+  days_completion_overdue: number
+  temporal_state: string | null
+  temporal_data_quality_state: string
+}
+
+type OperationalProjection = {
+  journeyEvents?: JourneyEventRow[]
+  initiativeTemporal?: InitiativeTemporalRow[]
+}
+
 type GanttVisibility = 'all' | 'mandatory'
 type GanttBarKind = 'baseline' | 'plan' | 'forecast' | 'actual'
 
 type GanttDisplayRow = {
   row: JourneyTemporalRow
+  depth: number
+}
+
+type InitiativeDisplayRow = {
+  row: InitiativeTemporalRow
   depth: number
 }
 
@@ -108,7 +152,23 @@ function normalizeRange(
     : { start: resolvedEnd, end: resolvedStart }
 }
 
-function getRange(row: JourneyTemporalRow, kind: GanttBarKind) {
+function getJourneyRange(row: JourneyTemporalRow, kind: GanttBarKind) {
+  if (kind === 'baseline') {
+    return normalizeRange(row.baseline_start_date, row.baseline_end_date)
+  }
+
+  if (kind === 'plan') {
+    return normalizeRange(row.current_plan_start_date, row.current_plan_end_date)
+  }
+
+  if (kind === 'forecast') {
+    return normalizeRange(row.forecast_start_date, row.forecast_end_date)
+  }
+
+  return normalizeRange(row.actual_start_date, row.actual_end_date)
+}
+
+function getInitiativeRange(row: InitiativeTemporalRow, kind: GanttBarKind) {
   if (kind === 'baseline') {
     return normalizeRange(row.baseline_start_date, row.baseline_end_date)
   }
@@ -172,8 +232,43 @@ function flattenJourney(rows: JourneyTemporalRow[]): GanttDisplayRow[] {
   return result
 }
 
+function flattenInitiative(rows: InitiativeTemporalRow[]): InitiativeDisplayRow[] {
+  const initiative = rows.find((row) => row.entity_type === 'initiative')
+  const actions = rows
+    .filter((row) => row.entity_type === 'action')
+    .sort((first, second) => first.code.localeCompare(second.code, 'pt-BR'))
+  const byParent = new Map<string | null, InitiativeTemporalRow[]>()
+  const actionIds = new Set(actions.map((row) => row.entity_id))
+
+  for (const action of actions) {
+    const parentId = action.parent_action_id && actionIds.has(action.parent_action_id)
+      ? action.parent_action_id
+      : null
+    const siblings = byParent.get(parentId) ?? []
+    siblings.push(action)
+    byParent.set(parentId, siblings)
+  }
+
+  const result: InitiativeDisplayRow[] = []
+
+  if (initiative) {
+    result.push({ row: initiative, depth: 0 })
+  }
+
+  const visit = (parentId: string | null, depth: number) => {
+    for (const action of byParent.get(parentId) ?? []) {
+      result.push({ row: action, depth })
+      visit(action.entity_id, depth + 1)
+    }
+  }
+
+  visit(null, 1)
+  return result
+}
+
 function buildTimeline(
   rows: JourneyTemporalRow[],
+  initiatives: InitiativeTemporalRow[],
   events: JourneyEventRow[],
   referenceDate: string | null,
 ): Timeline | null {
@@ -181,7 +276,15 @@ function buildTimeline(
 
   for (const row of rows) {
     for (const kind of ['baseline', 'plan', 'forecast', 'actual'] as const) {
-      const range = getRange(row, kind)
+      const range = getJourneyRange(row, kind)
+      if (!range) continue
+      dates.push(parseDateOnly(range.start), parseDateOnly(range.end))
+    }
+  }
+
+  for (const row of initiatives) {
+    for (const kind of ['baseline', 'plan', 'forecast', 'actual'] as const) {
+      const range = getInitiativeRange(row, kind)
       if (!range) continue
       dates.push(parseDateOnly(range.start), parseDateOnly(range.end))
     }
@@ -298,10 +401,45 @@ function getEventTitle(
   return `${event.event_title} · ${event.event_status} · ${formatDate(range.start)} a ${formatDate(range.end)} · ${participantSummary}${attendanceSummary}`
 }
 
+function getTemporalAlert(row: InitiativeTemporalRow) {
+  if (row.is_completion_overdue) {
+    return `Conclusão em atraso: ${row.days_completion_overdue} dia(s)`
+  }
+  if (row.is_start_overdue) {
+    return `Início em atraso: ${row.days_start_overdue} dia(s)`
+  }
+  if (row.temporal_data_quality_state !== 'ok') {
+    return `Qualidade temporal: ${row.temporal_data_quality_state}`
+  }
+  return null
+}
+
 function isMilestone(row: JourneyTemporalRow, range: DateRange) {
   return (
     (row.item_type === 'gate' || row.item_type === 'deliverable') &&
     range.start === range.end
+  )
+}
+
+function renderTimelineBackground(timeline: Timeline) {
+  return (
+    <>
+      {timeline.ticks.map((tick) => (
+        <i
+          key={tick.key}
+          className="skpe-gantt-grid-line"
+          style={{ left: `${tick.position}%` }}
+          aria-hidden="true"
+        />
+      ))}
+      {timeline.referencePosition !== null && (
+        <i
+          className="skpe-gantt-reference-line"
+          style={{ left: `${timeline.referencePosition}%` }}
+          aria-hidden="true"
+        />
+      )}
+    </>
   )
 }
 
@@ -314,8 +452,9 @@ export function JourneyGantt({
 }: JourneyGanttProps) {
   const [visibility, setVisibility] = useState<GanttVisibility>('all')
   const [events, setEvents] = useState<JourneyEventRow[]>([])
-  const [eventsLoading, setEventsLoading] = useState(false)
-  const [eventsError, setEventsError] = useState('')
+  const [initiativeTemporal, setInitiativeTemporal] = useState<InitiativeTemporalRow[]>([])
+  const [projectionLoading, setProjectionLoading] = useState(false)
+  const [projectionError, setProjectionError] = useState('')
 
   const organizationId = rows[0]?.organization_id ?? null
   const projectId = rows[0]?.project_id ?? null
@@ -323,25 +462,23 @@ export function JourneyGantt({
   useEffect(() => {
     let active = true
 
-    const loadEvents = async () => {
+    const loadProjection = async () => {
       if (!organizationId || !projectId) {
         setEvents([])
-        setEventsError('')
+        setInitiativeTemporal([])
+        setProjectionError('')
         return
       }
 
-      setEventsLoading(true)
-      setEventsError('')
+      setProjectionLoading(true)
+      setProjectionError('')
 
       const { data, error } = await supabase.rpc(
-        'get_skpe_journey_events_projection',
+        'get_skpe_project_operational_projection',
         {
           target_organization_id: organizationId,
           target_project_id: projectId,
-          target_date_from: null,
-          target_date_to: null,
-          target_include_cancelled: false,
-          target_include_archived: false,
+          target_as_of_date: referenceDate,
         },
       )
 
@@ -349,20 +486,23 @@ export function JourneyGantt({
 
       if (error) {
         setEvents([])
-        setEventsError('Eventos da jornada indisponíveis nesta visualização.')
+        setInitiativeTemporal([])
+        setProjectionError('Projeção gerencial integrada indisponível nesta visualização.')
       } else {
-        setEvents((data ?? []) as JourneyEventRow[])
+        const projection = (data ?? {}) as OperationalProjection
+        setEvents(projection.journeyEvents ?? [])
+        setInitiativeTemporal(projection.initiativeTemporal ?? [])
       }
 
-      setEventsLoading(false)
+      setProjectionLoading(false)
     }
 
-    void loadEvents()
+    void loadProjection()
 
     return () => {
       active = false
     }
-  }, [organizationId, projectId])
+  }, [organizationId, projectId, referenceDate])
 
   const flattenedRows = useMemo(() => flattenJourney(rows), [rows])
   const displayRows = useMemo(
@@ -371,6 +511,10 @@ export function JourneyGantt({
         ? flattenedRows.filter(({ row }) => row.is_mandatory)
         : flattenedRows,
     [flattenedRows, visibility],
+  )
+  const initiativeRows = useMemo(
+    () => flattenInitiative(initiativeTemporal),
+    [initiativeTemporal],
   )
   const eventsByItem = useMemo(() => {
     const grouped = new Map<string, JourneyEventRow[]>()
@@ -384,8 +528,8 @@ export function JourneyGantt({
     return grouped
   }, [events])
   const timeline = useMemo(
-    () => buildTimeline(rows, events, referenceDate),
-    [rows, events, referenceDate],
+    () => buildTimeline(rows, initiativeTemporal, events, referenceDate),
+    [rows, initiativeTemporal, events, referenceDate],
   )
 
   if (!timeline) {
@@ -394,7 +538,7 @@ export function JourneyGantt({
         <h2>Gantt ainda sem programação</h2>
         <p>
           A visão será preenchida quando houver baseline, plano vigente,
-          forecast, execução registrada ou eventos associados à Jornada Estratégica.
+          forecast, execução registrada, iniciativas, ações ou eventos associados.
         </p>
       </section>
     )
@@ -403,37 +547,37 @@ export function JourneyGantt({
   const kinds: GanttBarKind[] = ['baseline', 'plan', 'forecast', 'actual']
 
   return (
-    <section className="skpe-gantt-card" aria-label="Gantt governado da Jornada Estratégica">
+    <section className="skpe-gantt-card" aria-label="Gantt gerencial integrado do Planejamento Estratégico">
       <header className="skpe-gantt-header">
         <div>
-          <p className="skpe-eyebrow">Projeção operacional governada</p>
-          <h2>Baseline × Plano × Forecast × Realizado × Agenda</h2>
+          <p className="skpe-eyebrow">Projeção gerencial integrada governada</p>
+          <h2>Jornada × Iniciativa × Ações × Agenda</h2>
           <p>
-            O gráfico apenas projeta informações governadas pelo backend. Datas da
-            Jornada e eventos da agenda mantêm suas fontes canônicas; arrastar ou
-            editar barras não é permitido nesta visão.
+            Uma única régua temporal para comparar baseline, plano, forecast e
+            realizado. A Jornada, a iniciativa transversal, suas ações e os eventos
+            mantêm suas próprias fontes canônicas; o Gantt apenas projeta os dados.
           </p>
           <p className="skpe-gantt-event-status" aria-live="polite">
-            {eventsLoading
-              ? 'Carregando eventos associados à jornada...'
-              : eventsError || `${events.length} evento(s) associado(s) à jornada`}
+            {projectionLoading
+              ? 'Carregando projeção operacional integrada...'
+              : projectionError || `${initiativeTemporal.length} item(ns) de iniciativa/ação · ${events.length} evento(s) da jornada`}
           </p>
         </div>
 
-        <div className="skpe-gantt-filter" role="group" aria-label="Escopo do Gantt">
+        <div className="skpe-gantt-filter" role="group" aria-label="Escopo da Jornada no Gantt">
           <button
             type="button"
             className={visibility === 'all' ? 'is-active' : ''}
             onClick={() => setVisibility('all')}
           >
-            Estrutura completa
+            Jornada completa
           </button>
           <button
             type="button"
             className={visibility === 'mandatory' ? 'is-active' : ''}
             onClick={() => setVisibility('mandatory')}
           >
-            Somente obrigatórios
+            Jornada obrigatória
           </button>
         </div>
       </header>
@@ -449,7 +593,7 @@ export function JourneyGantt({
 
       <div className="skpe-gantt-scroll">
         <div className="skpe-gantt-grid">
-          <div className="skpe-gantt-axis-label">Item da jornada</div>
+          <div className="skpe-gantt-axis-label">Objeto gerencial</div>
           <div className="skpe-gantt-axis">
             {timeline.ticks.map((tick) => (
               <span
@@ -462,11 +606,14 @@ export function JourneyGantt({
             ))}
           </div>
 
+          <div className="skpe-gantt-section-label">Jornada Estratégica</div>
+          <div className="skpe-gantt-section-timeline">{renderTimelineBackground(timeline)}</div>
+
           {displayRows.map(({ row, depth }) => {
             const rowEvents = eventsByItem.get(row.item_id) ?? []
 
             return (
-              <div className="skpe-gantt-row" key={row.item_id}>
+              <div className="skpe-gantt-row" key={`journey-${row.item_id}`}>
                 <button
                   type="button"
                   className={[
@@ -498,26 +645,10 @@ export function JourneyGantt({
                     .join(' ')}
                   onClick={() => onSelectItem(row.item_id)}
                 >
-                  {timeline.ticks.map((tick) => (
-                    <i
-                      key={tick.key}
-                      className="skpe-gantt-grid-line"
-                      style={{ left: `${tick.position}%` }}
-                      aria-hidden="true"
-                    />
-                  ))}
-
-                  {timeline.referencePosition !== null && (
-                    <i
-                      className="skpe-gantt-reference-line"
-                      style={{ left: `${timeline.referencePosition}%` }}
-                      title={`Data de referência: ${formatDate(referenceDate)}`}
-                      aria-hidden="true"
-                    />
-                  )}
+                  {renderTimelineBackground(timeline)}
 
                   {kinds.map((kind) => {
-                    const range = getRange(row, kind)
+                    const range = getJourneyRange(row, kind)
                     if (!range) return null
 
                     return (
@@ -562,11 +693,66 @@ export function JourneyGantt({
               </div>
             )
           })}
+
+          {initiativeRows.length > 0 && (
+            <>
+              <div className="skpe-gantt-section-label">Execução Estratégica</div>
+              <div className="skpe-gantt-section-timeline">{renderTimelineBackground(timeline)}</div>
+
+              {initiativeRows.map(({ row, depth }) => {
+                const alert = getTemporalAlert(row)
+
+                return (
+                  <div className="skpe-gantt-row" key={`initiative-${row.entity_id}`}>
+                    <div className="skpe-gantt-row-label skpe-gantt-row-label-readonly">
+                      <span style={{ paddingLeft: `${Math.min(depth, 5) * 14}px` }}>
+                        <small>
+                          {row.entity_type === 'initiative' ? 'Iniciativa' : 'Ação'} · {row.code}
+                        </small>
+                        <strong>{row.name}</strong>
+                      </span>
+                      <span className="skpe-gantt-row-meta">
+                        <em>{row.lifecycle_status}</em>
+                        {alert && <b className="skpe-gantt-alert">{alert}</b>}
+                      </span>
+                    </div>
+
+                    <div className="skpe-gantt-timeline-cell skpe-gantt-timeline-cell-readonly">
+                      {renderTimelineBackground(timeline)}
+
+                      {kinds.map((kind) => {
+                        const range = getInitiativeRange(row, kind)
+                        if (!range) return null
+
+                        return (
+                          <span
+                            key={kind}
+                            className={[
+                              'skpe-gantt-bar',
+                              `skpe-gantt-bar-${kind}`,
+                              row.entity_type === 'initiative' ? 'skpe-gantt-bar-initiative' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                            style={getBarStyle(range, timeline)}
+                            title={`${row.code} · ${getBarTitle(kind, range, formatDate)}`}
+                            aria-label={`${row.code} · ${getBarTitle(kind, range, formatDate)}`}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </>
+          )}
         </div>
       </div>
 
       <footer className="skpe-gantt-footer">
-        <span>{displayRows.length} itens exibidos · {events.length} evento(s) associado(s)</span>
+        <span>
+          {displayRows.length} item(ns) da jornada · {initiativeRows.length} item(ns) de execução · {events.length} evento(s)
+        </span>
         <span>
           Janela visual: {formatDate(toDateOnly(timeline.startMs))} a{' '}
           {formatDate(toDateOnly(timeline.endMs))}
