@@ -11,10 +11,13 @@ import {
   initiativeActionEffortUnits,
   initiativeActionLifecycleLabels,
   initiativeActionPriorityLabels,
+  formatInitiativeActionCapacityAmount,
   formatInitiativeActionResponsibilityType,
+  getInitiativeActionCapacityAlert,
   validateInitiativeActionEconomics,
   validateInitiativeActionResponsibilityAssignment,
   type InitiativeActionDomainOption,
+  type InitiativeActionPersonCapacity,
   type InitiativeActionResponsibility,
   type InitiativeActionResponsibilityCandidate,
   type InitiativeKanbanCardModel,
@@ -22,6 +25,7 @@ import {
 import {
   assignInitiativeActionResponsibility,
   endInitiativeActionResponsibility,
+  loadInitiativeActionPersonCapacity,
   loadInitiativeActionResponsibilities,
   loadInitiativeActionResponsibilityCandidates,
   loadInitiativeActionResponsibilityDomains,
@@ -194,6 +198,20 @@ export function InitiativeActionDrawer({
     endingAssignmentId,
     setEndingAssignmentId,
   ] = useState<string | null>(null)
+  const [
+    selectedPersonCapacity,
+    setSelectedPersonCapacity,
+  ] = useState<InitiativeActionPersonCapacity[]>(
+    [],
+  )
+  const [
+    selectedPersonCapacityLoading,
+    setSelectedPersonCapacityLoading,
+  ] = useState(false)
+  const [
+    selectedPersonCapacityError,
+    setSelectedPersonCapacityError,
+  ] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
@@ -326,6 +344,55 @@ export function InitiativeActionDrawer({
       cancelled = true
     }
   }, [card.organizationId])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!selectedOrganizationPersonId) {
+      setSelectedPersonCapacity([])
+      setSelectedPersonCapacityError(null)
+      setSelectedPersonCapacityLoading(false)
+      return () => {
+        cancelled = true
+      }
+    }
+
+    setSelectedPersonCapacityLoading(true)
+    setSelectedPersonCapacityError(null)
+
+    void loadInitiativeActionPersonCapacity(
+      card.organizationId,
+      selectedOrganizationPersonId,
+      card.plannedStartDate,
+      card.plannedDueDate,
+    )
+      .then((items) => {
+        if (cancelled) return
+        setSelectedPersonCapacity(items)
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setSelectedPersonCapacity([])
+        setSelectedPersonCapacityError(
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível carregar a capacidade da pessoa.',
+        )
+      })
+      .finally(() => {
+        if (cancelled) return
+        setSelectedPersonCapacityLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    card.organizationId,
+    card.plannedDueDate,
+    card.plannedStartDate,
+    selectedOrganizationPersonId,
+  ])
 
   async function reloadResponsibilities() {
     const items =
@@ -822,6 +889,95 @@ export function InitiativeActionDrawer({
                         )}
                       </select>
                     </label>
+
+                    {selectedOrganizationPersonId ? (
+                      <div className="initiative-action-drawer__note">
+                        <strong>
+                          Capacidade no período da ação
+                        </strong>
+
+                        {selectedPersonCapacityLoading ? (
+                          <p>
+                            Carregando capacidade...
+                          </p>
+                        ) : selectedPersonCapacityError ? (
+                          <p>
+                            {
+                              selectedPersonCapacityError
+                            }
+                          </p>
+                        ) : (
+                          <>
+                            {getInitiativeActionCapacityAlert(
+                              selectedPersonCapacity,
+                            ) ? (
+                              <p>
+                                {
+                                  getInitiativeActionCapacityAlert(
+                                    selectedPersonCapacity,
+                                  )
+                                }
+                              </p>
+                            ) : null}
+
+                            {selectedPersonCapacity.map(
+                              (capacity) => (
+                                <p
+                                  key={
+                                    capacity.capacityPeriodId
+                                  }
+                                >
+                                  {formatDate(
+                                    capacity.periodStart,
+                                  )}
+                                  {' — '}
+                                  {formatDate(
+                                    capacity.periodEnd,
+                                  )}
+                                  {' · Capacidade '}
+                                  {formatInitiativeActionCapacityAmount(
+                                    capacity.capacityAmount,
+                                    capacity.capacityUnit,
+                                  )}
+                                  {' · Alocado '}
+                                  {formatInitiativeActionCapacityAmount(
+                                    capacity.allocatedCurrentAmount,
+                                    capacity.capacityUnit,
+                                  )}
+                                  {' · Disponível '}
+                                  {formatInitiativeActionCapacityAmount(
+                                    capacity.availableAmount,
+                                    capacity.capacityUnit,
+                                  )}
+                                  {capacity.utilizationPercentage !==
+                                  null
+                                    ? ` · Utilização ${new Intl.NumberFormat(
+                                        'pt-BR',
+                                        {
+                                          maximumFractionDigits:
+                                            2,
+                                        },
+                                      ).format(
+                                        capacity.utilizationPercentage,
+                                      )}%`
+                                    : ''}
+                                  {capacity.isOverallocated
+                                    ? ' · SOBREALOCAÇÃO'
+                                    : ''}
+                                </p>
+                              ),
+                            )}
+                          </>
+                        )}
+
+                        <p>
+                          A responsabilidade e a capacidade
+                          continuam fontes de verdade
+                          independentes. Esta tela não cria
+                          alocação quantitativa automaticamente.
+                        </p>
+                      </div>
+                    ) : null}
 
                     <label className="initiative-action-field">
                       <span>

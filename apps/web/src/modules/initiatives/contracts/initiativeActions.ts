@@ -53,6 +53,21 @@ export type InitiativeActionDomainOption = {
   name: string
 }
 
+export type InitiativeActionPersonCapacity = {
+  capacityPeriodId: string
+  periodStart: string
+  periodEnd: string
+  capacityUnit: string
+  capacityStatus: string
+  capacityAmount: number
+  allocatedCurrentAmount: number
+  availableAmount: number
+  utilizationPercentage: number | null
+  overallocationAmount: number
+  isOverallocated: boolean
+  currentAllocationCount: number
+}
+
 export type InitiativeActionResponsibilityFormValues = {
   organizationPersonId: string
   responsibilityType: string
@@ -618,4 +633,40 @@ export function validateInitiativeActionResponsibilityAssignment(
       changeReason,
     },
   }
+}
+export function formatInitiativeActionCapacityAmount(
+  value: number,
+  unit: string,
+) {
+  const formatted = new Intl.NumberFormat(
+    'pt-BR',
+    {
+      maximumFractionDigits: 2,
+    },
+  ).format(value)
+
+  const labels: Record<string, string> = {
+    hours: 'h',
+    days: 'dias',
+    weeks: 'sem.',
+    months: 'meses',
+    points: 'pts',
+    custom: 'un.',
+  }
+
+  return `${formatted} ${labels[unit] ?? unit}`
+}
+
+export function getInitiativeActionCapacityAlert(
+  items: readonly InitiativeActionPersonCapacity[],
+) {
+  if (items.some((item) => item.isOverallocated)) {
+    return 'Há sobrealocação explícita no período consultado.'
+  }
+
+  if (items.length === 0) {
+    return 'Não há capacidade quantitativa cadastrada para a pessoa no período da ação.'
+  }
+
+  return null
 }

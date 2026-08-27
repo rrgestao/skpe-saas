@@ -4,7 +4,9 @@ import test from 'node:test'
 import {
   canManageInitiativeActionResponsibilities,
   canUpdateInitiativeActionEconomics,
+  formatInitiativeActionCapacityAmount,
   formatInitiativeActionResponsibilityType,
+  getInitiativeActionCapacityAlert,
   validateInitiativeActionEconomics,
   validateInitiativeActionResponsibilityAssignment,
 } from '../src/modules/initiatives/contracts/initiativeActions.ts'
@@ -263,5 +265,52 @@ test('bloqueia gestão de responsabilidade em ação terminal', () => {
       'in_progress',
     ),
     true,
+  )
+})
+test('formata quantidade de capacidade sem converter unidade', () => {
+  assert.equal(
+    formatInitiativeActionCapacityAmount(
+      12.5,
+      'hours',
+    ),
+    '12,5 h',
+  )
+  assert.equal(
+    formatInitiativeActionCapacityAmount(
+      3,
+      'points',
+    ),
+    '3 pts',
+  )
+})
+
+test('sinaliza sobrealocação explícita de capacidade', () => {
+  const alert = getInitiativeActionCapacityAlert([
+    {
+      capacityPeriodId: 'cap-1',
+      periodStart: '2026-08-01',
+      periodEnd: '2026-08-31',
+      capacityUnit: 'hours',
+      capacityStatus: 'active',
+      capacityAmount: 100,
+      allocatedCurrentAmount: 120,
+      availableAmount: -20,
+      utilizationPercentage: 120,
+      overallocationAmount: 20,
+      isOverallocated: true,
+      currentAllocationCount: 3,
+    },
+  ])
+
+  assert.equal(
+    alert,
+    'Há sobrealocação explícita no período consultado.',
+  )
+})
+
+test('informa ausência de capacidade quantitativa cadastrada', () => {
+  assert.equal(
+    getInitiativeActionCapacityAlert([]),
+    'Não há capacidade quantitativa cadastrada para a pessoa no período da ação.',
   )
 })

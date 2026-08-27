@@ -8,6 +8,7 @@ import {
   type InitiativeActionDomainOption,
   type InitiativeActionLifecycle,
   type InitiativeActionResponsibility,
+  type InitiativeActionPersonCapacity,
   type InitiativeActionResponsibilityAssignment,
   type InitiativeActionResponsibilityCandidate,
   type InitiativeKanbanCardModel,
@@ -402,6 +403,68 @@ export async function loadInitiativeActionResponsibilityDomains(
     responsibilityTypes,
     authorityLevels,
   }
+}
+
+type InitiativeActionPersonCapacityRow = {
+  capacity_period_id: string
+  period_start: string
+  period_end: string
+  capacity_unit: string
+  capacity_status: string
+  capacity_amount: number | string
+  allocated_current_amount: number | string
+  available_amount: number | string
+  utilization_percentage: number | string | null
+  overallocation_amount: number | string
+  is_overallocated: boolean
+  current_allocation_count: number | string
+}
+
+export async function loadInitiativeActionPersonCapacity(
+  organizationId: string,
+  organizationPersonId: string,
+  periodStart: string | null,
+  periodEnd: string | null,
+): Promise<InitiativeActionPersonCapacity[]> {
+  const { data, error } = await supabase.rpc(
+    'get_sparks_person_capacity_projection',
+    {
+      target_organization_id: organizationId,
+      target_organization_person_id:
+        organizationPersonId,
+      target_period_start: periodStart,
+      target_period_end: periodEnd,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível carregar a capacidade da pessoa: ${error.message}`,
+    )
+  }
+
+  return (
+    (data ?? []) as InitiativeActionPersonCapacityRow[]
+  ).map((row) => ({
+    capacityPeriodId: row.capacity_period_id,
+    periodStart: row.period_start,
+    periodEnd: row.period_end,
+    capacityUnit: row.capacity_unit,
+    capacityStatus: row.capacity_status,
+    capacityAmount: Number(row.capacity_amount),
+    allocatedCurrentAmount:
+      Number(row.allocated_current_amount),
+    availableAmount: Number(row.available_amount),
+    utilizationPercentage:
+      row.utilization_percentage === null
+        ? null
+        : Number(row.utilization_percentage),
+    overallocationAmount:
+      Number(row.overallocation_amount),
+    isOverallocated: row.is_overallocated,
+    currentAllocationCount:
+      Number(row.current_allocation_count),
+  }))
 }
 
 export async function assignInitiativeActionResponsibility(
