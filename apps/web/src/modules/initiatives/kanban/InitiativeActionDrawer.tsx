@@ -43,6 +43,7 @@ import {
 import {
   InitiativeLifecycleDialog,
 } from './InitiativeLifecycleDialog'
+import { InitiativeActionCapacityAuditHistory } from './InitiativeActionCapacityAuditHistory'
 
 type InitiativeActionDrawerProps = {
   card: InitiativeKanbanCardModel
@@ -1203,6 +1204,11 @@ export function InitiativeActionDrawer({
                             {allocation.notes}
                           </small>
                         ) : null}
+
+                        <InitiativeActionCapacityAuditHistory
+                          organizationId={card.organizationId}
+                          allocationId={allocation.allocationId}
+                        />
 
                         {canTransitionInitiativeActionCapacityAllocation(
                           allocation.status,
