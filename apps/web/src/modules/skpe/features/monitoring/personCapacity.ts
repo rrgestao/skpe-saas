@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import {
   type PersonCapacityPeriodCreateCommand,
+  type PersonCapacityPeriodEditCommand,
   type PersonCapacityPeriodStatus,
   type PersonCapacityPeriodTransitionCommand,
   type PersonCapacityUnit,
@@ -200,6 +201,41 @@ export async function createPersonCapacityPeriod(
   if (error) {
     throw new Error(
       `Não foi possível registrar o período de capacidade: ${error.message}`,
+    )
+  }
+
+  return data
+}
+
+export async function updatePersonCapacityPeriod(
+  organizationId: string,
+  organizationPersonId: string,
+  period: PersonCapacityPeriod,
+  command: PersonCapacityPeriodEditCommand,
+) {
+  const { data, error } = await supabase.rpc(
+    'set_sparks_person_capacity_period',
+    {
+      target_organization_id: organizationId,
+      target_capacity_period_id:
+        period.capacityPeriodId,
+      target_organization_person_id:
+        organizationPersonId,
+      target_period_start: command.periodStart,
+      target_period_end: command.periodEnd,
+      target_capacity_amount:
+        command.capacityAmount,
+      target_capacity_unit:
+        command.capacityUnit,
+      target_status: period.capacityStatus,
+      target_notes: command.notes,
+      change_reason: command.changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível atualizar o período de capacidade: ${error.message}`,
     )
   }
 
