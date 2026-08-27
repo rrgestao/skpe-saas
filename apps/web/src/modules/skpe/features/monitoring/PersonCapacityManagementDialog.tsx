@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { translateBackendMessage } from '../../../../shared/i18n/ptBR'
+import { PersonCapacityAuditHistory } from './PersonCapacityAuditHistory'
 import {
   createPersonCapacityPeriod,
   loadPersonCapacityCandidates,
@@ -466,6 +467,13 @@ export function PersonCapacityManagementDialog({
                           )}`
                         : ''}
                     </div>
+                  ) : null}
+
+                  {selectedPeriod ? (
+                    <PersonCapacityAuditHistory
+                      organizationId={organizationId}
+                      capacityPeriodId={selectedPeriod.capacityPeriodId}
+                    />
                   ) : null}
 
                   {selectedPeriodEditable && selectedPeriod ? (
