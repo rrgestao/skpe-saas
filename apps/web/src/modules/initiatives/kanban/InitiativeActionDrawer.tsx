@@ -45,6 +45,7 @@ import {
 } from './InitiativeLifecycleDialog'
 import { InitiativeActionCapacityAuditHistory } from './InitiativeActionCapacityAuditHistory'
 import { InitiativeActionCapacityAllocationEditForm } from './InitiativeActionCapacityAllocationEditForm'
+import { loadInitiativeActionCapacityManagementPermission } from '../data/initiativeActionCapacityPermissionData'
 
 type InitiativeActionDrawerProps = {
   card: InitiativeKanbanCardModel
@@ -278,6 +279,8 @@ export function InitiativeActionDrawer({
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
+  const [canManageCapacity, setCanManageCapacity] =
+    useState(false)
 
   const progressEditable =
     canUpdateInitiativeActionProgress(
@@ -301,6 +304,23 @@ export function InitiativeActionDrawer({
     savingCapacityAllocation ||
     transitioningAllocationId !== null ||
     endingAssignmentId !== null
+
+  useEffect(() => {
+    let active = true
+
+    setCanManageCapacity(false)
+
+    void loadInitiativeActionCapacityManagementPermission(
+      card.organizationId,
+    ).then((allowed) => {
+      if (!active) return
+      setCanManageCapacity(allowed)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [card.organizationId])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -563,6 +583,12 @@ export function InitiativeActionDrawer({
   }
 
   async function handleCreateCapacityAllocation() {
+    if (!canManageCapacity) {
+      setErrorMessage(
+        'Você não possui permissão para gerenciar alocações de capacidade.',
+      )
+      return
+    }
     const selectedCapacity =
       selectedPersonCapacity.find(
         (item) =>
@@ -631,6 +657,12 @@ export function InitiativeActionDrawer({
     allocation: InitiativeActionCapacityAllocation,
     targetStatus: InitiativeActionCapacityAllocationStatus,
   ) {
+    if (!canManageCapacity) {
+      setErrorMessage(
+        'Você não possui permissão para alterar alocações de capacidade.',
+      )
+      return
+    }
     if (
       !canTransitionInitiativeActionCapacityAllocation(
         allocation.status,
@@ -1219,24 +1251,27 @@ export function InitiativeActionDrawer({
                           allocationId={allocation.allocationId}
                         />
 
-                        <InitiativeActionCapacityAllocationEditForm
-                          organizationId={card.organizationId}
-                          actionId={card.actionId}
-                          allocation={allocation}
-                          disabled={saving}
-                          onChanged={async () => {
-                            await reloadCapacityAllocations()
+                        {canManageCapacity ? (
+                          <InitiativeActionCapacityAllocationEditForm
+                            organizationId={card.organizationId}
+                            actionId={card.actionId}
+                            allocation={allocation}
+                            disabled={saving}
+                            onChanged={async () => {
+                              await reloadCapacityAllocations()
 
-                            if (
-                              selectedOrganizationPersonId ===
-                              allocation.organizationPersonId
-                            ) {
-                              await reloadSelectedPersonCapacity()
-                            }
-                          }}
-                        />
+                              if (
+                                selectedOrganizationPersonId ===
+                                allocation.organizationPersonId
+                              ) {
+                                await reloadSelectedPersonCapacity()
+                              }
+                            }}
+                          />
+                        ) : null}
 
-                        {canTransitionInitiativeActionCapacityAllocation(
+                        {canManageCapacity &&
+                        canTransitionInitiativeActionCapacityAllocation(
                           allocation.status,
                           'active',
                         ) ? (
@@ -1257,7 +1292,8 @@ export function InitiativeActionDrawer({
                           </button>
                         ) : null}
 
-                        {canTransitionInitiativeActionCapacityAllocation(
+                        {canManageCapacity &&
+                        canTransitionInitiativeActionCapacityAllocation(
                           allocation.status,
                           'ended',
                         ) ? (
@@ -1278,7 +1314,8 @@ export function InitiativeActionDrawer({
                           </button>
                         ) : null}
 
-                        {canTransitionInitiativeActionCapacityAllocation(
+                        {canManageCapacity &&
+                        canTransitionInitiativeActionCapacityAllocation(
                           allocation.status,
                           'cancelled',
                         ) ? (
@@ -1445,7 +1482,8 @@ export function InitiativeActionDrawer({
                           será criada mediante comando explícito.
                         </p>
 
-                        {selectedPersonCapacity.length > 0 ? (
+                        {canManageCapacity &&
+                        selectedPersonCapacity.length > 0 ? (
                           <>
                             <strong>
                               Alocar capacidade à ação
