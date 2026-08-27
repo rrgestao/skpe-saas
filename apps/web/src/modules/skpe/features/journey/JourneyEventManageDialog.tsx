@@ -366,7 +366,7 @@ export function JourneyEventManageDialog({
 
     if (reason.length < 10) {
       setErrorMessage(
-        'Informe uma justificativa de remocao com pelo menos 10 caracteres.',
+        'Informe uma justificativa de remo\u00e7\u00e3o com pelo menos 10 caracteres.',
       )
       return
     }
@@ -403,7 +403,7 @@ export function JourneyEventManageDialog({
 
     if (reason.length < 10) {
       setErrorMessage(
-        'Informe uma justificativa de presenca com pelo menos 10 caracteres.',
+        'Informe uma justificativa de presen\u00e7a com pelo menos 10 caracteres.',
       )
       return
     }
@@ -577,12 +577,19 @@ export function JourneyEventManageDialog({
           </div>
           <div>
             <span>Participantes</span>
-            <strong>{participants.length || event.participant_count}</strong>
+            <strong>
+              {participantProjection
+                ? participants.length
+                : event.participant_count}
+            </strong>
             <small>
               {event.accepted_count} aceito(s) - {
-                participants.filter((participant) =>
-                  participant.attendance_status === 'attended'
-                ).length || event.attended_count
+                participantProjection
+                  ? participants.filter(
+                      (participant) =>
+                        participant.attendance_status === 'attended',
+                    ).length
+                  : event.attended_count
               } presente(s)
             </small>
           </div>
@@ -728,8 +735,8 @@ export function JourneyEventManageDialog({
         <section className="skpe-journey-event-participants">
           <header>
             <div>
-              <span>Participacao governada</span>
-              <strong>Participantes e presenca</strong>
+              <span>Participa\u00e7\u00e3o governada</span>
+              <strong>Participantes e presen\u00e7a</strong>
             </div>
             <small>
               Pessoas internas e externas usam a mesma Agenda, sem exigir login
@@ -754,7 +761,7 @@ export function JourneyEventManageDialog({
                   onClick={() => setParticipantOrigin('internal')}
                   disabled={participantBusy}
                 >
-                  Pessoa da organizacao
+                  Pessoa da organiza\u00e7\u00e3o
                 </button>
                 <button
                   type="button"
@@ -769,7 +776,7 @@ export function JourneyEventManageDialog({
               <div className="skpe-journey-event-participant-add">
                 {participantOrigin === 'internal' ? (
                   <label className="is-wide">
-                    <span>Usuario da organizacao *</span>
+                    <span>Usu\u00e1rio da organiza\u00e7\u00e3o *</span>
                     <select
                       value={participantUserId}
                       onChange={(changeEvent) =>
@@ -782,7 +789,7 @@ export function JourneyEventManageDialog({
                         <option key={candidate.user_id} value={candidate.user_id}>
                           {candidate.user_display_name} - {candidate.user_email}
                           {candidate.is_current_participant
-                            ? ' - ja participante'
+                            ? ' - j\u00e1 participante'
                             : ''}
                         </option>
                       ))}
@@ -817,7 +824,7 @@ export function JourneyEventManageDialog({
                               ? ` - ${candidate.external_organization}`
                               : ''}
                             {candidate.is_current_participant
-                              ? ' - ja participante'
+                              ? ' - j\u00e1 participante'
                               : ''}
                           </option>
                         ))}
@@ -864,7 +871,7 @@ export function JourneyEventManageDialog({
                         </label>
 
                         <label>
-                          <span>Organizacao externa</span>
+                          <span>Organiza\u00e7\u00e3o externa</span>
                           <input
                             value={externalOrganization}
                             onChange={(changeEvent) =>
@@ -875,7 +882,7 @@ export function JourneyEventManageDialog({
                         </label>
 
                         <label>
-                          <span>Natureza da relacao</span>
+                          <span>Natureza da rela\u00e7\u00e3o</span>
                           <select
                             value={externalRelationshipType}
                             onChange={(changeEvent) =>
@@ -886,7 +893,7 @@ export function JourneyEventManageDialog({
                             disabled={participantBusy}
                           >
                             <option value="service_provider">
-                              Prestador de servico
+                              Prestador de servi\u00e7o
                             </option>
                             <option value="representative">Representante</option>
                             <option value="partner">Parceiro</option>
@@ -908,7 +915,7 @@ export function JourneyEventManageDialog({
                     )}
 
                     <label className="is-wide">
-                      <span>Funcao neste evento</span>
+                      <span>Fun\u00e7\u00e3o neste evento</span>
                       <input
                         value={participantFunction}
                         onChange={(changeEvent) =>
@@ -922,7 +929,7 @@ export function JourneyEventManageDialog({
                 )}
 
                 <label>
-                  <span>Papel de governanca *</span>
+                  <span>Papel de governan\u00e7a *</span>
                   <select
                     value={participantRole}
                     onChange={(changeEvent) =>
@@ -932,10 +939,10 @@ export function JourneyEventManageDialog({
                     }
                     disabled={participantBusy}
                   >
-                    <option value="owner">Responsavel principal</option>
-                    <option value="chair">Coordenacao</option>
+                    <option value="owner">Respons\u00e1vel principal</option>
+                    <option value="chair">Coordena\u00e7\u00e3o</option>
                     <option value="secretary">Secretaria</option>
-                    <option value="responsible">Responsavel</option>
+                    <option value="responsible">Respons\u00e1vel</option>
                     <option value="participant">Participante</option>
                     <option value="observer">Observador</option>
                   </select>
@@ -950,11 +957,11 @@ export function JourneyEventManageDialog({
                     }
                     disabled={participantBusy}
                   />
-                  <span>Participacao obrigatoria</span>
+                  <span>Participa\u00e7\u00e3o obrigat\u00f3ria</span>
                 </label>
 
                 <label className="is-wide">
-                  <span>Justificativa do vinculo/ajuste *</span>
+                  <span>Justificativa do v\u00ednculo/ajuste *</span>
                   <textarea
                     rows={2}
                     value={participantReason}
@@ -1023,7 +1030,7 @@ export function JourneyEventManageDialog({
                             <span>{participant.participant_function}</span>
                           )}
                           <span>
-                            {participant.required ? 'Obrigatorio' : 'Opcional'}
+                            {participant.required ? 'Obrigat\u00f3rio' : 'Opcional'}
                           </span>
                           <span>{participant.response_status}</span>
                         </div>
@@ -1031,7 +1038,7 @@ export function JourneyEventManageDialog({
 
                       <div className="skpe-journey-event-participant-attendance">
                         <label>
-                          <span>Presenca</span>
+                          <span>Presen\u00e7a</span>
                           <select
                             value={participant.attendance_status}
                             onChange={(changeEvent) =>
@@ -1042,14 +1049,14 @@ export function JourneyEventManageDialog({
                             }
                             disabled={participantBusy}
                           >
-                            <option value="not_recorded">Nao registrada</option>
+                            <option value="not_recorded">N\u00e3o registrada</option>
                             <option value="attended">Presente</option>
                             <option value="absent">Ausente</option>
                           </select>
                         </label>
 
                         <label className="is-wide">
-                          <span>Justificativa da presenca *</span>
+                          <span>Justificativa da presen\u00e7a *</span>
                           <input
                             value={
                               attendanceReasons[participant.participant_id] ?? ''
@@ -1062,7 +1069,7 @@ export function JourneyEventManageDialog({
                               }))
                             }
                             disabled={participantBusy}
-                            placeholder="Minimo de 10 caracteres"
+                            placeholder="M\u00ednimo de 10 caracteres"
                           />
                         </label>
                       </div>
@@ -1080,7 +1087,7 @@ export function JourneyEventManageDialog({
                             }))
                           }
                           disabled={participantBusy}
-                          placeholder="Justificativa para remocao"
+                          placeholder="Justificativa para remo\u00e7\u00e3o"
                         />
                         <button
                           type="button"
