@@ -175,6 +175,33 @@
   white-space: nowrap;
 }
 
+.skpe-gantt-section-label,
+.skpe-gantt-section-timeline {
+  min-height: 34px;
+  border-bottom: 1px solid #d8e3df;
+  background: #eef5f2;
+}
+
+.skpe-gantt-section-label {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  border-right: 1px solid #d8e3df;
+  color: #365249;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.skpe-gantt-section-timeline {
+  position: relative;
+  overflow: hidden;
+}
+
 .skpe-gantt-row {
   display: contents;
 }
@@ -199,6 +226,14 @@
   background: #edf6f2;
 }
 
+.skpe-gantt-row-label-readonly {
+  cursor: default;
+}
+
+.skpe-gantt-row-label-readonly:hover {
+  background: #ffffff;
+}
+
 .skpe-gantt-row-label span {
   display: grid;
   gap: 0.15rem;
@@ -218,6 +253,36 @@
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.skpe-gantt-row-meta {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.3rem !important;
+  margin-top: 0.35rem;
+}
+
+.skpe-gantt-row-meta em,
+.skpe-gantt-alert {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 20px;
+  padding: 0.1rem 0.38rem;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.skpe-gantt-row-meta em {
+  background: #eef2f0;
+  color: #53655d;
+}
+
+.skpe-gantt-alert {
+  background: #fff3df;
+  color: #8a5710;
 }
 
 .skpe-gantt-row-event-count {
@@ -245,6 +310,14 @@
 .skpe-gantt-timeline-cell:hover,
 .skpe-gantt-timeline-cell.is-selected {
   background: #fbfdfc;
+}
+
+.skpe-gantt-timeline-cell-readonly {
+  cursor: default;
+}
+
+.skpe-gantt-timeline-cell-readonly:hover {
+  background: #ffffff;
 }
 
 .skpe-gantt-grid-line {
@@ -296,6 +369,11 @@
 .skpe-gantt-bar-actual {
   top: 43px;
   background: #326fa8;
+}
+
+.skpe-gantt-bar-initiative {
+  height: 9px;
+  box-shadow: 0 0 0 1px rgba(34, 61, 52, 0.16), 0 1px 2px rgba(25, 44, 37, 0.14);
 }
 
 .skpe-gantt-bar-milestone {
