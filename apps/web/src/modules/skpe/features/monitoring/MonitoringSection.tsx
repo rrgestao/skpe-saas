@@ -150,20 +150,50 @@ export function MonitoringSection({
   const [showEconomicEditor, setShowEconomicEditor] = useState(false)
   const [showCapacityManager, setShowCapacityManager] = useState(false)
   const [canManageCapacity, setCanManageCapacity] = useState(false)
+  const [capacityPermissionLoading, setCapacityPermissionLoading] = useState(true)
+  const [capacityPermissionError, setCapacityPermissionError] = useState('')
 
   useEffect(() => {
     let active = true
 
-    void supabase
-      .rpc('can_manage_sparks_people', {
-        target_organization_id: organizationId,
-      })
-      .then(({ data, error }) => {
-        if (!active) return
-        setCanManageCapacity(
-          error ? false : data === true,
+    setCanManageCapacity(false)
+    setCapacityPermissionLoading(true)
+    setCapacityPermissionError('')
+
+    async function loadCapacityPermission() {
+      try {
+        const { data, error } = await supabase.rpc(
+          'can_manage_sparks_people',
+          {
+            target_organization_id: organizationId,
+          },
         )
-      })
+
+        if (!active) return
+
+        if (error) {
+          setCanManageCapacity(false)
+          setCapacityPermissionError(
+            'Não foi possível verificar a permissão de gestão de capacidade.',
+          )
+          return
+        }
+
+        setCanManageCapacity(data === true)
+      } catch {
+        if (!active) return
+        setCanManageCapacity(false)
+        setCapacityPermissionError(
+          'Não foi possível verificar a permissão de gestão de capacidade.',
+        )
+      } finally {
+        if (active) {
+          setCapacityPermissionLoading(false)
+        }
+      }
+    }
+
+    void loadCapacityPermission()
 
     return () => {
       active = false
@@ -294,6 +324,17 @@ export function MonitoringSection({
           ) : null}
         </div>
       </header>
+
+      {capacityPermissionLoading && (
+        <div className="skpe-monitoring-state">
+          Verificando permissão de gestão de capacidade...
+        </div>
+      )}
+      {!capacityPermissionLoading && capacityPermissionError && (
+        <div className="skpe-monitoring-state is-error" role="alert">
+          {capacityPermissionError}
+        </div>
+      )}
 
       {loading && <div className="skpe-monitoring-state">Carregando monitoramento...</div>}
       {!loading && error && <div className="skpe-monitoring-state is-error">{error}</div>}
