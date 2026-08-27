@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
 import { translateBackendMessage } from '../../../../shared/i18n/ptBR'
+import {
+  isValidTimeZone,
+  zonedLocalDateTimeToIso,
+} from './journeyEventDateTime'
 
 import './JourneyEventCreateDialog.css'
 
@@ -33,11 +37,6 @@ function toSuggestedLocalDateTime(dateOnly: string | null) {
   return `${dateOnly}T09:00`
 }
 
-function toIsoOrNull(value: string) {
-  if (!value) return null
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
-}
 
 export function JourneyEventCreateDialog({
   organizationId,
@@ -63,8 +62,14 @@ export function JourneyEventCreateDialog({
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const normalizedStart = useMemo(() => toIsoOrNull(startsAt), [startsAt])
-  const normalizedEnd = useMemo(() => toIsoOrNull(endsAt), [endsAt])
+  const normalizedStart = useMemo(
+    () => zonedLocalDateTimeToIso(startsAt, timezoneName),
+    [startsAt, timezoneName],
+  )
+  const normalizedEnd = useMemo(
+    () => zonedLocalDateTimeToIso(endsAt, timezoneName),
+    [endsAt, timezoneName],
+  )
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -81,6 +86,11 @@ export function JourneyEventCreateDialog({
 
     if (!normalizedTitle) {
       setErrorMessage('Informe o t\u00edtulo do evento.')
+      return
+    }
+
+    if (!isValidTimeZone(timezoneName)) {
+      setErrorMessage('O fuso hor\u00e1rio configurado para o evento \u00e9 inv\u00e1lido.')
       return
     }
 

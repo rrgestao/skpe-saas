@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
 import { translateBackendMessage } from '../../../../shared/i18n/ptBR'
+import {
+  isoToZonedLocalDateTime,
+  isValidTimeZone,
+  zonedLocalDateTimeToIso,
+} from './journeyEventDateTime'
 
 import './JourneyEventManageDialog.css'
 
@@ -124,30 +129,6 @@ const lifecycleLabels: Record<EventLifecycle, string> = {
   archived: 'Arquivado',
 }
 
-function toLocalDateTime(value: string | null) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-
-  const pad = (part: number) => String(part).padStart(2, '0')
-  return [
-    date.getFullYear(),
-    '-',
-    pad(date.getMonth() + 1),
-    '-',
-    pad(date.getDate()),
-    'T',
-    pad(date.getHours()),
-    ':',
-    pad(date.getMinutes()),
-  ].join('')
-}
-
-function toIsoOrNull(value: string) {
-  if (!value) return null
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
-}
 
 export function JourneyEventManageDialog({
   event,
@@ -163,8 +144,12 @@ export function JourneyEventManageDialog({
   )
   const [title, setTitle] = useState(event.event_title)
   const [description, setDescription] = useState(event.event_description ?? '')
-  const [startsAt, setStartsAt] = useState(toLocalDateTime(event.starts_at))
-  const [endsAt, setEndsAt] = useState(toLocalDateTime(event.ends_at))
+  const [startsAt, setStartsAt] = useState(
+    isoToZonedLocalDateTime(event.starts_at, event.timezone_name),
+  )
+  const [endsAt, setEndsAt] = useState(
+    isoToZonedLocalDateTime(event.ends_at, event.timezone_name),
+  )
   const [priority, setPriority] = useState<EventPriority>(
     event.priority as EventPriority,
   )
@@ -204,8 +189,14 @@ export function JourneyEventManageDialog({
     useState<Record<string, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const normalizedStart = useMemo(() => toIsoOrNull(startsAt), [startsAt])
-  const normalizedEnd = useMemo(() => toIsoOrNull(endsAt), [endsAt])
+  const normalizedStart = useMemo(
+    () => zonedLocalDateTimeToIso(startsAt, event.timezone_name),
+    [event.timezone_name, startsAt],
+  )
+  const normalizedEnd = useMemo(
+    () => zonedLocalDateTimeToIso(endsAt, event.timezone_name),
+    [endsAt, event.timezone_name],
+  )
   const allowedTargets = lifecycleTargets[status] ?? []
   const eligibleUsers = participantProjection?.eligible_users ?? []
   const eligibleExternalPeople =
@@ -443,6 +434,11 @@ export function JourneyEventManageDialog({
 
     if (!normalizedTitle) {
       setErrorMessage('Informe o t\u00edtulo do evento.')
+      return
+    }
+
+    if (!isValidTimeZone(event.timezone_name)) {
+      setErrorMessage('O fuso hor\u00e1rio configurado para o evento \u00e9 inv\u00e1lido.')
       return
     }
 
