@@ -4,6 +4,7 @@ import {
   initiativeKanbanStatuses,
   initiativeKanbanStatusLabels,
   type InitiativeActionBoardRow,
+  type InitiativeActionEconomicExecution,
   type InitiativeActionLifecycle,
   type InitiativeKanbanCardModel,
   type InitiativeKanbanColumnModel,
@@ -24,6 +25,20 @@ function normalizeProgress(value: unknown) {
   if (!Number.isFinite(parsed)) return 0
 
   return Math.min(100, Math.max(0, parsed))
+}
+
+function normalizeOptionalNumber(
+  value: unknown,
+) {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const parsed = Number(value)
+
+  return Number.isFinite(parsed)
+    ? parsed
+    : null
 }
 
 function mapBoardRow(
@@ -70,6 +85,25 @@ function mapBoardRow(
       row.planned_start_date,
     plannedDueDate:
       row.planned_due_date,
+
+    plannedCost:
+      normalizeOptionalNumber(
+        row.planned_cost,
+      ),
+    actualCost:
+      normalizeOptionalNumber(
+        row.actual_cost,
+      ),
+    currencyCode: row.currency_code,
+    estimatedEffort:
+      normalizeOptionalNumber(
+        row.estimated_effort,
+      ),
+    actualEffort:
+      normalizeOptionalNumber(
+        row.actual_effort,
+      ),
+    effortUnit: row.effort_unit,
 
     startedAt: row.started_at,
     completedAt: row.completed_at,
@@ -159,6 +193,38 @@ export async function updateInitiativeActionProgress(
 
   return data
 }
+
+export async function updateInitiativeActionEconomics(
+  actionId: string,
+  execution: InitiativeActionEconomicExecution,
+) {
+  const { data, error } = await supabase.rpc(
+    'update_sparks_initiative_action',
+    {
+      target_action_id: actionId,
+      action_payload: {
+        plannedCost: execution.plannedCost,
+        actualCost: execution.actualCost,
+        currencyCode: execution.currencyCode,
+        estimatedEffort:
+          execution.estimatedEffort,
+        actualEffort:
+          execution.actualEffort,
+        effortUnit: execution.effortUnit,
+      },
+      change_reason: execution.changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível atualizar a execução econômica da ação: ${error.message}`,
+    )
+  }
+
+  return data
+}
+
 export type CreateInitiativeActionCommand = {
   initiativeId: string
   code: string
@@ -195,6 +261,7 @@ export async function createInitiativeAction(
 
   return data
 }
+
 export type CancelledInitiativeAction = {
   id: string
   code: string

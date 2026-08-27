@@ -4,12 +4,17 @@ import {
 } from 'react'
 
 import {
+  canUpdateInitiativeActionEconomics,
   canUpdateInitiativeActionProgress,
+  initiativeActionEffortUnitLabels,
+  initiativeActionEffortUnits,
   initiativeActionLifecycleLabels,
   initiativeActionPriorityLabels,
+  validateInitiativeActionEconomics,
   type InitiativeKanbanCardModel,
 } from '../contracts/initiativeActions'
 import {
+  updateInitiativeActionEconomics,
   updateInitiativeActionProgress,
 } from '../data/initiativeActionsData'
 import {
@@ -41,6 +46,14 @@ function formatDate(value: string | null) {
   return `${day}/${month}/${year}`
 }
 
+function numberToInputValue(
+  value: number | null,
+) {
+  return value === null
+    ? ''
+    : String(value)
+}
+
 export function InitiativeActionDrawer({
   card,
   onClose,
@@ -55,6 +68,40 @@ export function InitiativeActionDrawer({
     useState('')
   const [savingProgress, setSavingProgress] =
     useState(false)
+
+  const [plannedCost, setPlannedCost] =
+    useState(
+      numberToInputValue(card.plannedCost),
+    )
+  const [actualCost, setActualCost] =
+    useState(
+      numberToInputValue(card.actualCost),
+    )
+  const [currencyCode, setCurrencyCode] =
+    useState(card.currencyCode)
+  const [
+    estimatedEffort,
+    setEstimatedEffort,
+  ] = useState(
+    numberToInputValue(
+      card.estimatedEffort,
+    ),
+  )
+  const [actualEffort, setActualEffort] =
+    useState(
+      numberToInputValue(card.actualEffort),
+    )
+  const [effortUnit, setEffortUnit] =
+    useState(card.effortUnit ?? '')
+  const [
+    economicChangeReason,
+    setEconomicChangeReason,
+  ] = useState('')
+  const [
+    savingEconomics,
+    setSavingEconomics,
+  ] = useState(false)
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
@@ -63,12 +110,20 @@ export function InitiativeActionDrawer({
       card.status,
     )
 
+  const economicsEditable =
+    canUpdateInitiativeActionEconomics(
+      card.status,
+    )
+
+  const saving =
+    savingProgress || savingEconomics
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (
         event.key === 'Escape' &&
         !showLifecycle &&
-        !savingProgress
+        !saving
       ) {
         onClose()
       }
@@ -87,7 +142,7 @@ export function InitiativeActionDrawer({
     }
   }, [
     onClose,
-    savingProgress,
+    saving,
     showLifecycle,
   ])
 
@@ -145,6 +200,72 @@ export function InitiativeActionDrawer({
     }
   }
 
+  async function handleEconomicsUpdate() {
+    if (!economicsEditable) {
+      setErrorMessage(
+        'A execução econômica não pode ser alterada em uma ação encerrada.',
+      )
+      return
+    }
+
+    const validation =
+      validateInitiativeActionEconomics({
+        plannedCost,
+        actualCost,
+        currencyCode,
+        estimatedEffort,
+        actualEffort,
+        effortUnit,
+        changeReason:
+          economicChangeReason,
+      })
+
+    if (!validation.ok) {
+      setErrorMessage(validation.message)
+      return
+    }
+
+    const next = validation.value
+
+    if (
+      next.plannedCost === card.plannedCost &&
+      next.actualCost === card.actualCost &&
+      next.currencyCode ===
+        card.currencyCode.toUpperCase() &&
+      next.estimatedEffort ===
+        card.estimatedEffort &&
+      next.actualEffort ===
+        card.actualEffort &&
+      next.effortUnit === card.effortUnit
+    ) {
+      setErrorMessage(
+        'Informe ao menos uma alteração econômica efetiva.',
+      )
+      return
+    }
+
+    setSavingEconomics(true)
+    setErrorMessage(null)
+
+    try {
+      await updateInitiativeActionEconomics(
+        card.actionId,
+        next,
+      )
+
+      await onChanged()
+      onClose()
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível atualizar a execução econômica.',
+      )
+    } finally {
+      setSavingEconomics(false)
+    }
+  }
+
   return (
     <>
       <div
@@ -153,7 +274,7 @@ export function InitiativeActionDrawer({
         onMouseDown={(event) => {
           if (
             event.target === event.currentTarget &&
-            !savingProgress
+            !saving
           ) {
             onClose()
           }
@@ -180,7 +301,7 @@ export function InitiativeActionDrawer({
             <button
               type="button"
               onClick={onClose}
-              disabled={savingProgress}
+              disabled={saving}
               aria-label="Fechar detalhes da ação"
             >
               Fechar
@@ -269,6 +390,7 @@ export function InitiativeActionDrawer({
               onClick={() =>
                 setShowLifecycle(true)
               }
+              disabled={saving}
             >
               Alterar situação
             </button>
@@ -294,7 +416,7 @@ export function InitiativeActionDrawer({
                         event.target.value,
                       )
                     }
-                    disabled={savingProgress}
+                    disabled={saving}
                   />
                 </label>
 
@@ -310,7 +432,7 @@ export function InitiativeActionDrawer({
                         event.target.value,
                       )
                     }
-                    disabled={savingProgress}
+                    disabled={saving}
                   />
                 </label>
 
@@ -319,7 +441,7 @@ export function InitiativeActionDrawer({
                   onClick={() =>
                     void handleProgressUpdate()
                   }
-                  disabled={savingProgress}
+                  disabled={saving}
                 >
                   {savingProgress
                     ? 'Salvando...'
@@ -331,6 +453,180 @@ export function InitiativeActionDrawer({
                 O progresso só pode ser atualizado
                 quando a ação estiver em execução,
                 em espera ou bloqueada.
+              </p>
+            )}
+          </section>
+
+          <section className="initiative-action-drawer__section">
+            <h3>Execução econômica</h3>
+            <p>
+              Registre custos e esforço diretamente
+              na ação. Estes valores permanecem
+              independentes dos valores da iniciativa
+              e não sofrem conversão cambial ou
+              consolidação automática.
+            </p>
+
+            <label className="initiative-action-field">
+              <span>Custo planejado</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={plannedCost}
+                onChange={(event) =>
+                  setPlannedCost(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  saving || !economicsEditable
+                }
+              />
+            </label>
+
+            <label className="initiative-action-field">
+              <span>Custo realizado</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={actualCost}
+                onChange={(event) =>
+                  setActualCost(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  saving || !economicsEditable
+                }
+              />
+            </label>
+
+            <label className="initiative-action-field">
+              <span>Moeda ISO *</span>
+              <input
+                type="text"
+                maxLength={3}
+                value={currencyCode}
+                onChange={(event) =>
+                  setCurrencyCode(
+                    event.target.value
+                      .toUpperCase(),
+                  )
+                }
+                disabled={
+                  saving || !economicsEditable
+                }
+              />
+            </label>
+
+            <label className="initiative-action-field">
+              <span>Esforço estimado</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={estimatedEffort}
+                onChange={(event) =>
+                  setEstimatedEffort(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  saving || !economicsEditable
+                }
+              />
+            </label>
+
+            <label className="initiative-action-field">
+              <span>Esforço realizado</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={actualEffort}
+                onChange={(event) =>
+                  setActualEffort(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  saving || !economicsEditable
+                }
+              />
+            </label>
+
+            <label className="initiative-action-field">
+              <span>Unidade de esforço</span>
+              <select
+                value={effortUnit}
+                onChange={(event) =>
+                  setEffortUnit(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  saving || !economicsEditable
+                }
+              >
+                <option value="">
+                  Não definida
+                </option>
+                {initiativeActionEffortUnits.map(
+                  (unit) => (
+                    <option
+                      key={unit}
+                      value={unit}
+                    >
+                      {
+                        initiativeActionEffortUnitLabels[
+                          unit
+                        ]
+                      }
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+
+            {economicsEditable ? (
+              <>
+                <label className="initiative-action-field">
+                  <span>
+                    Justificativa para auditoria *
+                  </span>
+                  <textarea
+                    rows={4}
+                    value={
+                      economicChangeReason
+                    }
+                    onChange={(event) =>
+                      setEconomicChangeReason(
+                        event.target.value,
+                      )
+                    }
+                    disabled={saving}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handleEconomicsUpdate()
+                  }
+                  disabled={saving}
+                >
+                  {savingEconomics
+                    ? 'Salvando...'
+                    : 'Atualizar execução econômica'}
+                </button>
+              </>
+            ) : (
+              <p>
+                A execução econômica fica somente
+                para consulta quando a ação estiver
+                concluída, cancelada ou arquivada.
               </p>
             )}
           </section>
