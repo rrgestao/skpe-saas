@@ -29,7 +29,45 @@ type JourneyEventManageDialogProps = {
   event: ManagedJourneyEvent
   onClose: () => void
   onChanged: () => void
+  onParticipantChanged: () => void
 }
+
+type EventParticipant = {
+  participant_id: string
+  user_id: string
+  user_email: string
+  user_display_name: string
+  participant_role: ParticipantRole
+  response_status: string
+  attendance_status: AttendanceStatus
+  required: boolean
+}
+
+type EligibleEventUser = {
+  user_id: string
+  user_email: string
+  user_display_name: string
+  is_current_participant: boolean
+}
+
+type ParticipantManagementProjection = {
+  event_id: string
+  event_status: string
+  organization_id: string
+  source_module_code: string | null
+  participants: EventParticipant[]
+  eligible_users: EligibleEventUser[]
+}
+
+type ParticipantRole =
+  | 'owner'
+  | 'chair'
+  | 'secretary'
+  | 'responsible'
+  | 'participant'
+  | 'observer'
+
+type AttendanceStatus = 'not_recorded' | 'attended' | 'absent'
 
 type EventType =
   | 'meeting'
@@ -98,6 +136,7 @@ export function JourneyEventManageDialog({
   event,
   onClose,
   onChanged,
+  onParticipantChanged,
 }: JourneyEventManageDialogProps) {
   const status = event.event_status as EventLifecycle
   const canEditContent = !['completed', 'cancelled', 'archived'].includes(status)
@@ -121,20 +160,174 @@ export function JourneyEventManageDialog({
   const [lifecycleReason, setLifecycleReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
+  const [participantBusy, setParticipantBusy] = useState(false)
+  const [participantLoading, setParticipantLoading] = useState(false)
+  const [participantProjection, setParticipantProjection] =
+    useState<ParticipantManagementProjection | null>(null)
+  const [participantUserId, setParticipantUserId] = useState('')
+  const [participantRole, setParticipantRole] =
+    useState<ParticipantRole>('participant')
+  const [participantRequired, setParticipantRequired] = useState(true)
+  const [participantReason, setParticipantReason] = useState('')
+  const [attendanceReasons, setAttendanceReasons] =
+    useState<Record<string, string>>({})
+  const [removeReasons, setRemoveReasons] =
+    useState<Record<string, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const normalizedStart = useMemo(() => toIsoOrNull(startsAt), [startsAt])
   const normalizedEnd = useMemo(() => toIsoOrNull(endsAt), [endsAt])
   const allowedTargets = lifecycleTargets[status] ?? []
+  const eligibleUsers = participantProjection?.eligible_users ?? []
+  const participants = participantProjection?.participants ?? []
 
   useEffect(() => {
     function handleKeyDown(keyboardEvent: KeyboardEvent) {
-      if (keyboardEvent.key === 'Escape' && !saving && !transitioning) onClose()
+      if (
+        keyboardEvent.key === 'Escape' &&
+        !saving &&
+        !transitioning &&
+        !participantBusy
+      ) {
+        onClose()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, saving, transitioning])
+  }, [onClose, participantBusy, saving, transitioning])
+
+  async function loadParticipantManagement() {
+    setParticipantLoading(true)
+
+    const { data, error } = await supabase.rpc(
+      'get_sparks_event_participant_management',
+      { target_event_id: event.event_id },
+    )
+
+    if (error) {
+      setParticipantProjection(null)
+      setErrorMessage(translateBackendMessage(error.message))
+      setParticipantLoading(false)
+      return
+    }
+
+    setParticipantProjection(
+      (data ?? null) as ParticipantManagementProjection | null,
+    )
+    setParticipantLoading(false)
+  }
+
+  useEffect(() => {
+    void loadParticipantManagement()
+  }, [event.event_id])
+
+  async function setParticipant() {
+    const reason = participantReason.trim()
+
+    if (!participantUserId) {
+      setErrorMessage('Selecione um participante.')
+      return
+    }
+
+    if (reason.length < 10) {
+      setErrorMessage(
+        'Informe uma justificativa de participante com pelo menos 10 caracteres.',
+      )
+      return
+    }
+
+    setParticipantBusy(true)
+    setErrorMessage(null)
+
+    const { error } = await supabase.rpc('set_sparks_event_participant', {
+      target_event_id: event.event_id,
+      target_user_id: participantUserId,
+      target_participant_role: participantRole,
+      target_required: participantRequired,
+      change_reason: reason,
+    })
+
+    if (error) {
+      setErrorMessage(translateBackendMessage(error.message))
+      setParticipantBusy(false)
+      return
+    }
+
+    setParticipantUserId('')
+    setParticipantRole('participant')
+    setParticipantRequired(true)
+    setParticipantReason('')
+    await loadParticipantManagement()
+    onParticipantChanged()
+    setParticipantBusy(false)
+  }
+
+  async function removeParticipant(userId: string) {
+    const reason = (removeReasons[userId] ?? '').trim()
+
+    if (reason.length < 10) {
+      setErrorMessage(
+        'Informe uma justificativa de remo\\u00e7\\u00e3o com pelo menos 10 caracteres.',
+      )
+      return
+    }
+
+    setParticipantBusy(true)
+    setErrorMessage(null)
+
+    const { error } = await supabase.rpc('remove_sparks_event_participant', {
+      target_event_id: event.event_id,
+      target_user_id: userId,
+      change_reason: reason,
+    })
+
+    if (error) {
+      setErrorMessage(translateBackendMessage(error.message))
+      setParticipantBusy(false)
+      return
+    }
+
+    setRemoveReasons((current) => ({ ...current, [userId]: '' }))
+    await loadParticipantManagement()
+    onParticipantChanged()
+    setParticipantBusy(false)
+  }
+
+  async function recordAttendance(
+    userId: string,
+    attendanceStatus: AttendanceStatus,
+  ) {
+    const reason = (attendanceReasons[userId] ?? '').trim()
+
+    if (reason.length < 10) {
+      setErrorMessage(
+        'Informe uma justificativa de presen\\u00e7a com pelo menos 10 caracteres.',
+      )
+      return
+    }
+
+    setParticipantBusy(true)
+    setErrorMessage(null)
+
+    const { error } = await supabase.rpc('record_sparks_event_attendance', {
+      target_event_id: event.event_id,
+      target_user_id: userId,
+      target_attendance_status: attendanceStatus,
+      change_reason: reason,
+    })
+
+    if (error) {
+      setErrorMessage(translateBackendMessage(error.message))
+      setParticipantBusy(false)
+      return
+    }
+
+    setAttendanceReasons((current) => ({ ...current, [userId]: '' }))
+    await loadParticipantManagement()
+    onParticipantChanged()
+    setParticipantBusy(false)
+  }
 
   async function saveChanges() {
     const normalizedTitle = title.trim()
@@ -267,7 +460,7 @@ export function JourneyEventManageDialog({
           <button
             type="button"
             onClick={onClose}
-            disabled={saving || transitioning}
+            disabled={saving || transitioning || participantBusy}
           >
             Fechar
           </button>
@@ -280,9 +473,13 @@ export function JourneyEventManageDialog({
           </div>
           <div>
             <span>Participantes</span>
-            <strong>{event.participant_count}</strong>
+            <strong>{participants.length || event.participant_count}</strong>
             <small>
-              {event.accepted_count} aceito(s) - {event.attended_count} presente(s)
+              {event.accepted_count} aceito(s) - {
+                participants.filter((participant) =>
+                  participant.attendance_status === 'attended'
+                ).length || event.attended_count
+              } presente(s)
             </small>
           </div>
           <div>
@@ -423,6 +620,185 @@ export function JourneyEventManageDialog({
             As transi\u00e7\u00f5es de lifecycle ainda permitidas aparecem abaixo.
           </div>
         )}
+
+        <section className="skpe-journey-event-participants">
+          <header>
+            <div>
+              <span>Participa\u00e7\u00e3o governada</span>
+              <strong>Participantes e presen\u00e7a</strong>
+            </div>
+            <small>
+              Somente usu\u00e1rios ativos e eleg\u00edveis ao m\u00f3dulo de origem podem ser vinculados.
+            </small>
+          </header>
+
+          {participantLoading ? (
+            <p className="skpe-journey-event-manage-note">
+              Carregando participantes...
+            </p>
+          ) : (
+            <>
+              <div className="skpe-journey-event-participant-add">
+                <label>
+                  <span>Usu\u00e1rio *</span>
+                  <select
+                    value={participantUserId}
+                    onChange={(changeEvent) =>
+                      setParticipantUserId(changeEvent.target.value)
+                    }
+                    disabled={participantBusy}
+                  >
+                    <option value="">Selecione</option>
+                    {eligibleUsers.map((candidate) => (
+                      <option key={candidate.user_id} value={candidate.user_id}>
+                        {candidate.user_display_name} - {candidate.user_email}
+                        {candidate.is_current_participant ? ' - j\u00e1 participante' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>Papel *</span>
+                  <select
+                    value={participantRole}
+                    onChange={(changeEvent) =>
+                      setParticipantRole(
+                        changeEvent.target.value as ParticipantRole,
+                      )
+                    }
+                    disabled={participantBusy}
+                  >
+                    <option value="owner">Respons\u00e1vel principal</option>
+                    <option value="chair">Coordena\u00e7\u00e3o</option>
+                    <option value="secretary">Secretaria</option>
+                    <option value="responsible">Respons\u00e1vel</option>
+                    <option value="participant">Participante</option>
+                    <option value="observer">Observador</option>
+                  </select>
+                </label>
+
+                <label className="is-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={participantRequired}
+                    onChange={(changeEvent) =>
+                      setParticipantRequired(changeEvent.target.checked)
+                    }
+                    disabled={participantBusy}
+                  />
+                  <span>Participa\u00e7\u00e3o obrigat\u00f3ria</span>
+                </label>
+
+                <label className="is-wide">
+                  <span>Justificativa do v\u00ednculo/ajuste *</span>
+                  <textarea
+                    rows={2}
+                    value={participantReason}
+                    onChange={(changeEvent) =>
+                      setParticipantReason(changeEvent.target.value)
+                    }
+                    disabled={participantBusy}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  className="is-primary"
+                  onClick={() => void setParticipant()}
+                  disabled={participantBusy}
+                >
+                  {participantBusy ? 'Atualizando...' : 'Adicionar / atualizar participante'}
+                </button>
+              </div>
+
+              <div className="skpe-journey-event-participant-list">
+                {participants.length === 0 ? (
+                  <p className="skpe-journey-event-manage-note">
+                    Nenhum participante registrado para este evento.
+                  </p>
+                ) : (
+                  participants.map((participant) => (
+                    <article
+                      key={participant.participant_id}
+                      className="skpe-journey-event-participant-card"
+                    >
+                      <header>
+                        <div>
+                          <strong>{participant.user_display_name}</strong>
+                          <small>{participant.user_email}</small>
+                        </div>
+                        <div className="skpe-journey-event-participant-tags">
+                          <span>{participant.participant_role}</span>
+                          <span>{participant.required ? 'Obrigat\u00f3rio' : 'Opcional'}</span>
+                          <span>{participant.response_status}</span>
+                        </div>
+                      </header>
+
+                      <div className="skpe-journey-event-participant-attendance">
+                        <label>
+                          <span>Presen\u00e7a</span>
+                          <select
+                            value={participant.attendance_status}
+                            onChange={(changeEvent) =>
+                              void recordAttendance(
+                                participant.user_id,
+                                changeEvent.target.value as AttendanceStatus,
+                              )
+                            }
+                            disabled={participantBusy}
+                          >
+                            <option value="not_recorded">N\u00e3o registrada</option>
+                            <option value="attended">Presente</option>
+                            <option value="absent">Ausente</option>
+                          </select>
+                        </label>
+
+                        <label className="is-wide">
+                          <span>Justificativa da presen\u00e7a *</span>
+                          <input
+                            value={attendanceReasons[participant.user_id] ?? ''}
+                            onChange={(changeEvent) =>
+                              setAttendanceReasons((current) => ({
+                                ...current,
+                                [participant.user_id]: changeEvent.target.value,
+                              }))
+                            }
+                            disabled={participantBusy}
+                            placeholder="M\u00ednimo de 10 caracteres"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="skpe-journey-event-participant-remove">
+                        <input
+                          value={removeReasons[participant.user_id] ?? ''}
+                          onChange={(changeEvent) =>
+                            setRemoveReasons((current) => ({
+                              ...current,
+                              [participant.user_id]: changeEvent.target.value,
+                            }))
+                          }
+                          disabled={participantBusy}
+                          placeholder="Justificativa para remo\u00e7\u00e3o"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void removeParticipant(participant.user_id)
+                          }
+                          disabled={participantBusy}
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </section>
 
         <section className="skpe-journey-event-lifecycle">
           <header>

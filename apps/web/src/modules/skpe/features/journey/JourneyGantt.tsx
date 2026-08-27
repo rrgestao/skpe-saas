@@ -1003,6 +1003,9 @@ export function JourneyGantt({
             setSelectedEvent(null)
             setLocalEventRevision((current) => current + 1)
           }}
+          onParticipantChanged={() => {
+            setLocalEventRevision((current) => current + 1)
+          }}
         />
       )}
 

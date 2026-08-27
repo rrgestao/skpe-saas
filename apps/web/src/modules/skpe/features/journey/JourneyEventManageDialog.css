@@ -197,3 +197,182 @@
     grid-column: auto;
   }
 }
+.skpe-journey-event-participants {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dfe8e4;
+}
+
+.skpe-journey-event-participants > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-journey-event-participants > header strong {
+  display: block;
+  margin-top: 0.15rem;
+  color: #29473d;
+}
+
+.skpe-journey-event-participants > header small {
+  max-width: 360px;
+  color: #718078;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.skpe-journey-event-participant-add {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 10px;
+  background: #f8fbfa;
+}
+
+.skpe-journey-event-participant-add label,
+.skpe-journey-event-participant-attendance label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.skpe-journey-event-participant-add label.is-wide,
+.skpe-journey-event-participant-attendance label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.skpe-journey-event-participant-add label.is-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skpe-journey-event-participant-add label.is-checkbox input {
+  width: auto;
+}
+
+.skpe-journey-event-participant-add label > span,
+.skpe-journey-event-participant-attendance label > span {
+  color: #61726a;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.skpe-journey-event-participant-add select,
+.skpe-journey-event-participant-add textarea,
+.skpe-journey-event-participant-attendance select,
+.skpe-journey-event-participant-attendance input,
+.skpe-journey-event-participant-remove input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.58rem 0.65rem;
+  border: 1px solid #cfdcd7;
+  border-radius: 8px;
+  background: #fff;
+  color: #243f36;
+  font: inherit;
+}
+
+.skpe-journey-event-participant-add > button {
+  justify-self: end;
+  grid-column: 1 / -1;
+}
+
+.skpe-journey-event-participant-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.skpe-journey-event-participant-card {
+  padding: 0.8rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.skpe-journey-event-participant-card > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skpe-journey-event-participant-card > header > div:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.skpe-journey-event-participant-card > header strong {
+  color: #29473d;
+}
+
+.skpe-journey-event-participant-card > header small {
+  color: #718078;
+  font-size: 0.7rem;
+}
+
+.skpe-journey-event-participant-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+
+.skpe-journey-event-participant-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  background: #edf4f1;
+  color: #53685f;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.skpe-journey-event-participant-attendance {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+}
+
+.skpe-journey-event-participant-remove {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+@media (max-width: 700px) {
+  .skpe-journey-event-participants > header,
+  .skpe-journey-event-participant-card > header {
+    display: grid;
+  }
+
+  .skpe-journey-event-participants > header small {
+    max-width: none;
+    text-align: left;
+  }
+
+  .skpe-journey-event-participant-add,
+  .skpe-journey-event-participant-attendance,
+  .skpe-journey-event-participant-remove {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-journey-event-participant-add label.is-wide,
+  .skpe-journey-event-participant-attendance label.is-wide,
+  .skpe-journey-event-participant-add > button {
+    grid-column: auto;
+  }
+
+  .skpe-journey-event-participant-tags {
+    justify-content: flex-start;
+  }
+}
