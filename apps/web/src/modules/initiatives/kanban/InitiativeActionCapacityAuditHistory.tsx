@@ -6,6 +6,7 @@ import {
 } from '../data/initiativeActionCapacityAuditData'
 import {
   formatInitiativeActionCapacityAuditAction,
+  formatInitiativeActionCapacityAuditActor,
   summarizeInitiativeActionCapacityAuditChange,
 } from '../contracts/initiativeActionCapacityAudit'
 
@@ -25,18 +26,6 @@ function formatOccurredAt(value: string) {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(parsed)
-}
-
-function formatActor(entry: InitiativeActionCapacityAuditEntry) {
-  if (entry.actorName) {
-    return entry.actorName
-  }
-
-  if (entry.actorUserId) {
-    return 'Usuário identificado sem nome organizacional disponível'
-  }
-
-  return 'Sistema ou automação'
 }
 
 export function InitiativeActionCapacityAuditHistory({
@@ -100,7 +89,9 @@ export function InitiativeActionCapacityAuditHistory({
                 {' · '}
                 {formatOccurredAt(entry.occurredAt)}
               </p>
-              <small>Executado por: {formatActor(entry)}</small>
+              <small>
+                Executado por: {formatInitiativeActionCapacityAuditActor(entry)}
+              </small>
               <br />
               <small>Justificativa: {entry.changeReason}</small>
               {changes.length > 0 ? (
