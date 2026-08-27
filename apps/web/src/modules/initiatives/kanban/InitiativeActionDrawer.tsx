@@ -1265,7 +1265,12 @@ export function InitiativeActionDrawer({
                             organizationId={card.organizationId}
                             actionId={card.actionId}
                             allocation={allocation}
-                            disabled={saving}
+                            disabled={
+                              saving ||
+                              (editingCapacityAllocationId !== null &&
+                                editingCapacityAllocationId !==
+                                  allocation.allocationId)
+                            }
                             onSavingChange={
                               setSavingCapacityAllocationEdit
                             }
