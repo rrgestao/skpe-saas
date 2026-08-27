@@ -7142,6 +7142,7 @@ export function SkpeCockpit({
         {activeSection === 'monitoring' && canViewMonitoring && (
           <MonitoringSection
             fallbackProjectId={projectContext?.project_id ?? null}
+            canManageEconomic={canManageJourney}
             onOpenJourney={() => navigateToSection('journey')}
             onOpenInitiatives={(target) => {
               setInitiativeDrilldown(target ?? null)

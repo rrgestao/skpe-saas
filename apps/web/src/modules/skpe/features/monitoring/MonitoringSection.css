@@ -224,3 +224,228 @@
     grid-template-columns: 1fr;
   }
 }
+.skpe-monitoring-economic {
+  padding: 0.95rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.skpe-monitoring-economic > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-monitoring-economic > header span {
+  display: block;
+  color: #61726a;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skpe-monitoring-economic > header h2 {
+  margin: 0.2rem 0 0;
+  color: #183c31;
+}
+
+.skpe-monitoring-economic button,
+.skpe-economic-dialog button {
+  min-height: 38px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #c8d7d1;
+  border-radius: 9px;
+  background: #fff;
+  color: #315148;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.skpe-monitoring-economic-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+}
+
+.skpe-monitoring-economic-grid > div {
+  padding: 0.7rem;
+  border: 1px solid #e0e8e5;
+  border-radius: 9px;
+  background: #f8fbfa;
+}
+
+.skpe-monitoring-economic-grid span {
+  display: block;
+  color: #61726a;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.skpe-monitoring-economic-grid strong {
+  display: block;
+  margin-top: 0.3rem;
+  color: #29473d;
+}
+
+.skpe-monitoring-economic-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+.skpe-monitoring-economic-breakdown span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0.16rem 0.45rem;
+  border-radius: 999px;
+  background: #edf3f0;
+  color: #4e6259;
+  font-size: 0.66rem;
+  font-weight: 750;
+}
+
+.skpe-monitoring-economic > p {
+  margin: 0.7rem 0 0;
+  color: #687870;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.skpe-economic-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1220;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(18 35 30 / 52%);
+}
+
+.skpe-economic-dialog {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgb(20 45 37 / 24%);
+}
+
+.skpe-economic-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-economic-dialog > header span {
+  color: #61726a;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skpe-economic-dialog > header h2 {
+  margin: 0.2rem 0 0;
+  color: #183c31;
+}
+
+.skpe-economic-dialog-note,
+.skpe-economic-dialog-message {
+  margin: 0.8rem 0 0;
+  padding: 0.7rem;
+  border-radius: 9px;
+  background: #f1f6f4;
+  color: #53665e;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.skpe-economic-dialog-message.is-error {
+  border: 1px solid #efd8b3;
+  background: #fff8ed;
+  color: #76501c;
+}
+
+.skpe-economic-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.skpe-economic-dialog-grid label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.skpe-economic-dialog-grid label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.skpe-economic-dialog-grid label > span {
+  color: #61726a;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.skpe-economic-dialog-grid input,
+.skpe-economic-dialog-grid select,
+.skpe-economic-dialog-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.58rem 0.65rem;
+  border: 1px solid #cfdcd7;
+  border-radius: 8px;
+  background: #fff;
+  color: #243f36;
+  font: inherit;
+}
+
+.skpe-economic-dialog button.is-primary {
+  border-color: #2e7c65;
+  background: #2e7c65;
+  color: #fff;
+}
+
+.skpe-economic-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.skpe-economic-dialog > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-monitoring-economic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .skpe-monitoring-economic > header,
+  .skpe-economic-dialog > header {
+    display: grid;
+  }
+
+  .skpe-monitoring-economic-grid,
+  .skpe-economic-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-economic-dialog-grid label.is-wide {
+    grid-column: auto;
+  }
+}

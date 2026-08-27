@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
 import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
+import {
+  InitiativeEconomicExecutionDialog,
+  type InitiativeEconomicDirect,
+} from './InitiativeEconomicExecutionDialog'
 
 import './MonitoringSection.css'
 
@@ -12,6 +16,7 @@ type MonitoringDrilldownTarget = {
 
 type MonitoringSectionProps = {
   fallbackProjectId: string | null
+  canManageEconomic: boolean
   onOpenJourney: () => void
   onOpenInitiatives: (target?: MonitoringDrilldownTarget) => void
 }
@@ -54,9 +59,27 @@ type OperationalProjection = {
   initiativeTemporal?: InitiativeTemporalRow[]
   actionBoard?: ActionBoardRow[]
   economic?: {
+    initiative?: {
+      initiativeId: string
+      organizationId: string
+      code: string
+      name: string
+      lifecycleStatus: string
+      direct: InitiativeEconomicDirect
+    }
     actions?: {
-      costByCurrency?: Array<{ currencyCode: string }>
-      effortByUnit?: Array<{ effortUnit: string }>
+      costByCurrency?: Array<{
+        currencyCode: string
+        currentPlannedCost: number
+        actualRealizedCost: number
+        currentPlanVariance: number
+      }>
+      effortByUnit?: Array<{
+        effortUnit: string
+        currentEstimatedEffort: number
+        actualRealizedEffort: number
+        currentPlanVariance: number
+      }>
       dataQuality?: {
         actionsWithCostWithoutCurrency: number
         actionsWithEffortWithoutUnit: number
@@ -111,6 +134,7 @@ function getTemporalException(row: InitiativeTemporalRow) {
 
 export function MonitoringSection({
   fallbackProjectId,
+  canManageEconomic,
   onOpenJourney,
   onOpenInitiatives,
 }: MonitoringSectionProps) {
@@ -121,6 +145,8 @@ export function MonitoringSection({
   const [projection, setProjection] = useState<OperationalProjection | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [reloadToken, setReloadToken] = useState(0)
+  const [showEconomicEditor, setShowEconomicEditor] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -162,7 +188,7 @@ export function MonitoringSection({
     return () => {
       active = false
     }
-  }, [organizationId, projectId])
+  }, [organizationId, projectId, reloadToken])
 
   const initiativeTemporal = projection?.initiativeTemporal ?? []
   const actionBoard = projection?.actionBoard ?? []
@@ -201,9 +227,17 @@ export function MonitoringSection({
     [events],
   )
 
+  const economicInitiative = projection?.economic?.initiative
+  const economicDirect = economicInitiative?.direct
   const economicQuality = projection?.economic?.actions?.dataQuality
   const costCurrencies = projection?.economic?.actions?.costByCurrency ?? []
   const effortUnits = projection?.economic?.actions?.effortByUnit ?? []
+  const economicEditable =
+    canManageEconomic &&
+    economicInitiative !== undefined &&
+    !['completed', 'cancelled', 'archived'].includes(
+      economicInitiative.lifecycleStatus,
+    )
   const allocations = projection?.capacity?.allocations ?? []
 
   return (
@@ -213,13 +247,19 @@ export function MonitoringSection({
           <p className="skpe-eyebrow">Monitoramento governado</p>
           <h1>Execução estratégica em uma visão gerencial</h1>
           <p>
-            Leitura integrada da projeção operacional canônica. Esta superfície não
-            altera Jornada, ações, agenda, econômico ou capacidade.
+            Leitura integrada da projeção operacional canônica. Jornada, ações, agenda
+            e capacidade permanecem em suas fontes governadas; a execução econômica da
+            iniciativa pode ser registrada aqui por usuários autorizados.
           </p>
         </div>
         <div className="skpe-monitoring-actions">
           <button type="button" onClick={onOpenJourney}>Abrir Jornada</button>
           <button type="button" onClick={() => onOpenInitiatives()}>Abrir Iniciativas / Kanban</button>
+          {economicEditable ? (
+            <button type="button" onClick={() => setShowEconomicEditor(true)}>
+              Registrar execução econômica
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -346,6 +386,79 @@ export function MonitoringSection({
             </article>
           </div>
 
+          {economicInitiative && economicDirect ? (
+            <article className="skpe-monitoring-economic">
+              <header>
+                <div>
+                  <span>Execução econômica governada</span>
+                  <h2>
+                    {economicInitiative.code} · {economicInitiative.name}
+                  </h2>
+                </div>
+                {economicEditable ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowEconomicEditor(true)}
+                  >
+                    Editar valores diretos
+                  </button>
+                ) : null}
+              </header>
+
+              <div className="skpe-monitoring-economic-grid">
+                <div>
+                  <span>Custo direto planejado</span>
+                  <strong>
+                    {economicDirect.currencyCode ?? '—'}{' '}
+                    {economicDirect.plannedCost ?? '—'}
+                  </strong>
+                </div>
+                <div>
+                  <span>Custo direto realizado</span>
+                  <strong>
+                    {economicDirect.currencyCode ?? '—'}{' '}
+                    {economicDirect.actualCost ?? '—'}
+                  </strong>
+                </div>
+                <div>
+                  <span>Esforço direto estimado</span>
+                  <strong>
+                    {economicDirect.estimatedEffort ?? '—'}{' '}
+                    {economicDirect.effortUnit ?? ''}
+                  </strong>
+                </div>
+                <div>
+                  <span>Esforço direto realizado</span>
+                  <strong>
+                    {economicDirect.actualEffort ?? '—'}{' '}
+                    {economicDirect.effortUnit ?? ''}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="skpe-monitoring-economic-breakdown">
+                {costCurrencies.map((row) => (
+                  <span key={`cost-${row.currencyCode}`}>
+                    Ações · {row.currencyCode}: planejado {row.currentPlannedCost}
+                    {' · '}realizado {row.actualRealizedCost}
+                  </span>
+                ))}
+                {effortUnits.map((row) => (
+                  <span key={`effort-${row.effortUnit}`}>
+                    Ações · {row.effortUnit}: estimado {row.currentEstimatedEffort}
+                    {' · '}realizado {row.actualRealizedEffort}
+                  </span>
+                ))}
+              </div>
+
+              <p>
+                Valores diretos da iniciativa e valores derivados das ações são
+                apresentados separadamente. Não há roll-up automático nem conversão
+                cambial.
+              </p>
+            </article>
+          ) : null}
+
           <footer className="skpe-monitoring-footer">
             <span>Referência: {projection.referenceDate ?? 'data atual da organização'}</span>
             <span>
@@ -354,6 +467,20 @@ export function MonitoringSection({
           </footer>
         </>
       )}
+      {showEconomicEditor && economicInitiative ? (
+        <InitiativeEconomicExecutionDialog
+          initiativeId={economicInitiative.initiativeId}
+          initiativeCode={economicInitiative.code}
+          initiativeName={economicInitiative.name}
+          lifecycleStatus={economicInitiative.lifecycleStatus}
+          direct={economicInitiative.direct}
+          onClose={() => setShowEconomicEditor(false)}
+          onSaved={() => {
+            setShowEconomicEditor(false)
+            setReloadToken((current) => current + 1)
+          }}
+        />
+      ) : null}
     </section>
   )
 }
