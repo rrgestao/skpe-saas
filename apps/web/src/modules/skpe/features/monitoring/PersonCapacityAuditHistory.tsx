@@ -7,6 +7,7 @@ import {
 } from './personCapacity'
 import {
   formatPersonCapacityAuditAction,
+  formatPersonCapacityAuditActor,
   summarizePersonCapacityAuditChange,
 } from './personCapacityAudit'
 
@@ -86,6 +87,8 @@ export function PersonCapacityAuditHistory({
                 {' · '}
                 {formatOccurredAt(entry.occurredAt)}
               </p>
+              <small>Executado por: {formatPersonCapacityAuditActor(entry)}</small>
+              <br />
               <small>Justificativa: {entry.changeReason}</small>
               {changes.length > 0 ? (
                 <ul>
