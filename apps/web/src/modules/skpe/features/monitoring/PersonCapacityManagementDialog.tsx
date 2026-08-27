@@ -6,12 +6,14 @@ import {
   loadPersonCapacityCandidates,
   loadPersonCapacityPeriods,
   transitionPersonCapacityPeriod,
+  updatePersonCapacityPeriod,
   type PersonCapacityCandidate,
   type PersonCapacityPeriod,
 } from './personCapacity'
 import {
   getAllowedPersonCapacityPeriodTransitions,
   validatePersonCapacityPeriodCreation,
+  validatePersonCapacityPeriodEdit,
   validatePersonCapacityPeriodTransition,
   type PersonCapacityPeriodStatus,
 } from './personCapacityValidation'
@@ -49,46 +51,36 @@ export function PersonCapacityManagementDialog({
   onClose,
   onSaved,
 }: PersonCapacityManagementDialogProps) {
-  const [candidates, setCandidates] = useState<
-    PersonCapacityCandidate[]
-  >([])
-  const [loadingCandidates, setLoadingCandidates] =
-    useState(true)
-  const [selectedPersonId, setSelectedPersonId] =
-    useState('')
-  const [periods, setPeriods] = useState<
-    PersonCapacityPeriod[]
-  >([])
-  const [loadingPeriods, setLoadingPeriods] =
-    useState(false)
-  const [selectedPeriodId, setSelectedPeriodId] =
-    useState('')
+  const [candidates, setCandidates] = useState<PersonCapacityCandidate[]>([])
+  const [loadingCandidates, setLoadingCandidates] = useState(true)
+  const [selectedPersonId, setSelectedPersonId] = useState('')
+  const [periods, setPeriods] = useState<PersonCapacityPeriod[]>([])
+  const [loadingPeriods, setLoadingPeriods] = useState(false)
+  const [selectedPeriodId, setSelectedPeriodId] = useState('')
   const [targetStatus, setTargetStatus] = useState('')
-  const [transitionReason, setTransitionReason] =
-    useState('')
+  const [transitionReason, setTransitionReason] = useState('')
+
+  const [editPeriodStart, setEditPeriodStart] = useState('')
+  const [editPeriodEnd, setEditPeriodEnd] = useState('')
+  const [editCapacityAmount, setEditCapacityAmount] = useState('')
+  const [editCapacityUnit, setEditCapacityUnit] = useState('hours')
+  const [editNotes, setEditNotes] = useState('')
+  const [editReason, setEditReason] = useState('')
 
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
-  const [capacityAmount, setCapacityAmount] =
-    useState('')
-  const [capacityUnit, setCapacityUnit] =
-    useState('hours')
-  const [status, setStatus] = useState<
-    'planned' | 'active'
-  >('planned')
+  const [capacityAmount, setCapacityAmount] = useState('')
+  const [capacityUnit, setCapacityUnit] = useState('hours')
+  const [status, setStatus] = useState<'planned' | 'active'>('planned')
   const [notes, setNotes] = useState('')
-  const [changeReason, setChangeReason] =
-    useState('')
+  const [changeReason, setChangeReason] = useState('')
   const [saving, setSaving] = useState(false)
-  const [errorMessage, setErrorMessage] =
-    useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const selectedPerson = useMemo(
     () =>
       candidates.find(
-        (candidate) =>
-          candidate.organizationPersonId ===
-          selectedPersonId,
+        (candidate) => candidate.organizationPersonId === selectedPersonId,
       ) ?? null,
     [candidates, selectedPersonId],
   )
@@ -96,8 +88,7 @@ export function PersonCapacityManagementDialog({
   const selectedPeriod = useMemo(
     () =>
       periods.find(
-        (period) =>
-          period.capacityPeriodId === selectedPeriodId,
+        (period) => period.capacityPeriodId === selectedPeriodId,
       ) ?? null,
     [periods, selectedPeriodId],
   )
@@ -112,14 +103,17 @@ export function PersonCapacityManagementDialog({
     [selectedPeriod],
   )
 
+  const selectedPeriodEditable =
+    selectedPeriod !== null &&
+    (selectedPeriod.capacityStatus === 'planned' ||
+      selectedPeriod.capacityStatus === 'active')
+
   useEffect(() => {
     let active = true
 
     setLoadingCandidates(true)
 
-    void loadPersonCapacityCandidates(
-      organizationId,
-    )
+    void loadPersonCapacityCandidates(organizationId)
       .then((items) => {
         if (!active) return
         setCandidates(items)
@@ -129,9 +123,7 @@ export function PersonCapacityManagementDialog({
         setCandidates([])
         setErrorMessage(
           error instanceof Error
-            ? translateBackendMessage(
-                error.message,
-              )
+            ? translateBackendMessage(error.message)
             : 'Não foi possível carregar as pessoas elegíveis.',
         )
       })
@@ -163,10 +155,7 @@ export function PersonCapacityManagementDialog({
     setLoadingPeriods(true)
     setErrorMessage(null)
 
-    void loadPersonCapacityPeriods(
-      organizationId,
-      selectedPersonId,
-    )
+    void loadPersonCapacityPeriods(organizationId, selectedPersonId)
       .then((items) => {
         if (!active) return
         setPeriods(items)
@@ -176,9 +165,7 @@ export function PersonCapacityManagementDialog({
         setPeriods([])
         setErrorMessage(
           error instanceof Error
-            ? translateBackendMessage(
-                error.message,
-              )
+            ? translateBackendMessage(error.message)
             : 'Não foi possível carregar os períodos de capacidade.',
         )
       })
@@ -193,41 +180,49 @@ export function PersonCapacityManagementDialog({
   }, [organizationId, selectedPersonId])
 
   useEffect(() => {
+    if (!selectedPeriod) {
+      setEditPeriodStart('')
+      setEditPeriodEnd('')
+      setEditCapacityAmount('')
+      setEditCapacityUnit('hours')
+      setEditNotes('')
+      setEditReason('')
+      return
+    }
+
+    setEditPeriodStart(selectedPeriod.periodStart)
+    setEditPeriodEnd(selectedPeriod.periodEnd)
+    setEditCapacityAmount(String(selectedPeriod.capacityAmount))
+    setEditCapacityUnit(selectedPeriod.capacityUnit)
+    setEditNotes(selectedPeriod.notes ?? '')
+    setEditReason('')
+  }, [selectedPeriod])
+
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (
-        event.key === 'Escape' &&
-        !saving
-      ) {
+      if (event.key === 'Escape' && !saving) {
         onClose()
       }
     }
 
-    window.addEventListener(
-      'keydown',
-      handleKeyDown,
-    )
+    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      window.removeEventListener(
-        'keydown',
-        handleKeyDown,
-      )
+      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [onClose, saving])
 
   async function handleCreate() {
-    const validation =
-      validatePersonCapacityPeriodCreation({
-        organizationPersonId:
-          selectedPersonId,
-        periodStart,
-        periodEnd,
-        capacityAmount,
-        capacityUnit,
-        status,
-        notes,
-        changeReason,
-      })
+    const validation = validatePersonCapacityPeriodCreation({
+      organizationPersonId: selectedPersonId,
+      periodStart,
+      periodEnd,
+      capacityAmount,
+      capacityUnit,
+      status,
+      notes,
+      changeReason,
+    })
 
     if (!validation.ok) {
       setErrorMessage(validation.message)
@@ -238,18 +233,55 @@ export function PersonCapacityManagementDialog({
     setErrorMessage(null)
 
     try {
-      await createPersonCapacityPeriod(
+      await createPersonCapacityPeriod(organizationId, validation.value)
+      onSaved()
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? translateBackendMessage(error.message)
+          : 'Não foi possível registrar o período de capacidade.',
+      )
+      setSaving(false)
+    }
+  }
+
+  async function handleEdit() {
+    if (!selectedPeriod || !selectedPersonId) {
+      setErrorMessage('Selecione um período de capacidade.')
+      return
+    }
+
+    const validation = validatePersonCapacityPeriodEdit({
+      currentStatus: selectedPeriod.capacityStatus,
+      periodStart: editPeriodStart,
+      periodEnd: editPeriodEnd,
+      capacityAmount: editCapacityAmount,
+      capacityUnit: editCapacityUnit,
+      notes: editNotes,
+      changeReason: editReason,
+    })
+
+    if (!validation.ok) {
+      setErrorMessage(validation.message)
+      return
+    }
+
+    setSaving(true)
+    setErrorMessage(null)
+
+    try {
+      await updatePersonCapacityPeriod(
         organizationId,
+        selectedPersonId,
+        selectedPeriod,
         validation.value,
       )
       onSaved()
     } catch (error) {
       setErrorMessage(
         error instanceof Error
-          ? translateBackendMessage(
-              error.message,
-            )
-          : 'Não foi possível registrar o período de capacidade.',
+          ? translateBackendMessage(error.message)
+          : 'Não foi possível atualizar o período de capacidade.',
       )
       setSaving(false)
     }
@@ -261,14 +293,12 @@ export function PersonCapacityManagementDialog({
       return
     }
 
-    const validation =
-      validatePersonCapacityPeriodTransition({
-        currentStatus: selectedPeriod.capacityStatus,
-        targetStatus,
-        currentAllocationCount:
-          selectedPeriod.currentAllocationCount,
-        changeReason: transitionReason,
-      })
+    const validation = validatePersonCapacityPeriodTransition({
+      currentStatus: selectedPeriod.capacityStatus,
+      targetStatus,
+      currentAllocationCount: selectedPeriod.currentAllocationCount,
+      changeReason: transitionReason,
+    })
 
     if (!validation.ok) {
       setErrorMessage(validation.message)
@@ -289,9 +319,7 @@ export function PersonCapacityManagementDialog({
     } catch (error) {
       setErrorMessage(
         error instanceof Error
-          ? translateBackendMessage(
-              error.message,
-            )
+          ? translateBackendMessage(error.message)
           : 'Não foi possível alterar a situação do período de capacidade.',
       )
       setSaving(false)
@@ -303,10 +331,7 @@ export function PersonCapacityManagementDialog({
       className="skpe-economic-dialog-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (
-          event.target === event.currentTarget &&
-          !saving
-        ) {
+        if (event.target === event.currentTarget && !saving) {
           onClose()
         }
       }}
@@ -319,28 +344,20 @@ export function PersonCapacityManagementDialog({
       >
         <header>
           <div>
-            <span>
-              Capacidade transversal de pessoas
-            </span>
+            <span>Capacidade transversal de pessoas</span>
             <h2 id="skpe-person-capacity-dialog-title">
               Gerenciar períodos de capacidade
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-          >
+          <button type="button" onClick={onClose} disabled={saving}>
             Fechar
           </button>
         </header>
 
         <p className="skpe-economic-dialog-note">
-          Capacidade é uma quantidade explícita,
-          temporal e vinculada a uma unidade.
-          Disponibilidade percentual, responsabilidades
-          e esforço das ações permanecem conceitos
-          independentes e não são convertidos
+          Capacidade é uma quantidade explícita, temporal e vinculada a uma
+          unidade. Disponibilidade percentual, responsabilidades e esforço das
+          ações permanecem conceitos independentes e não são convertidos
           automaticamente.
         </p>
 
@@ -349,33 +366,19 @@ export function PersonCapacityManagementDialog({
             <span>Pessoa *</span>
             <select
               value={selectedPersonId}
-              onChange={(event) => {
-                setSelectedPersonId(
-                  event.target.value,
-                )
-              }}
-              disabled={
-                saving || loadingCandidates
-              }
+              onChange={(event) => setSelectedPersonId(event.target.value)}
+              disabled={saving || loadingCandidates}
             >
               <option value="">
-                {loadingCandidates
-                  ? 'Carregando...'
-                  : 'Selecione'}
+                {loadingCandidates ? 'Carregando...' : 'Selecione'}
               </option>
               {candidates.map((candidate) => (
                 <option
-                  key={
-                    candidate.organizationPersonId
-                  }
-                  value={
-                    candidate.organizationPersonId
-                  }
+                  key={candidate.organizationPersonId}
+                  value={candidate.organizationPersonId}
                 >
                   {candidate.displayName}
-                  {candidate.jobTitle
-                    ? ` — ${candidate.jobTitle}`
-                    : ''}
+                  {candidate.jobTitle ? ` — ${candidate.jobTitle}` : ''}
                 </option>
               ))}
             </select>
@@ -383,43 +386,37 @@ export function PersonCapacityManagementDialog({
 
           {selectedPerson ? (
             <div className="is-wide skpe-economic-dialog-note">
-              <strong>
-                {selectedPerson.displayName}
-              </strong>
+              <strong>{selectedPerson.displayName}</strong>
               {selectedPerson.organizationalArea
                 ? ` · ${selectedPerson.organizationalArea}`
                 : ''}
-              {selectedPerson.availabilityPercentage !==
-              null
+              {selectedPerson.availabilityPercentage !== null
                 ? ` · Disponibilidade cadastral: ${formatNumber(
                     selectedPerson.availabilityPercentage,
                   )}%`
                 : ''}
               <br />
               <small>
-                A disponibilidade cadastral é apenas
-                contexto; ela não define a capacidade
-                quantitativa abaixo.
+                A disponibilidade cadastral é apenas contexto; ela não define a
+                capacidade quantitativa abaixo.
               </small>
             </div>
           ) : null}
 
           {selectedPersonId ? (
             <div className="is-wide skpe-economic-dialog-note">
-              <strong>
-                Períodos já cadastrados
-              </strong>
+              <strong>Períodos já cadastrados</strong>
               {loadingPeriods ? (
                 <p>Carregando períodos...</p>
               ) : periods.length === 0 ? (
                 <p>
-                  Nenhum período explícito de capacidade
-                  cadastrado para esta pessoa.
+                  Nenhum período explícito de capacidade cadastrado para esta
+                  pessoa.
                 </p>
               ) : (
                 <>
                   <label className="is-wide">
-                    <span>Período para transição</span>
+                    <span>Período para gestão</span>
                     <select
                       value={selectedPeriodId}
                       onChange={(event) => {
@@ -453,7 +450,8 @@ export function PersonCapacityManagementDialog({
                       </strong>
                       {' · '}
                       {formatNumber(selectedPeriod.capacityAmount)}{' '}
-                      {unitLabels[selectedPeriod.capacityUnit] ?? selectedPeriod.capacityUnit}
+                      {unitLabels[selectedPeriod.capacityUnit] ??
+                        selectedPeriod.capacityUnit}
                       {' · '}
                       {statusLabels[selectedPeriod.capacityStatus]}
                       {' · alocado '}
@@ -467,19 +465,120 @@ export function PersonCapacityManagementDialog({
                             selectedPeriod.overallocationAmount,
                           )}`
                         : ''}
-                      {selectedPeriod.notes ? (
-                        <>
-                          <br />
-                          <small>
-                            Observações preservadas: {selectedPeriod.notes}
-                          </small>
-                        </>
-                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {selectedPeriodEditable && selectedPeriod ? (
+                    <>
+                      <div className="is-wide skpe-economic-dialog-note">
+                        <strong>Editar período selecionado</strong>
+                        <br />
+                        <small>
+                          O banco validará sobreposição, vínculo das alocações e
+                          imutabilidade da unidade quando houver alocações.
+                        </small>
+                      </div>
+
+                      <label>
+                        <span>Início *</span>
+                        <input
+                          type="date"
+                          value={editPeriodStart}
+                          onChange={(event) =>
+                            setEditPeriodStart(event.target.value)
+                          }
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <label>
+                        <span>Fim *</span>
+                        <input
+                          type="date"
+                          value={editPeriodEnd}
+                          onChange={(event) =>
+                            setEditPeriodEnd(event.target.value)
+                          }
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <label>
+                        <span>Capacidade quantitativa *</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editCapacityAmount}
+                          onChange={(event) =>
+                            setEditCapacityAmount(event.target.value)
+                          }
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <label>
+                        <span>Unidade *</span>
+                        <select
+                          value={editCapacityUnit}
+                          onChange={(event) =>
+                            setEditCapacityUnit(event.target.value)
+                          }
+                          disabled={saving}
+                        >
+                          {Object.entries(unitLabels).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="is-wide">
+                        <span>Observações</span>
+                        <textarea
+                          rows={3}
+                          value={editNotes}
+                          onChange={(event) => setEditNotes(event.target.value)}
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <label className="is-wide">
+                        <span>Justificativa da edição *</span>
+                        <textarea
+                          rows={3}
+                          value={editReason}
+                          onChange={(event) => setEditReason(event.target.value)}
+                          disabled={saving}
+                        />
+                      </label>
+
+                      <div className="is-wide">
+                        <button
+                          type="button"
+                          onClick={() => void handleEdit()}
+                          disabled={saving}
+                        >
+                          {saving ? 'Atualizando...' : 'Salvar edição'}
+                        </button>
+                      </div>
+                    </>
+                  ) : selectedPeriod ? (
+                    <div className="is-wide skpe-economic-dialog-note">
+                      <small>
+                        Este período está em situação terminal e não pode ser
+                        modificado.
+                      </small>
                     </div>
                   ) : null}
 
                   {selectedPeriod && allowedTransitions.length > 0 ? (
                     <>
+                      <div className="is-wide skpe-economic-dialog-note">
+                        <strong>Alterar situação</strong>
+                      </div>
+
                       <label>
                         <span>Nova situação *</span>
                         <select
@@ -515,7 +614,8 @@ export function PersonCapacityManagementDialog({
 
                       <div className="is-wide skpe-economic-dialog-note">
                         <small>
-                          Este gate altera somente o status. Datas, quantidade, unidade e observações são preservadas integralmente.
+                          A transição altera somente o status. Datas, quantidade,
+                          unidade e observações são preservadas integralmente.
                         </small>
                       </div>
 
@@ -529,12 +629,6 @@ export function PersonCapacityManagementDialog({
                         </button>
                       </div>
                     </>
-                  ) : selectedPeriod ? (
-                    <div className="is-wide skpe-economic-dialog-note">
-                      <small>
-                        Este período está em situação terminal e não pode ser reaberto ou modificado.
-                      </small>
-                    </div>
                   ) : null}
                 </>
               )}
@@ -550,11 +644,7 @@ export function PersonCapacityManagementDialog({
             <input
               type="date"
               value={periodStart}
-              onChange={(event) =>
-                setPeriodStart(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setPeriodStart(event.target.value)}
               disabled={saving}
             />
           </label>
@@ -564,11 +654,7 @@ export function PersonCapacityManagementDialog({
             <input
               type="date"
               value={periodEnd}
-              onChange={(event) =>
-                setPeriodEnd(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setPeriodEnd(event.target.value)}
               disabled={saving}
             />
           </label>
@@ -580,11 +666,7 @@ export function PersonCapacityManagementDialog({
               min="0"
               step="0.01"
               value={capacityAmount}
-              onChange={(event) =>
-                setCapacityAmount(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setCapacityAmount(event.target.value)}
               disabled={saving}
             />
           </label>
@@ -593,31 +675,14 @@ export function PersonCapacityManagementDialog({
             <span>Unidade *</span>
             <select
               value={capacityUnit}
-              onChange={(event) =>
-                setCapacityUnit(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setCapacityUnit(event.target.value)}
               disabled={saving}
             >
-              <option value="hours">
-                Horas
-              </option>
-              <option value="days">
-                Dias
-              </option>
-              <option value="weeks">
-                Semanas
-              </option>
-              <option value="months">
-                Meses
-              </option>
-              <option value="points">
-                Pontos
-              </option>
-              <option value="custom">
-                Personalizada
-              </option>
+              {Object.entries(unitLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -626,20 +691,12 @@ export function PersonCapacityManagementDialog({
             <select
               value={status}
               onChange={(event) =>
-                setStatus(
-                  event.target.value as
-                    | 'planned'
-                    | 'active',
-                )
+                setStatus(event.target.value as 'planned' | 'active')
               }
               disabled={saving}
             >
-              <option value="planned">
-                Planejada
-              </option>
-              <option value="active">
-                Ativa
-              </option>
+              <option value="planned">Planejada</option>
+              <option value="active">Ativa</option>
             </select>
           </label>
 
@@ -648,25 +705,17 @@ export function PersonCapacityManagementDialog({
             <textarea
               rows={3}
               value={notes}
-              onChange={(event) =>
-                setNotes(event.target.value)
-              }
+              onChange={(event) => setNotes(event.target.value)}
               disabled={saving}
             />
           </label>
 
           <label className="is-wide">
-            <span>
-              Justificativa para auditoria *
-            </span>
+            <span>Justificativa para auditoria *</span>
             <textarea
               rows={3}
               value={changeReason}
-              onChange={(event) =>
-                setChangeReason(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setChangeReason(event.target.value)}
               disabled={saving}
             />
           </label>
@@ -682,24 +731,16 @@ export function PersonCapacityManagementDialog({
         ) : null}
 
         <footer>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-          >
+          <button type="button" onClick={onClose} disabled={saving}>
             Cancelar
           </button>
           <button
             type="button"
             className="is-primary"
-            onClick={() =>
-              void handleCreate()
-            }
+            onClick={() => void handleCreate()}
             disabled={saving}
           >
-            {saving
-              ? 'Registrando...'
-              : 'Registrar capacidade'}
+            {saving ? 'Registrando...' : 'Registrar capacidade'}
           </button>
         </footer>
       </section>
