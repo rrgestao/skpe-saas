@@ -1,6 +1,8 @@
 import { supabase } from '../../../../lib/supabase'
 import {
   type PersonCapacityPeriodCreateCommand,
+  type PersonCapacityPeriodStatus,
+  type PersonCapacityPeriodTransitionCommand,
   type PersonCapacityUnit,
 } from './personCapacityValidation'
 
@@ -17,13 +19,15 @@ export type PersonCapacityPeriod = {
   periodStart: string
   periodEnd: string
   capacityUnit: PersonCapacityUnit
-  capacityStatus: string
+  capacityStatus: PersonCapacityPeriodStatus
   capacityAmount: number
   allocatedCurrentAmount: number
   availableAmount: number
   utilizationPercentage: number | null
   overallocationAmount: number
   isOverallocated: boolean
+  currentAllocationCount: number
+  notes: string | null
 }
 
 type PersonCandidateRow = {
@@ -85,38 +89,66 @@ type PersonCapacityProjectionRow = {
   period_start: string
   period_end: string
   capacity_unit: PersonCapacityUnit
-  capacity_status: string
+  capacity_status: PersonCapacityPeriodStatus
   capacity_amount: number | string
   allocated_current_amount: number | string
   available_amount: number | string
   utilization_percentage: number | string | null
   overallocation_amount: number | string
   is_overallocated: boolean
+  current_allocation_count: number | string
+}
+
+type PersonCapacityNotesRow = {
+  id: string
+  notes: string | null
 }
 
 export async function loadPersonCapacityPeriods(
   organizationId: string,
   organizationPersonId: string,
 ): Promise<PersonCapacityPeriod[]> {
-  const { data, error } = await supabase.rpc(
-    'get_sparks_person_capacity_projection',
-    {
-      target_organization_id: organizationId,
-      target_organization_person_id:
+  const [projectionResult, notesResult] = await Promise.all([
+    supabase.rpc(
+      'get_sparks_person_capacity_projection',
+      {
+        target_organization_id: organizationId,
+        target_organization_person_id:
+          organizationPersonId,
+        target_period_start: null,
+        target_period_end: null,
+      },
+    ),
+    supabase
+      .from('sparks_person_capacity_periods')
+      .select('id, notes')
+      .eq('organization_id', organizationId)
+      .eq(
+        'organization_person_id',
         organizationPersonId,
-      target_period_start: null,
-      target_period_end: null,
-    },
-  )
+      ),
+  ])
 
-  if (error) {
+  if (projectionResult.error) {
     throw new Error(
-      `Não foi possível carregar os períodos de capacidade: ${error.message}`,
+      `Não foi possível carregar os períodos de capacidade: ${projectionResult.error.message}`,
     )
   }
 
+  if (notesResult.error) {
+    throw new Error(
+      `Não foi possível carregar as observações dos períodos de capacidade: ${notesResult.error.message}`,
+    )
+  }
+
+  const notesByPeriodId = new Map(
+    ((notesResult.data ?? []) as PersonCapacityNotesRow[]).map(
+      (row) => [row.id, row.notes],
+    ),
+  )
+
   return (
-    (data ?? []) as PersonCapacityProjectionRow[]
+    (projectionResult.data ?? []) as PersonCapacityProjectionRow[]
   ).map((row) => ({
     capacityPeriodId: row.capacity_period_id,
     periodStart: row.period_start,
@@ -134,6 +166,11 @@ export async function loadPersonCapacityPeriods(
     overallocationAmount:
       Number(row.overallocation_amount),
     isOverallocated: row.is_overallocated,
+    currentAllocationCount:
+      Number(row.current_allocation_count),
+    notes:
+      notesByPeriodId.get(row.capacity_period_id) ??
+      null,
   }))
 }
 
@@ -163,6 +200,40 @@ export async function createPersonCapacityPeriod(
   if (error) {
     throw new Error(
       `Não foi possível registrar o período de capacidade: ${error.message}`,
+    )
+  }
+
+  return data
+}
+
+export async function transitionPersonCapacityPeriod(
+  organizationId: string,
+  organizationPersonId: string,
+  period: PersonCapacityPeriod,
+  command: PersonCapacityPeriodTransitionCommand,
+) {
+  const { data, error } = await supabase.rpc(
+    'set_sparks_person_capacity_period',
+    {
+      target_organization_id: organizationId,
+      target_capacity_period_id:
+        period.capacityPeriodId,
+      target_organization_person_id:
+        organizationPersonId,
+      target_period_start: period.periodStart,
+      target_period_end: period.periodEnd,
+      target_capacity_amount:
+        period.capacityAmount,
+      target_capacity_unit: period.capacityUnit,
+      target_status: command.targetStatus,
+      target_notes: period.notes,
+      change_reason: command.changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível alterar a situação do período de capacidade: ${error.message}`,
     )
   }
 
