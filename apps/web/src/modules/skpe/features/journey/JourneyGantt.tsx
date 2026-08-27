@@ -73,9 +73,118 @@ type InitiativeTemporalRow = {
   temporal_data_quality_state: string
 }
 
+type ActionBoardRow = {
+  action_id: string
+  parent_action_id: string | null
+  depth: number
+  code: string
+  name: string
+  action_type: string
+  status: string
+  priority: string
+  official_progress: number
+  calculated_progress: number
+  is_root: boolean
+  has_eligible_children: boolean
+  planned_start_date: string | null
+  planned_due_date: string | null
+}
+
+type EconomicProjection = {
+  initiative?: {
+    direct?: {
+      plannedCost: number | null
+      actualCost: number | null
+      currencyCode: string | null
+      costVariance: number | null
+      estimatedEffort: number | null
+      actualEffort: number | null
+      effortUnit: string | null
+      effortVariance: number | null
+      resourceEstimate: string | null
+    }
+  }
+  actions?: {
+    counts?: {
+      total: number
+      currentPlan: number
+      cancelled: number
+      archived: number
+    }
+    costByCurrency?: Array<{
+      currencyCode: string
+      currentPlannedCost: number
+      actualRealizedCost: number
+      currentPlanVariance: number
+      cancelledPlannedCost: number
+      archivedPlannedCost: number
+    }>
+    effortByUnit?: Array<{
+      effortUnit: string
+      currentEstimatedEffort: number
+      actualRealizedEffort: number
+      currentPlanVariance: number
+      cancelledEstimatedEffort: number
+      archivedEstimatedEffort: number
+    }>
+    dataQuality?: {
+      actionsWithCostWithoutCurrency: number
+      actionsWithEffortWithoutUnit: number
+    }
+  }
+}
+
+type CapacityAllocation = {
+  allocationId: string
+  capacityPeriodId: string
+  organizationPersonId: string
+  personId: string
+  personName: string
+  organizationalArea: string | null
+  capacityUnit: string
+  capacityAmount: number
+  capacityStatus: string
+  moduleCode: string
+  objectType: string
+  objectId: string
+  allocationStart: string
+  allocationEnd: string
+  allocatedAmount: number
+  allocationStatus: string
+}
+
+type PersonCapacity = {
+  capacity_period_id: string
+  organization_person_id: string
+  person_id: string
+  person_name: string
+  organizational_area: string | null
+  period_start: string
+  period_end: string
+  capacity_unit: string
+  capacity_status: string
+  capacity_amount: number
+  allocated_current_amount: number
+  allocated_ended_amount: number
+  available_amount: number
+  utilization_percentage: number | null
+  overallocation_amount: number
+  is_overallocated: boolean
+  current_allocation_count: number
+}
+
+type CapacityProjection = {
+  allocations?: CapacityAllocation[]
+  involvedPeopleCapacity?: PersonCapacity[]
+  visible?: boolean
+}
+
 type OperationalProjection = {
   journeyEvents?: JourneyEventRow[]
   initiativeTemporal?: InitiativeTemporalRow[]
+  actionBoard?: ActionBoardRow[]
+  economic?: EconomicProjection
+  capacity?: CapacityProjection
 }
 
 type GanttVisibility = 'all' | 'mandatory'
@@ -414,6 +523,35 @@ function getTemporalAlert(row: InitiativeTemporalRow) {
   return null
 }
 
+function formatQuantity(value: number | null | undefined) {
+  if (value === null || value === undefined) return '—'
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)
+}
+
+function formatMoney(value: number, currencyCode: string) {
+  try {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: currencyCode,
+      maximumFractionDigits: 2,
+    }).format(value)
+  } catch {
+    return `${currencyCode} ${formatQuantity(value)}`
+  }
+}
+
+function getStatusCounts(rows: ActionBoardRow[]) {
+  const counts = new Map<string, number>()
+
+  for (const row of rows) {
+    counts.set(row.status, (counts.get(row.status) ?? 0) + 1)
+  }
+
+  return Array.from(counts.entries()).sort(([first], [second]) =>
+    first.localeCompare(second, 'pt-BR'),
+  )
+}
+
 function isMilestone(row: JourneyTemporalRow, range: DateRange) {
   return (
     (row.item_type === 'gate' || row.item_type === 'deliverable') &&
@@ -453,6 +591,9 @@ export function JourneyGantt({
   const [visibility, setVisibility] = useState<GanttVisibility>('all')
   const [events, setEvents] = useState<JourneyEventRow[]>([])
   const [initiativeTemporal, setInitiativeTemporal] = useState<InitiativeTemporalRow[]>([])
+  const [actionBoard, setActionBoard] = useState<ActionBoardRow[]>([])
+  const [economic, setEconomic] = useState<EconomicProjection>({})
+  const [capacity, setCapacity] = useState<CapacityProjection>({})
   const [projectionLoading, setProjectionLoading] = useState(false)
   const [projectionError, setProjectionError] = useState('')
 
@@ -466,6 +607,9 @@ export function JourneyGantt({
       if (!organizationId || !projectId) {
         setEvents([])
         setInitiativeTemporal([])
+        setActionBoard([])
+        setEconomic({})
+        setCapacity({})
         setProjectionError('')
         return
       }
@@ -487,11 +631,17 @@ export function JourneyGantt({
       if (error) {
         setEvents([])
         setInitiativeTemporal([])
+        setActionBoard([])
+        setEconomic({})
+        setCapacity({})
         setProjectionError('Projeção gerencial integrada indisponível nesta visualização.')
       } else {
         const projection = (data ?? {}) as OperationalProjection
         setEvents(projection.journeyEvents ?? [])
         setInitiativeTemporal(projection.initiativeTemporal ?? [])
+        setActionBoard(projection.actionBoard ?? [])
+        setEconomic(projection.economic ?? {})
+        setCapacity(projection.capacity ?? {})
       }
 
       setProjectionLoading(false)
@@ -531,6 +681,11 @@ export function JourneyGantt({
     () => buildTimeline(rows, initiativeTemporal, events, referenceDate),
     [rows, initiativeTemporal, events, referenceDate],
   )
+  const statusCounts = useMemo(() => getStatusCounts(actionBoard), [actionBoard])
+  const overallocatedCapacity = useMemo(
+    () => (capacity.involvedPeopleCapacity ?? []).filter((row) => row.is_overallocated),
+    [capacity.involvedPeopleCapacity],
+  )
 
   if (!timeline) {
     return (
@@ -545,6 +700,11 @@ export function JourneyGantt({
   }
 
   const kinds: GanttBarKind[] = ['baseline', 'plan', 'forecast', 'actual']
+  const costRows = economic.actions?.costByCurrency ?? []
+  const effortRows = economic.actions?.effortByUnit ?? []
+  const economicQuality = economic.actions?.dataQuality
+  const capacityRows = capacity.involvedPeopleCapacity ?? []
+  const allocations = capacity.allocations ?? []
 
   return (
     <section className="skpe-gantt-card" aria-label="Gantt gerencial integrado do Planejamento Estratégico">
@@ -758,6 +918,139 @@ export function JourneyGantt({
           {formatDate(toDateOnly(timeline.endMs))}
         </span>
       </footer>
+
+      <section className="skpe-management-summary" aria-label="Resumo gerencial da execução estratégica">
+        <header className="skpe-management-summary-header">
+          <div>
+            <p className="skpe-eyebrow">Execução integrada</p>
+            <h3>Prazo, Kanban, econômico e capacidade</h3>
+          </div>
+          <p>
+            Indicadores derivados exclusivamente das projeções governadas. Moedas e
+            unidades de esforço/capacidade permanecem segregadas; não há conversão
+            ou normalização automática.
+          </p>
+        </header>
+
+        <div className="skpe-management-grid">
+          <article className="skpe-management-card">
+            <span className="skpe-management-card-kicker">Kanban transversal</span>
+            <strong>{actionBoard.length}</strong>
+            <small>Ações ativas na projeção do board</small>
+            <div className="skpe-management-tags">
+              {statusCounts.length === 0 ? (
+                <span>Sem ações registradas</span>
+              ) : (
+                statusCounts.map(([status, count]) => (
+                  <span key={status}>{status}: {count}</span>
+                ))
+              )}
+            </div>
+          </article>
+
+          <article className="skpe-management-card">
+            <span className="skpe-management-card-kicker">Capacidade humana</span>
+            <strong>{capacity.visible === false ? '—' : allocations.length}</strong>
+            <small>
+              {capacity.visible === false
+                ? 'Capacidade não visível para este usuário'
+                : `${capacityRows.length} período(s) de capacidade envolvida`}
+            </small>
+            <div className="skpe-management-tags">
+              {capacity.visible !== false && (
+                <>
+                  <span>Alocações: {allocations.length}</span>
+                  <span className={overallocatedCapacity.length > 0 ? 'is-warning' : ''}>
+                    Sobrealocados: {overallocatedCapacity.length}
+                  </span>
+                </>
+              )}
+            </div>
+          </article>
+
+          <article className="skpe-management-card skpe-management-card-wide">
+            <span className="skpe-management-card-kicker">Custos das ações</span>
+            {costRows.length === 0 ? (
+              <p className="skpe-management-empty">Sem custos quantitativos registrados.</p>
+            ) : (
+              <div className="skpe-management-table-wrap">
+                <table className="skpe-management-table">
+                  <thead>
+                    <tr>
+                      <th>Moeda</th>
+                      <th>Plano atual</th>
+                      <th>Realizado</th>
+                      <th>Variação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {costRows.map((row) => (
+                      <tr key={row.currencyCode}>
+                        <td>{row.currencyCode}</td>
+                        <td>{formatMoney(row.currentPlannedCost, row.currencyCode)}</td>
+                        <td>{formatMoney(row.actualRealizedCost, row.currencyCode)}</td>
+                        <td>{formatMoney(row.currentPlanVariance, row.currencyCode)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </article>
+
+          <article className="skpe-management-card skpe-management-card-wide">
+            <span className="skpe-management-card-kicker">Esforço das ações</span>
+            {effortRows.length === 0 ? (
+              <p className="skpe-management-empty">Sem esforço quantitativo registrado.</p>
+            ) : (
+              <div className="skpe-management-table-wrap">
+                <table className="skpe-management-table">
+                  <thead>
+                    <tr>
+                      <th>Unidade</th>
+                      <th>Estimado atual</th>
+                      <th>Realizado</th>
+                      <th>Variação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {effortRows.map((row) => (
+                      <tr key={row.effortUnit}>
+                        <td>{row.effortUnit}</td>
+                        <td>{formatQuantity(row.currentEstimatedEffort)}</td>
+                        <td>{formatQuantity(row.actualRealizedEffort)}</td>
+                        <td>{formatQuantity(row.currentPlanVariance)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </article>
+        </div>
+
+        {(economicQuality?.actionsWithCostWithoutCurrency ?? 0) > 0 ||
+        (economicQuality?.actionsWithEffortWithoutUnit ?? 0) > 0 ||
+        overallocatedCapacity.length > 0 ? (
+          <div className="skpe-management-warnings" role="status">
+            {(economicQuality?.actionsWithCostWithoutCurrency ?? 0) > 0 && (
+              <span>
+                {economicQuality?.actionsWithCostWithoutCurrency} ação(ões) com custo sem moeda definida.
+              </span>
+            )}
+            {(economicQuality?.actionsWithEffortWithoutUnit ?? 0) > 0 && (
+              <span>
+                {economicQuality?.actionsWithEffortWithoutUnit} ação(ões) com esforço sem unidade definida.
+              </span>
+            )}
+            {overallocatedCapacity.map((row) => (
+              <span key={row.capacity_period_id}>
+                {row.person_name}: sobrealocação de {formatQuantity(row.overallocation_amount)} {row.capacity_unit}.
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </section>
     </section>
   )
 }
