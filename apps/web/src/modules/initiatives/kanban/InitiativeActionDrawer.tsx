@@ -289,6 +289,14 @@ export function InitiativeActionDrawer({
     useState<string | null>(null)
   const [canManageCapacity, setCanManageCapacity] =
     useState(false)
+  const [
+    capacityManagementPermissionLoading,
+    setCapacityManagementPermissionLoading,
+  ] = useState(true)
+  const [
+    capacityManagementPermissionError,
+    setCapacityManagementPermissionError,
+  ] = useState<string | null>(null)
 
   const progressEditable =
     canUpdateInitiativeActionProgress(
@@ -321,13 +329,29 @@ export function InitiativeActionDrawer({
     let active = true
 
     setCanManageCapacity(false)
+    setCapacityManagementPermissionLoading(true)
+    setCapacityManagementPermissionError(null)
 
     void loadInitiativeActionCapacityManagementPermission(
       card.organizationId,
-    ).then((allowed) => {
-      if (!active) return
-      setCanManageCapacity(allowed)
-    })
+    )
+      .then((allowed) => {
+        if (!active) return
+        setCanManageCapacity(allowed)
+      })
+      .catch((error) => {
+        if (!active) return
+        setCanManageCapacity(false)
+        setCapacityManagementPermissionError(
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível verificar a permissão de gestão de capacidade.',
+        )
+      })
+      .finally(() => {
+        if (!active) return
+        setCapacityManagementPermissionLoading(false)
+      })
 
     return () => {
       active = false
@@ -1183,6 +1207,17 @@ export function InitiativeActionDrawer({
             )}
 
             <h4>Alocações de capacidade da ação</h4>
+
+            {capacityManagementPermissionLoading ? (
+              <p>Verificando permissão de gestão de capacidade...</p>
+            ) : capacityManagementPermissionError ? (
+              <div
+                className="initiative-action-message initiative-action-message--error"
+                role="alert"
+              >
+                {capacityManagementPermissionError}
+              </div>
+            ) : null}
 
             {capacityAllocationsLoading ? (
               <p>Carregando alocações...</p>

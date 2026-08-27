@@ -11,7 +11,10 @@ export async function loadInitiativeActionCapacityManagementPermission(
   )
 
   if (error) {
-    return false
+    throw new Error(
+      error.message ||
+        'Não foi possível verificar a permissão de gestão de capacidade.',
+    )
   }
 
   return data === true
