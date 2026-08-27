@@ -42,6 +42,25 @@ export type PersonCapacityPeriodCreateCommand = {
   changeReason: string
 }
 
+export type PersonCapacityPeriodEditValues = {
+  currentStatus: string
+  periodStart: string
+  periodEnd: string
+  capacityAmount: string
+  capacityUnit: string
+  notes: string
+  changeReason: string
+}
+
+export type PersonCapacityPeriodEditCommand = {
+  periodStart: string
+  periodEnd: string
+  capacityAmount: number
+  capacityUnit: PersonCapacityUnit
+  notes: string | null
+  changeReason: string
+}
+
 export type PersonCapacityPeriodTransitionValues = {
   currentStatus: string
   targetStatus: string
@@ -78,6 +97,152 @@ function parsePersonCapacityPeriodStatus(
       (candidate) => candidate === normalized,
     ) ?? null
   )
+}
+
+function parsePersonCapacityUnit(
+  value: string,
+): PersonCapacityUnit | null {
+  const normalized = value.trim().toLowerCase()
+
+  return (
+    personCapacityUnits.find(
+      (candidate) => candidate === normalized,
+    ) ?? null
+  )
+}
+
+function validatePeriodFields(values: {
+  periodStart: string
+  periodEnd: string
+  capacityAmount: string
+  capacityUnit: string
+}):
+  | {
+      ok: true
+      value: {
+        periodStart: string
+        periodEnd: string
+        capacityAmount: number
+        capacityUnit: PersonCapacityUnit
+      }
+    }
+  | {
+      ok: false
+      message: string
+    } {
+  const periodStart = values.periodStart.trim()
+  const periodEnd = values.periodEnd.trim()
+  const rawAmount = values.capacityAmount.trim()
+  const capacityUnit = parsePersonCapacityUnit(
+    values.capacityUnit,
+  )
+
+  if (!periodStart || !periodEnd) {
+    return {
+      ok: false,
+      message:
+        'Informe o início e o fim do período de capacidade.',
+    }
+  }
+
+  if (periodEnd < periodStart) {
+    return {
+      ok: false,
+      message:
+        'A data final não pode ser anterior à data inicial.',
+    }
+  }
+
+  const capacityAmount = Number(rawAmount)
+
+  if (
+    !rawAmount ||
+    !Number.isFinite(capacityAmount) ||
+    capacityAmount < 0
+  ) {
+    return {
+      ok: false,
+      message:
+        'Informe uma capacidade quantitativa não negativa.',
+    }
+  }
+
+  if (!capacityUnit) {
+    return {
+      ok: false,
+      message:
+        'Selecione uma unidade de capacidade válida.',
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      periodStart,
+      periodEnd,
+      capacityAmount,
+      capacityUnit,
+    },
+  }
+}
+
+export function validatePersonCapacityPeriodEdit(
+  values: PersonCapacityPeriodEditValues,
+):
+  | {
+      ok: true
+      value: PersonCapacityPeriodEditCommand
+    }
+  | {
+      ok: false
+      message: string
+    } {
+  const currentStatus = parsePersonCapacityPeriodStatus(
+    values.currentStatus,
+  )
+
+  if (!currentStatus) {
+    return {
+      ok: false,
+      message: 'Situação de capacidade inválida.',
+    }
+  }
+
+  if (
+    currentStatus === 'closed' ||
+    currentStatus === 'cancelled'
+  ) {
+    return {
+      ok: false,
+      message:
+        'Períodos encerrados ou cancelados não podem ser modificados.',
+    }
+  }
+
+  const fields = validatePeriodFields(values)
+
+  if (!fields.ok) {
+    return fields
+  }
+
+  const changeReason = values.changeReason.trim()
+
+  if (changeReason.length < 10) {
+    return {
+      ok: false,
+      message:
+        'Informe uma justificativa com pelo menos 10 caracteres.',
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      ...fields.value,
+      notes: values.notes.trim() || null,
+      changeReason,
+    },
+  }
 }
 
 export function validatePersonCapacityPeriodTransition(
@@ -160,11 +325,6 @@ export function validatePersonCapacityPeriodCreation(
     } {
   const organizationPersonId =
     values.organizationPersonId.trim()
-  const periodStart = values.periodStart.trim()
-  const periodEnd = values.periodEnd.trim()
-  const rawAmount = values.capacityAmount.trim()
-  const rawUnit =
-    values.capacityUnit.trim().toLowerCase()
   const rawStatus =
     values.status.trim().toLowerCase()
   const notes = values.notes.trim() || null
@@ -178,47 +338,10 @@ export function validatePersonCapacityPeriodCreation(
     }
   }
 
-  if (!periodStart || !periodEnd) {
-    return {
-      ok: false,
-      message:
-        'Informe o início e o fim do período de capacidade.',
-    }
-  }
+  const fields = validatePeriodFields(values)
 
-  if (periodEnd < periodStart) {
-    return {
-      ok: false,
-      message:
-        'A data final não pode ser anterior à data inicial.',
-    }
-  }
-
-  const capacityAmount = Number(rawAmount)
-
-  if (
-    !rawAmount ||
-    !Number.isFinite(capacityAmount) ||
-    capacityAmount < 0
-  ) {
-    return {
-      ok: false,
-      message:
-        'Informe uma capacidade quantitativa não negativa.',
-    }
-  }
-
-  const capacityUnit =
-    personCapacityUnits.find(
-      (candidate) => candidate === rawUnit,
-    ) ?? null
-
-  if (!capacityUnit) {
-    return {
-      ok: false,
-      message:
-        'Selecione uma unidade de capacidade válida.',
-    }
+  if (!fields.ok) {
+    return fields
   }
 
   if (
@@ -244,10 +367,7 @@ export function validatePersonCapacityPeriodCreation(
     ok: true,
     value: {
       organizationPersonId,
-      periodStart,
-      periodEnd,
-      capacityAmount,
-      capacityUnit,
+      ...fields.value,
       status: rawStatus,
       notes,
       changeReason,
