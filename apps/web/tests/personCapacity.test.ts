@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  getAllowedPersonCapacityPeriodTransitions,
   validatePersonCapacityPeriodCreation,
+  validatePersonCapacityPeriodTransition,
 } from '../src/modules/skpe/features/monitoring/personCapacityValidation.ts'
 
 function validValues() {
@@ -106,4 +108,92 @@ test('exige justificativa auditável com dez caracteres', () => {
     })
 
   assert.equal(result.ok, false)
+})
+
+test('expõe somente transições permitidas do lifecycle', () => {
+  assert.deepEqual(
+    getAllowedPersonCapacityPeriodTransitions('planned'),
+    ['active', 'cancelled'],
+  )
+  assert.deepEqual(
+    getAllowedPersonCapacityPeriodTransitions('active'),
+    ['closed', 'cancelled'],
+  )
+  assert.deepEqual(
+    getAllowedPersonCapacityPeriodTransitions('closed'),
+    [],
+  )
+  assert.deepEqual(
+    getAllowedPersonCapacityPeriodTransitions('cancelled'),
+    [],
+  )
+})
+
+test('aceita planned para active com justificativa auditável', () => {
+  const result = validatePersonCapacityPeriodTransition({
+    currentStatus: 'planned',
+    targetStatus: 'active',
+    currentAllocationCount: 0,
+    changeReason: 'Capacidade liberada para execução.',
+  })
+
+  assert.equal(result.ok, true)
+})
+
+test('rejeita planned para closed', () => {
+  const result = validatePersonCapacityPeriodTransition({
+    currentStatus: 'planned',
+    targetStatus: 'closed',
+    currentAllocationCount: 0,
+    changeReason: 'Tentativa inválida de encerramento direto.',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita active para planned', () => {
+  const result = validatePersonCapacityPeriodTransition({
+    currentStatus: 'active',
+    targetStatus: 'planned',
+    currentAllocationCount: 0,
+    changeReason: 'Tentativa inválida de retorno ao planejamento.',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita alteração de período terminal', () => {
+  const result = validatePersonCapacityPeriodTransition({
+    currentStatus: 'closed',
+    targetStatus: 'active',
+    currentAllocationCount: 0,
+    changeReason: 'Tentativa inválida de reabertura do período.',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('bloqueia terminalização com alocação aberta', () => {
+  const result = validatePersonCapacityPeriodTransition({
+    currentStatus: 'active',
+    targetStatus: 'closed',
+    currentAllocationCount: 1,
+    changeReason: 'Encerramento solicitado para o período ativo.',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('aceita terminalização sem alocações abertas', () => {
+  const result = validatePersonCapacityPeriodTransition({
+    currentStatus: 'active',
+    targetStatus: 'closed',
+    currentAllocationCount: 0,
+    changeReason: 'Período concluído sem alocações em aberto.',
+  })
+
+  assert.equal(result.ok, true)
+
+  if (!result.ok) return
+  assert.equal(result.value.targetStatus, 'closed')
 })
