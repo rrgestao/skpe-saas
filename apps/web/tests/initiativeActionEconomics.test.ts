@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   canUpdateInitiativeActionEconomics,
+  formatInitiativeActionResponsibilityType,
   validateInitiativeActionEconomics,
 } from '../src/modules/initiatives/contracts/initiativeActions.ts'
 
@@ -148,5 +149,28 @@ test('bloqueia edição econômica em lifecycle encerrado', () => {
       'in_progress',
     ),
     true,
+  )
+})
+test('traduz tipos conhecidos de responsabilidade da ação', () => {
+  assert.equal(
+    formatInitiativeActionResponsibilityType(
+      'owner',
+    ),
+    'Responsável principal',
+  )
+  assert.equal(
+    formatInitiativeActionResponsibilityType(
+      'co_owner',
+    ),
+    'Corresponsável',
+  )
+})
+
+test('humaniza tipo de responsabilidade não catalogado no frontend', () => {
+  assert.equal(
+    formatInitiativeActionResponsibilityType(
+      'technical_reviewer',
+    ),
+    'Technical reviewer',
   )
 })

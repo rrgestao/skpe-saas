@@ -25,6 +25,20 @@ export type InitiativeActionEffortUnit =
   | 'points'
   | 'custom'
 
+export type InitiativeActionResponsibility = {
+  assignmentId: string
+  organizationPersonId: string
+  personId: string
+  personName: string
+  jobTitle: string | null
+  organizationalArea: string | null
+  responsibilityType: string
+  allocationPercentage: number | null
+  authorityLevel: string | null
+  validFrom: string | null
+  validUntil: string | null
+}
+
 export type InitiativeKanbanStatus = Extract<
   InitiativeActionLifecycle,
   | 'planned'
@@ -172,6 +186,41 @@ export const initiativeActionEffortUnits:
     'points',
     'custom',
   ]
+
+const initiativeActionResponsibilityTypeLabels:
+  Record<string, string> = {
+    owner: 'Responsável principal',
+    co_owner: 'Corresponsável',
+    sponsor: 'Patrocinador',
+    approver: 'Aprovador',
+    validator: 'Validador',
+    executor: 'Executor',
+  }
+
+export function formatInitiativeActionResponsibilityType(
+  value: string,
+) {
+  const normalized =
+    value.trim().toLowerCase()
+
+  const known =
+    initiativeActionResponsibilityTypeLabels[
+      normalized
+    ]
+
+  if (known) return known
+
+  const readable = normalized
+    .replaceAll('_', ' ')
+    .trim()
+
+  if (!readable) return 'Responsabilidade'
+
+  return (
+    readable.charAt(0).toUpperCase() +
+    readable.slice(1)
+  )
+}
 
 export const initiativeActionAllowedTransitions:
   Record<

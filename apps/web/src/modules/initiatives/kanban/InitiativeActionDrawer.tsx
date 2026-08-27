@@ -10,10 +10,13 @@ import {
   initiativeActionEffortUnits,
   initiativeActionLifecycleLabels,
   initiativeActionPriorityLabels,
+  formatInitiativeActionResponsibilityType,
   validateInitiativeActionEconomics,
+  type InitiativeActionResponsibility,
   type InitiativeKanbanCardModel,
 } from '../contracts/initiativeActions'
 import {
+  loadInitiativeActionResponsibilities,
   updateInitiativeActionEconomics,
   updateInitiativeActionProgress,
 } from '../data/initiativeActionsData'
@@ -102,6 +105,21 @@ export function InitiativeActionDrawer({
     setSavingEconomics,
   ] = useState(false)
 
+  const [
+    responsibilities,
+    setResponsibilities,
+  ] = useState<
+    InitiativeActionResponsibility[]
+  >([])
+  const [
+    responsibilitiesLoading,
+    setResponsibilitiesLoading,
+  ] = useState(true)
+  const [
+    responsibilitiesError,
+    setResponsibilitiesError,
+  ] = useState<string | null>(null)
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
@@ -145,6 +163,39 @@ export function InitiativeActionDrawer({
     saving,
     showLifecycle,
   ])
+
+  useEffect(() => {
+    let cancelled = false
+
+    setResponsibilitiesLoading(true)
+    setResponsibilitiesError(null)
+
+    void loadInitiativeActionResponsibilities(
+      card.actionId,
+    )
+      .then((items) => {
+        if (cancelled) return
+        setResponsibilities(items)
+      })
+      .catch((error) => {
+        if (cancelled) return
+
+        setResponsibilities([])
+        setResponsibilitiesError(
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível carregar os responsáveis da ação.',
+        )
+      })
+      .finally(() => {
+        if (cancelled) return
+        setResponsibilitiesLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [card.actionId])
 
   async function handleProgressUpdate() {
     const parsedProgress = Number(progress)
@@ -375,6 +426,94 @@ export function InitiativeActionDrawer({
               </dd>
             </div>
           </dl>
+
+          <section className="initiative-action-drawer__section">
+            <h3>Responsáveis</h3>
+
+            {responsibilitiesLoading ? (
+              <p>Carregando responsáveis...</p>
+            ) : responsibilitiesError ? (
+              <div
+                className="initiative-action-message initiative-action-message--error"
+                role="alert"
+              >
+                {responsibilitiesError}
+              </div>
+            ) : responsibilities.length === 0 ? (
+              <p>
+                Nenhuma responsabilidade ativa foi
+                atribuída a esta ação.
+              </p>
+            ) : (
+              <dl className="initiative-action-drawer__facts">
+                {responsibilities.map(
+                  (responsibility) => (
+                    <div
+                      key={
+                        responsibility.assignmentId
+                      }
+                    >
+                      <dt>
+                        {formatInitiativeActionResponsibilityType(
+                          responsibility.responsibilityType,
+                        )}
+                      </dt>
+                      <dd>
+                        {responsibility.personName}
+                      </dd>
+
+                      {responsibility.jobTitle ? (
+                        <small>
+                          {
+                            responsibility.jobTitle
+                          }
+                        </small>
+                      ) : null}
+
+                      {responsibility.organizationalArea ? (
+                        <small>
+                          Área:{' '}
+                          {
+                            responsibility.organizationalArea
+                          }
+                        </small>
+                      ) : null}
+
+                      {responsibility.allocationPercentage !==
+                      null ? (
+                        <small>
+                          Alocação:{' '}
+                          {new Intl.NumberFormat(
+                            'pt-BR',
+                            {
+                              maximumFractionDigits: 2,
+                            },
+                          ).format(
+                            responsibility.allocationPercentage,
+                          )}
+                          %
+                        </small>
+                      ) : null}
+
+                      {responsibility.validFrom ||
+                      responsibility.validUntil ? (
+                        <small>
+                          Vigência:{' '}
+                          {formatDate(
+                            responsibility.validFrom,
+                          )}
+                          {' — '}
+                          {formatDate(
+                            responsibility.validUntil,
+                          )}
+                        </small>
+                      ) : null}
+                    </div>
+                  ),
+                )}
+              </dl>
+            )}
+          </section>
 
           <section className="initiative-action-drawer__section">
             <h3>Lifecycle</h3>

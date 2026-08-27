@@ -6,6 +6,7 @@ import {
   type InitiativeActionBoardRow,
   type InitiativeActionEconomicExecution,
   type InitiativeActionLifecycle,
+  type InitiativeActionResponsibility,
   type InitiativeKanbanCardModel,
   type InitiativeKanbanColumnModel,
   type InitiativeKanbanStatus,
@@ -223,6 +224,68 @@ export async function updateInitiativeActionEconomics(
   }
 
   return data
+}
+
+type InitiativeActionResponsibilityRow = {
+  assignment_id: string
+  organization_person_id: string
+  person_id: string
+  person_name: string
+  job_title: string | null
+  organizational_area: string | null
+  responsibility_type: string
+  allocation_percentage: number | string | null
+  authority_level: string | null
+  valid_from: string | null
+  valid_until: string | null
+}
+
+export async function loadInitiativeActionResponsibilities(
+  actionId: string,
+): Promise<InitiativeActionResponsibility[]> {
+  const { data, error } = await supabase.rpc(
+    'get_sparks_initiative_action_responsibilities',
+    {
+      target_action_id: actionId,
+      include_inactive: false,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível carregar os responsáveis da ação: ${error.message}`,
+    )
+  }
+
+  return (
+    (data ?? []) as InitiativeActionResponsibilityRow[]
+  ).map((row) => {
+    const parsedAllocation =
+      row.allocation_percentage === null
+        ? null
+        : Number(row.allocation_percentage)
+
+    return {
+      assignmentId: row.assignment_id,
+      organizationPersonId:
+        row.organization_person_id,
+      personId: row.person_id,
+      personName: row.person_name,
+      jobTitle: row.job_title,
+      organizationalArea:
+        row.organizational_area,
+      responsibilityType:
+        row.responsibility_type,
+      allocationPercentage:
+        parsedAllocation !== null &&
+        Number.isFinite(parsedAllocation)
+          ? parsedAllocation
+          : null,
+      authorityLevel: row.authority_level,
+      validFrom: row.valid_from,
+      validUntil: row.valid_until,
+    }
+  })
 }
 
 export type CreateInitiativeActionCommand = {
