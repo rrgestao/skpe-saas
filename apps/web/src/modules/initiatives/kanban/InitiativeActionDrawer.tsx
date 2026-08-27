@@ -314,6 +314,9 @@ export function InitiativeActionDrawer({
     transitioningAllocationId !== null ||
     endingAssignmentId !== null
 
+  const closeLocked =
+    saving || editingCapacityAllocationId !== null
+
   useEffect(() => {
     let active = true
 
@@ -336,7 +339,7 @@ export function InitiativeActionDrawer({
       if (
         event.key === 'Escape' &&
         !showLifecycle &&
-        !saving
+        !closeLocked
       ) {
         onClose()
       }
@@ -354,8 +357,8 @@ export function InitiativeActionDrawer({
       )
     }
   }, [
+    closeLocked,
     onClose,
-    saving,
     showLifecycle,
   ])
 
@@ -973,7 +976,7 @@ export function InitiativeActionDrawer({
         onMouseDown={(event) => {
           if (
             event.target === event.currentTarget &&
-            !saving
+            !closeLocked
           ) {
             onClose()
           }
@@ -1000,7 +1003,7 @@ export function InitiativeActionDrawer({
             <button
               type="button"
               onClick={onClose}
-              disabled={saving}
+              disabled={closeLocked}
               aria-label="Fechar detalhes da ação"
             >
               Fechar
