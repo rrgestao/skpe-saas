@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   getAllowedPersonCapacityPeriodTransitions,
   validatePersonCapacityPeriodCreation,
+  validatePersonCapacityPeriodEdit,
   validatePersonCapacityPeriodTransition,
 } from '../src/modules/skpe/features/monitoring/personCapacityValidation.ts'
 
@@ -19,6 +20,19 @@ function validValues() {
       'Capacidade mensal explicitamente acordada.',
     changeReason:
       'Capacidade aprovada para setembro de 2026.',
+  }
+}
+
+function validEditValues() {
+  return {
+    currentStatus: 'planned',
+    periodStart: '2026-09-01',
+    periodEnd: '2026-09-30',
+    capacityAmount: '168',
+    capacityUnit: 'hours',
+    notes: 'Capacidade revisada após validação gerencial.',
+    changeReason:
+      'Capacidade revisada após alinhamento com a gestão.',
   }
 }
 
@@ -106,6 +120,90 @@ test('exige justificativa auditável com dez caracteres', () => {
       ...validValues(),
       changeReason: 'curta',
     })
+
+  assert.equal(result.ok, false)
+})
+
+test('valida edição de período não terminal', () => {
+  const result = validatePersonCapacityPeriodEdit(
+    validEditValues(),
+  )
+
+  assert.equal(result.ok, true)
+
+  if (!result.ok) return
+
+  assert.deepEqual(result.value, {
+    periodStart: '2026-09-01',
+    periodEnd: '2026-09-30',
+    capacityAmount: 168,
+    capacityUnit: 'hours',
+    notes: 'Capacidade revisada após validação gerencial.',
+    changeReason:
+      'Capacidade revisada após alinhamento com a gestão.',
+  })
+})
+
+test('aceita edição de período ativo', () => {
+  const result = validatePersonCapacityPeriodEdit({
+    ...validEditValues(),
+    currentStatus: 'active',
+  })
+
+  assert.equal(result.ok, true)
+})
+
+test('rejeita edição de período encerrado', () => {
+  const result = validatePersonCapacityPeriodEdit({
+    ...validEditValues(),
+    currentStatus: 'closed',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita edição de período cancelado', () => {
+  const result = validatePersonCapacityPeriodEdit({
+    ...validEditValues(),
+    currentStatus: 'cancelled',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita edição com datas invertidas', () => {
+  const result = validatePersonCapacityPeriodEdit({
+    ...validEditValues(),
+    periodStart: '2026-10-01',
+    periodEnd: '2026-09-30',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita edição com capacidade negativa', () => {
+  const result = validatePersonCapacityPeriodEdit({
+    ...validEditValues(),
+    capacityAmount: '-0.01',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita edição com unidade inválida', () => {
+  const result = validatePersonCapacityPeriodEdit({
+    ...validEditValues(),
+    capacityUnit: 'minutes',
+  })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita edição sem justificativa auditável', () => {
+  const result = validatePersonCapacityPeriodEdit({
+    ...validEditValues(),
+    changeReason: 'curta',
+  })
 
   assert.equal(result.ok, false)
 })
