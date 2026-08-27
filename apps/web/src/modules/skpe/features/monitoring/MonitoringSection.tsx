@@ -6,6 +6,7 @@ import {
   InitiativeEconomicExecutionDialog,
   type InitiativeEconomicDirect,
 } from './InitiativeEconomicExecutionDialog'
+import { PersonCapacityManagementDialog } from './PersonCapacityManagementDialog'
 
 import './MonitoringSection.css'
 
@@ -147,6 +148,27 @@ export function MonitoringSection({
   const [error, setError] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
   const [showEconomicEditor, setShowEconomicEditor] = useState(false)
+  const [showCapacityManager, setShowCapacityManager] = useState(false)
+  const [canManageCapacity, setCanManageCapacity] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    void supabase
+      .rpc('can_manage_sparks_people', {
+        target_organization_id: organizationId,
+      })
+      .then(({ data, error }) => {
+        if (!active) return
+        setCanManageCapacity(
+          error ? false : data === true,
+        )
+      })
+
+    return () => {
+      active = false
+    }
+  }, [organizationId])
 
   useEffect(() => {
     let active = true
@@ -258,6 +280,16 @@ export function MonitoringSection({
           {economicEditable ? (
             <button type="button" onClick={() => setShowEconomicEditor(true)}>
               Registrar execução econômica
+            </button>
+          ) : null}
+          {canManageCapacity ? (
+            <button
+              type="button"
+              onClick={() =>
+                setShowCapacityManager(true)
+              }
+            >
+              Gerenciar capacidade
             </button>
           ) : null}
         </div>
@@ -478,6 +510,21 @@ export function MonitoringSection({
           onSaved={() => {
             setShowEconomicEditor(false)
             setReloadToken((current) => current + 1)
+          }}
+        />
+      ) : null}
+
+      {showCapacityManager ? (
+        <PersonCapacityManagementDialog
+          organizationId={organizationId}
+          onClose={() =>
+            setShowCapacityManager(false)
+          }
+          onSaved={() => {
+            setShowCapacityManager(false)
+            setReloadToken(
+              (current) => current + 1,
+            )
           }}
         />
       ) : null}
