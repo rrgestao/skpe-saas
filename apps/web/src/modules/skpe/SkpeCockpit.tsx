@@ -1660,6 +1660,10 @@ type InitiativesSectionProps = {
   organizationId: string
   canManageCanvas: boolean
   canManageInitiatives: boolean
+  drilldownTarget: {
+    initiativeId: string
+    actionId: string | null
+  } | null
 }
 
 function getInitiativeClassLabel(value: string) {
@@ -1692,6 +1696,7 @@ function InitiativesSection({
   organizationId,
   canManageCanvas,
   canManageInitiatives,
+  drilldownTarget,
 }: InitiativesSectionProps) {
   const [dashboard, setDashboard] = useState<InitiativePortfolioDashboardRow | null>(null)
   const [initiatives, setInitiatives] = useState<InitiativePortfolioRow[]>([])
@@ -1712,6 +1717,14 @@ function InitiativesSection({
     useState<'portfolio' | 'kanban'>('portfolio')
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
+
+  useEffect(() => {
+    if (!drilldownTarget?.initiativeId) return
+
+    setKanbanInitiativeId(drilldownTarget.initiativeId)
+    setInitiativeViewMode('kanban')
+  }, [drilldownTarget?.initiativeId, drilldownTarget?.actionId])
+
   const [lifecycleInitiativeId, setLifecycleInitiativeId] =
     useState<string | null>(null)
   const [lifecycleTargetStatus, setLifecycleTargetStatus] =
@@ -2558,6 +2571,11 @@ function InitiativesSection({
             <InitiativeKanbanBoard
               initiativeId={kanbanInitiativeId}
               canManageInitiatives={canManageInitiatives}
+              initialActionId={
+                drilldownTarget?.initiativeId === kanbanInitiativeId
+                  ? drilldownTarget.actionId
+                  : null
+              }
             />
           </section>
         ) : (
@@ -6470,6 +6488,10 @@ export function SkpeCockpit({
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfileRow | null>(null)
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState<string | null>(null)
   const [projectContext, setProjectContext] = useState<StrategicProjectContext | null>(null)
+  const [initiativeDrilldown, setInitiativeDrilldown] = useState<{
+    initiativeId: string
+    actionId: string | null
+  } | null>(null)
   const [startingProject, setStartingProject] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sparks-theme') === 'dark' ? 'dark' : 'light'))
@@ -7113,6 +7135,7 @@ export function SkpeCockpit({
             canManageInitiatives={
               canManageJourney
             }
+            drilldownTarget={initiativeDrilldown}
           />
         )}
 
@@ -7120,7 +7143,10 @@ export function SkpeCockpit({
           <MonitoringSection
             fallbackProjectId={projectContext?.project_id ?? null}
             onOpenJourney={() => navigateToSection('journey')}
-            onOpenInitiatives={() => navigateToSection('initiatives')}
+            onOpenInitiatives={(target) => {
+              setInitiativeDrilldown(target ?? null)
+              navigateToSection('initiatives')
+            }}
           />
         )}
 

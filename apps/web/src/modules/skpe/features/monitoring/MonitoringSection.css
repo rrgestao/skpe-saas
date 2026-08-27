@@ -126,11 +126,34 @@
   margin-top: 0.8rem;
 }
 
-.skpe-monitoring-exceptions div {
+.skpe-monitoring-exceptions > div,
+.skpe-monitoring-exception-link {
   padding: 0.65rem;
   border: 1px solid #eadfcd;
   border-radius: 9px;
   background: #fffdf9;
+}
+
+.skpe-monitoring-exception-link {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.skpe-monitoring-exception-link:hover,
+.skpe-monitoring-exception-link:focus-visible {
+  border-color: #c99d5d;
+  background: #fff8ed;
+  outline: none;
+}
+
+.skpe-monitoring-exception-link small {
+  display: block;
+  margin-top: 0.35rem;
+  color: #315148;
+  font-size: 0.66rem;
+  font-weight: 800;
 }
 
 .skpe-monitoring-exceptions strong,

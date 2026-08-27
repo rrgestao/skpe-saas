@@ -5,15 +5,21 @@ import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
 
 import './MonitoringSection.css'
 
+type MonitoringDrilldownTarget = {
+  initiativeId: string
+  actionId: string | null
+}
+
 type MonitoringSectionProps = {
   fallbackProjectId: string | null
   onOpenJourney: () => void
-  onOpenInitiatives: () => void
+  onOpenInitiatives: (target?: MonitoringDrilldownTarget) => void
 }
 
 type InitiativeTemporalRow = {
   entity_type: 'initiative' | 'action'
   entity_id: string
+  initiative_id: string
   code: string
   name: string
   is_start_overdue: boolean
@@ -213,7 +219,7 @@ export function MonitoringSection({
         </div>
         <div className="skpe-monitoring-actions">
           <button type="button" onClick={onOpenJourney}>Abrir Jornada</button>
-          <button type="button" onClick={onOpenInitiatives}>Abrir Iniciativas / Kanban</button>
+          <button type="button" onClick={() => onOpenInitiatives()}>Abrir Iniciativas / Kanban</button>
         </div>
       </header>
 
@@ -274,10 +280,28 @@ export function MonitoringSection({
               ) : (
                 <div className="skpe-monitoring-exceptions">
                   {temporalExceptions.slice(0, 8).map(({ row, exception }) => (
-                    <div key={row.entity_id}>
+                    <button
+                      key={row.entity_id}
+                      type="button"
+                      className="skpe-monitoring-exception-link"
+                      onClick={() =>
+                        onOpenInitiatives({
+                          initiativeId: row.initiative_id,
+                          actionId:
+                            row.entity_type === 'action'
+                              ? row.entity_id
+                              : null,
+                        })
+                      }
+                    >
                       <strong>{row.code} · {row.name}</strong>
                       <span>{exception.label}</span>
-                    </div>
+                      <small>
+                        {row.entity_type === 'action'
+                          ? 'Abrir a\u00e7\u00e3o no Kanban'
+                          : 'Abrir iniciativa no Kanban'}
+                      </small>
+                    </button>
                   ))}
                   {overallocated.slice(0, 5).map((row) => (
                     <div key={row.capacity_period_id}>

@@ -33,6 +33,7 @@ import './InitiativeKanbanBoard.css'
 type InitiativeKanbanBoardProps = {
   initiativeId: string
   canManageInitiatives: boolean
+  initialActionId?: string | null
 }
 
 type PendingTransition = {
@@ -43,6 +44,7 @@ type PendingTransition = {
 export function InitiativeKanbanBoard({
   initiativeId,
   canManageInitiatives,
+  initialActionId = null,
 }: InitiativeKanbanBoardProps) {
   const [columns, setColumns] = useState<
     InitiativeKanbanColumnModel[]
@@ -77,6 +79,14 @@ export function InitiativeKanbanBoard({
         )
 
       setColumns(nextColumns)
+
+      if (initialActionId) {
+        const initialCard = nextColumns
+          .flatMap((column) => column.cards)
+          .find((card) => card.actionId === initialActionId)
+
+        setSelectedCard(initialCard ?? null)
+      }
     } catch (error) {
       setColumns([])
       setErrorMessage(
@@ -87,7 +97,7 @@ export function InitiativeKanbanBoard({
     } finally {
       setLoading(false)
     }
-  }, [initiativeId])
+  }, [initiativeId, initialActionId])
 
   useEffect(() => {
     void loadBoard()
