@@ -109,6 +109,16 @@ export function PersonCapacityManagementDialog({
     (selectedPeriod.capacityStatus === 'planned' ||
       selectedPeriod.capacityStatus === 'active')
 
+  const editDraftDirty =
+    selectedPeriodEditable &&
+    selectedPeriod !== null &&
+    (editPeriodStart !== selectedPeriod.periodStart ||
+      editPeriodEnd !== selectedPeriod.periodEnd ||
+      editCapacityAmount !== String(selectedPeriod.capacityAmount) ||
+      editCapacityUnit !== selectedPeriod.capacityUnit ||
+      editNotes !== (selectedPeriod.notes ?? '') ||
+      editReason.trim().length > 0)
+
   useEffect(() => {
     let active = true
 
@@ -594,7 +604,7 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setTargetStatus(event.target.value)
                           }
-                          disabled={saving}
+                          disabled={saving || editDraftDirty}
                         >
                           <option value="">Selecione</option>
                           {allowedTransitions.map((candidateStatus) => (
@@ -616,9 +626,18 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setTransitionReason(event.target.value)
                           }
-                          disabled={saving}
+                          disabled={saving || editDraftDirty}
                         />
                       </label>
+
+                      {editDraftDirty ? (
+                        <div className="is-wide skpe-economic-dialog-note">
+                          <small>
+                            Salve ou descarte o rascunho de edição antes de alterar
+                            a situação deste período.
+                          </small>
+                        </div>
+                      ) : null}
 
                       <div className="is-wide skpe-economic-dialog-note">
                         <small>
@@ -631,7 +650,7 @@ export function PersonCapacityManagementDialog({
                         <button
                           type="button"
                           onClick={() => void handleTransition()}
-                          disabled={saving}
+                          disabled={saving || editDraftDirty}
                         >
                           {saving ? 'Atualizando...' : 'Aplicar transição'}
                         </button>
