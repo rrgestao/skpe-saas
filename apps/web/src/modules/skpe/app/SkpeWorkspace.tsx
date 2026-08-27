@@ -9,7 +9,6 @@ import {
   SkpeWorkspaceProvider,
   type SkpeWorkspaceContextValue,
 } from '../context/SkpeWorkspaceContext'
-import { MonitoringSection } from '../features/monitoring/MonitoringSection'
 import {
   parsePlatformRoute,
   platformRoutes,
@@ -31,6 +30,7 @@ const ROUTABLE_COCKPIT_SECTIONS =
     'journey',
     'evolution-cycles',
     'initiatives',
+    'monitoring',
     'artifacts',
     'governance',
   ])
@@ -70,7 +70,6 @@ export function SkpeWorkspace(props: SkpeWorkspaceProps) {
   const route = parsePlatformRoute(location.pathname)
 
   const explicitRoute = route.kind === 'skpe' ? route : null
-  const isMonitoringRoute = explicitRoute?.section === 'monitoring'
 
   const explicitSection =
     explicitRoute &&
@@ -149,25 +148,15 @@ export function SkpeWorkspace(props: SkpeWorkspaceProps) {
 
   return (
     <SkpeWorkspaceProvider value={contextValue}>
-      {isMonitoringRoute ? (
-        <main className="skpe-main" style={{ minHeight: '100vh', padding: '1.5rem' }}>
-          <MonitoringSection
-            fallbackProjectId={explicitRoute?.projectId ?? null}
-            onOpenJourney={() => navigateExplicitSection('journey')}
-            onOpenInitiatives={() => navigateExplicitSection('initiatives')}
-          />
-        </main>
-      ) : (
-        <SkpeCockpit
-          {...props}
-          initialSection={
-            explicitSection ??
-            legacySection ??
-            props.initialSection
-          }
-          onNavigateSection={handleNavigateSection}
-        />
-      )}
+      <SkpeCockpit
+        {...props}
+        initialSection={
+          explicitSection ??
+          legacySection ??
+          props.initialSection
+        }
+        onNavigateSection={handleNavigateSection}
+      />
     </SkpeWorkspaceProvider>
   )
 }
