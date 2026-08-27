@@ -5,8 +5,11 @@ import {
   initiativeKanbanStatusLabels,
   type InitiativeActionBoardRow,
   type InitiativeActionEconomicExecution,
+  type InitiativeActionDomainOption,
   type InitiativeActionLifecycle,
   type InitiativeActionResponsibility,
+  type InitiativeActionResponsibilityAssignment,
+  type InitiativeActionResponsibilityCandidate,
   type InitiativeKanbanCardModel,
   type InitiativeKanbanColumnModel,
   type InitiativeKanbanStatus,
@@ -59,6 +62,7 @@ function mapBoardRow(
 
   return {
     actionId: row.action_id,
+    organizationId: row.organization_id,
     parentActionId: row.parent_action_id,
     depth: row.depth,
 
@@ -286,6 +290,180 @@ export async function loadInitiativeActionResponsibilities(
       validUntil: row.valid_until,
     }
   })
+}
+
+type InitiativeActionResponsibilityCandidateRow = {
+  organization_person_id: string
+  person_id: string
+  full_name: string
+  preferred_name: string | null
+  job_title: string | null
+  organizational_area: string | null
+  availability_percentage: number | string | null
+}
+
+type InitiativeActionDomainRow = {
+  value_code: string
+  value_name: string
+}
+
+export async function loadInitiativeActionResponsibilityCandidates(
+  organizationId: string,
+): Promise<InitiativeActionResponsibilityCandidate[]> {
+  const { data, error } = await supabase.rpc(
+    'get_sparks_people_for_responsibility',
+    {
+      target_organization_id: organizationId,
+      target_search: null,
+      target_relationship_type: null,
+      target_only_active: true,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível carregar as pessoas elegíveis: ${error.message}`,
+    )
+  }
+
+  return (
+    (data ?? []) as InitiativeActionResponsibilityCandidateRow[]
+  ).map((row) => {
+    const parsedAvailability =
+      row.availability_percentage === null
+        ? null
+        : Number(row.availability_percentage)
+
+    return {
+      organizationPersonId:
+        row.organization_person_id,
+      personId: row.person_id,
+      displayName:
+        row.preferred_name?.trim() ||
+        row.full_name,
+      jobTitle: row.job_title,
+      organizationalArea:
+        row.organizational_area,
+      availabilityPercentage:
+        parsedAvailability !== null &&
+        Number.isFinite(parsedAvailability)
+          ? parsedAvailability
+          : null,
+    }
+  })
+}
+
+async function loadInitiativeActionDomainOptions(
+  domainCode: string,
+  organizationId: string,
+): Promise<InitiativeActionDomainOption[]> {
+  const { data, error } = await supabase.rpc(
+    'get_sparks_domain_values',
+    {
+      target_domain_code: domainCode,
+      target_organization_id: organizationId,
+      target_module_code: 'SK-PE',
+      include_inactive: false,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível carregar o domínio ${domainCode}: ${error.message}`,
+    )
+  }
+
+  return (
+    (data ?? []) as InitiativeActionDomainRow[]
+  ).map((row) => ({
+    code: row.value_code,
+    name: row.value_name,
+  }))
+}
+
+export async function loadInitiativeActionResponsibilityDomains(
+  organizationId: string,
+) {
+  const [
+    responsibilityTypes,
+    authorityLevels,
+  ] = await Promise.all([
+    loadInitiativeActionDomainOptions(
+      'RESPONSIBILITY_TYPE',
+      organizationId,
+    ),
+    loadInitiativeActionDomainOptions(
+      'AUTHORITY_LEVEL',
+      organizationId,
+    ),
+  ])
+
+  return {
+    responsibilityTypes,
+    authorityLevels,
+  }
+}
+
+export async function assignInitiativeActionResponsibility(
+  actionId: string,
+  assignment: InitiativeActionResponsibilityAssignment,
+) {
+  const { data, error } = await supabase.rpc(
+    'assign_sparks_initiative_action_responsibility',
+    {
+      target_action_id: actionId,
+      target_organization_person_id:
+        assignment.organizationPersonId,
+      target_responsibility_type:
+        assignment.responsibilityType,
+      target_allocation_percentage:
+        assignment.allocationPercentage,
+      target_authority_level:
+        assignment.authorityLevel,
+      target_valid_from: assignment.validFrom,
+      target_valid_until: assignment.validUntil,
+      target_assignment_reason:
+        assignment.assignmentReason,
+      change_reason: assignment.changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível atribuir a responsabilidade: ${error.message}`,
+    )
+  }
+
+  return data
+}
+
+export async function endInitiativeActionResponsibility(
+  assignmentId: string,
+  endDate: string | null,
+  changeReason: string,
+) {
+  const reason = changeReason.trim()
+
+  if (reason.length < 10) {
+    throw new Error(
+      'Informe uma justificativa com pelo menos 10 caracteres.',
+    )
+  }
+
+  const { error } = await supabase.rpc(
+    'end_sparks_initiative_action_responsibility',
+    {
+      target_assignment_id: assignmentId,
+      target_end_date: endDate,
+      change_reason: reason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível encerrar a responsabilidade: ${error.message}`,
+    )
+  }
 }
 
 export type CreateInitiativeActionCommand = {

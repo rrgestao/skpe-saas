@@ -39,6 +39,42 @@ export type InitiativeActionResponsibility = {
   validUntil: string | null
 }
 
+export type InitiativeActionResponsibilityCandidate = {
+  organizationPersonId: string
+  personId: string
+  displayName: string
+  jobTitle: string | null
+  organizationalArea: string | null
+  availabilityPercentage: number | null
+}
+
+export type InitiativeActionDomainOption = {
+  code: string
+  name: string
+}
+
+export type InitiativeActionResponsibilityFormValues = {
+  organizationPersonId: string
+  responsibilityType: string
+  allocationPercentage: string
+  authorityLevel: string
+  validFrom: string
+  validUntil: string
+  assignmentReason: string
+  changeReason: string
+}
+
+export type InitiativeActionResponsibilityAssignment = {
+  organizationPersonId: string
+  responsibilityType: string
+  allocationPercentage: number | null
+  authorityLevel: string | null
+  validFrom: string | null
+  validUntil: string | null
+  assignmentReason: string | null
+  changeReason: string
+}
+
 export type InitiativeKanbanStatus = Extract<
   InitiativeActionLifecycle,
   | 'planned'
@@ -90,6 +126,7 @@ export type InitiativeActionBoardRow = {
 
 export type InitiativeKanbanCardModel = {
   actionId: string
+  organizationId: string
   parentActionId: string | null
   depth: number
 
@@ -472,6 +509,112 @@ export function validateInitiativeActionEconomics(
         estimatedEffort.value,
       actualEffort: actualEffort.value,
       effortUnit,
+      changeReason,
+    },
+  }
+}
+export function canManageInitiativeActionResponsibilities(
+  status: InitiativeActionLifecycle,
+) {
+  return (
+    status !== 'completed' &&
+    status !== 'cancelled' &&
+    status !== 'archived'
+  )
+}
+
+export function validateInitiativeActionResponsibilityAssignment(
+  values: InitiativeActionResponsibilityFormValues,
+):
+  | {
+      ok: true
+      value: InitiativeActionResponsibilityAssignment
+    }
+  | {
+      ok: false
+      message: string
+    } {
+  const organizationPersonId =
+    values.organizationPersonId.trim()
+  const responsibilityType =
+    values.responsibilityType.trim()
+  const authorityLevel =
+    values.authorityLevel.trim() || null
+  const validFrom =
+    values.validFrom.trim() || null
+  const validUntil =
+    values.validUntil.trim() || null
+  const assignmentReason =
+    values.assignmentReason.trim() || null
+  const changeReason =
+    values.changeReason.trim()
+
+  if (!organizationPersonId) {
+    return {
+      ok: false,
+      message: 'Selecione uma pessoa responsável.',
+    }
+  }
+
+  if (!responsibilityType) {
+    return {
+      ok: false,
+      message: 'Selecione o tipo de responsabilidade.',
+    }
+  }
+
+  if (changeReason.length < 10) {
+    return {
+      ok: false,
+      message:
+        'Informe uma justificativa com pelo menos 10 caracteres.',
+    }
+  }
+
+  let allocationPercentage: number | null = null
+  const rawAllocation =
+    values.allocationPercentage.trim()
+
+  if (rawAllocation) {
+    const parsed = Number(rawAllocation)
+
+    if (
+      !Number.isFinite(parsed) ||
+      parsed < 0 ||
+      parsed > 100
+    ) {
+      return {
+        ok: false,
+        message:
+          'A alocação deve estar entre 0 e 100%.',
+      }
+    }
+
+    allocationPercentage = parsed
+  }
+
+  if (
+    validFrom !== null &&
+    validUntil !== null &&
+    validUntil < validFrom
+  ) {
+    return {
+      ok: false,
+      message:
+        'A data final da vigência não pode ser anterior à data inicial.',
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      organizationPersonId,
+      responsibilityType,
+      allocationPercentage,
+      authorityLevel,
+      validFrom,
+      validUntil,
+      assignmentReason,
       changeReason,
     },
   }

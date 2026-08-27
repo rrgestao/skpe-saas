@@ -2,9 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  canManageInitiativeActionResponsibilities,
   canUpdateInitiativeActionEconomics,
   formatInitiativeActionResponsibilityType,
   validateInitiativeActionEconomics,
+  validateInitiativeActionResponsibilityAssignment,
 } from '../src/modules/initiatives/contracts/initiativeActions.ts'
 
 function validValues() {
@@ -172,5 +174,94 @@ test('humaniza tipo de responsabilidade não catalogado no frontend', () => {
       'technical_reviewer',
     ),
     'Technical reviewer',
+  )
+})
+test('valida atribuição governada de responsabilidade', () => {
+  const result =
+    validateInitiativeActionResponsibilityAssignment({
+      organizationPersonId: 'person-link-1',
+      responsibilityType: 'owner',
+      allocationPercentage: '50',
+      authorityLevel: 'tactical',
+      validFrom: '2026-08-27',
+      validUntil: '2026-12-31',
+      assignmentReason:
+        'Responsabilidade operacional definida.',
+      changeReason:
+        'Atribuição aprovada para execução da ação.',
+    })
+
+  assert.equal(result.ok, true)
+
+  if (!result.ok) return
+
+  assert.equal(
+    result.value.allocationPercentage,
+    50,
+  )
+  assert.equal(
+    result.value.authorityLevel,
+    'tactical',
+  )
+})
+
+test('rejeita alocação fora de 0 a 100', () => {
+  const result =
+    validateInitiativeActionResponsibilityAssignment({
+      organizationPersonId: 'person-link-1',
+      responsibilityType: 'executor',
+      allocationPercentage: '120',
+      authorityLevel: '',
+      validFrom: '',
+      validUntil: '',
+      assignmentReason: '',
+      changeReason:
+        'Atribuição operacional da responsabilidade.',
+    })
+
+  assert.equal(result.ok, false)
+})
+
+test('rejeita vigência invertida na responsabilidade', () => {
+  const result =
+    validateInitiativeActionResponsibilityAssignment({
+      organizationPersonId: 'person-link-1',
+      responsibilityType: 'executor',
+      allocationPercentage: '',
+      authorityLevel: '',
+      validFrom: '2026-10-01',
+      validUntil: '2026-09-01',
+      assignmentReason: '',
+      changeReason:
+        'Atribuição operacional da responsabilidade.',
+    })
+
+  assert.equal(result.ok, false)
+})
+
+test('bloqueia gestão de responsabilidade em ação terminal', () => {
+  assert.equal(
+    canManageInitiativeActionResponsibilities(
+      'completed',
+    ),
+    false,
+  )
+  assert.equal(
+    canManageInitiativeActionResponsibilities(
+      'cancelled',
+    ),
+    false,
+  )
+  assert.equal(
+    canManageInitiativeActionResponsibilities(
+      'archived',
+    ),
+    false,
+  )
+  assert.equal(
+    canManageInitiativeActionResponsibilities(
+      'in_progress',
+    ),
+    true,
   )
 })

@@ -4,6 +4,7 @@ import {
 } from 'react'
 
 import {
+  canManageInitiativeActionResponsibilities,
   canUpdateInitiativeActionEconomics,
   canUpdateInitiativeActionProgress,
   initiativeActionEffortUnitLabels,
@@ -12,11 +13,18 @@ import {
   initiativeActionPriorityLabels,
   formatInitiativeActionResponsibilityType,
   validateInitiativeActionEconomics,
+  validateInitiativeActionResponsibilityAssignment,
+  type InitiativeActionDomainOption,
   type InitiativeActionResponsibility,
+  type InitiativeActionResponsibilityCandidate,
   type InitiativeKanbanCardModel,
 } from '../contracts/initiativeActions'
 import {
+  assignInitiativeActionResponsibility,
+  endInitiativeActionResponsibility,
   loadInitiativeActionResponsibilities,
+  loadInitiativeActionResponsibilityCandidates,
+  loadInitiativeActionResponsibilityDomains,
   updateInitiativeActionEconomics,
   updateInitiativeActionProgress,
 } from '../data/initiativeActionsData'
@@ -119,6 +127,73 @@ export function InitiativeActionDrawer({
     responsibilitiesError,
     setResponsibilitiesError,
   ] = useState<string | null>(null)
+  const [
+    responsibilityCandidates,
+    setResponsibilityCandidates,
+  ] = useState<
+    InitiativeActionResponsibilityCandidate[]
+  >([])
+  const [
+    responsibilityTypes,
+    setResponsibilityTypes,
+  ] = useState<InitiativeActionDomainOption[]>(
+    [],
+  )
+  const [
+    authorityLevels,
+    setAuthorityLevels,
+  ] = useState<InitiativeActionDomainOption[]>(
+    [],
+  )
+  const [
+    responsibilityReferenceLoading,
+    setResponsibilityReferenceLoading,
+  ] = useState(true)
+  const [
+    responsibilityReferenceError,
+    setResponsibilityReferenceError,
+  ] = useState<string | null>(null)
+
+  const [
+    selectedOrganizationPersonId,
+    setSelectedOrganizationPersonId,
+  ] = useState('')
+  const [
+    selectedResponsibilityType,
+    setSelectedResponsibilityType,
+  ] = useState('')
+  const [
+    responsibilityAllocation,
+    setResponsibilityAllocation,
+  ] = useState('')
+  const [
+    selectedAuthorityLevel,
+    setSelectedAuthorityLevel,
+  ] = useState('')
+  const [
+    responsibilityValidFrom,
+    setResponsibilityValidFrom,
+  ] = useState('')
+  const [
+    responsibilityValidUntil,
+    setResponsibilityValidUntil,
+  ] = useState('')
+  const [
+    responsibilityAssignmentReason,
+    setResponsibilityAssignmentReason,
+  ] = useState('')
+  const [
+    responsibilityChangeReason,
+    setResponsibilityChangeReason,
+  ] = useState('')
+  const [
+    savingResponsibility,
+    setSavingResponsibility,
+  ] = useState(false)
+  const [
+    endingAssignmentId,
+    setEndingAssignmentId,
+  ] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
@@ -133,8 +208,16 @@ export function InitiativeActionDrawer({
       card.status,
     )
 
+  const responsibilitiesManageable =
+    canManageInitiativeActionResponsibilities(
+      card.status,
+    )
+
   const saving =
-    savingProgress || savingEconomics
+    savingProgress ||
+    savingEconomics ||
+    savingResponsibility ||
+    endingAssignmentId !== null
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -196,6 +279,162 @@ export function InitiativeActionDrawer({
       cancelled = true
     }
   }, [card.actionId])
+
+  useEffect(() => {
+    let cancelled = false
+
+    setResponsibilityReferenceLoading(true)
+    setResponsibilityReferenceError(null)
+
+    void Promise.all([
+      loadInitiativeActionResponsibilityCandidates(
+        card.organizationId,
+      ),
+      loadInitiativeActionResponsibilityDomains(
+        card.organizationId,
+      ),
+    ])
+      .then(([candidates, domains]) => {
+        if (cancelled) return
+
+        setResponsibilityCandidates(candidates)
+        setResponsibilityTypes(
+          domains.responsibilityTypes,
+        )
+        setAuthorityLevels(
+          domains.authorityLevels,
+        )
+      })
+      .catch((error) => {
+        if (cancelled) return
+
+        setResponsibilityCandidates([])
+        setResponsibilityTypes([])
+        setAuthorityLevels([])
+        setResponsibilityReferenceError(
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível carregar os dados para atribuição de responsabilidades.',
+        )
+      })
+      .finally(() => {
+        if (cancelled) return
+        setResponsibilityReferenceLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [card.organizationId])
+
+  async function reloadResponsibilities() {
+    const items =
+      await loadInitiativeActionResponsibilities(
+        card.actionId,
+      )
+
+    setResponsibilities(items)
+    setResponsibilitiesError(null)
+  }
+
+  async function handleAssignResponsibility() {
+    if (!responsibilitiesManageable) {
+      setErrorMessage(
+        'Não é possível atribuir novas responsabilidades a uma ação encerrada.',
+      )
+      return
+    }
+
+    const validation =
+      validateInitiativeActionResponsibilityAssignment({
+        organizationPersonId:
+          selectedOrganizationPersonId,
+        responsibilityType:
+          selectedResponsibilityType,
+        allocationPercentage:
+          responsibilityAllocation,
+        authorityLevel:
+          selectedAuthorityLevel,
+        validFrom: responsibilityValidFrom,
+        validUntil:
+          responsibilityValidUntil,
+        assignmentReason:
+          responsibilityAssignmentReason,
+        changeReason:
+          responsibilityChangeReason,
+      })
+
+    if (!validation.ok) {
+      setErrorMessage(validation.message)
+      return
+    }
+
+    setSavingResponsibility(true)
+    setErrorMessage(null)
+
+    try {
+      await assignInitiativeActionResponsibility(
+        card.actionId,
+        validation.value,
+      )
+      await reloadResponsibilities()
+
+      setSelectedOrganizationPersonId('')
+      setSelectedResponsibilityType('')
+      setResponsibilityAllocation('')
+      setSelectedAuthorityLevel('')
+      setResponsibilityValidFrom('')
+      setResponsibilityValidUntil('')
+      setResponsibilityAssignmentReason('')
+      setResponsibilityChangeReason('')
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível atribuir a responsabilidade.',
+      )
+    } finally {
+      setSavingResponsibility(false)
+    }
+  }
+
+  async function handleEndResponsibility(
+    assignmentId: string,
+  ) {
+    const reason =
+      window.prompt(
+        'Justificativa para encerrar a responsabilidade (mínimo 10 caracteres):',
+      )?.trim() ?? ''
+
+    if (!reason) return
+
+    if (reason.length < 10) {
+      setErrorMessage(
+        'Informe uma justificativa com pelo menos 10 caracteres.',
+      )
+      return
+    }
+
+    setEndingAssignmentId(assignmentId)
+    setErrorMessage(null)
+
+    try {
+      await endInitiativeActionResponsibility(
+        assignmentId,
+        null,
+        reason,
+      )
+      await reloadResponsibilities()
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível encerrar a responsabilidade.',
+      )
+    } finally {
+      setEndingAssignmentId(null)
+    }
+  }
 
   async function handleProgressUpdate() {
     const parsedProgress = Number(progress)
@@ -508,10 +747,248 @@ export function InitiativeActionDrawer({
                           )}
                         </small>
                       ) : null}
+
+                      {responsibilitiesManageable ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleEndResponsibility(
+                              responsibility.assignmentId,
+                            )
+                          }
+                          disabled={saving}
+                        >
+                          {endingAssignmentId ===
+                          responsibility.assignmentId
+                            ? 'Encerrando...'
+                            : 'Encerrar responsabilidade'}
+                        </button>
+                      ) : null}
                     </div>
                   ),
                 )}
               </dl>
+            )}
+
+            {responsibilitiesManageable ? (
+              <>
+                <h4>Atribuir responsabilidade</h4>
+
+                {responsibilityReferenceLoading ? (
+                  <p>
+                    Carregando pessoas e domínios...
+                  </p>
+                ) : responsibilityReferenceError ? (
+                  <div
+                    className="initiative-action-message initiative-action-message--error"
+                    role="alert"
+                  >
+                    {responsibilityReferenceError}
+                  </div>
+                ) : (
+                  <>
+                    <label className="initiative-action-field">
+                      <span>Pessoa *</span>
+                      <select
+                        value={
+                          selectedOrganizationPersonId
+                        }
+                        onChange={(event) =>
+                          setSelectedOrganizationPersonId(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        <option value="">
+                          Selecione
+                        </option>
+                        {responsibilityCandidates.map(
+                          (candidate) => (
+                            <option
+                              key={
+                                candidate.organizationPersonId
+                              }
+                              value={
+                                candidate.organizationPersonId
+                              }
+                            >
+                              {candidate.displayName}
+                              {candidate.jobTitle
+                                ? ` — ${candidate.jobTitle}`
+                                : ''}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+
+                    <label className="initiative-action-field">
+                      <span>
+                        Tipo de responsabilidade *
+                      </span>
+                      <select
+                        value={
+                          selectedResponsibilityType
+                        }
+                        onChange={(event) =>
+                          setSelectedResponsibilityType(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        <option value="">
+                          Selecione
+                        </option>
+                        {responsibilityTypes.map(
+                          (option) => (
+                            <option
+                              key={option.code}
+                              value={option.code}
+                            >
+                              {option.name}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+
+                    <label className="initiative-action-field">
+                      <span>Alocação (%)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={
+                          responsibilityAllocation
+                        }
+                        onChange={(event) =>
+                          setResponsibilityAllocation(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      />
+                    </label>
+
+                    <label className="initiative-action-field">
+                      <span>Nível de autoridade</span>
+                      <select
+                        value={
+                          selectedAuthorityLevel
+                        }
+                        onChange={(event) =>
+                          setSelectedAuthorityLevel(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        <option value="">
+                          Não definido
+                        </option>
+                        {authorityLevels.map(
+                          (option) => (
+                            <option
+                              key={option.code}
+                              value={option.code}
+                            >
+                              {option.name}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+
+                    <label className="initiative-action-field">
+                      <span>Início da vigência</span>
+                      <input
+                        type="date"
+                        value={
+                          responsibilityValidFrom
+                        }
+                        onChange={(event) =>
+                          setResponsibilityValidFrom(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      />
+                    </label>
+
+                    <label className="initiative-action-field">
+                      <span>Fim da vigência</span>
+                      <input
+                        type="date"
+                        value={
+                          responsibilityValidUntil
+                        }
+                        onChange={(event) =>
+                          setResponsibilityValidUntil(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      />
+                    </label>
+
+                    <label className="initiative-action-field">
+                      <span>
+                        Motivo da atribuição
+                      </span>
+                      <textarea
+                        rows={3}
+                        value={
+                          responsibilityAssignmentReason
+                        }
+                        onChange={(event) =>
+                          setResponsibilityAssignmentReason(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      />
+                    </label>
+
+                    <label className="initiative-action-field">
+                      <span>
+                        Justificativa para auditoria *
+                      </span>
+                      <textarea
+                        rows={3}
+                        value={
+                          responsibilityChangeReason
+                        }
+                        onChange={(event) =>
+                          setResponsibilityChangeReason(
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleAssignResponsibility()
+                      }
+                      disabled={saving}
+                    >
+                      {savingResponsibility
+                        ? 'Atribuindo...'
+                        : 'Atribuir responsabilidade'}
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <p>
+                A gestão de responsabilidades fica
+                bloqueada quando a ação está encerrada.
+              </p>
             )}
           </section>
 
