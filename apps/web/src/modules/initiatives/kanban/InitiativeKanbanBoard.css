@@ -299,3 +299,29 @@
   justify-content: flex-end;
   margin-bottom: 0.75rem;
 }
+.initiative-kanban-card__economics {
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid var(--border-color, #dfe3e8);
+  padding-top: 0.55rem;
+}
+
+.initiative-kanban-card__economics div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.initiative-kanban-card__economics span {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.initiative-kanban-card__economics p {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.initiative-kanban-card__economics strong {
+  font-weight: 750;
+}

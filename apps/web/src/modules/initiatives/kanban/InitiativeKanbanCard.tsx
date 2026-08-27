@@ -1,5 +1,7 @@
 import {
+  initiativeActionEffortUnitLabels,
   initiativeActionPriorityLabels,
+  type InitiativeActionEffortUnit,
   type InitiativeKanbanCardModel,
 } from '../contracts/initiativeActions'
 
@@ -33,6 +35,45 @@ function formatDate(value: string | null) {
   return `${day}/${month}/${year}`
 }
 
+function formatDirectCost(
+  value: number | null,
+  currencyCode: string,
+) {
+  if (value === null) return '—'
+
+  return `${currencyCode} ${new Intl.NumberFormat(
+    'pt-BR',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  ).format(value)}`
+}
+
+function formatDirectEffort(
+  value: number | null,
+  effortUnit: InitiativeActionEffortUnit | null,
+) {
+  if (value === null) return '—'
+
+  const formatted = new Intl.NumberFormat(
+    'pt-BR',
+    {
+      maximumFractionDigits: 2,
+    },
+  ).format(value)
+
+  if (!effortUnit) {
+    return formatted
+  }
+
+  return `${formatted} ${
+    initiativeActionEffortUnitLabels[
+      effortUnit
+    ].toLowerCase()
+  }`
+}
+
 export function InitiativeKanbanCard({
   card,
   onOpen,
@@ -41,6 +82,17 @@ export function InitiativeKanbanCard({
 }: InitiativeKanbanCardProps) {
   const plannedDueDate =
     formatDate(card.plannedDueDate)
+
+  const hasDirectCost =
+    card.plannedCost !== null ||
+    card.actualCost !== null
+
+  const hasDirectEffort =
+    card.estimatedEffort !== null ||
+    card.actualEffort !== null
+
+  const hasDirectEconomics =
+    hasDirectCost || hasDirectEffort
 
   return (
     <article
@@ -114,6 +166,59 @@ export function InitiativeKanbanCard({
           Calculado{' '}
           {formatProgress(card.calculatedProgress)}
         </p>
+      ) : null}
+
+      {hasDirectEconomics ? (
+        <div
+          className="initiative-kanban-card__economics"
+          aria-label="Execução econômica direta da ação"
+        >
+          {hasDirectCost ? (
+            <div>
+              <span>Custo direto</span>
+              <p>
+                Planejado{' '}
+                <strong>
+                  {formatDirectCost(
+                    card.plannedCost,
+                    card.currencyCode,
+                  )}
+                </strong>
+                {' · '}
+                Realizado{' '}
+                <strong>
+                  {formatDirectCost(
+                    card.actualCost,
+                    card.currencyCode,
+                  )}
+                </strong>
+              </p>
+            </div>
+          ) : null}
+
+          {hasDirectEffort ? (
+            <div>
+              <span>Esforço direto</span>
+              <p>
+                Estimado{' '}
+                <strong>
+                  {formatDirectEffort(
+                    card.estimatedEffort,
+                    card.effortUnit,
+                  )}
+                </strong>
+                {' · '}
+                Realizado{' '}
+                <strong>
+                  {formatDirectEffort(
+                    card.actualEffort,
+                    card.effortUnit,
+                  )}
+                </strong>
+              </p>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       {card.hasEligibleChildren ? (
