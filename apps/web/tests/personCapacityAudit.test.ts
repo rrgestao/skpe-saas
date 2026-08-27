@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   formatPersonCapacityAuditAction,
+  formatPersonCapacityAuditActor,
   summarizePersonCapacityAuditChange,
 } from '../src/modules/skpe/features/monitoring/personCapacityAudit.ts'
 
@@ -64,5 +65,35 @@ test('traduz ações canônicas conhecidas sem inventar outras', () => {
   assert.equal(
     formatPersonCapacityAuditAction('capacity_period.custom'),
     'capacity_period.custom',
+  )
+})
+
+test('formata ator resolvido da auditoria de período', () => {
+  assert.equal(
+    formatPersonCapacityAuditActor({
+      actorUserId: 'user-1',
+      actorName: 'Maria Silva',
+    }),
+    'Maria Silva',
+  )
+})
+
+test('expõe fallback quando usuário não possui nome organizacional resolvido', () => {
+  assert.equal(
+    formatPersonCapacityAuditActor({
+      actorUserId: 'user-2',
+      actorName: null,
+    }),
+    'Usuário identificado sem nome organizacional disponível',
+  )
+})
+
+test('expõe fallback para sistema ou automação sem ator de usuário', () => {
+  assert.equal(
+    formatPersonCapacityAuditActor({
+      actorUserId: null,
+      actorName: null,
+    }),
+    'Sistema ou automação',
   )
 })
