@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
+import { JourneyEventManageDialog } from './JourneyEventManageDialog'
 import type { JourneyTemporalRow } from '../../contracts/journey'
 
 import './JourneyGantt.css'
@@ -615,6 +616,8 @@ export function JourneyGantt({
   const [capacity, setCapacity] = useState<CapacityProjection>({})
   const [projectionLoading, setProjectionLoading] = useState(false)
   const [projectionError, setProjectionError] = useState('')
+  const [selectedEvent, setSelectedEvent] = useState<JourneyEventRow | null>(null)
+  const [localEventRevision, setLocalEventRevision] = useState(0)
 
   const organizationId = rows[0]?.organization_id ?? null
   const projectId = rows[0]?.project_id ?? null
@@ -671,7 +674,7 @@ export function JourneyGantt({
     return () => {
       active = false
     }
-  }, [organizationId, projectId, referenceDate, eventProjectionRevision])
+  }, [organizationId, projectId, referenceDate, eventProjectionRevision, localEventRevision])
 
   const flattenedRows = useMemo(() => flattenJourney(rows), [rows])
   const displayRows = useMemo(
@@ -885,19 +888,40 @@ export function JourneyGantt({
                     if (!range) return null
                     const title = getEventTitle(event, range, formatDate)
 
+                    const eventClassName = [
+                      'skpe-gantt-event',
+                      range.start === range.end ? 'skpe-gantt-event-milestone' : '',
+                      event.event_status === 'in_progress' ? 'is-in-progress' : '',
+                      canManageJourney ? 'is-manageable' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+
+                    if (!canManageJourney) {
+                      return (
+                        <span
+                          key={event.event_id}
+                          className={eventClassName}
+                          style={getBarStyle(range, timeline)}
+                          title={title}
+                          aria-label={title}
+                        />
+                      )
+                    }
+
                     return (
-                      <span
+                      <button
                         key={event.event_id}
-                        className={[
-                          'skpe-gantt-event',
-                          range.start === range.end ? 'skpe-gantt-event-milestone' : '',
-                          event.event_status === 'in_progress' ? 'is-in-progress' : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
+                        type="button"
+                        className={eventClassName}
                         style={getBarStyle(range, timeline)}
-                        title={title}
-                        aria-label={title}
+                        title={title + " - abrir gest\u00e3o do evento"}
+                        aria-label={title + " - abrir gest\u00e3o do evento"}
+                        onClick={(clickEvent) => {
+                          clickEvent.stopPropagation()
+                          onSelectItem(row.item_id)
+                          setSelectedEvent(event)
+                        }}
                       />
                     )
                   })}
@@ -970,6 +994,17 @@ export function JourneyGantt({
           {formatDate(toDateOnly(timeline.endMs))}
         </span>
       </footer>
+
+      {selectedEvent && canManageJourney && (
+        <JourneyEventManageDialog
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onChanged={() => {
+            setSelectedEvent(null)
+            setLocalEventRevision((current) => current + 1)
+          }}
+        />
+      )}
 
       <section className="skpe-management-summary" aria-label="Resumo gerencial da execução estratégica">
         <header className="skpe-management-summary-header">
