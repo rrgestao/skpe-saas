@@ -8,7 +8,9 @@ import {
   type InitiativeActionDomainOption,
   type InitiativeActionLifecycle,
   type InitiativeActionResponsibility,
+  type InitiativeActionCapacityAllocation,
   type InitiativeActionCapacityAllocationCommand,
+  type InitiativeActionCapacityAllocationStatus,
   type InitiativeActionPersonCapacity,
   type InitiativeActionResponsibilityAssignment,
   type InitiativeActionResponsibilityCandidate,
@@ -466,6 +468,162 @@ export async function loadInitiativeActionPersonCapacity(
     currentAllocationCount:
       Number(row.current_allocation_count),
   }))
+}
+
+type InitiativeActionCapacityAllocationRow = {
+  id: string
+  capacity_period_id: string
+  allocation_start: string
+  allocation_end: string
+  allocated_amount: number | string
+  status: InitiativeActionCapacityAllocationStatus
+  notes: string | null
+}
+
+type InitiativeActionCapacityPeriodLookupRow = {
+  id: string
+  organization_person_id: string
+  capacity_unit: string
+}
+
+export async function loadInitiativeActionCapacityAllocations(
+  organizationId: string,
+  actionId: string,
+): Promise<InitiativeActionCapacityAllocation[]> {
+  const { data: allocationData, error: allocationError } =
+    await supabase
+      .from('sparks_person_capacity_allocations')
+      .select(
+        'id,capacity_period_id,allocation_start,allocation_end,allocated_amount,status,notes',
+      )
+      .eq('organization_id', organizationId)
+      .eq('module_code', 'SK-PE')
+      .eq('object_type', 'initiative_action')
+      .eq('object_id', actionId)
+      .order('allocation_start', {
+        ascending: true,
+      })
+
+  if (allocationError) {
+    throw new Error(
+      `Não foi possível carregar as alocações de capacidade da ação: ${allocationError.message}`,
+    )
+  }
+
+  const allocations =
+    (allocationData ?? []) as InitiativeActionCapacityAllocationRow[]
+
+  if (allocations.length === 0) {
+    return []
+  }
+
+  const capacityPeriodIds = [
+    ...new Set(
+      allocations.map(
+        (allocation) =>
+          allocation.capacity_period_id,
+      ),
+    ),
+  ]
+
+  const { data: capacityData, error: capacityError } =
+    await supabase
+      .from('sparks_person_capacity_periods')
+      .select(
+        'id,organization_person_id,capacity_unit',
+      )
+      .eq('organization_id', organizationId)
+      .in('id', capacityPeriodIds)
+
+  if (capacityError) {
+    throw new Error(
+      `Não foi possível identificar as pessoas das alocações: ${capacityError.message}`,
+    )
+  }
+
+  const capacityById = new Map(
+    (
+      (capacityData ?? []) as InitiativeActionCapacityPeriodLookupRow[]
+    ).map((capacity) => [
+      capacity.id,
+      capacity,
+    ]),
+  )
+
+  return allocations.flatMap((allocation) => {
+    const capacity =
+      capacityById.get(
+        allocation.capacity_period_id,
+      )
+
+    if (!capacity) return []
+
+    return [
+      {
+        allocationId: allocation.id,
+        capacityPeriodId:
+          allocation.capacity_period_id,
+        organizationPersonId:
+          capacity.organization_person_id,
+        allocationStart:
+          allocation.allocation_start,
+        allocationEnd:
+          allocation.allocation_end,
+        allocatedAmount:
+          Number(allocation.allocated_amount),
+        capacityUnit: capacity.capacity_unit,
+        status: allocation.status,
+        notes: allocation.notes,
+      },
+    ]
+  })
+}
+
+export async function transitionInitiativeActionCapacityAllocation(
+  organizationId: string,
+  actionId: string,
+  allocation: InitiativeActionCapacityAllocation,
+  targetStatus: InitiativeActionCapacityAllocationStatus,
+  changeReason: string,
+) {
+  const reason = changeReason.trim()
+
+  if (reason.length < 10) {
+    throw new Error(
+      'Informe uma justificativa com pelo menos 10 caracteres.',
+    )
+  }
+
+  const { data, error } = await supabase.rpc(
+    'set_sparks_person_capacity_allocation',
+    {
+      target_organization_id: organizationId,
+      target_allocation_id:
+        allocation.allocationId,
+      target_capacity_period_id:
+        allocation.capacityPeriodId,
+      target_module_code: 'SK-PE',
+      target_object_type: 'initiative_action',
+      target_object_id: actionId,
+      target_allocation_start:
+        allocation.allocationStart,
+      target_allocation_end:
+        allocation.allocationEnd,
+      target_allocated_amount:
+        allocation.allocatedAmount,
+      target_status: targetStatus,
+      target_notes: allocation.notes,
+      change_reason: reason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível alterar a situação da alocação: ${error.message}`,
+    )
+  }
+
+  return data
 }
 
 export async function createInitiativeActionCapacityAllocation(

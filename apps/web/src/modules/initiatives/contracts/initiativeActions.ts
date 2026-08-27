@@ -78,6 +78,24 @@ export type InitiativeActionCapacityAllocationFormValues = {
   changeReason: string
 }
 
+export type InitiativeActionCapacityAllocationStatus =
+  | 'planned'
+  | 'active'
+  | 'ended'
+  | 'cancelled'
+
+export type InitiativeActionCapacityAllocation = {
+  allocationId: string
+  capacityPeriodId: string
+  organizationPersonId: string
+  allocationStart: string
+  allocationEnd: string
+  allocatedAmount: number
+  capacityUnit: string
+  status: InitiativeActionCapacityAllocationStatus
+  notes: string | null
+}
+
 export type InitiativeActionCapacityAllocationCommand = {
   capacityPeriodId: string
   allocationStart: string
@@ -835,4 +853,26 @@ export function validateInitiativeActionCapacityAllocation(
       changeReason,
     },
   }
+}
+export function getInitiativeActionCapacityAllocationTransitions(
+  status: InitiativeActionCapacityAllocationStatus,
+): readonly InitiativeActionCapacityAllocationStatus[] {
+  if (status === 'planned') {
+    return ['active', 'cancelled']
+  }
+
+  if (status === 'active') {
+    return ['ended', 'cancelled']
+  }
+
+  return []
+}
+
+export function canTransitionInitiativeActionCapacityAllocation(
+  status: InitiativeActionCapacityAllocationStatus,
+  targetStatus: InitiativeActionCapacityAllocationStatus,
+) {
+  return getInitiativeActionCapacityAllocationTransitions(
+    status,
+  ).includes(targetStatus)
 }

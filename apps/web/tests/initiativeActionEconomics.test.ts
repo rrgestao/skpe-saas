@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   canManageInitiativeActionResponsibilities,
+  canTransitionInitiativeActionCapacityAllocation,
   canUpdateInitiativeActionEconomics,
   deriveInitiativeActionCapacityAllocationRange,
   formatInitiativeActionCapacityAmount,
@@ -456,4 +457,55 @@ test('rejeita alocação fora do período de capacidade', () => {
     )
 
   assert.equal(result.ok, false)
+})
+test('permite somente transições governadas da alocação de capacidade', () => {
+  assert.equal(
+    canTransitionInitiativeActionCapacityAllocation(
+      'planned',
+      'active',
+    ),
+    true,
+  )
+  assert.equal(
+    canTransitionInitiativeActionCapacityAllocation(
+      'planned',
+      'cancelled',
+    ),
+    true,
+  )
+  assert.equal(
+    canTransitionInitiativeActionCapacityAllocation(
+      'planned',
+      'ended',
+    ),
+    false,
+  )
+  assert.equal(
+    canTransitionInitiativeActionCapacityAllocation(
+      'active',
+      'ended',
+    ),
+    true,
+  )
+  assert.equal(
+    canTransitionInitiativeActionCapacityAllocation(
+      'active',
+      'cancelled',
+    ),
+    true,
+  )
+  assert.equal(
+    canTransitionInitiativeActionCapacityAllocation(
+      'ended',
+      'active',
+    ),
+    false,
+  )
+  assert.equal(
+    canTransitionInitiativeActionCapacityAllocation(
+      'cancelled',
+      'planned',
+    ),
+    false,
+  )
 })

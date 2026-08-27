@@ -11,6 +11,7 @@ import {
   initiativeActionEffortUnits,
   initiativeActionLifecycleLabels,
   initiativeActionPriorityLabels,
+  canTransitionInitiativeActionCapacityAllocation,
   deriveInitiativeActionCapacityAllocationRange,
   formatInitiativeActionCapacityAmount,
   formatInitiativeActionResponsibilityType,
@@ -18,6 +19,8 @@ import {
   validateInitiativeActionCapacityAllocation,
   validateInitiativeActionEconomics,
   validateInitiativeActionResponsibilityAssignment,
+  type InitiativeActionCapacityAllocation,
+  type InitiativeActionCapacityAllocationStatus,
   type InitiativeActionDomainOption,
   type InitiativeActionPersonCapacity,
   type InitiativeActionResponsibility,
@@ -28,10 +31,12 @@ import {
   assignInitiativeActionResponsibility,
   createInitiativeActionCapacityAllocation,
   endInitiativeActionResponsibility,
+  loadInitiativeActionCapacityAllocations,
   loadInitiativeActionPersonCapacity,
   loadInitiativeActionResponsibilities,
   loadInitiativeActionResponsibilityCandidates,
   loadInitiativeActionResponsibilityDomains,
+  transitionInitiativeActionCapacityAllocation,
   updateInitiativeActionEconomics,
   updateInitiativeActionProgress,
 } from '../data/initiativeActionsData'
@@ -250,6 +255,24 @@ export function InitiativeActionDrawer({
     savingCapacityAllocation,
     setSavingCapacityAllocation,
   ] = useState(false)
+  const [
+    capacityAllocations,
+    setCapacityAllocations,
+  ] = useState<InitiativeActionCapacityAllocation[]>(
+    [],
+  )
+  const [
+    capacityAllocationsLoading,
+    setCapacityAllocationsLoading,
+  ] = useState(true)
+  const [
+    capacityAllocationsError,
+    setCapacityAllocationsError,
+  ] = useState<string | null>(null)
+  const [
+    transitioningAllocationId,
+    setTransitioningAllocationId,
+  ] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
@@ -274,6 +297,7 @@ export function InitiativeActionDrawer({
     savingEconomics ||
     savingResponsibility ||
     savingCapacityAllocation ||
+    transitioningAllocationId !== null ||
     endingAssignmentId !== null
 
   useEffect(() => {
@@ -303,6 +327,40 @@ export function InitiativeActionDrawer({
     saving,
     showLifecycle,
   ])
+
+  useEffect(() => {
+    let cancelled = false
+
+    setCapacityAllocationsLoading(true)
+    setCapacityAllocationsError(null)
+
+    void loadInitiativeActionCapacityAllocations(
+      card.organizationId,
+      card.actionId,
+    )
+      .then((items) => {
+        if (cancelled) return
+        setCapacityAllocations(items)
+      })
+      .catch((error) => {
+        if (cancelled) return
+
+        setCapacityAllocations([])
+        setCapacityAllocationsError(
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível carregar as alocações de capacidade da ação.',
+        )
+      })
+      .finally(() => {
+        if (cancelled) return
+        setCapacityAllocationsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [card.actionId, card.organizationId])
 
   useEffect(() => {
     let cancelled = false
@@ -474,6 +532,17 @@ export function InitiativeActionDrawer({
     )
   }
 
+  async function reloadCapacityAllocations() {
+    const items =
+      await loadInitiativeActionCapacityAllocations(
+        card.organizationId,
+        card.actionId,
+      )
+
+    setCapacityAllocations(items)
+    setCapacityAllocationsError(null)
+  }
+
   async function reloadSelectedPersonCapacity() {
     if (!selectedOrganizationPersonId) {
       return
@@ -533,7 +602,10 @@ export function InitiativeActionDrawer({
         validation.value,
       )
 
-      await reloadSelectedPersonCapacity()
+      await Promise.all([
+        reloadSelectedPersonCapacity(),
+        reloadCapacityAllocations(),
+      ])
 
       setAllocationCapacityPeriodId('')
       setCapacityAllocationStart('')
@@ -550,6 +622,74 @@ export function InitiativeActionDrawer({
       )
     } finally {
       setSavingCapacityAllocation(false)
+    }
+  }
+
+  async function handleCapacityAllocationTransition(
+    allocation: InitiativeActionCapacityAllocation,
+    targetStatus: InitiativeActionCapacityAllocationStatus,
+  ) {
+    if (
+      !canTransitionInitiativeActionCapacityAllocation(
+        allocation.status,
+        targetStatus,
+      )
+    ) {
+      setErrorMessage(
+        'Transição de alocação não permitida.',
+      )
+      return
+    }
+
+    const label =
+      targetStatus === 'active'
+        ? 'ativar'
+        : targetStatus === 'ended'
+          ? 'encerrar'
+          : 'cancelar'
+
+    const reason =
+      window.prompt(
+        `Justificativa para ${label} a alocação (mínimo 10 caracteres):`,
+      )?.trim() ?? ''
+
+    if (!reason) return
+
+    if (reason.length < 10) {
+      setErrorMessage(
+        'Informe uma justificativa com pelo menos 10 caracteres.',
+      )
+      return
+    }
+
+    setTransitioningAllocationId(
+      allocation.allocationId,
+    )
+    setErrorMessage(null)
+
+    try {
+      await transitionInitiativeActionCapacityAllocation(
+        card.organizationId,
+        card.actionId,
+        allocation,
+        targetStatus,
+        reason,
+      )
+
+      await Promise.all([
+        reloadCapacityAllocations(),
+        selectedOrganizationPersonId
+          ? reloadSelectedPersonCapacity()
+          : Promise.resolve(),
+      ])
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível alterar a situação da alocação.',
+      )
+    } finally {
+      setTransitioningAllocationId(null)
     }
   }
 
@@ -992,6 +1132,143 @@ export function InitiativeActionDrawer({
                       ) : null}
                     </div>
                   ),
+                )}
+              </dl>
+            )}
+
+            <h4>Alocações de capacidade da ação</h4>
+
+            {capacityAllocationsLoading ? (
+              <p>Carregando alocações...</p>
+            ) : capacityAllocationsError ? (
+              <div
+                className="initiative-action-message initiative-action-message--error"
+                role="alert"
+              >
+                {capacityAllocationsError}
+              </div>
+            ) : capacityAllocations.length === 0 ? (
+              <p>
+                Nenhuma alocação quantitativa de
+                capacidade foi registrada para esta ação.
+              </p>
+            ) : (
+              <dl className="initiative-action-detail-list">
+                {capacityAllocations.map(
+                  (allocation) => {
+                    const candidate =
+                      responsibilityCandidates.find(
+                        (item) =>
+                          item.organizationPersonId ===
+                          allocation.organizationPersonId,
+                      )
+
+                    return (
+                      <div
+                        key={allocation.allocationId}
+                      >
+                        <dt>
+                          {candidate?.displayName ??
+                            'Pessoa vinculada'}
+                        </dt>
+                        <dd>
+                          {formatInitiativeActionCapacityAmount(
+                            allocation.allocatedAmount,
+                            allocation.capacityUnit,
+                          )}
+                        </dd>
+                        <small>
+                          {formatDate(
+                            allocation.allocationStart,
+                          )}
+                          {' — '}
+                          {formatDate(
+                            allocation.allocationEnd,
+                          )}
+                          {' · '}
+                          {allocation.status ===
+                          'planned'
+                            ? 'Planejada'
+                            : allocation.status ===
+                                'active'
+                              ? 'Ativa'
+                              : allocation.status ===
+                                  'ended'
+                                ? 'Encerrada'
+                                : 'Cancelada'}
+                        </small>
+
+                        {allocation.notes ? (
+                          <small>
+                            {allocation.notes}
+                          </small>
+                        ) : null}
+
+                        {canTransitionInitiativeActionCapacityAllocation(
+                          allocation.status,
+                          'active',
+                        ) ? (
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              void handleCapacityAllocationTransition(
+                                allocation,
+                                'active',
+                              )
+                            }
+                          >
+                            {transitioningAllocationId ===
+                            allocation.allocationId
+                              ? 'Atualizando...'
+                              : 'Ativar'}
+                          </button>
+                        ) : null}
+
+                        {canTransitionInitiativeActionCapacityAllocation(
+                          allocation.status,
+                          'ended',
+                        ) ? (
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              void handleCapacityAllocationTransition(
+                                allocation,
+                                'ended',
+                              )
+                            }
+                          >
+                            {transitioningAllocationId ===
+                            allocation.allocationId
+                              ? 'Atualizando...'
+                              : 'Encerrar'}
+                          </button>
+                        ) : null}
+
+                        {canTransitionInitiativeActionCapacityAllocation(
+                          allocation.status,
+                          'cancelled',
+                        ) ? (
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              void handleCapacityAllocationTransition(
+                                allocation,
+                                'cancelled',
+                              )
+                            }
+                          >
+                            {transitioningAllocationId ===
+                            allocation.allocationId
+                              ? 'Atualizando...'
+                              : 'Cancelar'}
+                          </button>
+                        ) : null}
+                      </div>
+                    )
+                  },
                 )}
               </dl>
             )}
