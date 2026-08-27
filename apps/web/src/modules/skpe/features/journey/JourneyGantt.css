@@ -57,6 +57,13 @@
   line-height: 1.5;
 }
 
+.skpe-gantt-event-status {
+  margin-top: 0.45rem !important;
+  color: #52645d !important;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
 .skpe-gantt-filter {
   display: flex;
   flex-wrap: wrap;
@@ -104,6 +111,12 @@
 
 .skpe-gantt-legend-actual {
   background: #326fa8;
+}
+
+.skpe-gantt-legend-event {
+  height: 9px !important;
+  border: 2px solid #6f4aa8;
+  background: rgba(111, 74, 168, 0.14);
 }
 
 .skpe-gantt-legend-reference {
@@ -171,7 +184,7 @@
   left: 0;
   z-index: 5;
   display: block;
-  min-height: 62px;
+  min-height: 72px;
   padding: 0.55rem 0.75rem;
   border-right: 1px solid #e0e8e5;
   border-bottom: 1px solid #edf1ef;
@@ -207,9 +220,22 @@
   white-space: nowrap;
 }
 
+.skpe-gantt-row-event-count {
+  display: inline-flex;
+  margin-top: 0.35rem;
+  padding: 0.12rem 0.4rem;
+  border: 1px solid rgba(111, 74, 168, 0.24);
+  border-radius: 999px;
+  background: rgba(111, 74, 168, 0.08);
+  color: #60418d;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .skpe-gantt-timeline-cell {
   position: relative;
-  min-height: 62px;
+  min-height: 72px;
   overflow: hidden;
   border-bottom: 1px solid #edf1ef;
   background: #ffffff;
@@ -250,7 +276,7 @@
 }
 
 .skpe-gantt-bar-baseline {
-  top: 8px;
+  top: 7px;
   height: 6px;
   border: 1px dashed #78857f;
   background: rgba(120, 133, 127, 0.08);
@@ -258,17 +284,17 @@
 }
 
 .skpe-gantt-bar-plan {
-  top: 21px;
+  top: 19px;
   background: #176b53;
 }
 
 .skpe-gantt-bar-forecast {
-  top: 34px;
+  top: 31px;
   background: #d58a1f;
 }
 
 .skpe-gantt-bar-actual {
-  top: 47px;
+  top: 43px;
   background: #326fa8;
 }
 
@@ -277,6 +303,29 @@
   min-width: 9px;
   border-radius: 50%;
   transform: translateX(-4px);
+}
+
+.skpe-gantt-event {
+  position: absolute;
+  top: 56px;
+  z-index: 5;
+  min-width: 8px;
+  height: 9px;
+  border: 2px solid #6f4aa8;
+  border-radius: 999px;
+  background: rgba(111, 74, 168, 0.18);
+  box-shadow: 0 1px 2px rgba(48, 31, 72, 0.15);
+}
+
+.skpe-gantt-event.is-in-progress {
+  background: rgba(111, 74, 168, 0.42);
+}
+
+.skpe-gantt-event-milestone {
+  width: 10px !important;
+  min-width: 10px;
+  border-radius: 50%;
+  transform: translateX(-5px);
 }
 
 .skpe-gantt-footer {
