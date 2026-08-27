@@ -67,3 +67,17 @@ export function formatPersonCapacityAuditAction(actionCode: string) {
 
   return actionCode
 }
+
+export function formatPersonCapacityAuditActor(
+  entry: Pick<PersonCapacityAuditEntry, 'actorUserId' | 'actorName'>,
+) {
+  if (entry.actorName) {
+    return entry.actorName
+  }
+
+  if (entry.actorUserId) {
+    return 'Usuário identificado sem nome organizacional disponível'
+  }
+
+  return 'Sistema ou automação'
+}
