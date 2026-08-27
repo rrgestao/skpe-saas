@@ -695,6 +695,27 @@ export function JourneyGantt({
     [rows, initiativeTemporal, events, referenceDate],
   )
   const statusCounts = useMemo(() => getStatusCounts(actionBoard), [actionBoard])
+  const temporalExceptions = useMemo(
+    () =>
+      initiativeTemporal
+        .filter((row) => getTemporalAlert(row) !== null)
+        .sort((first, second) => {
+          if (first.is_completion_overdue !== second.is_completion_overdue) {
+            return first.is_completion_overdue ? -1 : 1
+          }
+          if (first.is_start_overdue !== second.is_start_overdue) {
+            return first.is_start_overdue ? -1 : 1
+          }
+          const firstDays = first.is_completion_overdue
+            ? first.days_completion_overdue
+            : first.days_start_overdue
+          const secondDays = second.is_completion_overdue
+            ? second.days_completion_overdue
+            : second.days_start_overdue
+          return secondDays - firstDays || first.code.localeCompare(second.code, 'pt-BR')
+        }),
+    [initiativeTemporal],
+  )
   const overallocatedCapacity = useMemo(
     () => (capacity.involvedPeopleCapacity ?? []).filter((row) => row.is_overallocated),
     [capacity.involvedPeopleCapacity],
@@ -984,6 +1005,26 @@ export function JourneyGantt({
                 </>
               )}
             </div>
+          </article>
+
+          <article className="skpe-management-card">
+            <span className="skpe-management-card-kicker">Exceções temporais</span>
+            <strong>{temporalExceptions.length}</strong>
+            <small>Itens sinalizados pela projeção temporal governada</small>
+            {temporalExceptions.length === 0 ? (
+              <p className="skpe-management-empty">Nenhuma exceção temporal sinalizada.</p>
+            ) : (
+              <div className="skpe-management-warnings" role="status">
+                {temporalExceptions.slice(0, 5).map((row) => (
+                  <span key={row.entity_id}>
+                    {row.code} · {row.name}: {getTemporalAlert(row)}
+                  </span>
+                ))}
+                {temporalExceptions.length > 5 && (
+                  <span>+ {temporalExceptions.length - 5} exceção(ões) adicional(is) na régua temporal.</span>
+                )}
+              </div>
+            )}
           </article>
 
           <article className="skpe-management-card skpe-management-card-wide">
