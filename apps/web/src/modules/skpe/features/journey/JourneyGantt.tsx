@@ -552,6 +552,19 @@ function getStatusCounts(rows: ActionBoardRow[]) {
   )
 }
 
+function openGovernedKanban() {
+  const target = new URL(window.location.href)
+
+  if (target.pathname.endsWith('/journey')) {
+    target.pathname = `${target.pathname.slice(0, -'/journey'.length)}/initiatives`
+    target.searchParams.delete('section')
+  } else {
+    target.searchParams.set('section', 'initiatives')
+  }
+
+  window.location.assign(target.toString())
+}
+
 function isMilestone(row: JourneyTemporalRow, range: DateRange) {
   return (
     (row.item_type === 'gate' || row.item_type === 'deliverable') &&
@@ -924,6 +937,11 @@ export function JourneyGantt({
           <div>
             <p className="skpe-eyebrow">Execução integrada</p>
             <h3>Prazo, Kanban, econômico e capacidade</h3>
+          </div>
+          <div className="skpe-gantt-filter">
+            <button type="button" onClick={openGovernedKanban}>
+              Abrir Kanban governado
+            </button>
           </div>
           <p>
             Indicadores derivados exclusivamente das projeções governadas. Moedas e
