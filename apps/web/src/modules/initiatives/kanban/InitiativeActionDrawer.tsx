@@ -44,6 +44,7 @@ import {
   InitiativeLifecycleDialog,
 } from './InitiativeLifecycleDialog'
 import { InitiativeActionCapacityAuditHistory } from './InitiativeActionCapacityAuditHistory'
+import { InitiativeActionCapacityAllocationEditForm } from './InitiativeActionCapacityAllocationEditForm'
 
 type InitiativeActionDrawerProps = {
   card: InitiativeKanbanCardModel
@@ -1208,6 +1209,23 @@ export function InitiativeActionDrawer({
                         <InitiativeActionCapacityAuditHistory
                           organizationId={card.organizationId}
                           allocationId={allocation.allocationId}
+                        />
+
+                        <InitiativeActionCapacityAllocationEditForm
+                          organizationId={card.organizationId}
+                          actionId={card.actionId}
+                          allocation={allocation}
+                          disabled={saving}
+                          onChanged={async () => {
+                            await reloadCapacityAllocations()
+
+                            if (
+                              selectedOrganizationPersonId ===
+                              allocation.organizationPersonId
+                            ) {
+                              await reloadSelectedPersonCapacity()
+                            }
+                          }}
                         />
 
                         {canTransitionInitiativeActionCapacityAllocation(
