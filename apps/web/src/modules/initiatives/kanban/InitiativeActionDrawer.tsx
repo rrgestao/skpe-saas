@@ -280,6 +280,10 @@ export function InitiativeActionDrawer({
     savingCapacityAllocationEdit,
     setSavingCapacityAllocationEdit,
   ] = useState(false)
+  const [
+    editingCapacityAllocationId,
+    setEditingCapacityAllocationId,
+  ] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
@@ -1265,6 +1269,13 @@ export function InitiativeActionDrawer({
                             onSavingChange={
                               setSavingCapacityAllocationEdit
                             }
+                            onEditingChange={(editing) =>
+                              setEditingCapacityAllocationId(
+                                editing
+                                  ? allocation.allocationId
+                                  : null,
+                              )
+                            }
                             onChanged={async () => {
                               await reloadCapacityAllocations()
 
@@ -1285,7 +1296,11 @@ export function InitiativeActionDrawer({
                         ) ? (
                           <button
                             type="button"
-                            disabled={saving}
+                            disabled={
+                              saving ||
+                              editingCapacityAllocationId ===
+                                allocation.allocationId
+                            }
                             onClick={() =>
                               void handleCapacityAllocationTransition(
                                 allocation,
@@ -1307,7 +1322,11 @@ export function InitiativeActionDrawer({
                         ) ? (
                           <button
                             type="button"
-                            disabled={saving}
+                            disabled={
+                              saving ||
+                              editingCapacityAllocationId ===
+                                allocation.allocationId
+                            }
                             onClick={() =>
                               void handleCapacityAllocationTransition(
                                 allocation,
@@ -1329,7 +1348,11 @@ export function InitiativeActionDrawer({
                         ) ? (
                           <button
                             type="button"
-                            disabled={saving}
+                            disabled={
+                              saving ||
+                              editingCapacityAllocationId ===
+                                allocation.allocationId
+                            }
                             onClick={() =>
                               void handleCapacityAllocationTransition(
                                 allocation,

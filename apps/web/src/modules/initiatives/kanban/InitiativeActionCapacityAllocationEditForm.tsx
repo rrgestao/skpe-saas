@@ -14,6 +14,7 @@ type InitiativeActionCapacityAllocationEditFormProps = {
   disabled: boolean
   onChanged: () => Promise<void>
   onSavingChange: (saving: boolean) => void
+  onEditingChange: (editing: boolean) => void
 }
 
 export function InitiativeActionCapacityAllocationEditForm({
@@ -23,6 +24,7 @@ export function InitiativeActionCapacityAllocationEditForm({
   disabled,
   onChanged,
   onSavingChange,
+  onEditingChange,
 }: InitiativeActionCapacityAllocationEditFormProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -45,6 +47,7 @@ export function InitiativeActionCapacityAllocationEditForm({
         onClick={() => {
           setError(null)
           setEditing(true)
+          onEditingChange(true)
         }}
       >
         Editar alocação
@@ -82,6 +85,7 @@ export function InitiativeActionCapacityAllocationEditForm({
       )
       await onChanged()
       setEditing(false)
+      onEditingChange(false)
       setChangeReason('')
     } catch (saveError) {
       setError(
@@ -178,6 +182,7 @@ export function InitiativeActionCapacityAllocationEditForm({
             setChangeReason('')
             setError(null)
             setEditing(false)
+            onEditingChange(false)
           }}
         >
           Cancelar edição
