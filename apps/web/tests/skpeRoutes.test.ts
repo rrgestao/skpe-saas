@@ -35,6 +35,34 @@ test(
 )
 
 test(
+  'gera e reconhece a rota de Monitoramento',
+  () => {
+    const pathname = platformRoutes.skpe({
+      organizationId: 'org-001',
+      projectId: 'project-001',
+      formulationId: 'formulation-001',
+      section: 'monitoring',
+    })
+
+    assert.equal(
+      pathname,
+      '/organizations/org-001/skpe/projects/project-001/formulations/formulation-001/monitoring',
+    )
+
+    assert.deepEqual(
+      parsePlatformRoute(pathname),
+      {
+        kind: 'skpe',
+        organizationId: 'org-001',
+        projectId: 'project-001',
+        formulationId: 'formulation-001',
+        section: 'monitoring',
+      },
+    )
+  },
+)
+
+test(
   'preserva codificacao e decodificacao dos identificadores',
   () => {
     const pathname = platformRoutes.skpe({
