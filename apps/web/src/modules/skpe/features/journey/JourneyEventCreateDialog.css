@@ -1,0 +1,138 @@
+.skpe-journey-event-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(18 35 30 / 48%);
+}
+
+.skpe-journey-event-dialog {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgb(20 45 37 / 22%);
+}
+
+.skpe-journey-event-dialog > header,
+.skpe-journey-event-dialog > footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-journey-event-dialog > header span {
+  color: #61726a;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skpe-journey-event-dialog > header h3 {
+  margin: 0.2rem 0 0;
+  color: #183c31;
+}
+
+.skpe-journey-event-dialog > header p {
+  margin: 0.3rem 0 0;
+  color: #66766f;
+}
+
+.skpe-journey-event-dialog button {
+  min-height: 38px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #c8d7d1;
+  border-radius: 9px;
+  background: #fff;
+  color: #315148;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.skpe-journey-event-dialog button.is-primary {
+  border-color: #2e7c65;
+  background: #2e7c65;
+  color: #fff;
+}
+
+.skpe-journey-event-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.skpe-journey-event-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.skpe-journey-event-dialog-grid label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.skpe-journey-event-dialog-grid label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.skpe-journey-event-dialog-grid label > span {
+  color: #52645d;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.skpe-journey-event-dialog-grid input,
+.skpe-journey-event-dialog-grid select,
+.skpe-journey-event-dialog-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.58rem 0.65rem;
+  border: 1px solid #cfdcd7;
+  border-radius: 8px;
+  background: #fff;
+  color: #243f36;
+  font: inherit;
+}
+
+.skpe-journey-event-dialog-note,
+.skpe-journey-event-dialog-error {
+  margin-top: 0.85rem;
+  padding: 0.7rem;
+  border-radius: 9px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.skpe-journey-event-dialog-note {
+  background: #f1f6f4;
+  color: #53665e;
+}
+
+.skpe-journey-event-dialog-error {
+  border: 1px solid #efd8b3;
+  background: #fff8ed;
+  color: #76501c;
+}
+
+.skpe-journey-event-dialog > footer {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+@media (max-width: 700px) {
+  .skpe-journey-event-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-journey-event-dialog-grid label.is-wide {
+    grid-column: auto;
+  }
+}

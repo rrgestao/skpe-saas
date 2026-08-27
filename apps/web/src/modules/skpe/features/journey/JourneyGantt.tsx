@@ -13,6 +13,9 @@ type JourneyGanttProps = {
   formatDate: (value: string | null) => string
   selectedItemId: string | null
   onSelectItem: (itemId: string) => void
+  canManageJourney: boolean
+  onCreateEvent: (itemId: string) => void
+  eventProjectionRevision: number
 }
 
 type JourneyEventRow = {
@@ -600,6 +603,9 @@ export function JourneyGantt({
   formatDate,
   selectedItemId,
   onSelectItem,
+  canManageJourney,
+  onCreateEvent,
+  eventProjectionRevision,
 }: JourneyGanttProps) {
   const [visibility, setVisibility] = useState<GanttVisibility>('all')
   const [events, setEvents] = useState<JourneyEventRow[]>([])
@@ -665,7 +671,7 @@ export function JourneyGantt({
     return () => {
       active = false
     }
-  }, [organizationId, projectId, referenceDate])
+  }, [organizationId, projectId, referenceDate, eventProjectionRevision])
 
   const flattenedRows = useMemo(() => flattenJourney(rows), [rows])
   const displayRows = useMemo(
@@ -758,7 +764,18 @@ export function JourneyGantt({
           </p>
         </div>
 
-        <div className="skpe-gantt-filter" role="group" aria-label="Escopo da Jornada no Gantt">
+        <div className="skpe-gantt-header-actions">
+          {canManageJourney && selectedItemId && (
+            <button
+              type="button"
+              className="skpe-gantt-create-event-button"
+              onClick={() => onCreateEvent(selectedItemId)}
+            >
+              Novo evento
+            </button>
+          )}
+
+          <div className="skpe-gantt-filter" role="group" aria-label="Escopo da Jornada no Gantt">
           <button
             type="button"
             className={visibility === 'all' ? 'is-active' : ''}
@@ -773,6 +790,7 @@ export function JourneyGantt({
           >
             Jornada obrigatória
           </button>
+          </div>
         </div>
       </header>
 

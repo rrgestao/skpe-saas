@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { statusLabelPtBr, translateBackendMessage } from '../../../../shared/i18n/ptBR'
 import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
+import { JourneyEventCreateDialog } from './JourneyEventCreateDialog'
 import { JourneyGantt } from './JourneyGantt'
 import type {
   JourneyRow,
@@ -296,6 +297,8 @@ export function JourneySection({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [journeyView, setJourneyView] = useState<'structure' | 'gantt'>('structure')
+  const [eventDialogItemId, setEventDialogItemId] = useState<string | null>(null)
+  const [eventProjectionRevision, setEventProjectionRevision] = useState(0)
 
   const journeyTree = useMemo(() => buildJourneyTree(rows), [rows])
   const project = rows[0] ?? null
@@ -308,6 +311,11 @@ export function JourneySection({
   const selectedBreadcrumb = useMemo(
     () => buildJourneyBreadcrumb(rows, selectedItemId),
     [rows, selectedItemId],
+  )
+
+  const eventDialogItem = useMemo(
+    () => rows.find((row) => row.item_id === eventDialogItemId) ?? null,
+    [rows, eventDialogItemId],
   )
 
   const temporalSummary = useMemo(() => {
@@ -794,6 +802,9 @@ export function JourneySection({
           formatDate={formatDate}
           selectedItemId={selectedItemId}
           onSelectItem={setSelectedItemId}
+          canManageJourney={canManageJourney}
+          onCreateEvent={(itemId) => setEventDialogItemId(itemId)}
+          eventProjectionRevision={eventProjectionRevision}
         />
       ) : (
         <div className="skpe-journey-workspace">
@@ -939,6 +950,18 @@ export function JourneySection({
                   </div>
                 )}
 
+                {canManageJourney && (
+                  <div className="skpe-journey-detail-actions">
+                    <button
+                      type="button"
+                      className="skpe-primary-action-button"
+                      onClick={() => setEventDialogItemId(selectedItem.item_id)}
+                    >
+                      Novo evento da Jornada
+                    </button>
+                  </div>
+                )}
+
                 {selectedItem.item_type === 'macrophase' && (
                   <div className="skpe-journey-detail-hint">
                     Clique novamente no cartÃ£o ou no Ã­cone de expansÃ£o para navegar pelos nÃ­veis subordinados.
@@ -954,6 +977,25 @@ export function JourneySection({
             )}
           </aside>
         </div>
+      )}
+
+      {eventDialogItem && (
+        <JourneyEventCreateDialog
+          organizationId={organizationId}
+          itemId={eventDialogItem.item_id}
+          itemCode={eventDialogItem.item_code}
+          itemName={methodologyTextPtBr(eventDialogItem.item_name)}
+          timezoneName={eventDialogItem.organization_timezone}
+          suggestedStartDate={
+            eventDialogItem.current_plan_start_date ??
+            eventDialogItem.baseline_start_date
+          }
+          onClose={() => setEventDialogItemId(null)}
+          onCreated={() => {
+            setEventProjectionRevision((current) => current + 1)
+            setEventDialogItemId(null)
+          }}
+        />
       )}
     </>
   )
