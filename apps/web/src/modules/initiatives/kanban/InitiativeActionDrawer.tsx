@@ -1207,6 +1207,14 @@ export function InitiativeActionDrawer({
                         ) : null}
 
                         <InitiativeActionCapacityAuditHistory
+                          key={[
+                            allocation.allocationId,
+                            allocation.status,
+                            allocation.allocationStart,
+                            allocation.allocationEnd,
+                            allocation.allocatedAmount,
+                            allocation.notes ?? '',
+                          ].join(':')}
                           organizationId={card.organizationId}
                           allocationId={allocation.allocationId}
                         />
