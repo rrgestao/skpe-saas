@@ -1,0 +1,203 @@
+.skpe-monitoring {
+  display: grid;
+  gap: 1rem;
+}
+
+.skpe-monitoring-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.skpe-monitoring-header h1,
+.skpe-monitoring-panel h2 {
+  margin: 0;
+}
+
+.skpe-monitoring-header p:last-child {
+  max-width: 760px;
+  margin: 0.55rem 0 0;
+  color: #65746e;
+  line-height: 1.5;
+}
+
+.skpe-monitoring-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skpe-monitoring-actions button {
+  min-height: 38px;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #c8d7d1;
+  border-radius: 9px;
+  background: #fff;
+  color: #315148;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.skpe-monitoring-actions button:hover {
+  border-color: #6ca68f;
+  background: #e9f5f0;
+  color: #145d48;
+}
+
+.skpe-monitoring-state {
+  padding: 1rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 12px;
+  background: #f9fbfa;
+  color: #52645d;
+}
+
+.skpe-monitoring-state.is-error {
+  border-color: #efd8b3;
+  background: #fff8ed;
+  color: #76501c;
+}
+
+.skpe-monitoring-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.skpe-monitoring-grid article,
+.skpe-monitoring-panel {
+  padding: 0.95rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 12px;
+  background: #f9fbfa;
+}
+
+.skpe-monitoring-grid article.is-warning {
+  border-color: #efd8b3;
+  background: #fff8ed;
+}
+
+.skpe-monitoring-grid span,
+.skpe-monitoring-panel header span {
+  display: block;
+  color: #61726a;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skpe-monitoring-grid strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #183c31;
+  font-size: 1.7rem;
+}
+
+.skpe-monitoring-grid small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #697971;
+  line-height: 1.35;
+}
+
+.skpe-monitoring-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.skpe-monitoring-panel header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-monitoring-panel header > strong {
+  color: #8a5710;
+  font-size: 1.4rem;
+}
+
+.skpe-monitoring-exceptions {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+}
+
+.skpe-monitoring-exceptions div {
+  padding: 0.65rem;
+  border: 1px solid #eadfcd;
+  border-radius: 9px;
+  background: #fffdf9;
+}
+
+.skpe-monitoring-exceptions strong,
+.skpe-monitoring-exceptions span {
+  display: block;
+}
+
+.skpe-monitoring-exceptions strong {
+  color: #3f4f48;
+  font-size: 0.76rem;
+}
+
+.skpe-monitoring-exceptions span {
+  margin-top: 0.2rem;
+  color: #835916;
+  font-size: 0.7rem;
+}
+
+.skpe-monitoring-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+}
+
+.skpe-monitoring-tags span,
+.skpe-monitoring-quality span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0.16rem 0.45rem;
+  border-radius: 999px;
+  background: #edf3f0;
+  color: #4e6259;
+  font-size: 0.66rem;
+  font-weight: 750;
+}
+
+.skpe-monitoring-quality {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.skpe-monitoring-empty {
+  margin: 0.8rem 0 0;
+  color: #74827c;
+  font-size: 0.74rem;
+}
+
+.skpe-monitoring-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  color: #687870;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-monitoring-header,
+  .skpe-monitoring-columns {
+    display: grid;
+  }
+
+  .skpe-monitoring-grid {
+    grid-template-columns: 1fr;
+  }
+}
