@@ -4,9 +4,11 @@ import test from 'node:test'
 import {
   canManageInitiativeActionResponsibilities,
   canUpdateInitiativeActionEconomics,
+  deriveInitiativeActionCapacityAllocationRange,
   formatInitiativeActionCapacityAmount,
   formatInitiativeActionResponsibilityType,
   getInitiativeActionCapacityAlert,
+  validateInitiativeActionCapacityAllocation,
   validateInitiativeActionEconomics,
   validateInitiativeActionResponsibilityAssignment,
 } from '../src/modules/initiatives/contracts/initiativeActions.ts'
@@ -313,4 +315,145 @@ test('informa ausência de capacidade quantitativa cadastrada', () => {
     getInitiativeActionCapacityAlert([]),
     'Não há capacidade quantitativa cadastrada para a pessoa no período da ação.',
   )
+})
+test('deriva intervalo de alocação pela interseção com a ação', () => {
+  const capacity = {
+    capacityPeriodId: 'cap-1',
+    periodStart: '2026-08-01',
+    periodEnd: '2026-08-31',
+    capacityUnit: 'hours',
+    capacityStatus: 'active',
+    capacityAmount: 100,
+    allocatedCurrentAmount: 20,
+    availableAmount: 80,
+    utilizationPercentage: 20,
+    overallocationAmount: 0,
+    isOverallocated: false,
+    currentAllocationCount: 1,
+  }
+
+  assert.deepEqual(
+    deriveInitiativeActionCapacityAllocationRange(
+      capacity,
+      '2026-08-10',
+      '2026-09-15',
+    ),
+    {
+      allocationStart: '2026-08-10',
+      allocationEnd: '2026-08-31',
+    },
+  )
+})
+
+test('valida criação de alocação quantitativa da ação', () => {
+  const capacity = {
+    capacityPeriodId: 'cap-1',
+    periodStart: '2026-08-01',
+    periodEnd: '2026-08-31',
+    capacityUnit: 'hours',
+    capacityStatus: 'active',
+    capacityAmount: 100,
+    allocatedCurrentAmount: 80,
+    availableAmount: 20,
+    utilizationPercentage: 80,
+    overallocationAmount: 0,
+    isOverallocated: false,
+    currentAllocationCount: 2,
+  }
+
+  const result =
+    validateInitiativeActionCapacityAllocation(
+      {
+        capacityPeriodId: 'cap-1',
+        allocationStart: '2026-08-10',
+        allocationEnd: '2026-08-20',
+        allocatedAmount: '30',
+        status: 'planned',
+        notes: 'Alocação planejada.',
+        changeReason:
+          'Alocação aprovada para execução desta ação.',
+      },
+      capacity,
+    )
+
+  assert.equal(result.ok, true)
+
+  if (!result.ok) return
+
+  assert.equal(
+    result.value.allocatedAmount,
+    30,
+  )
+  assert.equal(
+    result.value.status,
+    'planned',
+  )
+})
+
+test('não bloqueia quantidade acima da disponibilidade no frontend', () => {
+  const capacity = {
+    capacityPeriodId: 'cap-1',
+    periodStart: '2026-08-01',
+    periodEnd: '2026-08-31',
+    capacityUnit: 'hours',
+    capacityStatus: 'active',
+    capacityAmount: 100,
+    allocatedCurrentAmount: 95,
+    availableAmount: 5,
+    utilizationPercentage: 95,
+    overallocationAmount: 0,
+    isOverallocated: false,
+    currentAllocationCount: 2,
+  }
+
+  const result =
+    validateInitiativeActionCapacityAllocation(
+      {
+        capacityPeriodId: 'cap-1',
+        allocationStart: '2026-08-10',
+        allocationEnd: '2026-08-20',
+        allocatedAmount: '20',
+        status: 'active',
+        notes: '',
+        changeReason:
+          'Sobrealocação consciente para prioridade estratégica.',
+      },
+      capacity,
+    )
+
+  assert.equal(result.ok, true)
+})
+
+test('rejeita alocação fora do período de capacidade', () => {
+  const capacity = {
+    capacityPeriodId: 'cap-1',
+    periodStart: '2026-08-01',
+    periodEnd: '2026-08-31',
+    capacityUnit: 'hours',
+    capacityStatus: 'active',
+    capacityAmount: 100,
+    allocatedCurrentAmount: 0,
+    availableAmount: 100,
+    utilizationPercentage: 0,
+    overallocationAmount: 0,
+    isOverallocated: false,
+    currentAllocationCount: 0,
+  }
+
+  const result =
+    validateInitiativeActionCapacityAllocation(
+      {
+        capacityPeriodId: 'cap-1',
+        allocationStart: '2026-07-31',
+        allocationEnd: '2026-08-20',
+        allocatedAmount: '10',
+        status: 'planned',
+        notes: '',
+        changeReason:
+          'Alocação planejada para a execução da ação.',
+      },
+      capacity,
+    )
+
+  assert.equal(result.ok, false)
 })

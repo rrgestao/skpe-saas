@@ -68,6 +68,26 @@ export type InitiativeActionPersonCapacity = {
   currentAllocationCount: number
 }
 
+export type InitiativeActionCapacityAllocationFormValues = {
+  capacityPeriodId: string
+  allocationStart: string
+  allocationEnd: string
+  allocatedAmount: string
+  status: string
+  notes: string
+  changeReason: string
+}
+
+export type InitiativeActionCapacityAllocationCommand = {
+  capacityPeriodId: string
+  allocationStart: string
+  allocationEnd: string
+  allocatedAmount: number
+  status: 'planned' | 'active'
+  notes: string | null
+  changeReason: string
+}
+
 export type InitiativeActionResponsibilityFormValues = {
   organizationPersonId: string
   responsibilityType: string
@@ -669,4 +689,150 @@ export function getInitiativeActionCapacityAlert(
   }
 
   return null
+}
+export function deriveInitiativeActionCapacityAllocationRange(
+  capacity: InitiativeActionPersonCapacity,
+  plannedStartDate: string | null,
+  plannedDueDate: string | null,
+) {
+  const start =
+    plannedStartDate &&
+    plannedStartDate > capacity.periodStart
+      ? plannedStartDate
+      : capacity.periodStart
+
+  const end =
+    plannedDueDate &&
+    plannedDueDate < capacity.periodEnd
+      ? plannedDueDate
+      : capacity.periodEnd
+
+  if (end < start) {
+    return {
+      allocationStart: capacity.periodStart,
+      allocationEnd: capacity.periodEnd,
+    }
+  }
+
+  return {
+    allocationStart: start,
+    allocationEnd: end,
+  }
+}
+
+export function validateInitiativeActionCapacityAllocation(
+  values: InitiativeActionCapacityAllocationFormValues,
+  capacity: InitiativeActionPersonCapacity | null,
+):
+  | {
+      ok: true
+      value: InitiativeActionCapacityAllocationCommand
+    }
+  | {
+      ok: false
+      message: string
+    } {
+  const capacityPeriodId =
+    values.capacityPeriodId.trim()
+  const allocationStart =
+    values.allocationStart.trim()
+  const allocationEnd =
+    values.allocationEnd.trim()
+  const status = values.status.trim().toLowerCase()
+  const notes = values.notes.trim() || null
+  const changeReason =
+    values.changeReason.trim()
+
+  if (!capacity || !capacityPeriodId) {
+    return {
+      ok: false,
+      message:
+        'Selecione um período de capacidade.',
+    }
+  }
+
+  if (
+    capacity.capacityPeriodId !==
+    capacityPeriodId
+  ) {
+    return {
+      ok: false,
+      message:
+        'O período de capacidade selecionado é inválido.',
+    }
+  }
+
+  if (!allocationStart || !allocationEnd) {
+    return {
+      ok: false,
+      message:
+        'Informe o início e o fim da alocação.',
+    }
+  }
+
+  if (allocationEnd < allocationStart) {
+    return {
+      ok: false,
+      message:
+        'A data final da alocação não pode ser anterior à data inicial.',
+    }
+  }
+
+  if (
+    allocationStart < capacity.periodStart ||
+    allocationEnd > capacity.periodEnd
+  ) {
+    return {
+      ok: false,
+      message:
+        'A alocação deve permanecer dentro do período de capacidade selecionado.',
+    }
+  }
+
+  const allocatedAmount =
+    Number(values.allocatedAmount)
+
+  if (
+    values.allocatedAmount.trim() === '' ||
+    !Number.isFinite(allocatedAmount) ||
+    allocatedAmount < 0
+  ) {
+    return {
+      ok: false,
+      message:
+        'Informe uma quantidade alocada não negativa.',
+    }
+  }
+
+  if (
+    status !== 'planned' &&
+    status !== 'active'
+  ) {
+    return {
+      ok: false,
+      message:
+        'A situação inicial da alocação deve ser planejada ou ativa.',
+    }
+  }
+
+  if (changeReason.length < 10) {
+    return {
+      ok: false,
+      message:
+        'Informe uma justificativa com pelo menos 10 caracteres.',
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      capacityPeriodId,
+      allocationStart,
+      allocationEnd,
+      allocatedAmount,
+      status,
+      notes,
+      changeReason,
+    },
+  }
 }

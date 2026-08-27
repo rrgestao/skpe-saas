@@ -11,9 +11,11 @@ import {
   initiativeActionEffortUnits,
   initiativeActionLifecycleLabels,
   initiativeActionPriorityLabels,
+  deriveInitiativeActionCapacityAllocationRange,
   formatInitiativeActionCapacityAmount,
   formatInitiativeActionResponsibilityType,
   getInitiativeActionCapacityAlert,
+  validateInitiativeActionCapacityAllocation,
   validateInitiativeActionEconomics,
   validateInitiativeActionResponsibilityAssignment,
   type InitiativeActionDomainOption,
@@ -24,6 +26,7 @@ import {
 } from '../contracts/initiativeActions'
 import {
   assignInitiativeActionResponsibility,
+  createInitiativeActionCapacityAllocation,
   endInitiativeActionResponsibility,
   loadInitiativeActionPersonCapacity,
   loadInitiativeActionResponsibilities,
@@ -213,6 +216,41 @@ export function InitiativeActionDrawer({
     setSelectedPersonCapacityError,
   ] = useState<string | null>(null)
 
+  const [
+    allocationCapacityPeriodId,
+    setAllocationCapacityPeriodId,
+  ] = useState('')
+  const [
+    capacityAllocationStart,
+    setCapacityAllocationStart,
+  ] = useState('')
+  const [
+    capacityAllocationEnd,
+    setCapacityAllocationEnd,
+  ] = useState('')
+  const [
+    capacityAllocatedAmount,
+    setCapacityAllocatedAmount,
+  ] = useState('')
+  const [
+    capacityAllocationStatus,
+    setCapacityAllocationStatus,
+  ] = useState<'planned' | 'active'>(
+    'planned',
+  )
+  const [
+    capacityAllocationNotes,
+    setCapacityAllocationNotes,
+  ] = useState('')
+  const [
+    capacityAllocationChangeReason,
+    setCapacityAllocationChangeReason,
+  ] = useState('')
+  const [
+    savingCapacityAllocation,
+    setSavingCapacityAllocation,
+  ] = useState(false)
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
@@ -235,6 +273,7 @@ export function InitiativeActionDrawer({
     savingProgress ||
     savingEconomics ||
     savingResponsibility ||
+    savingCapacityAllocation ||
     endingAssignmentId !== null
 
   useEffect(() => {
@@ -352,6 +391,12 @@ export function InitiativeActionDrawer({
       setSelectedPersonCapacity([])
       setSelectedPersonCapacityError(null)
       setSelectedPersonCapacityLoading(false)
+      setAllocationCapacityPeriodId('')
+      setCapacityAllocationStart('')
+      setCapacityAllocationEnd('')
+      setCapacityAllocatedAmount('')
+      setCapacityAllocationNotes('')
+      setCapacityAllocationChangeReason('')
       return () => {
         cancelled = true
       }
@@ -393,6 +438,120 @@ export function InitiativeActionDrawer({
     card.plannedStartDate,
     selectedOrganizationPersonId,
   ])
+
+  function handleCapacityPeriodSelection(
+    capacityPeriodId: string,
+  ) {
+    setAllocationCapacityPeriodId(
+      capacityPeriodId,
+    )
+
+    const capacity =
+      selectedPersonCapacity.find(
+        (item) =>
+          item.capacityPeriodId ===
+          capacityPeriodId,
+      ) ?? null
+
+    if (!capacity) {
+      setCapacityAllocationStart('')
+      setCapacityAllocationEnd('')
+      return
+    }
+
+    const range =
+      deriveInitiativeActionCapacityAllocationRange(
+        capacity,
+        card.plannedStartDate,
+        card.plannedDueDate,
+      )
+
+    setCapacityAllocationStart(
+      range.allocationStart,
+    )
+    setCapacityAllocationEnd(
+      range.allocationEnd,
+    )
+  }
+
+  async function reloadSelectedPersonCapacity() {
+    if (!selectedOrganizationPersonId) {
+      return
+    }
+
+    const items =
+      await loadInitiativeActionPersonCapacity(
+        card.organizationId,
+        selectedOrganizationPersonId,
+        card.plannedStartDate,
+        card.plannedDueDate,
+      )
+
+    setSelectedPersonCapacity(items)
+    setSelectedPersonCapacityError(null)
+  }
+
+  async function handleCreateCapacityAllocation() {
+    const selectedCapacity =
+      selectedPersonCapacity.find(
+        (item) =>
+          item.capacityPeriodId ===
+          allocationCapacityPeriodId,
+      ) ?? null
+
+    const validation =
+      validateInitiativeActionCapacityAllocation(
+        {
+          capacityPeriodId:
+            allocationCapacityPeriodId,
+          allocationStart:
+            capacityAllocationStart,
+          allocationEnd:
+            capacityAllocationEnd,
+          allocatedAmount:
+            capacityAllocatedAmount,
+          status: capacityAllocationStatus,
+          notes: capacityAllocationNotes,
+          changeReason:
+            capacityAllocationChangeReason,
+        },
+        selectedCapacity,
+      )
+
+    if (!validation.ok) {
+      setErrorMessage(validation.message)
+      return
+    }
+
+    setSavingCapacityAllocation(true)
+    setErrorMessage(null)
+
+    try {
+      await createInitiativeActionCapacityAllocation(
+        card.organizationId,
+        card.actionId,
+        validation.value,
+      )
+
+      await reloadSelectedPersonCapacity()
+
+      setAllocationCapacityPeriodId('')
+      setCapacityAllocationStart('')
+      setCapacityAllocationEnd('')
+      setCapacityAllocatedAmount('')
+      setCapacityAllocationStatus('planned')
+      setCapacityAllocationNotes('')
+      setCapacityAllocationChangeReason('')
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível alocar capacidade à ação.',
+      )
+    } finally {
+      setSavingCapacityAllocation(false)
+    }
+  }
 
   async function reloadResponsibilities() {
     const items =
@@ -973,9 +1132,202 @@ export function InitiativeActionDrawer({
                         <p>
                           A responsabilidade e a capacidade
                           continuam fontes de verdade
-                          independentes. Esta tela não cria
-                          alocação quantitativa automaticamente.
+                          independentes. A alocação abaixo só
+                          será criada mediante comando explícito.
                         </p>
+
+                        {selectedPersonCapacity.length > 0 ? (
+                          <>
+                            <strong>
+                              Alocar capacidade à ação
+                            </strong>
+
+                            <label className="initiative-action-field">
+                              <span>
+                                Período de capacidade *
+                              </span>
+                              <select
+                                value={
+                                  allocationCapacityPeriodId
+                                }
+                                onChange={(event) =>
+                                  handleCapacityPeriodSelection(
+                                    event.target.value,
+                                  )
+                                }
+                                disabled={saving}
+                              >
+                                <option value="">
+                                  Selecione
+                                </option>
+                                {selectedPersonCapacity.map(
+                                  (capacity) => (
+                                    <option
+                                      key={
+                                        capacity.capacityPeriodId
+                                      }
+                                      value={
+                                        capacity.capacityPeriodId
+                                      }
+                                    >
+                                      {formatDate(
+                                        capacity.periodStart,
+                                      )}
+                                      {' — '}
+                                      {formatDate(
+                                        capacity.periodEnd,
+                                      )}
+                                      {' · '}
+                                      {formatInitiativeActionCapacityAmount(
+                                        capacity.capacityAmount,
+                                        capacity.capacityUnit,
+                                      )}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            </label>
+
+                            {allocationCapacityPeriodId ? (
+                              <>
+                                <label className="initiative-action-field">
+                                  <span>
+                                    Início da alocação *
+                                  </span>
+                                  <input
+                                    type="date"
+                                    value={
+                                      capacityAllocationStart
+                                    }
+                                    onChange={(event) =>
+                                      setCapacityAllocationStart(
+                                        event.target.value,
+                                      )
+                                    }
+                                    disabled={saving}
+                                  />
+                                </label>
+
+                                <label className="initiative-action-field">
+                                  <span>
+                                    Fim da alocação *
+                                  </span>
+                                  <input
+                                    type="date"
+                                    value={
+                                      capacityAllocationEnd
+                                    }
+                                    onChange={(event) =>
+                                      setCapacityAllocationEnd(
+                                        event.target.value,
+                                      )
+                                    }
+                                    disabled={saving}
+                                  />
+                                </label>
+
+                                <label className="initiative-action-field">
+                                  <span>
+                                    Quantidade alocada *
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={
+                                      capacityAllocatedAmount
+                                    }
+                                    onChange={(event) =>
+                                      setCapacityAllocatedAmount(
+                                        event.target.value,
+                                      )
+                                    }
+                                    disabled={saving}
+                                  />
+                                </label>
+
+                                <label className="initiative-action-field">
+                                  <span>
+                                    Situação inicial *
+                                  </span>
+                                  <select
+                                    value={
+                                      capacityAllocationStatus
+                                    }
+                                    onChange={(event) =>
+                                      setCapacityAllocationStatus(
+                                        event.target.value as
+                                          | 'planned'
+                                          | 'active',
+                                      )
+                                    }
+                                    disabled={saving}
+                                  >
+                                    <option value="planned">
+                                      Planejada
+                                    </option>
+                                    <option value="active">
+                                      Ativa
+                                    </option>
+                                  </select>
+                                </label>
+
+                                <label className="initiative-action-field">
+                                  <span>Observações</span>
+                                  <textarea
+                                    rows={3}
+                                    value={
+                                      capacityAllocationNotes
+                                    }
+                                    onChange={(event) =>
+                                      setCapacityAllocationNotes(
+                                        event.target.value,
+                                      )
+                                    }
+                                    disabled={saving}
+                                  />
+                                </label>
+
+                                <label className="initiative-action-field">
+                                  <span>
+                                    Justificativa para auditoria *
+                                  </span>
+                                  <textarea
+                                    rows={3}
+                                    value={
+                                      capacityAllocationChangeReason
+                                    }
+                                    onChange={(event) =>
+                                      setCapacityAllocationChangeReason(
+                                        event.target.value,
+                                      )
+                                    }
+                                    disabled={saving}
+                                  />
+                                </label>
+
+                                <p>
+                                  A sobrealocação não é
+                                  normalizada nem ocultada.
+                                  Caso ocorra, ficará explícita
+                                  na projeção após o registro.
+                                </p>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleCreateCapacityAllocation()
+                                  }
+                                  disabled={saving}
+                                >
+                                  {savingCapacityAllocation
+                                    ? 'Alocando...'
+                                    : 'Alocar capacidade à ação'}
+                                </button>
+                              </>
+                            ) : null}
+                          </>
+                        ) : null}
                       </div>
                     ) : null}
 

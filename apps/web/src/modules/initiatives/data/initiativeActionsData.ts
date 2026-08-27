@@ -8,6 +8,7 @@ import {
   type InitiativeActionDomainOption,
   type InitiativeActionLifecycle,
   type InitiativeActionResponsibility,
+  type InitiativeActionCapacityAllocationCommand,
   type InitiativeActionPersonCapacity,
   type InitiativeActionResponsibilityAssignment,
   type InitiativeActionResponsibilityCandidate,
@@ -465,6 +466,42 @@ export async function loadInitiativeActionPersonCapacity(
     currentAllocationCount:
       Number(row.current_allocation_count),
   }))
+}
+
+export async function createInitiativeActionCapacityAllocation(
+  organizationId: string,
+  actionId: string,
+  command: InitiativeActionCapacityAllocationCommand,
+) {
+  const { data, error } = await supabase.rpc(
+    'set_sparks_person_capacity_allocation',
+    {
+      target_organization_id: organizationId,
+      target_allocation_id: null,
+      target_capacity_period_id:
+        command.capacityPeriodId,
+      target_module_code: 'SK-PE',
+      target_object_type: 'initiative_action',
+      target_object_id: actionId,
+      target_allocation_start:
+        command.allocationStart,
+      target_allocation_end:
+        command.allocationEnd,
+      target_allocated_amount:
+        command.allocatedAmount,
+      target_status: command.status,
+      target_notes: command.notes,
+      change_reason: command.changeReason,
+    },
+  )
+
+  if (error) {
+    throw new Error(
+      `Não foi possível alocar capacidade à ação: ${error.message}`,
+    )
+  }
+
+  return data
 }
 
 export async function assignInitiativeActionResponsibility(
