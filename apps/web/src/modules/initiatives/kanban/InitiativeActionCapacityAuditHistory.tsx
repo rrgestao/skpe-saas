@@ -27,6 +27,18 @@ function formatOccurredAt(value: string) {
   }).format(parsed)
 }
 
+function formatActor(entry: InitiativeActionCapacityAuditEntry) {
+  if (entry.actorName) {
+    return entry.actorName
+  }
+
+  if (entry.actorUserId) {
+    return 'Usuário identificado sem nome organizacional disponível'
+  }
+
+  return 'Sistema ou automação'
+}
+
 export function InitiativeActionCapacityAuditHistory({
   organizationId,
   allocationId,
@@ -88,6 +100,8 @@ export function InitiativeActionCapacityAuditHistory({
                 {' · '}
                 {formatOccurredAt(entry.occurredAt)}
               </p>
+              <small>Executado por: {formatActor(entry)}</small>
+              <br />
               <small>Justificativa: {entry.changeReason}</small>
               {changes.length > 0 ? (
                 <ul>
