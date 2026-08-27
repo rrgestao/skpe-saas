@@ -34,10 +34,16 @@ type JourneyEventManageDialogProps = {
 
 type EventParticipant = {
   participant_id: string
-  user_id: string
-  user_email: string
+  person_id: string | null
+  user_id: string | null
+  participant_origin: 'internal' | 'external'
+  user_email: string | null
   user_display_name: string
+  external_organization: string | null
+  relationship_type: string | null
+  job_title: string | null
   participant_role: ParticipantRole
+  participant_function: string | null
   response_status: string
   attendance_status: AttendanceStatus
   required: boolean
@@ -50,6 +56,16 @@ type EligibleEventUser = {
   is_current_participant: boolean
 }
 
+type EligibleExternalPerson = {
+  person_id: string
+  display_name: string
+  primary_email: string | null
+  external_organization: string | null
+  relationship_type: string | null
+  job_title: string | null
+  is_current_participant: boolean
+}
+
 type ParticipantManagementProjection = {
   event_id: string
   event_status: string
@@ -57,6 +73,7 @@ type ParticipantManagementProjection = {
   source_module_code: string | null
   participants: EventParticipant[]
   eligible_users: EligibleEventUser[]
+  eligible_external_people: EligibleExternalPerson[]
 }
 
 type ParticipantRole =
@@ -164,7 +181,19 @@ export function JourneyEventManageDialog({
   const [participantLoading, setParticipantLoading] = useState(false)
   const [participantProjection, setParticipantProjection] =
     useState<ParticipantManagementProjection | null>(null)
+  const [participantOrigin, setParticipantOrigin] =
+    useState<'internal' | 'external'>('internal')
   const [participantUserId, setParticipantUserId] = useState('')
+  const [externalPersonId, setExternalPersonId] = useState('')
+  const [externalCreateNew, setExternalCreateNew] = useState(false)
+  const [externalFullName, setExternalFullName] = useState('')
+  const [externalPreferredName, setExternalPreferredName] = useState('')
+  const [externalEmail, setExternalEmail] = useState('')
+  const [externalOrganization, setExternalOrganization] = useState('')
+  const [externalRelationshipType, setExternalRelationshipType] =
+    useState('service_provider')
+  const [externalJobTitle, setExternalJobTitle] = useState('')
+  const [participantFunction, setParticipantFunction] = useState('')
   const [participantRole, setParticipantRole] =
     useState<ParticipantRole>('participant')
   const [participantRequired, setParticipantRequired] = useState(true)
@@ -179,6 +208,8 @@ export function JourneyEventManageDialog({
   const normalizedEnd = useMemo(() => toIsoOrNull(endsAt), [endsAt])
   const allowedTargets = lifecycleTargets[status] ?? []
   const eligibleUsers = participantProjection?.eligible_users ?? []
+  const eligibleExternalPeople =
+    participantProjection?.eligible_external_people ?? []
   const participants = participantProjection?.participants ?? []
 
   useEffect(() => {
@@ -255,20 +286,29 @@ export function JourneyEventManageDialog({
     }
 
     setParticipantUserId('')
-    setParticipantRole('participant')
-    setParticipantRequired(true)
-    setParticipantReason('')
+    resetParticipantContext()
     await loadParticipantManagement()
     onParticipantChanged()
     setParticipantBusy(false)
   }
 
-  async function removeParticipant(userId: string) {
-    const reason = (removeReasons[userId] ?? '').trim()
+  async function setExternalParticipant() {
+    const reason = participantReason.trim()
+    const selectedPersonId = externalCreateNew ? null : externalPersonId || null
+
+    if (!externalCreateNew && !selectedPersonId) {
+      setErrorMessage('Selecione uma pessoa externa existente ou cadastre uma nova.')
+      return
+    }
+
+    if (externalCreateNew && !externalFullName.trim()) {
+      setErrorMessage('Informe o nome completo da pessoa externa.')
+      return
+    }
 
     if (reason.length < 10) {
       setErrorMessage(
-        'Informe uma justificativa de remo\\u00e7\\u00e3o com pelo menos 10 caracteres.',
+        'Informe uma justificativa de participante com pelo menos 10 caracteres.',
       )
       return
     }
@@ -276,11 +316,23 @@ export function JourneyEventManageDialog({
     setParticipantBusy(true)
     setErrorMessage(null)
 
-    const { error } = await supabase.rpc('remove_sparks_event_participant', {
-      target_event_id: event.event_id,
-      target_user_id: userId,
-      change_reason: reason,
-    })
+    const { error } = await supabase.rpc(
+      'set_sparks_external_event_participant',
+      {
+        target_event_id: event.event_id,
+        target_person_id: selectedPersonId,
+        target_full_name: externalFullName.trim(),
+        target_preferred_name: externalPreferredName.trim() || null,
+        target_primary_email: externalEmail.trim() || null,
+        target_external_organization: externalOrganization.trim() || null,
+        target_relationship_type: externalRelationshipType,
+        target_job_title: externalJobTitle.trim() || null,
+        target_participant_role: participantRole,
+        target_participant_function: participantFunction.trim() || null,
+        target_required: participantRequired,
+        change_reason: reason,
+      },
+    )
 
     if (error) {
       setErrorMessage(translateBackendMessage(error.message))
@@ -288,21 +340,70 @@ export function JourneyEventManageDialog({
       return
     }
 
-    setRemoveReasons((current) => ({ ...current, [userId]: '' }))
+    setExternalPersonId('')
+    setExternalCreateNew(false)
+    setExternalFullName('')
+    setExternalPreferredName('')
+    setExternalEmail('')
+    setExternalOrganization('')
+    setExternalRelationshipType('service_provider')
+    setExternalJobTitle('')
+    resetParticipantContext()
+    await loadParticipantManagement()
+    onParticipantChanged()
+    setParticipantBusy(false)
+  }
+
+  function resetParticipantContext() {
+    setParticipantRole('participant')
+    setParticipantFunction('')
+    setParticipantRequired(true)
+    setParticipantReason('')
+  }
+
+  async function removeParticipant(participantId: string) {
+    const reason = (removeReasons[participantId] ?? '').trim()
+
+    if (reason.length < 10) {
+      setErrorMessage(
+        'Informe uma justificativa de remocao com pelo menos 10 caracteres.',
+      )
+      return
+    }
+
+    setParticipantBusy(true)
+    setErrorMessage(null)
+
+    const { error } = await supabase.rpc(
+      'remove_sparks_event_participant_by_id',
+      {
+        target_event_id: event.event_id,
+        target_participant_id: participantId,
+        change_reason: reason,
+      },
+    )
+
+    if (error) {
+      setErrorMessage(translateBackendMessage(error.message))
+      setParticipantBusy(false)
+      return
+    }
+
+    setRemoveReasons((current) => ({ ...current, [participantId]: '' }))
     await loadParticipantManagement()
     onParticipantChanged()
     setParticipantBusy(false)
   }
 
   async function recordAttendance(
-    userId: string,
+    participantId: string,
     attendanceStatus: AttendanceStatus,
   ) {
-    const reason = (attendanceReasons[userId] ?? '').trim()
+    const reason = (attendanceReasons[participantId] ?? '').trim()
 
     if (reason.length < 10) {
       setErrorMessage(
-        'Informe uma justificativa de presen\\u00e7a com pelo menos 10 caracteres.',
+        'Informe uma justificativa de presenca com pelo menos 10 caracteres.',
       )
       return
     }
@@ -310,12 +411,15 @@ export function JourneyEventManageDialog({
     setParticipantBusy(true)
     setErrorMessage(null)
 
-    const { error } = await supabase.rpc('record_sparks_event_attendance', {
-      target_event_id: event.event_id,
-      target_user_id: userId,
-      target_attendance_status: attendanceStatus,
-      change_reason: reason,
-    })
+    const { error } = await supabase.rpc(
+      'record_sparks_event_attendance_by_id',
+      {
+        target_event_id: event.event_id,
+        target_participant_id: participantId,
+        target_attendance_status: attendanceStatus,
+        change_reason: reason,
+      },
+    )
 
     if (error) {
       setErrorMessage(translateBackendMessage(error.message))
@@ -323,12 +427,11 @@ export function JourneyEventManageDialog({
       return
     }
 
-    setAttendanceReasons((current) => ({ ...current, [userId]: '' }))
+    setAttendanceReasons((current) => ({ ...current, [participantId]: '' }))
     await loadParticipantManagement()
     onParticipantChanged()
     setParticipantBusy(false)
   }
-
   async function saveChanges() {
     const normalizedTitle = title.trim()
     const reason = changeReason.trim()
@@ -437,7 +540,8 @@ export function JourneyEventManageDialog({
         if (
           mouseEvent.target === mouseEvent.currentTarget &&
           !saving &&
-          !transitioning
+          !transitioning &&
+          !participantBusy
         ) {
           onClose()
         }
@@ -624,11 +728,12 @@ export function JourneyEventManageDialog({
         <section className="skpe-journey-event-participants">
           <header>
             <div>
-              <span>Participa\u00e7\u00e3o governada</span>
-              <strong>Participantes e presen\u00e7a</strong>
+              <span>Participacao governada</span>
+              <strong>Participantes e presenca</strong>
             </div>
             <small>
-              Somente usu\u00e1rios ativos e eleg\u00edveis ao m\u00f3dulo de origem podem ser vinculados.
+              Pessoas internas e externas usam a mesma Agenda, sem exigir login
+              para convidados externos.
             </small>
           </header>
 
@@ -638,28 +743,186 @@ export function JourneyEventManageDialog({
             </p>
           ) : (
             <>
+              <div
+                className="skpe-journey-event-participant-origin"
+                role="group"
+                aria-label="Tipo de participante"
+              >
+                <button
+                  type="button"
+                  className={participantOrigin === 'internal' ? 'is-active' : ''}
+                  onClick={() => setParticipantOrigin('internal')}
+                  disabled={participantBusy}
+                >
+                  Pessoa da organizacao
+                </button>
+                <button
+                  type="button"
+                  className={participantOrigin === 'external' ? 'is-active' : ''}
+                  onClick={() => setParticipantOrigin('external')}
+                  disabled={participantBusy}
+                >
+                  Pessoa externa
+                </button>
+              </div>
+
               <div className="skpe-journey-event-participant-add">
-                <label>
-                  <span>Usu\u00e1rio *</span>
-                  <select
-                    value={participantUserId}
-                    onChange={(changeEvent) =>
-                      setParticipantUserId(changeEvent.target.value)
-                    }
-                    disabled={participantBusy}
-                  >
-                    <option value="">Selecione</option>
-                    {eligibleUsers.map((candidate) => (
-                      <option key={candidate.user_id} value={candidate.user_id}>
-                        {candidate.user_display_name} - {candidate.user_email}
-                        {candidate.is_current_participant ? ' - j\u00e1 participante' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {participantOrigin === 'internal' ? (
+                  <label className="is-wide">
+                    <span>Usuario da organizacao *</span>
+                    <select
+                      value={participantUserId}
+                      onChange={(changeEvent) =>
+                        setParticipantUserId(changeEvent.target.value)
+                      }
+                      disabled={participantBusy}
+                    >
+                      <option value="">Selecione</option>
+                      {eligibleUsers.map((candidate) => (
+                        <option key={candidate.user_id} value={candidate.user_id}>
+                          {candidate.user_display_name} - {candidate.user_email}
+                          {candidate.is_current_participant
+                            ? ' - ja participante'
+                            : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <>
+                    <label className="is-wide">
+                      <span>Pessoa externa conhecida</span>
+                      <select
+                        value={externalCreateNew ? '__new__' : externalPersonId}
+                        onChange={(changeEvent) => {
+                          const value = changeEvent.target.value
+                          if (value === '__new__') {
+                            setExternalCreateNew(true)
+                            setExternalPersonId('')
+                          } else {
+                            setExternalCreateNew(false)
+                            setExternalPersonId(value)
+                          }
+                        }}
+                        disabled={participantBusy}
+                      >
+                        <option value="">Selecione</option>
+                        {eligibleExternalPeople.map((candidate) => (
+                          <option
+                            key={candidate.person_id}
+                            value={candidate.person_id}
+                          >
+                            {candidate.display_name}
+                            {candidate.external_organization
+                              ? ` - ${candidate.external_organization}`
+                              : ''}
+                            {candidate.is_current_participant
+                              ? ' - ja participante'
+                              : ''}
+                          </option>
+                        ))}
+                        <option value="__new__">
+                          + Cadastrar nova pessoa externa
+                        </option>
+                      </select>
+                    </label>
+
+                    {externalCreateNew && (
+                      <div className="skpe-journey-event-external-grid is-wide">
+                        <label>
+                          <span>Nome completo *</span>
+                          <input
+                            value={externalFullName}
+                            onChange={(changeEvent) =>
+                              setExternalFullName(changeEvent.target.value)
+                            }
+                            disabled={participantBusy}
+                          />
+                        </label>
+
+                        <label>
+                          <span>Nome preferido</span>
+                          <input
+                            value={externalPreferredName}
+                            onChange={(changeEvent) =>
+                              setExternalPreferredName(changeEvent.target.value)
+                            }
+                            disabled={participantBusy}
+                          />
+                        </label>
+
+                        <label>
+                          <span>E-mail</span>
+                          <input
+                            type="email"
+                            value={externalEmail}
+                            onChange={(changeEvent) =>
+                              setExternalEmail(changeEvent.target.value)
+                            }
+                            disabled={participantBusy}
+                          />
+                        </label>
+
+                        <label>
+                          <span>Organizacao externa</span>
+                          <input
+                            value={externalOrganization}
+                            onChange={(changeEvent) =>
+                              setExternalOrganization(changeEvent.target.value)
+                            }
+                            disabled={participantBusy}
+                          />
+                        </label>
+
+                        <label>
+                          <span>Natureza da relacao</span>
+                          <select
+                            value={externalRelationshipType}
+                            onChange={(changeEvent) =>
+                              setExternalRelationshipType(
+                                changeEvent.target.value,
+                              )
+                            }
+                            disabled={participantBusy}
+                          >
+                            <option value="service_provider">
+                              Prestador de servico
+                            </option>
+                            <option value="representative">Representante</option>
+                            <option value="partner">Parceiro</option>
+                            <option value="other">Outro</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>Cargo / atividade externa</span>
+                          <input
+                            value={externalJobTitle}
+                            onChange={(changeEvent) =>
+                              setExternalJobTitle(changeEvent.target.value)
+                            }
+                            disabled={participantBusy}
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    <label className="is-wide">
+                      <span>Funcao neste evento</span>
+                      <input
+                        value={participantFunction}
+                        onChange={(changeEvent) =>
+                          setParticipantFunction(changeEvent.target.value)
+                        }
+                        disabled={participantBusy}
+                        placeholder="Ex.: Palestrante, facilitador, auditor"
+                      />
+                    </label>
+                  </>
+                )}
 
                 <label>
-                  <span>Papel *</span>
+                  <span>Papel de governanca *</span>
                   <select
                     value={participantRole}
                     onChange={(changeEvent) =>
@@ -669,10 +932,10 @@ export function JourneyEventManageDialog({
                     }
                     disabled={participantBusy}
                   >
-                    <option value="owner">Respons\u00e1vel principal</option>
-                    <option value="chair">Coordena\u00e7\u00e3o</option>
+                    <option value="owner">Responsavel principal</option>
+                    <option value="chair">Coordenacao</option>
                     <option value="secretary">Secretaria</option>
-                    <option value="responsible">Respons\u00e1vel</option>
+                    <option value="responsible">Responsavel</option>
                     <option value="participant">Participante</option>
                     <option value="observer">Observador</option>
                   </select>
@@ -687,11 +950,11 @@ export function JourneyEventManageDialog({
                     }
                     disabled={participantBusy}
                   />
-                  <span>Participa\u00e7\u00e3o obrigat\u00f3ria</span>
+                  <span>Participacao obrigatoria</span>
                 </label>
 
                 <label className="is-wide">
-                  <span>Justificativa do v\u00ednculo/ajuste *</span>
+                  <span>Justificativa do vinculo/ajuste *</span>
                   <textarea
                     rows={2}
                     value={participantReason}
@@ -705,10 +968,18 @@ export function JourneyEventManageDialog({
                 <button
                   type="button"
                   className="is-primary"
-                  onClick={() => void setParticipant()}
+                  onClick={() =>
+                    void (
+                      participantOrigin === 'internal'
+                        ? setParticipant()
+                        : setExternalParticipant()
+                    )
+                  }
                   disabled={participantBusy}
                 >
-                  {participantBusy ? 'Atualizando...' : 'Adicionar / atualizar participante'}
+                  {participantBusy
+                    ? 'Atualizando...'
+                    : 'Adicionar / atualizar participante'}
                 </button>
               </div>
 
@@ -726,66 +997,95 @@ export function JourneyEventManageDialog({
                       <header>
                         <div>
                           <strong>{participant.user_display_name}</strong>
-                          <small>{participant.user_email}</small>
+                          {participant.user_email && (
+                            <small>{participant.user_email}</small>
+                          )}
+                          {participant.participant_origin === 'external' && (
+                            <small>
+                              {[
+                                participant.external_organization,
+                                participant.job_title,
+                                participant.participant_function,
+                              ]
+                                .filter(Boolean)
+                                .join(' - ')}
+                            </small>
+                          )}
                         </div>
                         <div className="skpe-journey-event-participant-tags">
+                          <span>
+                            {participant.participant_origin === 'external'
+                              ? 'Externo'
+                              : 'Interno'}
+                          </span>
                           <span>{participant.participant_role}</span>
-                          <span>{participant.required ? 'Obrigat\u00f3rio' : 'Opcional'}</span>
+                          {participant.participant_function && (
+                            <span>{participant.participant_function}</span>
+                          )}
+                          <span>
+                            {participant.required ? 'Obrigatorio' : 'Opcional'}
+                          </span>
                           <span>{participant.response_status}</span>
                         </div>
                       </header>
 
                       <div className="skpe-journey-event-participant-attendance">
                         <label>
-                          <span>Presen\u00e7a</span>
+                          <span>Presenca</span>
                           <select
                             value={participant.attendance_status}
                             onChange={(changeEvent) =>
                               void recordAttendance(
-                                participant.user_id,
+                                participant.participant_id,
                                 changeEvent.target.value as AttendanceStatus,
                               )
                             }
                             disabled={participantBusy}
                           >
-                            <option value="not_recorded">N\u00e3o registrada</option>
+                            <option value="not_recorded">Nao registrada</option>
                             <option value="attended">Presente</option>
                             <option value="absent">Ausente</option>
                           </select>
                         </label>
 
                         <label className="is-wide">
-                          <span>Justificativa da presen\u00e7a *</span>
+                          <span>Justificativa da presenca *</span>
                           <input
-                            value={attendanceReasons[participant.user_id] ?? ''}
+                            value={
+                              attendanceReasons[participant.participant_id] ?? ''
+                            }
                             onChange={(changeEvent) =>
                               setAttendanceReasons((current) => ({
                                 ...current,
-                                [participant.user_id]: changeEvent.target.value,
+                                [participant.participant_id]:
+                                  changeEvent.target.value,
                               }))
                             }
                             disabled={participantBusy}
-                            placeholder="M\u00ednimo de 10 caracteres"
+                            placeholder="Minimo de 10 caracteres"
                           />
                         </label>
                       </div>
 
                       <div className="skpe-journey-event-participant-remove">
                         <input
-                          value={removeReasons[participant.user_id] ?? ''}
+                          value={
+                            removeReasons[participant.participant_id] ?? ''
+                          }
                           onChange={(changeEvent) =>
                             setRemoveReasons((current) => ({
                               ...current,
-                              [participant.user_id]: changeEvent.target.value,
+                              [participant.participant_id]:
+                                changeEvent.target.value,
                             }))
                           }
                           disabled={participantBusy}
-                          placeholder="Justificativa para remo\u00e7\u00e3o"
+                          placeholder="Justificativa para remocao"
                         />
                         <button
                           type="button"
                           onClick={() =>
-                            void removeParticipant(participant.user_id)
+                            void removeParticipant(participant.participant_id)
                           }
                           disabled={participantBusy}
                         >
@@ -799,7 +1099,6 @@ export function JourneyEventManageDialog({
             </>
           )}
         </section>
-
         <section className="skpe-journey-event-lifecycle">
           <header>
             <div>

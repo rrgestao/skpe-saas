@@ -376,3 +376,69 @@
     justify-content: flex-start;
   }
 }
+.skpe-journey-event-participant-origin {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  padding: 0.25rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 10px;
+  background: #f4f8f6;
+}
+
+.skpe-journey-event-participant-origin button {
+  min-height: 34px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.skpe-journey-event-participant-origin button.is-active {
+  border-color: #b9d4ca;
+  background: #fff;
+  color: #1f614e;
+  box-shadow: 0 1px 4px rgb(24 60 49 / 8%);
+}
+
+.skpe-journey-event-external-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  padding: 0.75rem;
+  border: 1px dashed #cfdcd7;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.skpe-journey-event-external-grid label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.skpe-journey-event-external-grid label > span {
+  color: #61726a;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.skpe-journey-event-external-grid input,
+.skpe-journey-event-external-grid select,
+.skpe-journey-event-participant-add input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.58rem 0.65rem;
+  border: 1px solid #cfdcd7;
+  border-radius: 8px;
+  background: #fff;
+  color: #243f36;
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .skpe-journey-event-participant-origin {
+    display: grid;
+  }
+
+  .skpe-journey-event-external-grid {
+    grid-template-columns: 1fr;
+  }
+}
