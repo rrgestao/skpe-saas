@@ -1,5 +1,6 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
+import { supabase } from '../../../../lib/supabase'
 import type { JourneyTemporalRow } from '../../contracts/journey'
 
 import './JourneyGantt.css'
@@ -12,6 +13,30 @@ type JourneyGanttProps = {
   formatDate: (value: string | null) => string
   selectedItemId: string | null
   onSelectItem: (itemId: string) => void
+}
+
+type JourneyEventRow = {
+  event_id: string
+  journey_item_id: string
+  journey_item_code: string
+  journey_item_title: string
+  journey_item_type: string
+  parent_item_id: string | null
+  event_type: string
+  event_title: string
+  event_description: string | null
+  starts_at: string | null
+  ends_at: string | null
+  all_day: boolean
+  timezone_name: string
+  event_status: string
+  priority: string
+  location_text: string | null
+  meeting_reference: string | null
+  participant_count: number
+  accepted_count: number
+  attended_count: number
+  current_user_role: string | null
 }
 
 type GanttVisibility = 'all' | 'mandatory'
@@ -46,6 +71,21 @@ function parseDateOnly(value: string) {
 
 function toDateOnly(ms: number) {
   return new Date(ms).toISOString().slice(0, 10)
+}
+
+function toZonedDateOnly(value: string, timezoneName: string) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezoneName || 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(value))
+
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+
+  return year && month && day ? `${year}-${month}-${day}` : value.slice(0, 10)
 }
 
 function daysBetween(startMs: number, endMs: number) {
@@ -84,6 +124,21 @@ function getRange(row: JourneyTemporalRow, kind: GanttBarKind) {
   return normalizeRange(row.actual_start_date, row.actual_end_date)
 }
 
+function getEventRange(event: JourneyEventRow): DateRange | null {
+  if (!event.starts_at && !event.ends_at) return null
+
+  const start = event.starts_at
+    ? toZonedDateOnly(event.starts_at, event.timezone_name)
+    : event.ends_at
+      ? toZonedDateOnly(event.ends_at, event.timezone_name)
+      : null
+  const end = event.ends_at
+    ? toZonedDateOnly(event.ends_at, event.timezone_name)
+    : start
+
+  return normalizeRange(start, end)
+}
+
 function flattenJourney(rows: JourneyTemporalRow[]): GanttDisplayRow[] {
   const childrenByParent = new Map<string | null, JourneyTemporalRow[]>()
   const rowIds = new Set(rows.map((row) => row.item_id))
@@ -119,6 +174,7 @@ function flattenJourney(rows: JourneyTemporalRow[]): GanttDisplayRow[] {
 
 function buildTimeline(
   rows: JourneyTemporalRow[],
+  events: JourneyEventRow[],
   referenceDate: string | null,
 ): Timeline | null {
   const dates: number[] = []
@@ -129,6 +185,12 @@ function buildTimeline(
       if (!range) continue
       dates.push(parseDateOnly(range.start), parseDateOnly(range.end))
     }
+  }
+
+  for (const event of events) {
+    const range = getEventRange(event)
+    if (!range) continue
+    dates.push(parseDateOnly(range.start), parseDateOnly(range.end))
   }
 
   if (referenceDate) dates.push(parseDateOnly(referenceDate))
@@ -201,7 +263,7 @@ function getItemTypeLabel(itemType: JourneyTemporalRow['item_type']) {
     stage: 'Etapa',
     meta_stage: 'Metaetapa',
     activity: 'Atividade',
-    deliverable: 'EntregÃ¡vel',
+    deliverable: 'Entregável',
     gate: 'Gate',
   }
 
@@ -223,6 +285,19 @@ function getBarTitle(
   return `${labels[kind]}: ${formatDate(range.start)} a ${formatDate(range.end)}`
 }
 
+function getEventTitle(
+  event: JourneyEventRow,
+  range: DateRange,
+  formatDate: (value: string | null) => string,
+) {
+  const participantSummary = `${event.accepted_count}/${event.participant_count} participantes confirmados`
+  const attendanceSummary = event.attended_count > 0
+    ? ` · ${event.attended_count} presença(s) registrada(s)`
+    : ''
+
+  return `${event.event_title} · ${event.event_status} · ${formatDate(range.start)} a ${formatDate(range.end)} · ${participantSummary}${attendanceSummary}`
+}
+
 function isMilestone(row: JourneyTemporalRow, range: DateRange) {
   return (
     (row.item_type === 'gate' || row.item_type === 'deliverable') &&
@@ -238,6 +313,56 @@ export function JourneyGantt({
   onSelectItem,
 }: JourneyGanttProps) {
   const [visibility, setVisibility] = useState<GanttVisibility>('all')
+  const [events, setEvents] = useState<JourneyEventRow[]>([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [eventsError, setEventsError] = useState('')
+
+  const organizationId = rows[0]?.organization_id ?? null
+  const projectId = rows[0]?.project_id ?? null
+
+  useEffect(() => {
+    let active = true
+
+    const loadEvents = async () => {
+      if (!organizationId || !projectId) {
+        setEvents([])
+        setEventsError('')
+        return
+      }
+
+      setEventsLoading(true)
+      setEventsError('')
+
+      const { data, error } = await supabase.rpc(
+        'get_skpe_journey_events_projection',
+        {
+          target_organization_id: organizationId,
+          target_project_id: projectId,
+          target_date_from: null,
+          target_date_to: null,
+          target_include_cancelled: false,
+          target_include_archived: false,
+        },
+      )
+
+      if (!active) return
+
+      if (error) {
+        setEvents([])
+        setEventsError('Eventos da jornada indisponíveis nesta visualização.')
+      } else {
+        setEvents((data ?? []) as JourneyEventRow[])
+      }
+
+      setEventsLoading(false)
+    }
+
+    void loadEvents()
+
+    return () => {
+      active = false
+    }
+  }, [organizationId, projectId])
 
   const flattenedRows = useMemo(() => flattenJourney(rows), [rows])
   const displayRows = useMemo(
@@ -247,18 +372,29 @@ export function JourneyGantt({
         : flattenedRows,
     [flattenedRows, visibility],
   )
+  const eventsByItem = useMemo(() => {
+    const grouped = new Map<string, JourneyEventRow[]>()
+
+    for (const event of events) {
+      const current = grouped.get(event.journey_item_id) ?? []
+      current.push(event)
+      grouped.set(event.journey_item_id, current)
+    }
+
+    return grouped
+  }, [events])
   const timeline = useMemo(
-    () => buildTimeline(rows, referenceDate),
-    [rows, referenceDate],
+    () => buildTimeline(rows, events, referenceDate),
+    [rows, events, referenceDate],
   )
 
   if (!timeline) {
     return (
       <section className="skpe-gantt-empty">
-        <h2>Gantt ainda sem programaÃ§Ã£o</h2>
+        <h2>Gantt ainda sem programação</h2>
         <p>
-          A visÃ£o serÃ¡ preenchida quando houver baseline, plano vigente,
-          forecast ou execuÃ§Ã£o registrada na Jornada EstratÃ©gica.
+          A visão será preenchida quando houver baseline, plano vigente,
+          forecast, execução registrada ou eventos associados à Jornada Estratégica.
         </p>
       </section>
     )
@@ -267,14 +403,20 @@ export function JourneyGantt({
   const kinds: GanttBarKind[] = ['baseline', 'plan', 'forecast', 'actual']
 
   return (
-    <section className="skpe-gantt-card" aria-label="Gantt governado da Jornada EstratÃ©gica">
+    <section className="skpe-gantt-card" aria-label="Gantt governado da Jornada Estratégica">
       <header className="skpe-gantt-header">
         <div>
-          <p className="skpe-eyebrow">ProjeÃ§Ã£o temporal governada</p>
-          <h2>Planned Ã— Actual Ã— Forecast</h2>
+          <p className="skpe-eyebrow">Projeção operacional governada</p>
+          <h2>Baseline × Plano × Forecast × Realizado × Agenda</h2>
           <p>
-            O grÃ¡fico apenas projeta datas governadas pelo backend. Arrastar ou
-            editar barras nÃ£o Ã© permitido nesta visÃ£o.
+            O gráfico apenas projeta informações governadas pelo backend. Datas da
+            Jornada e eventos da agenda mantêm suas fontes canônicas; arrastar ou
+            editar barras não é permitido nesta visão.
+          </p>
+          <p className="skpe-gantt-event-status" aria-live="polite">
+            {eventsLoading
+              ? 'Carregando eventos associados à jornada...'
+              : eventsError || `${events.length} evento(s) associado(s) à jornada`}
           </p>
         </div>
 
@@ -291,7 +433,7 @@ export function JourneyGantt({
             className={visibility === 'mandatory' ? 'is-active' : ''}
             onClick={() => setVisibility('mandatory')}
           >
-            Somente obrigatÃ³rios
+            Somente obrigatórios
           </button>
         </div>
       </header>
@@ -301,7 +443,8 @@ export function JourneyGantt({
         <span><i className="skpe-gantt-legend-plan" />Plano vigente</span>
         <span><i className="skpe-gantt-legend-forecast" />Forecast</span>
         <span><i className="skpe-gantt-legend-actual" />Realizado</span>
-        <span><i className="skpe-gantt-legend-reference" />Data de referÃªncia</span>
+        <span><i className="skpe-gantt-legend-event" />Evento / agenda</span>
+        <span><i className="skpe-gantt-legend-reference" />Data de referência</span>
       </div>
 
       <div className="skpe-gantt-scroll">
@@ -319,80 +462,111 @@ export function JourneyGantt({
             ))}
           </div>
 
-          {displayRows.map(({ row, depth }) => (
-            <div className="skpe-gantt-row" key={row.item_id}>
-              <button
-                type="button"
-                className={[
-                  'skpe-gantt-row-label',
-                  selectedItemId === row.item_id ? 'is-selected' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => onSelectItem(row.item_id)}
-                title={`${getItemTypeLabel(row.item_type)} Â· ${row.item_code} Â· ${row.item_name}`}
-              >
-                <span style={{ paddingLeft: `${Math.min(depth, 5) * 14}px` }}>
-                  <small>{getItemTypeLabel(row.item_type)} Â· {row.item_code}</small>
-                  <strong>{row.item_name}</strong>
-                </span>
-              </button>
+          {displayRows.map(({ row, depth }) => {
+            const rowEvents = eventsByItem.get(row.item_id) ?? []
 
-              <div
-                className={[
-                  'skpe-gantt-timeline-cell',
-                  selectedItemId === row.item_id ? 'is-selected' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => onSelectItem(row.item_id)}
-              >
-                {timeline.ticks.map((tick) => (
-                  <i
-                    key={tick.key}
-                    className="skpe-gantt-grid-line"
-                    style={{ left: `${tick.position}%` }}
-                    aria-hidden="true"
-                  />
-                ))}
+            return (
+              <div className="skpe-gantt-row" key={row.item_id}>
+                <button
+                  type="button"
+                  className={[
+                    'skpe-gantt-row-label',
+                    selectedItemId === row.item_id ? 'is-selected' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => onSelectItem(row.item_id)}
+                  title={`${getItemTypeLabel(row.item_type)} · ${row.item_code} · ${row.item_name}`}
+                >
+                  <span style={{ paddingLeft: `${Math.min(depth, 5) * 14}px` }}>
+                    <small>{getItemTypeLabel(row.item_type)} · {row.item_code}</small>
+                    <strong>{row.item_name}</strong>
+                  </span>
+                  {rowEvents.length > 0 && (
+                    <em className="skpe-gantt-row-event-count">
+                      {rowEvents.length} evento(s)
+                    </em>
+                  )}
+                </button>
 
-                {timeline.referencePosition !== null && (
-                  <i
-                    className="skpe-gantt-reference-line"
-                    style={{ left: `${timeline.referencePosition}%` }}
-                    title={`Data de referÃªncia: ${formatDate(referenceDate)}`}
-                    aria-hidden="true"
-                  />
-                )}
-
-                {kinds.map((kind) => {
-                  const range = getRange(row, kind)
-                  if (!range) return null
-
-                  return (
-                    <span
-                      key={kind}
-                      className={[
-                        'skpe-gantt-bar',
-                        `skpe-gantt-bar-${kind}`,
-                        isMilestone(row, range) ? 'skpe-gantt-bar-milestone' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      style={getBarStyle(range, timeline)}
-                      title={getBarTitle(kind, range, formatDate)}
-                      aria-label={getBarTitle(kind, range, formatDate)}
+                <div
+                  className={[
+                    'skpe-gantt-timeline-cell',
+                    selectedItemId === row.item_id ? 'is-selected' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => onSelectItem(row.item_id)}
+                >
+                  {timeline.ticks.map((tick) => (
+                    <i
+                      key={tick.key}
+                      className="skpe-gantt-grid-line"
+                      style={{ left: `${tick.position}%` }}
+                      aria-hidden="true"
                     />
-                  )
-                })}
+                  ))}
+
+                  {timeline.referencePosition !== null && (
+                    <i
+                      className="skpe-gantt-reference-line"
+                      style={{ left: `${timeline.referencePosition}%` }}
+                      title={`Data de referência: ${formatDate(referenceDate)}`}
+                      aria-hidden="true"
+                    />
+                  )}
+
+                  {kinds.map((kind) => {
+                    const range = getRange(row, kind)
+                    if (!range) return null
+
+                    return (
+                      <span
+                        key={kind}
+                        className={[
+                          'skpe-gantt-bar',
+                          `skpe-gantt-bar-${kind}`,
+                          isMilestone(row, range) ? 'skpe-gantt-bar-milestone' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        style={getBarStyle(range, timeline)}
+                        title={getBarTitle(kind, range, formatDate)}
+                        aria-label={getBarTitle(kind, range, formatDate)}
+                      />
+                    )
+                  })}
+
+                  {rowEvents.map((event) => {
+                    const range = getEventRange(event)
+                    if (!range) return null
+                    const title = getEventTitle(event, range, formatDate)
+
+                    return (
+                      <span
+                        key={event.event_id}
+                        className={[
+                          'skpe-gantt-event',
+                          range.start === range.end ? 'skpe-gantt-event-milestone' : '',
+                          event.event_status === 'in_progress' ? 'is-in-progress' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        style={getBarStyle(range, timeline)}
+                        title={title}
+                        aria-label={title}
+                      />
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
       <footer className="skpe-gantt-footer">
-        <span>{displayRows.length} itens exibidos</span>
+        <span>{displayRows.length} itens exibidos · {events.length} evento(s) associado(s)</span>
         <span>
           Janela visual: {formatDate(toDateOnly(timeline.startMs))} a{' '}
           {formatDate(toDateOnly(timeline.endMs))}
