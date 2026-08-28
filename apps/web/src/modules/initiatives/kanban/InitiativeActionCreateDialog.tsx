@@ -36,9 +36,19 @@ export function InitiativeActionCreateDialog({
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
+  const draftDirty =
+    code.trim().length > 0 ||
+    name.trim().length > 0 ||
+    description.trim().length > 0 ||
+    actionType !== 'action' ||
+    priority !== 'medium' ||
+    changeReason.trim().length > 0
+
+  const closeLocked = saving || draftDirty
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !saving) {
+      if (event.key === 'Escape' && !closeLocked) {
         onClose()
       }
     }
@@ -54,7 +64,7 @@ export function InitiativeActionCreateDialog({
         handleKeyDown,
       )
     }
-  }, [onClose, saving])
+  }, [closeLocked, onClose])
 
   async function handleSubmit() {
     const normalizedCode = code.trim()
@@ -110,7 +120,7 @@ export function InitiativeActionCreateDialog({
       onMouseDown={(event) => {
         if (
           event.target === event.currentTarget &&
-          !saving
+          !closeLocked
         ) {
           onClose()
         }
@@ -133,7 +143,7 @@ export function InitiativeActionCreateDialog({
           <button
             type="button"
             onClick={onClose}
-            disabled={saving}
+            disabled={closeLocked}
           >
             Fechar
           </button>
@@ -223,6 +233,13 @@ export function InitiativeActionCreateDialog({
             disabled={saving}
           />
         </label>
+
+        {draftDirty ? (
+          <p className="initiative-action-drawer__note">
+            Salve a nova ação ou use Cancelar para descartar o rascunho antes
+            de fechar por ESC, backdrop ou pelo botão Fechar.
+          </p>
+        ) : null}
 
         {errorMessage ? (
           <div

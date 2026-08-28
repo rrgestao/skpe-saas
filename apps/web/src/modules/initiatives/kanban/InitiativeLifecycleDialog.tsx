@@ -56,9 +56,16 @@ export function InitiativeLifecycleDialog({
   const isDropConfirmation =
     requestedStatus !== null
 
+  const draftDirty =
+    changeReason.trim().length > 0 ||
+    (!isDropConfirmation &&
+      targetStatus !== defaultStatus)
+
+  const closeLocked = saving || draftDirty
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !saving) {
+      if (event.key === 'Escape' && !closeLocked) {
         onClose()
       }
     }
@@ -74,7 +81,7 @@ export function InitiativeLifecycleDialog({
         handleKeyDown,
       )
     }
-  }, [onClose, saving])
+  }, [closeLocked, onClose])
 
   async function handleSubmit() {
     if (!canManageInitiatives) {
@@ -130,7 +137,7 @@ export function InitiativeLifecycleDialog({
       onMouseDown={(event) => {
         if (
           event.target === event.currentTarget &&
-          !saving
+          !closeLocked
         ) {
           onClose()
         }
@@ -155,7 +162,7 @@ export function InitiativeLifecycleDialog({
           <button
             type="button"
             onClick={onClose}
-            disabled={saving}
+            disabled={closeLocked}
             aria-label="Fechar alteração de situação"
           >
             Fechar
@@ -244,6 +251,13 @@ export function InitiativeLifecycleDialog({
               rows={4}
             />
           </label>
+        ) : null}
+
+        {draftDirty ? (
+          <p className="initiative-action-drawer__note">
+            Confirme a alteração ou use Cancelar para descartar o rascunho
+            antes de fechar por ESC, backdrop ou pelo botão Fechar.
+          </p>
         ) : null}
 
         {errorMessage ? (
