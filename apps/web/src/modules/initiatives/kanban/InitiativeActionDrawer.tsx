@@ -323,6 +323,15 @@ export function InitiativeActionDrawer({
       capacityAllocationNotes.trim().length > 0 ||
       capacityAllocationChangeReason.trim().length > 0)
 
+  const responsibilityAssignmentDraftDirty =
+    selectedResponsibilityType !== '' ||
+    responsibilityAllocation !== '' ||
+    selectedAuthorityLevel !== '' ||
+    responsibilityValidFrom !== '' ||
+    responsibilityValidUntil !== '' ||
+    responsibilityAssignmentReason.trim().length > 0 ||
+    responsibilityChangeReason.trim().length > 0
+
   const saving =
     savingProgress ||
     savingEconomics ||
@@ -333,11 +342,20 @@ export function InitiativeActionDrawer({
     endingAssignmentId !== null
 
   const capacityAllocationCreationLocked =
-    saving || editingCapacityAllocationId !== null
+    saving ||
+    editingCapacityAllocationId !== null ||
+    responsibilityAssignmentDraftDirty
+
+  const responsibilityAssignmentLocked =
+    saving ||
+    editingCapacityAllocationId !== null ||
+    capacityAllocationCreationDraftDirty
 
   const otherMutationLocked =
-    capacityAllocationCreationLocked ||
-    capacityAllocationCreationDraftDirty
+    saving ||
+    editingCapacityAllocationId !== null ||
+    capacityAllocationCreationDraftDirty ||
+    responsibilityAssignmentDraftDirty
 
   const closeLocked = otherMutationLocked
 
@@ -579,6 +597,17 @@ export function InitiativeActionDrawer({
     setCapacityAllocationStatus('planned')
     setCapacityAllocationNotes('')
     setCapacityAllocationChangeReason('')
+    setErrorMessage(null)
+  }
+
+  function resetResponsibilityAssignmentDraft() {
+    setSelectedResponsibilityType('')
+    setResponsibilityAllocation('')
+    setSelectedAuthorityLevel('')
+    setResponsibilityValidFrom('')
+    setResponsibilityValidUntil('')
+    setResponsibilityAssignmentReason('')
+    setResponsibilityChangeReason('')
     setErrorMessage(null)
   }
 
@@ -1340,6 +1369,7 @@ export function InitiativeActionDrawer({
                             disabled={
                               saving ||
                               capacityAllocationCreationDraftDirty ||
+                              responsibilityAssignmentDraftDirty ||
                               (editingCapacityAllocationId !== null &&
                                 editingCapacityAllocationId !==
                                   allocation.allocationId)
@@ -1808,7 +1838,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={responsibilityAssignmentLocked}
                       >
                         <option value="">
                           Selecione
@@ -1841,7 +1871,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -1856,7 +1886,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={responsibilityAssignmentLocked}
                       >
                         <option value="">
                           Não definido
@@ -1886,7 +1916,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -1902,7 +1932,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -1920,7 +1950,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -1938,16 +1968,36 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={responsibilityAssignmentLocked}
                       />
                     </label>
+
+                    {responsibilityAssignmentDraftDirty ? (
+                      <p className="initiative-action-drawer__note">
+                        Este rascunho de responsabilidade está vinculado à
+                        pessoa selecionada. Atribua ou descarte antes de trocar
+                        pessoa, editar capacidade, executar outra alteração ou
+                        fechar esta janela.
+                      </p>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={resetResponsibilityAssignmentDraft}
+                      disabled={
+                        responsibilityAssignmentLocked ||
+                        !responsibilityAssignmentDraftDirty
+                      }
+                    >
+                      Descartar responsabilidade
+                    </button>
 
                     <button
                       type="button"
                       onClick={() =>
                         void handleAssignResponsibility()
                       }
-                      disabled={otherMutationLocked}
+                      disabled={responsibilityAssignmentLocked}
                     >
                       {savingResponsibility
                         ? 'Atribuindo...'
