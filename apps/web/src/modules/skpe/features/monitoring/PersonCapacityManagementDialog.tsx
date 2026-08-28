@@ -119,7 +119,18 @@ export function PersonCapacityManagementDialog({
       editNotes !== (selectedPeriod.notes ?? '') ||
       editReason.trim().length > 0)
 
-  const closeLocked = saving || editDraftDirty
+  const creationDraftDirty =
+    selectedPersonId !== '' &&
+    (periodStart !== '' ||
+      periodEnd !== '' ||
+      capacityAmount !== '' ||
+      capacityUnit !== 'hours' ||
+      status !== 'planned' ||
+      notes.trim().length > 0 ||
+      changeReason.trim().length > 0)
+
+  const closeLocked =
+    saving || editDraftDirty || creationDraftDirty
 
   function resetEditDraft() {
     if (!selectedPeriod) return
@@ -130,6 +141,17 @@ export function PersonCapacityManagementDialog({
     setEditCapacityUnit(selectedPeriod.capacityUnit)
     setEditNotes(selectedPeriod.notes ?? '')
     setEditReason('')
+    setErrorMessage(null)
+  }
+
+  function resetCreationDraft() {
+    setPeriodStart('')
+    setPeriodEnd('')
+    setCapacityAmount('')
+    setCapacityUnit('hours')
+    setStatus('planned')
+    setNotes('')
+    setChangeReason('')
     setErrorMessage(null)
   }
 
@@ -392,7 +414,7 @@ export function PersonCapacityManagementDialog({
             <select
               value={selectedPersonId}
               onChange={(event) => setSelectedPersonId(event.target.value)}
-              disabled={saving || loadingCandidates || editDraftDirty}
+              disabled={saving || loadingCandidates || editDraftDirty || creationDraftDirty}
             >
               <option value="">
                 {loadingCandidates ? 'Carregando...' : 'Selecione'}
@@ -449,7 +471,7 @@ export function PersonCapacityManagementDialog({
                         setTargetStatus('')
                         setTransitionReason('')
                       }}
-                      disabled={saving || editDraftDirty}
+                      disabled={saving || editDraftDirty || creationDraftDirty}
                     >
                       <option value="">Selecione</option>
                       {periods.map((period) => (
@@ -519,7 +541,7 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setEditPeriodStart(event.target.value)
                           }
-                          disabled={saving}
+                          disabled={saving || creationDraftDirty}
                         />
                       </label>
 
@@ -531,7 +553,7 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setEditPeriodEnd(event.target.value)
                           }
-                          disabled={saving}
+                          disabled={saving || creationDraftDirty}
                         />
                       </label>
 
@@ -545,7 +567,7 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setEditCapacityAmount(event.target.value)
                           }
-                          disabled={saving}
+                          disabled={saving || creationDraftDirty}
                         />
                       </label>
 
@@ -556,7 +578,7 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setEditCapacityUnit(event.target.value)
                           }
-                          disabled={saving}
+                          disabled={saving || creationDraftDirty}
                         >
                           {Object.entries(unitLabels).map(([value, label]) => (
                             <option key={value} value={value}>
@@ -572,7 +594,7 @@ export function PersonCapacityManagementDialog({
                           rows={3}
                           value={editNotes}
                           onChange={(event) => setEditNotes(event.target.value)}
-                          disabled={saving}
+                          disabled={saving || creationDraftDirty}
                         />
                       </label>
 
@@ -582,7 +604,7 @@ export function PersonCapacityManagementDialog({
                           rows={3}
                           value={editReason}
                           onChange={(event) => setEditReason(event.target.value)}
-                          disabled={saving}
+                          disabled={saving || creationDraftDirty}
                         />
                       </label>
 
@@ -590,14 +612,14 @@ export function PersonCapacityManagementDialog({
                         <button
                           type="button"
                           onClick={() => void handleEdit()}
-                          disabled={saving}
+                          disabled={saving || creationDraftDirty}
                         >
                           {saving ? 'Atualizando...' : 'Salvar edição'}
                         </button>
                         <button
                           type="button"
                           onClick={resetEditDraft}
-                          disabled={saving || !editDraftDirty}
+                          disabled={saving || creationDraftDirty || !editDraftDirty}
                         >
                           Descartar edição
                         </button>
@@ -625,7 +647,7 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setTargetStatus(event.target.value)
                           }
-                          disabled={saving || editDraftDirty}
+                          disabled={saving || editDraftDirty || creationDraftDirty}
                         >
                           <option value="">Selecione</option>
                           {allowedTransitions.map((candidateStatus) => (
@@ -647,7 +669,7 @@ export function PersonCapacityManagementDialog({
                           onChange={(event) =>
                             setTransitionReason(event.target.value)
                           }
-                          disabled={saving || editDraftDirty}
+                          disabled={saving || editDraftDirty || creationDraftDirty}
                         />
                       </label>
 
@@ -672,7 +694,7 @@ export function PersonCapacityManagementDialog({
                         <button
                           type="button"
                           onClick={() => void handleTransition()}
-                          disabled={saving || editDraftDirty}
+                          disabled={saving || editDraftDirty || creationDraftDirty}
                         >
                           {saving ? 'Atualizando...' : 'Aplicar transição'}
                         </button>
@@ -686,6 +708,14 @@ export function PersonCapacityManagementDialog({
 
           <div className="is-wide skpe-economic-dialog-note">
             <strong>Novo período de capacidade</strong>
+            {!selectedPersonId ? (
+              <>
+                <br />
+                <small>
+                  Selecione primeiro a pessoa à qual o novo período pertencerá.
+                </small>
+              </>
+            ) : null}
             {editDraftDirty ? (
               <>
                 <br />
@@ -697,13 +727,23 @@ export function PersonCapacityManagementDialog({
             ) : null}
           </div>
 
+          {creationDraftDirty ? (
+            <div className="is-wide skpe-economic-dialog-note">
+              <small>
+                Este rascunho está vinculado à pessoa selecionada. Registre ou
+                descarte o novo período antes de trocar pessoa/período, editar
+                outro período, alterar situação ou fechar esta janela.
+              </small>
+            </div>
+          ) : null}
+
           <label>
             <span>Início *</span>
             <input
               type="date"
               value={periodStart}
               onChange={(event) => setPeriodStart(event.target.value)}
-              disabled={saving || editDraftDirty}
+              disabled={saving || editDraftDirty || !selectedPersonId}
             />
           </label>
 
@@ -713,7 +753,7 @@ export function PersonCapacityManagementDialog({
               type="date"
               value={periodEnd}
               onChange={(event) => setPeriodEnd(event.target.value)}
-              disabled={saving || editDraftDirty}
+              disabled={saving || editDraftDirty || !selectedPersonId}
             />
           </label>
 
@@ -725,7 +765,7 @@ export function PersonCapacityManagementDialog({
               step="0.01"
               value={capacityAmount}
               onChange={(event) => setCapacityAmount(event.target.value)}
-              disabled={saving || editDraftDirty}
+              disabled={saving || editDraftDirty || !selectedPersonId}
             />
           </label>
 
@@ -734,7 +774,7 @@ export function PersonCapacityManagementDialog({
             <select
               value={capacityUnit}
               onChange={(event) => setCapacityUnit(event.target.value)}
-              disabled={saving || editDraftDirty}
+              disabled={saving || editDraftDirty || !selectedPersonId}
             >
               {Object.entries(unitLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -751,7 +791,7 @@ export function PersonCapacityManagementDialog({
               onChange={(event) =>
                 setStatus(event.target.value as 'planned' | 'active')
               }
-              disabled={saving || editDraftDirty}
+              disabled={saving || editDraftDirty || !selectedPersonId}
             >
               <option value="planned">Planejada</option>
               <option value="active">Ativa</option>
@@ -764,7 +804,7 @@ export function PersonCapacityManagementDialog({
               rows={3}
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              disabled={saving || editDraftDirty}
+              disabled={saving || editDraftDirty || !selectedPersonId}
             />
           </label>
 
@@ -774,7 +814,7 @@ export function PersonCapacityManagementDialog({
               rows={3}
               value={changeReason}
               onChange={(event) => setChangeReason(event.target.value)}
-              disabled={saving || editDraftDirty}
+              disabled={saving || editDraftDirty || !selectedPersonId}
             />
           </label>
         </div>
@@ -794,9 +834,16 @@ export function PersonCapacityManagementDialog({
           </button>
           <button
             type="button"
+            onClick={resetCreationDraft}
+            disabled={saving || editDraftDirty || !creationDraftDirty}
+          >
+            Descartar novo período
+          </button>
+          <button
+            type="button"
             className="is-primary"
             onClick={() => void handleCreate()}
-            disabled={saving || editDraftDirty}
+            disabled={saving || editDraftDirty || !selectedPersonId}
           >
             {saving ? 'Registrando...' : 'Registrar capacidade'}
           </button>
