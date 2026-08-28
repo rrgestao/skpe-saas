@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
 import { supabase } from '../../lib/supabase'
@@ -3237,7 +3237,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   <label>Razão social<input value={organizationForm.legalName} onChange={(event) => setOrganizationForm((current) => ({ ...current, legalName: event.target.value }))} required /></label>
                   <label>Nome fantasia<input value={organizationForm.tradeName} onChange={(event) => setOrganizationForm((current) => ({ ...current, tradeName: event.target.value }))} /></label>
                   <div className="pa-form-grid">
-                    <label>Tipo<select value={organizationForm.organizationType} onChange={(event) => changeOrganizationType(event.target.value)}>{Object.entries(ORGANIZATION_TYPE_LABELS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label>
+                    <label>Tipo<select value={organizationForm.organizationType} onChange={(event) => changeOrganizationType(event.target.value)}>{Object.entries(ORGANIZATION_TYPE_LABELS).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select><small className="pa-field-hint">{organizationForm.organizationType === 'system' ? 'Use Sistema para entidades representativas do Sistema Cooperativista, como SESCOOP/OCB em abrangência Nacional, Regional ou Estadual.' : 'O tipo define os níveis institucionais aplicáveis.'}</small></label>
                     <label>Nível<select value={organizationForm.organizationLevel} onChange={(event) => setOrganizationForm((current) => ({ ...current, organizationLevel: event.target.value }))}>{availableOrganizationLevels.map((level) => <option key={level.level_code} value={level.level_code}>{level.level_name}</option>)}</select><small className="pa-field-hint">{organizationForm.organizationType === 'system' ? 'Para organizações do tipo Sistema: Nacional, Regional ou Estadual.' : 'As opções são ajustadas conforme o tipo de organização.'}</small></label>
                   </div>
                   <label>Organização superior<select value={organizationForm.parentOrganizationId} onChange={(event) => setOrganizationForm((current) => ({ ...current, parentOrganizationId: event.target.value }))}><option value="">Sem organização superior</option>{organizations.filter((organization) => organization.organization_id !== organizationForm.organizationId).map((organization) => <option key={organization.organization_id} value={organization.organization_id}>{organization.trade_name ?? organization.legal_name}</option>)}</select></label>
@@ -3245,6 +3245,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                     <label id="organization-field-cnpj" className={organizationErrorField === 'organization-field-cnpj' ? 'pa-field-invalid' : ''}>CNPJ<input value={organizationForm.cnpj} onChange={(event) => setOrganizationForm((current) => ({ ...current, cnpj: formatCnpjInput(event.target.value) }))} inputMode="numeric" /></label>
                     {organizationForm.organizationType === 'cooperative' ? (
                       <label id="organization-field-branch" className={organizationErrorField === 'organization-field-branch' ? 'pa-field-invalid' : ''}>Ramo cooperativista<select value={organizationForm.cooperativeBranchCode} onChange={(event) => setOrganizationForm((current) => ({ ...current, cooperativeBranchCode: event.target.value }))}><option value="">Selecione o ramo</option>{cooperativeBranches.map((branch) => <option key={branch.branch_id} value={branch.branch_code}>{branch.branch_name}</option>)}</select><small className="pa-field-hint">Catálogo mestre oficial, incluindo o Ramo Seguros.</small></label>
+                    ) : organizationForm.organizationType === 'system' ? (
+                      <div className="pa-not-applicable-field"><strong>Ramos representados</strong><span>Todos os Ramos Cooperativistas.</span></div>
                     ) : (
                       <div className="pa-not-applicable-field"><strong>Ramo cooperativista</strong><span>Não aplicável ao tipo de organização selecionado.</span></div>
                     )}
