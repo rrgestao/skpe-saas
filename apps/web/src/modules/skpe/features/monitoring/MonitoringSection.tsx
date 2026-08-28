@@ -7,6 +7,12 @@ import {
   type InitiativeEconomicDirect,
 } from './InitiativeEconomicExecutionDialog'
 import { PersonCapacityManagementDialog } from './PersonCapacityManagementDialog'
+import { ManagementTimeline } from './ManagementTimeline'
+import type {
+  InitiativeTemporalTimelineRow,
+  JourneyEventTimelineRow,
+  JourneyTemporalTimelineRow,
+} from './monitoringTimeline'
 
 import './MonitoringSection.css'
 
@@ -22,28 +28,12 @@ type MonitoringSectionProps = {
   onOpenInitiatives: (target?: MonitoringDrilldownTarget) => void
 }
 
-type InitiativeTemporalRow = {
-  entity_type: 'initiative' | 'action'
-  entity_id: string
-  initiative_id: string
-  code: string
-  name: string
-  is_start_overdue: boolean
-  days_start_overdue: number
-  is_completion_overdue: boolean
-  days_completion_overdue: number
-  temporal_data_quality_state: string
-}
 
 type ActionBoardRow = {
   action_id: string
   status: string
 }
 
-type JourneyEventRow = {
-  event_id: string
-  event_status: string
-}
 
 type PersonCapacity = {
   capacity_period_id: string
@@ -55,9 +45,9 @@ type PersonCapacity = {
 
 type OperationalProjection = {
   referenceDate?: string
-  journeyTemporal?: unknown[]
-  journeyEvents?: JourneyEventRow[]
-  initiativeTemporal?: InitiativeTemporalRow[]
+  journeyTemporal?: JourneyTemporalTimelineRow[]
+  journeyEvents?: JourneyEventTimelineRow[]
+  initiativeTemporal?: InitiativeTemporalTimelineRow[]
   actionBoard?: ActionBoardRow[]
   economic?: {
     initiative?: {
@@ -108,7 +98,9 @@ function countBy<T>(rows: T[], read: (row: T) => string) {
   )
 }
 
-function getTemporalException(row: InitiativeTemporalRow) {
+function getTemporalException(
+  row: InitiativeTemporalTimelineRow,
+) {
   if (row.is_completion_overdue) {
     return {
       severity: 3,
@@ -252,7 +244,12 @@ export function MonitoringSection({
       initiativeTemporal
         .map((row) => ({ row, exception: getTemporalException(row) }))
         .filter(
-          (entry): entry is { row: InitiativeTemporalRow; exception: NonNullable<ReturnType<typeof getTemporalException>> } =>
+          (entry): entry is {
+            row: InitiativeTemporalTimelineRow
+            exception: NonNullable<
+              ReturnType<typeof getTemporalException>
+            >
+          } =>
             entry.exception !== null,
         )
         .sort(
@@ -458,6 +455,15 @@ export function MonitoringSection({
               </div>
             </article>
           </div>
+
+          <ManagementTimeline
+            journeyRows={projection.journeyTemporal ?? []}
+            initiativeRows={initiativeTemporal}
+            events={events}
+            referenceDate={projection.referenceDate}
+            onOpenJourney={onOpenJourney}
+            onOpenInitiatives={onOpenInitiatives}
+          />
 
           {economicInitiative && economicDirect ? (
             <article className="skpe-monitoring-economic">
