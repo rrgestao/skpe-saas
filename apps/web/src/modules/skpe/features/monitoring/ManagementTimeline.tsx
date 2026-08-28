@@ -15,6 +15,8 @@ type ManagementTimelineProps = {
   initiativeRows: InitiativeTemporalTimelineRow[]
   events: JourneyEventTimelineRow[]
   referenceDate?: string
+  journeyVisible: boolean
+  initiativesVisible: boolean
   onOpenJourney: () => void
   onOpenInitiatives: (target?: {
     initiativeId: string
@@ -143,6 +145,8 @@ export function ManagementTimeline({
   initiativeRows,
   events,
   referenceDate,
+  journeyVisible,
+  initiativesVisible,
   onOpenJourney,
   onOpenInitiatives,
 }: ManagementTimelineProps) {
@@ -250,7 +254,8 @@ export function ManagementTimeline({
         </span>
       </div>
 
-      <section className="skpe-management-timeline-group">
+      {journeyVisible ? (
+        <section className="skpe-management-timeline-group">
         <header>
           <div>
             <span>Jornada do Planejamento Estratégico</span>
@@ -326,8 +331,10 @@ export function ManagementTimeline({
           </div>
         </div>
       </section>
+      ) : null}
 
-      <section className="skpe-management-timeline-group">
+      {initiativesVisible ? (
+        <section className="skpe-management-timeline-group">
         <header>
           <div>
             <span>Execução transversal</span>
@@ -400,6 +407,7 @@ export function ManagementTimeline({
           </div>
         </div>
       </section>
+      ) : null}
 
       <footer>
         <span>

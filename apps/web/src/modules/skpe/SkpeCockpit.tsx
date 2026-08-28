@@ -80,6 +80,7 @@ type SkpeCapabilities = {
   can_generate_delivery_kit: boolean
   can_view_governance: boolean
   can_manage_journey: boolean
+  can_manage_initiatives: boolean
   can_manage_artifacts: boolean
   can_manage_skpe: boolean
   can_administer_users: boolean
@@ -6629,6 +6630,9 @@ export function SkpeCockpit({
   const canViewArtifacts = capabilities?.can_view_artifacts ?? legacyCanView
   const canViewGovernance = capabilities?.can_view_governance ?? legacyCanView
   const canManageJourney = capabilities?.can_manage_journey ?? legacyCanManageJourney
+  const canManageInitiatives =
+    capabilities?.can_manage_initiatives ??
+    legacyCanManageJourney
   const canManageArtifacts = capabilities?.can_manage_artifacts ?? legacyCanManageJourney
   const canManageUsers = mode === 'organization-admin'
     ? isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator'
@@ -7133,7 +7137,7 @@ export function SkpeCockpit({
               canManageCanvas
             }
             canManageInitiatives={
-              canManageJourney
+              canManageInitiatives
             }
             drilldownTarget={initiativeDrilldown}
           />
@@ -7142,7 +7146,9 @@ export function SkpeCockpit({
         {activeSection === 'monitoring' && canViewMonitoring && (
           <MonitoringSection
             fallbackProjectId={projectContext?.project_id ?? null}
-            canManageEconomic={canManageJourney}
+            canManageEconomic={canManageInitiatives}
+            canViewJourney={canViewJourney}
+            canViewInitiatives={canViewInitiatives}
             onOpenJourney={() => navigateToSection('journey')}
             onOpenInitiatives={(target) => {
               setInitiativeDrilldown(target ?? null)

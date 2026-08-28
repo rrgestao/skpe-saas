@@ -30,6 +30,8 @@ type MonitoringDrilldownTarget = {
 type MonitoringSectionProps = {
   fallbackProjectId: string | null
   canManageEconomic: boolean
+  canViewJourney: boolean
+  canViewInitiatives: boolean
   onOpenJourney: () => void
   onOpenInitiatives: (target?: MonitoringDrilldownTarget) => void
 }
@@ -77,6 +79,10 @@ type OperationalProjection = {
   }
   governance?: {
     readOnlyProjection?: boolean
+    journeyVisible?: boolean
+    initiativesVisible?: boolean
+    economicVisible?: boolean
+    capacityVisible?: boolean
   }
 }
 
@@ -121,6 +127,8 @@ function getTemporalException(
 export function MonitoringSection({
   fallbackProjectId,
   canManageEconomic,
+  canViewJourney,
+  canViewInitiatives,
   onOpenJourney,
   onOpenInitiatives,
 }: MonitoringSectionProps) {
@@ -295,8 +303,16 @@ export function MonitoringSection({
           </p>
         </div>
         <div className="skpe-monitoring-actions">
-          <button type="button" onClick={onOpenJourney}>Abrir Jornada</button>
-          <button type="button" onClick={() => onOpenInitiatives()}>Abrir Iniciativas / Kanban</button>
+          {canViewJourney ? (
+            <button type="button" onClick={onOpenJourney}>
+              Abrir Jornada
+            </button>
+          ) : null}
+          {canViewInitiatives ? (
+            <button type="button" onClick={() => onOpenInitiatives()}>
+              Abrir Iniciativas / Kanban
+            </button>
+          ) : null}
           {economicEditable ? (
             <button type="button" onClick={() => setShowEconomicEditor(true)}>
               Registrar execução econômica
@@ -334,8 +350,16 @@ export function MonitoringSection({
           <div className="skpe-monitoring-grid">
             <article>
               <span>Jornada temporal</span>
-              <strong>{projection.journeyTemporal?.length ?? 0}</strong>
-              <small>itens na projeção temporal da jornada</small>
+              <strong>
+                {canViewJourney
+                  ? projection.journeyTemporal?.length ?? 0
+                  : '—'}
+              </strong>
+              <small>
+                {canViewJourney
+                  ? 'itens na projeção temporal da jornada'
+                  : 'domínio não autorizado para este usuário'}
+              </small>
             </article>
             <article className={temporalExceptions.length > 0 ? 'is-warning' : ''}>
               <span>Exceções temporais</span>
@@ -344,13 +368,27 @@ export function MonitoringSection({
             </article>
             <article>
               <span>Kanban transversal</span>
-              <strong>{actionBoard.length}</strong>
-              <small>ações ativas na projeção do board</small>
+              <strong>
+                {canViewInitiatives
+                  ? actionBoard.length
+                  : '—'}
+              </strong>
+              <small>
+                {canViewInitiatives
+                  ? 'ações ativas na projeção do board'
+                  : 'domínio não autorizado para este usuário'}
+              </small>
             </article>
             <article>
               <span>Agenda da Jornada</span>
-              <strong>{events.length}</strong>
-              <small>eventos vinculados à jornada</small>
+              <strong>
+                {canViewJourney ? events.length : '—'}
+              </strong>
+              <small>
+                {canViewJourney
+                  ? 'eventos vinculados à jornada'
+                  : 'domínio não autorizado para este usuário'}
+              </small>
             </article>
             <article className={overallocated.length > 0 ? 'is-warning' : ''}>
               <span>Capacidade</span>
@@ -363,8 +401,16 @@ export function MonitoringSection({
             </article>
             <article>
               <span>Econômico</span>
-              <strong>{costCurrencies.length + effortUnits.length}</strong>
-              <small>{costCurrencies.length} moeda(s) · {effortUnits.length} unidade(s) de esforço</small>
+              <strong>
+                {canViewInitiatives
+                  ? costCurrencies.length + effortUnits.length
+                  : '—'}
+              </strong>
+              <small>
+                {canViewInitiatives
+                  ? `${costCurrencies.length} moeda(s) · ${effortUnits.length} unidade(s) de esforço`
+                  : 'domínio não autorizado para este usuário'}
+              </small>
             </article>
           </div>
 
@@ -454,20 +500,24 @@ export function MonitoringSection({
             initiativeRows={initiativeTemporal}
             events={events}
             referenceDate={projection.referenceDate}
+            journeyVisible={canViewJourney}
+            initiativesVisible={canViewInitiatives}
             onOpenJourney={onOpenJourney}
             onOpenInitiatives={onOpenInitiatives}
           />
 
-          <ManagementExecutionMatrix
-            actions={actionBoard}
-            temporalRows={initiativeTemporal}
-            allocations={allocations}
-            capacityRows={capacityRows}
-            capacityVisible={
-              projection.capacity?.visible !== false
-            }
-            onOpenInitiatives={onOpenInitiatives}
-          />
+          {canViewInitiatives ? (
+            <ManagementExecutionMatrix
+              actions={actionBoard}
+              temporalRows={initiativeTemporal}
+              allocations={allocations}
+              capacityRows={capacityRows}
+              capacityVisible={
+                projection.capacity?.visible === true
+              }
+              onOpenInitiatives={onOpenInitiatives}
+            />
+          ) : null}
 
           {economicInitiative && economicDirect ? (
             <article className="skpe-monitoring-economic">
