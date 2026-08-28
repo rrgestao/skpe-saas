@@ -6632,7 +6632,7 @@ export function SkpeCockpit({
   const canManageJourney = capabilities?.can_manage_journey ?? legacyCanManageJourney
   const canManageInitiatives =
     capabilities?.can_manage_initiatives ??
-    legacyCanManageJourney
+    (isOrganizationAdmin || isPlatformSuperAdmin)
   const canManageArtifacts = capabilities?.can_manage_artifacts ?? legacyCanManageJourney
   const canManageUsers = mode === 'organization-admin'
     ? isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator'
