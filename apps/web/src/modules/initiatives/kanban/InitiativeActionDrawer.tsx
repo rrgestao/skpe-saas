@@ -332,6 +332,10 @@ export function InitiativeActionDrawer({
     responsibilityAssignmentReason.trim().length > 0 ||
     responsibilityChangeReason.trim().length > 0
 
+  const progressDraftDirty =
+    progress !== String(card.officialProgress) ||
+    changeReason.trim().length > 0
+
   const saving =
     savingProgress ||
     savingEconomics ||
@@ -344,18 +348,27 @@ export function InitiativeActionDrawer({
   const capacityAllocationCreationLocked =
     saving ||
     editingCapacityAllocationId !== null ||
-    responsibilityAssignmentDraftDirty
+    responsibilityAssignmentDraftDirty ||
+    progressDraftDirty
 
   const responsibilityAssignmentLocked =
     saving ||
     editingCapacityAllocationId !== null ||
-    capacityAllocationCreationDraftDirty
+    capacityAllocationCreationDraftDirty ||
+    progressDraftDirty
+
+  const progressUpdateLocked =
+    saving ||
+    editingCapacityAllocationId !== null ||
+    capacityAllocationCreationDraftDirty ||
+    responsibilityAssignmentDraftDirty
 
   const otherMutationLocked =
     saving ||
     editingCapacityAllocationId !== null ||
     capacityAllocationCreationDraftDirty ||
-    responsibilityAssignmentDraftDirty
+    responsibilityAssignmentDraftDirty ||
+    progressDraftDirty
 
   const closeLocked = otherMutationLocked
 
@@ -608,6 +621,12 @@ export function InitiativeActionDrawer({
     setResponsibilityValidUntil('')
     setResponsibilityAssignmentReason('')
     setResponsibilityChangeReason('')
+    setErrorMessage(null)
+  }
+
+  function resetProgressDraft() {
+    setProgress(String(card.officialProgress))
+    setChangeReason('')
     setErrorMessage(null)
   }
 
@@ -1370,6 +1389,7 @@ export function InitiativeActionDrawer({
                               saving ||
                               capacityAllocationCreationDraftDirty ||
                               responsibilityAssignmentDraftDirty ||
+                              progressDraftDirty ||
                               (editingCapacityAllocationId !== null &&
                                 editingCapacityAllocationId !==
                                   allocation.allocationId)
@@ -2054,7 +2074,7 @@ export function InitiativeActionDrawer({
                         event.target.value,
                       )
                     }
-                    disabled={saving}
+                    disabled={progressUpdateLocked}
                   />
                 </label>
 
@@ -2070,16 +2090,31 @@ export function InitiativeActionDrawer({
                         event.target.value,
                       )
                     }
-                    disabled={saving}
+                    disabled={progressUpdateLocked}
                   />
                 </label>
+
+                {progressDraftDirty ? (
+                  <p className="initiative-action-drawer__note">
+                    Salve ou descarte o rascunho de progresso antes de
+                    executar outra alteração ou fechar esta janela.
+                  </p>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={resetProgressDraft}
+                  disabled={progressUpdateLocked || !progressDraftDirty}
+                >
+                  Descartar progresso
+                </button>
 
                 <button
                   type="button"
                   onClick={() =>
                     void handleProgressUpdate()
                   }
-                  disabled={otherMutationLocked}
+                  disabled={progressUpdateLocked}
                 >
                   {savingProgress
                     ? 'Salvando...'
@@ -2118,7 +2153,9 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving || !economicsEditable
+                  saving ||
+                  progressDraftDirty ||
+                  !economicsEditable
                 }
               />
             </label>
@@ -2136,7 +2173,9 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving || !economicsEditable
+                  saving ||
+                  progressDraftDirty ||
+                  !economicsEditable
                 }
               />
             </label>
@@ -2154,7 +2193,9 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving || !economicsEditable
+                  saving ||
+                  progressDraftDirty ||
+                  !economicsEditable
                 }
               />
             </label>
@@ -2172,7 +2213,9 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving || !economicsEditable
+                  saving ||
+                  progressDraftDirty ||
+                  !economicsEditable
                 }
               />
             </label>
@@ -2190,7 +2233,9 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving || !economicsEditable
+                  saving ||
+                  progressDraftDirty ||
+                  !economicsEditable
                 }
               />
             </label>
@@ -2205,7 +2250,9 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving || !economicsEditable
+                  saving ||
+                  progressDraftDirty ||
+                  !economicsEditable
                 }
               >
                 <option value="">
@@ -2244,7 +2291,7 @@ export function InitiativeActionDrawer({
                         event.target.value,
                       )
                     }
-                    disabled={saving}
+                    disabled={saving || progressDraftDirty}
                   />
                 </label>
 
