@@ -169,6 +169,7 @@ export function InitiativeKanbanBoard({
           <InitiativeKanbanColumn
             key={column.status}
             column={column}
+            canManageInitiatives={canManageInitiatives}
             draggingCard={draggingCard}
             onOpenCard={setSelectedCard}
             onDragStart={setDraggingCard}
@@ -185,6 +186,7 @@ export function InitiativeKanbanBoard({
       {selectedCard ? (
         <InitiativeActionDrawer
           card={selectedCard}
+          canManageInitiatives={canManageInitiatives}
           onClose={() =>
             setSelectedCard(null)
           }
@@ -195,6 +197,7 @@ export function InitiativeKanbanBoard({
       {pendingTransition ? (
         <InitiativeLifecycleDialog
           card={pendingTransition.card}
+          canManageInitiatives={canManageInitiatives}
           requestedStatus={
             pendingTransition.targetStatus
           }

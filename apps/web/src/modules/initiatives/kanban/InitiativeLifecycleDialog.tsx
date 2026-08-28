@@ -16,6 +16,7 @@ import {
 
 type InitiativeLifecycleDialogProps = {
   card: InitiativeKanbanCardModel
+  canManageInitiatives: boolean
   requestedStatus?: InitiativeActionLifecycle | null
   onClose: () => void
   onChanged: () => Promise<void>
@@ -23,6 +24,7 @@ type InitiativeLifecycleDialogProps = {
 
 export function InitiativeLifecycleDialog({
   card,
+  canManageInitiatives,
   requestedStatus = null,
   onClose,
   onChanged,
@@ -75,6 +77,13 @@ export function InitiativeLifecycleDialog({
   }, [onClose, saving])
 
   async function handleSubmit() {
+    if (!canManageInitiatives) {
+      setErrorMessage(
+        'Você não possui permissão para alterar o lifecycle desta ação.',
+      )
+      return
+    }
+
     const reason = changeReason.trim()
 
     if (reason.length < 10) {
@@ -157,6 +166,13 @@ export function InitiativeLifecycleDialog({
           {card.code} — {card.name}
         </p>
 
+        {!canManageInitiatives ? (
+          <p className="initiative-action-drawer__note">
+            Modo de consulta. Alterar o lifecycle exige permissão de gestão
+            de iniciativas.
+          </p>
+        ) : null}
+
         {transitions.length === 0 ? (
           <p>
             Não há transições disponíveis para esta ação.
@@ -194,7 +210,7 @@ export function InitiativeLifecycleDialog({
                     .value as InitiativeActionLifecycle,
                 )
               }
-              disabled={saving}
+              disabled={saving || !canManageInitiatives}
             >
               {transitions.map((status) => (
                 <option
@@ -224,7 +240,7 @@ export function InitiativeLifecycleDialog({
                   event.target.value,
                 )
               }
-              disabled={saving}
+              disabled={saving || !canManageInitiatives}
               rows={4}
             />
           </label>
@@ -253,6 +269,7 @@ export function InitiativeLifecycleDialog({
             onClick={() => void handleSubmit()}
             disabled={
               saving ||
+              !canManageInitiatives ||
               transitions.length === 0
             }
           >

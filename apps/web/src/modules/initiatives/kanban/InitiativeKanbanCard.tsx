@@ -7,6 +7,7 @@ import {
 
 type InitiativeKanbanCardProps = {
   card: InitiativeKanbanCardModel
+  canManageInitiatives: boolean
   onOpen: (
     card: InitiativeKanbanCardModel,
   ) => void
@@ -76,6 +77,7 @@ function formatDirectEffort(
 
 export function InitiativeKanbanCard({
   card,
+  canManageInitiatives,
   onOpen,
   onDragStart,
   onDragEnd,
@@ -99,8 +101,13 @@ export function InitiativeKanbanCard({
       className="initiative-kanban-card"
       data-status={card.status}
       data-action-id={card.actionId}
-      draggable
+      draggable={canManageInitiatives}
       onDragStart={(event) => {
+        if (!canManageInitiatives) {
+          event.preventDefault()
+          return
+        }
+
         event.dataTransfer.effectAllowed = 'move'
         event.dataTransfer.setData(
           'text/plain',

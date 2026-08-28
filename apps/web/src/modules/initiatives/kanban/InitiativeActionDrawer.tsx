@@ -49,6 +49,7 @@ import { loadInitiativeActionCapacityManagementPermission } from '../data/initia
 
 type InitiativeActionDrawerProps = {
   card: InitiativeKanbanCardModel
+  canManageInitiatives: boolean
   onClose: () => void
   onChanged: () => Promise<void>
 }
@@ -82,6 +83,7 @@ function numberToInputValue(
 
 export function InitiativeActionDrawer({
   card,
+  canManageInitiatives,
   onClose,
   onChanged,
 }: InitiativeActionDrawerProps) {
@@ -299,11 +301,13 @@ export function InitiativeActionDrawer({
   ] = useState<string | null>(null)
 
   const progressEditable =
+    canManageInitiatives &&
     canUpdateInitiativeActionProgress(
       card.status,
     )
 
   const economicsEditable =
+    canManageInitiatives &&
     canUpdateInitiativeActionEconomics(
       card.status,
     )
@@ -312,6 +316,10 @@ export function InitiativeActionDrawer({
     canManageInitiativeActionResponsibilities(
       card.status,
     )
+
+  const canManageResponsibilities =
+    canManageInitiatives &&
+    responsibilitiesManageable
 
   const capacityAllocationCreationDraftDirty =
     selectedOrganizationPersonId !== '' &&
@@ -880,9 +888,11 @@ export function InitiativeActionDrawer({
   }
 
   async function handleAssignResponsibility() {
-    if (!responsibilitiesManageable) {
+    if (!canManageResponsibilities) {
       setErrorMessage(
-        'Não é possível atribuir novas responsabilidades a uma ação encerrada.',
+        !canManageInitiatives
+          ? 'Você não possui permissão para gerenciar responsabilidades desta ação.'
+          : 'Não é possível atribuir novas responsabilidades a uma ação encerrada.',
       )
       return
     }
@@ -1290,7 +1300,7 @@ export function InitiativeActionDrawer({
                         </small>
                       ) : null}
 
-                      {responsibilitiesManageable ? (
+                      {canManageResponsibilities ? (
                         <button
                           type="button"
                           onClick={() =>
@@ -1524,6 +1534,15 @@ export function InitiativeActionDrawer({
             {responsibilitiesManageable ? (
               <>
                 <h4>Atribuir responsabilidade</h4>
+
+                {!canManageInitiatives ? (
+                  <p className="initiative-action-drawer__note">
+                    Esta ação está em modo de consulta para responsabilidades,
+                    progresso, execução econômica e lifecycle. A gestão de
+                    capacidade permanece sujeita à permissão específica de
+                    pessoas/capacidade.
+                  </p>
+                ) : null}
 
                 {responsibilityReferenceLoading ? (
                   <p>
@@ -1890,7 +1909,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={responsibilityAssignmentLocked}
+                        disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                       >
                         <option value="">
                           Selecione
@@ -1923,7 +1942,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={responsibilityAssignmentLocked}
+                        disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -1938,7 +1957,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={responsibilityAssignmentLocked}
+                        disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                       >
                         <option value="">
                           Não definido
@@ -1968,7 +1987,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={responsibilityAssignmentLocked}
+                        disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -1984,7 +2003,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={responsibilityAssignmentLocked}
+                        disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -2002,7 +2021,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={responsibilityAssignmentLocked}
+                        disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -2020,7 +2039,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={responsibilityAssignmentLocked}
+                        disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                       />
                     </label>
 
@@ -2049,7 +2068,7 @@ export function InitiativeActionDrawer({
                       onClick={() =>
                         void handleAssignResponsibility()
                       }
-                      disabled={responsibilityAssignmentLocked}
+                      disabled={!canManageInitiatives || responsibilityAssignmentLocked}
                     >
                       {savingResponsibility
                         ? 'Atribuindo...'
@@ -2075,12 +2094,22 @@ export function InitiativeActionDrawer({
               governada é obrigatória.
             </p>
 
+            {!canManageInitiatives ? (
+              <p className="initiative-action-drawer__note">
+                Você possui acesso de consulta; alterar o lifecycle exige
+                permissão de gestão de iniciativas.
+              </p>
+            ) : null}
+
             <button
               type="button"
               onClick={() =>
                 setShowLifecycle(true)
               }
-              disabled={otherMutationLocked}
+              disabled={
+                !canManageInitiatives ||
+                otherMutationLocked
+              }
             >
               Alterar situação
             </button>
@@ -2155,9 +2184,9 @@ export function InitiativeActionDrawer({
               </>
             ) : (
               <p>
-                O progresso só pode ser atualizado
-                quando a ação estiver em execução,
-                em espera ou bloqueada.
+                {!canManageInitiatives
+                  ? 'Você possui acesso de consulta; atualizar o progresso exige permissão de gestão de iniciativas.'
+                  : 'O progresso só pode ser atualizado quando a ação estiver em execução, em espera ou bloqueada.'}
               </p>
             )}
           </section>
@@ -2350,9 +2379,9 @@ export function InitiativeActionDrawer({
               </>
             ) : (
               <p>
-                A execução econômica fica somente
-                para consulta quando a ação estiver
-                concluída, cancelada ou arquivada.
+                {!canManageInitiatives
+                  ? 'Você possui acesso de consulta; atualizar a execução econômica exige permissão de gestão de iniciativas.'
+                  : 'A execução econômica fica somente para consulta quando a ação estiver concluída, cancelada ou arquivada.'}
               </p>
             )}
           </section>
@@ -2379,6 +2408,7 @@ export function InitiativeActionDrawer({
       {showLifecycle ? (
         <InitiativeLifecycleDialog
           card={card}
+          canManageInitiatives={canManageInitiatives}
           onClose={() =>
             setShowLifecycle(false)
           }

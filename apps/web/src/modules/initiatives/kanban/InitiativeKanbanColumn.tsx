@@ -10,6 +10,7 @@ import { InitiativeKanbanCard } from './InitiativeKanbanCard'
 
 type InitiativeKanbanColumnProps = {
   column: InitiativeKanbanColumnModel
+  canManageInitiatives: boolean
   draggingCard: InitiativeKanbanCardModel | null
   onOpenCard: (
     card: InitiativeKanbanCardModel,
@@ -26,6 +27,7 @@ type InitiativeKanbanColumnProps = {
 
 export function InitiativeKanbanColumn({
   column,
+  canManageInitiatives,
   draggingCard,
   onOpenCard,
   onDragStart,
@@ -36,6 +38,7 @@ export function InitiativeKanbanColumn({
     useState(false)
 
   const canDrop =
+    canManageInitiatives &&
     draggingCard !== null &&
     draggingCard.status !== column.status &&
     canTransitionInitiativeActionTo(
@@ -102,6 +105,7 @@ export function InitiativeKanbanColumn({
             <InitiativeKanbanCard
               key={card.actionId}
               card={card}
+              canManageInitiatives={canManageInitiatives}
               onOpen={onOpenCard}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
