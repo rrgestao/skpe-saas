@@ -43,6 +43,9 @@ import {
 import {
   InitiativeLifecycleDialog,
 } from './InitiativeLifecycleDialog'
+import {
+  getInitiativeActionDraftLocks,
+} from '../contracts/initiativeActionDraftGovernance'
 import { InitiativeActionCapacityAuditHistory } from './InitiativeActionCapacityAuditHistory'
 import { InitiativeActionCapacityAllocationEditForm } from './InitiativeActionCapacityAllocationEditForm'
 import { loadInitiativeActionCapacityManagementPermission } from '../data/initiativeActionCapacityPermissionData'
@@ -362,43 +365,22 @@ export function InitiativeActionDrawer({
     transitioningAllocationId !== null ||
     endingAssignmentId !== null
 
-  const capacityAllocationCreationLocked =
-    saving ||
-    editingCapacityAllocationId !== null ||
-    responsibilityAssignmentDraftDirty ||
-    progressDraftDirty ||
-    economicsDraftDirty
-
-  const responsibilityAssignmentLocked =
-    saving ||
-    editingCapacityAllocationId !== null ||
-    capacityAllocationCreationDraftDirty ||
-    progressDraftDirty ||
-    economicsDraftDirty
-
-  const progressUpdateLocked =
-    saving ||
-    editingCapacityAllocationId !== null ||
-    capacityAllocationCreationDraftDirty ||
-    responsibilityAssignmentDraftDirty ||
-    economicsDraftDirty
-
-  const economicsUpdateLocked =
-    saving ||
-    editingCapacityAllocationId !== null ||
-    capacityAllocationCreationDraftDirty ||
-    responsibilityAssignmentDraftDirty ||
-    progressDraftDirty
-
-  const otherMutationLocked =
-    saving ||
-    editingCapacityAllocationId !== null ||
-    capacityAllocationCreationDraftDirty ||
-    responsibilityAssignmentDraftDirty ||
-    progressDraftDirty ||
-    economicsDraftDirty
-
-  const closeLocked = otherMutationLocked
+  const {
+    capacityAllocationCreationLocked,
+    responsibilityAssignmentLocked,
+    progressUpdateLocked,
+    economicsUpdateLocked,
+    otherMutationLocked,
+    closeLocked,
+  } = getInitiativeActionDraftLocks({
+    saving,
+    editingCapacityAllocation:
+      editingCapacityAllocationId !== null,
+    capacityAllocationCreationDraftDirty,
+    responsibilityAssignmentDraftDirty,
+    progressDraftDirty,
+    economicsDraftDirty,
+  })
 
   useEffect(() => {
     let active = true

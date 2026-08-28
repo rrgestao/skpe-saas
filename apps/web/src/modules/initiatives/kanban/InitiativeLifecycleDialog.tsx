@@ -13,6 +13,9 @@ import {
 import {
   transitionInitiativeAction,
 } from '../data/initiativeActionsData'
+import {
+  isInitiativeActionLifecycleDraftDirty,
+} from '../contracts/initiativeActionDraftGovernance'
 
 type InitiativeLifecycleDialogProps = {
   card: InitiativeKanbanCardModel
@@ -57,9 +60,12 @@ export function InitiativeLifecycleDialog({
     requestedStatus !== null
 
   const draftDirty =
-    changeReason.trim().length > 0 ||
-    (!isDropConfirmation &&
-      targetStatus !== defaultStatus)
+    isInitiativeActionLifecycleDraftDirty(
+      isDropConfirmation,
+      targetStatus,
+      defaultStatus,
+      changeReason,
+    )
 
   const closeLocked = saving || draftDirty
 

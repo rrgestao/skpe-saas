@@ -10,6 +10,9 @@ import {
 import {
   createInitiativeAction,
 } from '../data/initiativeActionsData'
+import {
+  isInitiativeActionCreateDraftDirty,
+} from '../contracts/initiativeActionDraftGovernance'
 
 type InitiativeActionCreateDialogProps = {
   initiativeId: string
@@ -37,12 +40,14 @@ export function InitiativeActionCreateDialog({
     useState<string | null>(null)
 
   const draftDirty =
-    code.trim().length > 0 ||
-    name.trim().length > 0 ||
-    description.trim().length > 0 ||
-    actionType !== 'action' ||
-    priority !== 'medium' ||
-    changeReason.trim().length > 0
+    isInitiativeActionCreateDraftDirty({
+      code,
+      name,
+      description,
+      actionType,
+      priority,
+      changeReason,
+    })
 
   const closeLocked = saving || draftDirty
 
