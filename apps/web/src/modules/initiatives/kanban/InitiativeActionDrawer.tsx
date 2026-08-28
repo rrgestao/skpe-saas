@@ -313,6 +313,16 @@ export function InitiativeActionDrawer({
       card.status,
     )
 
+  const capacityAllocationCreationDraftDirty =
+    selectedOrganizationPersonId !== '' &&
+    (allocationCapacityPeriodId !== '' ||
+      capacityAllocationStart !== '' ||
+      capacityAllocationEnd !== '' ||
+      capacityAllocatedAmount !== '' ||
+      capacityAllocationStatus !== 'planned' ||
+      capacityAllocationNotes.trim().length > 0 ||
+      capacityAllocationChangeReason.trim().length > 0)
+
   const saving =
     savingProgress ||
     savingEconomics ||
@@ -322,8 +332,12 @@ export function InitiativeActionDrawer({
     transitioningAllocationId !== null ||
     endingAssignmentId !== null
 
-  const otherMutationLocked =
+  const capacityAllocationCreationLocked =
     saving || editingCapacityAllocationId !== null
+
+  const otherMutationLocked =
+    capacityAllocationCreationLocked ||
+    capacityAllocationCreationDraftDirty
 
   const closeLocked = otherMutationLocked
 
@@ -556,6 +570,17 @@ export function InitiativeActionDrawer({
     card.plannedStartDate,
     selectedOrganizationPersonId,
   ])
+
+  function resetCapacityAllocationCreationDraft() {
+    setAllocationCapacityPeriodId('')
+    setCapacityAllocationStart('')
+    setCapacityAllocationEnd('')
+    setCapacityAllocatedAmount('')
+    setCapacityAllocationStatus('planned')
+    setCapacityAllocationNotes('')
+    setCapacityAllocationChangeReason('')
+    setErrorMessage(null)
+  }
 
   function handleCapacityPeriodSelection(
     capacityPeriodId: string,
@@ -1314,6 +1339,7 @@ export function InitiativeActionDrawer({
                             allocation={allocation}
                             disabled={
                               saving ||
+                              capacityAllocationCreationDraftDirty ||
                               (editingCapacityAllocationId !== null &&
                                 editingCapacityAllocationId !==
                                   allocation.allocationId)
@@ -1441,7 +1467,7 @@ export function InitiativeActionDrawer({
                             event.target.value,
                           )
                         }
-                        disabled={saving}
+                        disabled={otherMutationLocked}
                       >
                         <option value="">
                           Selecione
@@ -1573,7 +1599,7 @@ export function InitiativeActionDrawer({
                                     event.target.value,
                                   )
                                 }
-                                disabled={saving}
+                                disabled={capacityAllocationCreationLocked}
                               >
                                 <option value="">
                                   Selecione
@@ -1622,7 +1648,7 @@ export function InitiativeActionDrawer({
                                         event.target.value,
                                       )
                                     }
-                                    disabled={saving}
+                                    disabled={capacityAllocationCreationLocked}
                                   />
                                 </label>
 
@@ -1640,7 +1666,7 @@ export function InitiativeActionDrawer({
                                         event.target.value,
                                       )
                                     }
-                                    disabled={saving}
+                                    disabled={capacityAllocationCreationLocked}
                                   />
                                 </label>
 
@@ -1660,7 +1686,7 @@ export function InitiativeActionDrawer({
                                         event.target.value,
                                       )
                                     }
-                                    disabled={saving}
+                                    disabled={capacityAllocationCreationLocked}
                                   />
                                 </label>
 
@@ -1679,7 +1705,7 @@ export function InitiativeActionDrawer({
                                           | 'active',
                                       )
                                     }
-                                    disabled={saving}
+                                    disabled={capacityAllocationCreationLocked}
                                   >
                                     <option value="planned">
                                       Planejada
@@ -1702,7 +1728,7 @@ export function InitiativeActionDrawer({
                                         event.target.value,
                                       )
                                     }
-                                    disabled={saving}
+                                    disabled={capacityAllocationCreationLocked}
                                   />
                                 </label>
 
@@ -1720,7 +1746,7 @@ export function InitiativeActionDrawer({
                                         event.target.value,
                                       )
                                     }
-                                    disabled={saving}
+                                    disabled={capacityAllocationCreationLocked}
                                   />
                                 </label>
 
@@ -1731,12 +1757,32 @@ export function InitiativeActionDrawer({
                                   na projeção após o registro.
                                 </p>
 
+                                {capacityAllocationCreationDraftDirty ? (
+                                  <p>
+                                    Este rascunho está vinculado à pessoa e ao
+                                    período selecionados. Registre ou descarte
+                                    antes de trocar contexto, editar outra
+                                    alocação, executar outra alteração ou fechar.
+                                  </p>
+                                ) : null}
+
+                                <button
+                                  type="button"
+                                  onClick={resetCapacityAllocationCreationDraft}
+                                  disabled={
+                                    capacityAllocationCreationLocked ||
+                                    !capacityAllocationCreationDraftDirty
+                                  }
+                                >
+                                  Descartar alocação
+                                </button>
+
                                 <button
                                   type="button"
                                   onClick={() =>
                                     void handleCreateCapacityAllocation()
                                   }
-                                  disabled={otherMutationLocked}
+                                  disabled={capacityAllocationCreationLocked}
                                 >
                                   {savingCapacityAllocation
                                     ? 'Alocando...'
