@@ -39,6 +39,8 @@ type Organization = {
   source_organization_name: string | null
   hierarchy_depth: number | null
   can_manage_organization: boolean
+  cooperative_branch: string | null
+  logo_storage_path: string | null
 }
 
 type OrganizationHierarchyNode = {
@@ -1686,10 +1688,15 @@ function App() {
             </p>
           </div>
 
-          <h1>
-            {forgotPasswordMode
-              ? 'Recuperar acesso'
-              : 'Gestão Integrada das Organizações'}
+          <h1 className="login-title">
+            {forgotPasswordMode ? (
+              'Recuperar acesso'
+            ) : (
+              <>
+                <span>Gestão Integrada das</span>
+                <span>Organizações</span>
+              </>
+            )}
           </h1>
 
           <p className="supporting-text">
@@ -1865,6 +1872,7 @@ function App() {
               selectedOrganization?.legal_name ??
               null
             }
+          logoStoragePath={selectedOrganization?.logo_storage_path ?? null}
           />
         </div>
         <div className="user-area">
@@ -2354,7 +2362,7 @@ function App() {
                           <span className="organization-hierarchy-branch" aria-hidden="true">{depth > 0 ? '└─' : '●'}</span>
                           <div className="organization-hierarchy-main">
                             <strong>{organization.trade_name ?? organization.legal_name}</strong>
-                            <small>{organization.organization_code}</small>
+                            <small>{organization.cooperative_branch ?? 'Ramo não informado'}</small>
                           </div>
                           <span>{getOrganizationLevelLabel(organization.organization_level)}</span>
                           <span>Tipo de acesso: {accessType}</span>
@@ -2387,9 +2395,7 @@ function App() {
                       <div className="organization-card-header">
                         <div>
                           <p className="organization-code">
-                            {
-                              organization.organization_code
-                            }
+                            {organization.cooperative_branch ?? 'Ramo não informado'}
                           </p>
 
                           <h2>
@@ -2423,6 +2429,7 @@ function App() {
                             organization.trade_name ??
                             organization.legal_name
                           }
+                        logoStoragePath={organization.logo_storage_path}
                         />
                       </div>
 
