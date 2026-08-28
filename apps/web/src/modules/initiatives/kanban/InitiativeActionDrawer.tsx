@@ -322,8 +322,10 @@ export function InitiativeActionDrawer({
     transitioningAllocationId !== null ||
     endingAssignmentId !== null
 
-  const closeLocked =
+  const otherMutationLocked =
     saving || editingCapacityAllocationId !== null
+
+  const closeLocked = otherMutationLocked
 
   useEffect(() => {
     let active = true
@@ -1192,7 +1194,7 @@ export function InitiativeActionDrawer({
                               responsibility.assignmentId,
                             )
                           }
-                          disabled={saving}
+                          disabled={otherMutationLocked}
                         >
                           {endingAssignmentId ===
                           responsibility.assignmentId
@@ -1207,6 +1209,13 @@ export function InitiativeActionDrawer({
             )}
 
             <h4>Alocações de capacidade da ação</h4>
+
+            {editingCapacityAllocationId !== null ? (
+              <p className="initiative-action-drawer__note">
+                Conclua ou cancele a edição da alocação em andamento
+                antes de executar outra alteração nesta ação.
+              </p>
+            ) : null}
 
             {capacityManagementPermissionLoading ? (
               <p>Verificando permissão de gestão de capacidade...</p>
@@ -1339,11 +1348,7 @@ export function InitiativeActionDrawer({
                         ) ? (
                           <button
                             type="button"
-                            disabled={
-                              saving ||
-                              editingCapacityAllocationId ===
-                                allocation.allocationId
-                            }
+                            disabled={otherMutationLocked}
                             onClick={() =>
                               void handleCapacityAllocationTransition(
                                 allocation,
@@ -1365,11 +1370,7 @@ export function InitiativeActionDrawer({
                         ) ? (
                           <button
                             type="button"
-                            disabled={
-                              saving ||
-                              editingCapacityAllocationId ===
-                                allocation.allocationId
-                            }
+                            disabled={otherMutationLocked}
                             onClick={() =>
                               void handleCapacityAllocationTransition(
                                 allocation,
@@ -1391,11 +1392,7 @@ export function InitiativeActionDrawer({
                         ) ? (
                           <button
                             type="button"
-                            disabled={
-                              saving ||
-                              editingCapacityAllocationId ===
-                                allocation.allocationId
-                            }
+                            disabled={otherMutationLocked}
                             onClick={() =>
                               void handleCapacityAllocationTransition(
                                 allocation,
@@ -1739,7 +1736,7 @@ export function InitiativeActionDrawer({
                                   onClick={() =>
                                     void handleCreateCapacityAllocation()
                                   }
-                                  disabled={saving}
+                                  disabled={otherMutationLocked}
                                 >
                                   {savingCapacityAllocation
                                     ? 'Alocando...'
@@ -1904,7 +1901,7 @@ export function InitiativeActionDrawer({
                       onClick={() =>
                         void handleAssignResponsibility()
                       }
-                      disabled={saving}
+                      disabled={otherMutationLocked}
                     >
                       {savingResponsibility
                         ? 'Atribuindo...'
@@ -1935,7 +1932,7 @@ export function InitiativeActionDrawer({
               onClick={() =>
                 setShowLifecycle(true)
               }
-              disabled={saving}
+              disabled={otherMutationLocked}
             >
               Alterar situação
             </button>
@@ -1986,7 +1983,7 @@ export function InitiativeActionDrawer({
                   onClick={() =>
                     void handleProgressUpdate()
                   }
-                  disabled={saving}
+                  disabled={otherMutationLocked}
                 >
                   {savingProgress
                     ? 'Salvando...'
@@ -2160,7 +2157,7 @@ export function InitiativeActionDrawer({
                   onClick={() =>
                     void handleEconomicsUpdate()
                   }
-                  disabled={saving}
+                  disabled={otherMutationLocked}
                 >
                   {savingEconomics
                     ? 'Salvando...'
