@@ -336,6 +336,15 @@ export function InitiativeActionDrawer({
     progress !== String(card.officialProgress) ||
     changeReason.trim().length > 0
 
+  const economicsDraftDirty =
+    plannedCost !== numberToInputValue(card.plannedCost) ||
+    actualCost !== numberToInputValue(card.actualCost) ||
+    currencyCode !== card.currencyCode ||
+    estimatedEffort !== numberToInputValue(card.estimatedEffort) ||
+    actualEffort !== numberToInputValue(card.actualEffort) ||
+    effortUnit !== (card.effortUnit ?? '') ||
+    economicChangeReason.trim().length > 0
+
   const saving =
     savingProgress ||
     savingEconomics ||
@@ -349,26 +358,37 @@ export function InitiativeActionDrawer({
     saving ||
     editingCapacityAllocationId !== null ||
     responsibilityAssignmentDraftDirty ||
-    progressDraftDirty
+    progressDraftDirty ||
+    economicsDraftDirty
 
   const responsibilityAssignmentLocked =
     saving ||
     editingCapacityAllocationId !== null ||
     capacityAllocationCreationDraftDirty ||
-    progressDraftDirty
+    progressDraftDirty ||
+    economicsDraftDirty
 
   const progressUpdateLocked =
     saving ||
     editingCapacityAllocationId !== null ||
     capacityAllocationCreationDraftDirty ||
-    responsibilityAssignmentDraftDirty
+    responsibilityAssignmentDraftDirty ||
+    economicsDraftDirty
+
+  const economicsUpdateLocked =
+    saving ||
+    editingCapacityAllocationId !== null ||
+    capacityAllocationCreationDraftDirty ||
+    responsibilityAssignmentDraftDirty ||
+    progressDraftDirty
 
   const otherMutationLocked =
     saving ||
     editingCapacityAllocationId !== null ||
     capacityAllocationCreationDraftDirty ||
     responsibilityAssignmentDraftDirty ||
-    progressDraftDirty
+    progressDraftDirty ||
+    economicsDraftDirty
 
   const closeLocked = otherMutationLocked
 
@@ -627,6 +647,17 @@ export function InitiativeActionDrawer({
   function resetProgressDraft() {
     setProgress(String(card.officialProgress))
     setChangeReason('')
+    setErrorMessage(null)
+  }
+
+  function resetEconomicsDraft() {
+    setPlannedCost(numberToInputValue(card.plannedCost))
+    setActualCost(numberToInputValue(card.actualCost))
+    setCurrencyCode(card.currencyCode)
+    setEstimatedEffort(numberToInputValue(card.estimatedEffort))
+    setActualEffort(numberToInputValue(card.actualEffort))
+    setEffortUnit(card.effortUnit ?? '')
+    setEconomicChangeReason('')
     setErrorMessage(null)
   }
 
@@ -1390,6 +1421,7 @@ export function InitiativeActionDrawer({
                               capacityAllocationCreationDraftDirty ||
                               responsibilityAssignmentDraftDirty ||
                               progressDraftDirty ||
+                              economicsDraftDirty ||
                               (editingCapacityAllocationId !== null &&
                                 editingCapacityAllocationId !==
                                   allocation.allocationId)
@@ -2153,8 +2185,7 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving ||
-                  progressDraftDirty ||
+                  economicsUpdateLocked ||
                   !economicsEditable
                 }
               />
@@ -2173,8 +2204,7 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving ||
-                  progressDraftDirty ||
+                  economicsUpdateLocked ||
                   !economicsEditable
                 }
               />
@@ -2193,8 +2223,7 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving ||
-                  progressDraftDirty ||
+                  economicsUpdateLocked ||
                   !economicsEditable
                 }
               />
@@ -2213,8 +2242,7 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving ||
-                  progressDraftDirty ||
+                  economicsUpdateLocked ||
                   !economicsEditable
                 }
               />
@@ -2233,8 +2261,7 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving ||
-                  progressDraftDirty ||
+                  economicsUpdateLocked ||
                   !economicsEditable
                 }
               />
@@ -2250,8 +2277,7 @@ export function InitiativeActionDrawer({
                   )
                 }
                 disabled={
-                  saving ||
-                  progressDraftDirty ||
+                  economicsUpdateLocked ||
                   !economicsEditable
                 }
               >
@@ -2291,16 +2317,31 @@ export function InitiativeActionDrawer({
                         event.target.value,
                       )
                     }
-                    disabled={saving || progressDraftDirty}
+                    disabled={economicsUpdateLocked}
                   />
                 </label>
+
+                {economicsDraftDirty ? (
+                  <p className="initiative-action-drawer__note">
+                    Salve ou descarte o rascunho econômico antes de
+                    executar outra alteração ou fechar esta janela.
+                  </p>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={resetEconomicsDraft}
+                  disabled={economicsUpdateLocked || !economicsDraftDirty}
+                >
+                  Descartar execução econômica
+                </button>
 
                 <button
                   type="button"
                   onClick={() =>
                     void handleEconomicsUpdate()
                   }
-                  disabled={otherMutationLocked}
+                  disabled={economicsUpdateLocked}
                 >
                   {savingEconomics
                     ? 'Salvando...'
