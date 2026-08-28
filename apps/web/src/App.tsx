@@ -16,6 +16,7 @@ import {
 import { PlatformAdmin } from './modules/platform-admin/PlatformAdmin'
 import { OrganizationBrandingLogo } from './components/organization-branding/OrganizationBrandingLogo'
 import { UserProfileDialog } from './components/user-profile/UserProfileDialog'
+import { sortOrganizationsHierarchically } from './lib/organizationHierarchy'
 
 import './App.css'
 
@@ -516,49 +517,16 @@ function App() {
   }, [organizations, organizationSearch, organizationSortDirection])
 
   const hierarchicalVisibleOrganizations = useMemo(() => {
-    if (organizationHierarchy.length === 0) {
-      return visibleOrganizations
-    }
-
-    const hierarchyByOrganization = new Map(
-      organizationHierarchy.map((node) => [
-        node.organization_id,
-        node,
-      ]),
+    return sortOrganizationsHierarchically(
+      visibleOrganizations,
+      organizationHierarchy,
+      organizationSortDirection,
     )
-
-    return [...visibleOrganizations].sort((first, second) => {
-      const firstNode = hierarchyByOrganization.get(
-        first.organization_id,
-      )
-      const secondNode = hierarchyByOrganization.get(
-        second.organization_id,
-      )
-
-      const firstPath = firstNode?.hierarchy_path.join('/') ?? first.organization_id
-      const secondPath = secondNode?.hierarchy_path.join('/') ?? second.organization_id
-
-      const pathComparison = firstPath.localeCompare(
-        secondPath,
-        'pt-BR',
-      )
-
-      if (pathComparison !== 0) {
-        return pathComparison
-      }
-
-      const firstName =
-        first.trade_name ??
-        first.legal_name ??
-        first.organization_code
-      const secondName =
-        second.trade_name ??
-        second.legal_name ??
-        second.organization_code
-
-      return firstName.localeCompare(secondName, 'pt-BR')
-    })
-  }, [organizationHierarchy, visibleOrganizations])
+  }, [
+    organizationHierarchy,
+    organizationSortDirection,
+    visibleOrganizations,
+  ])
 
 
   const [modules, setModules] =
