@@ -1,0 +1,154 @@
+.skpe-journey-status-dialog-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(18 34 29 / 48%);
+}
+
+.skpe-journey-status-dialog {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #d9e4df;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgb(17 45 36 / 22%);
+}
+
+.skpe-journey-status-dialog > header,
+.skpe-journey-status-dialog > footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-journey-status-dialog > header span {
+  color: #64756e;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skpe-journey-status-dialog h3 {
+  margin: 0.2rem 0 0;
+  color: #183c31;
+}
+
+.skpe-journey-status-dialog header p {
+  margin: 0.25rem 0 0;
+  color: #687870;
+  font-size: 0.75rem;
+}
+
+.skpe-journey-status-dialog button {
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #c8d7d1;
+  border-radius: 8px;
+  background: #fff;
+  color: #315148;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.skpe-journey-status-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.skpe-journey-status-dialog button.is-primary {
+  border-color: #315148;
+  background: #315148;
+  color: #fff;
+}
+
+.skpe-journey-status-dialog-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.skpe-journey-status-dialog-summary > div {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.65rem;
+  border-radius: 9px;
+  background: #f4f8f6;
+}
+
+.skpe-journey-status-dialog-summary span,
+.skpe-journey-status-dialog label > span {
+  color: #687870;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.skpe-journey-status-dialog-summary strong {
+  color: #29473d;
+  font-size: 0.76rem;
+}
+
+.skpe-journey-status-dialog label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.skpe-journey-status-dialog textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 0.65rem;
+  border: 1px solid #cddad5;
+  border-radius: 9px;
+  color: #29473d;
+  font: inherit;
+  line-height: 1.4;
+}
+
+.skpe-journey-status-dialog-note {
+  margin: 0.65rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: #f4f8f6;
+  color: #607169;
+  font-size: 0.69rem;
+}
+
+.skpe-journey-status-dialog-error {
+  margin-top: 0.65rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #edcaca;
+  border-radius: 8px;
+  background: #fff2f2;
+  color: #8b3131;
+  font-size: 0.72rem;
+}
+
+.skpe-journey-status-dialog > footer {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .skpe-journey-status-dialog-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-journey-status-dialog > header,
+  .skpe-journey-status-dialog > footer {
+    display: grid;
+  }
+
+  .skpe-journey-status-dialog > footer button {
+    width: 100%;
+  }
+}

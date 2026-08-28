@@ -4,6 +4,7 @@ import { supabase } from '../../../../lib/supabase'
 import { statusLabelPtBr, translateBackendMessage } from '../../../../shared/i18n/ptBR'
 import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
 import { JourneyEventCreateDialog } from './JourneyEventCreateDialog'
+import { JourneyItemStatusDialog } from './JourneyItemStatusDialog'
 import { JourneyGantt } from './JourneyGantt'
 import type {
   JourneyRow,
@@ -73,39 +74,39 @@ function methodologyTextPtBr(value: string | null | undefined) {
   if (!value) return ''
 
   const exactLabels: Record<string, string> = {
-    'Diagnostico e Entendimento Estrategico': 'DiagnÃ³stico e Entendimento EstratÃ©gico',
-    'Formulacao Estrategica': 'FormulaÃ§Ã£o EstratÃ©gica',
-    'Abertura da Formulacao Estrategica': 'Abertura da FormulaÃ§Ã£o EstratÃ©gica',
-    'Direcionadores Estrategicos': 'Direcionadores EstratÃ©gicos',
+    'Diagnostico e Entendimento Estrategico': 'Diagnóstico e Entendimento Estratégico',
+    'Formulacao Estrategica': 'Formulação Estratégica',
+    'Abertura da Formulacao Estrategica': 'Abertura da Formulação Estratégica',
+    'Direcionadores Estrategicos': 'Direcionadores Estratégicos',
   }
 
   const exact = exactLabels[value.trim()]
   if (exact) return exact
 
   const replacements: Array<[RegExp, string]> = [
-    [/\bDiagnostico\b/g, 'DiagnÃ³stico'],
-    [/\bFormulacao\b/g, 'FormulaÃ§Ã£o'],
-    [/\bEstrategico\b/g, 'EstratÃ©gico'],
-    [/\bEstrategica\b/g, 'EstratÃ©gica'],
-    [/\bProposito\b/g, 'PropÃ³sito'],
-    [/\bMissao\b/g, 'MissÃ£o'],
-    [/\bVisao\b/g, 'VisÃ£o'],
-    [/\bValidacao\b/g, 'ValidaÃ§Ã£o'],
-    [/\bOrganizacao\b/g, 'OrganizaÃ§Ã£o'],
-    [/\bAdministracao\b/g, 'AdministraÃ§Ã£o'],
-    [/\bConfiguracao\b/g, 'ConfiguraÃ§Ã£o'],
-    [/\bInformacao\b/g, 'InformaÃ§Ã£o'],
-    [/\bGovernanca\b/g, 'GovernanÃ§a'],
-    [/\bExecucao\b/g, 'ExecuÃ§Ã£o'],
-    [/\bAvaliacao\b/g, 'AvaliaÃ§Ã£o'],
-    [/\bConcluida\b/g, 'ConcluÃ­da'],
-    [/\bcriterios\b/g, 'critÃ©rios'],
-    [/\borganizacao\b/g, 'organizaÃ§Ã£o'],
-    [/\bformulacao\b/g, 'formulaÃ§Ã£o'],
-    [/\bproposito\b/g, 'propÃ³sito'],
-    [/\bmissao\b/g, 'missÃ£o'],
-    [/\bvisao\b/g, 'visÃ£o'],
-    [/\bprincipios\b/g, 'princÃ­pios'],
+    [/\bDiagnostico\b/g, 'Diagnóstico'],
+    [/\bFormulacao\b/g, 'Formulação'],
+    [/\bEstrategico\b/g, 'Estratégico'],
+    [/\bEstrategica\b/g, 'Estratégica'],
+    [/\bProposito\b/g, 'Propósito'],
+    [/\bMissao\b/g, 'Missão'],
+    [/\bVisao\b/g, 'Visão'],
+    [/\bValidacao\b/g, 'Validação'],
+    [/\bOrganizacao\b/g, 'Organização'],
+    [/\bAdministracao\b/g, 'Administração'],
+    [/\bConfiguracao\b/g, 'Configuração'],
+    [/\bInformacao\b/g, 'Informação'],
+    [/\bGovernanca\b/g, 'Governança'],
+    [/\bExecucao\b/g, 'Execução'],
+    [/\bAvaliacao\b/g, 'Avaliação'],
+    [/\bConcluida\b/g, 'Concluída'],
+    [/\bcriterios\b/g, 'critérios'],
+    [/\borganizacao\b/g, 'organização'],
+    [/\bformulacao\b/g, 'formulação'],
+    [/\bproposito\b/g, 'propósito'],
+    [/\bmissao\b/g, 'missão'],
+    [/\bvisao\b/g, 'visão'],
+    [/\bprincipios\b/g, 'princípios'],
   ]
 
   return replacements.reduce(
@@ -116,11 +117,11 @@ function methodologyTextPtBr(value: string | null | undefined) {
 
 function getStatusLabel(status: JourneyStatus) {
   const labels: Record<JourneyStatus, string> = {
-    not_started: 'NÃ£o iniciada',
+    not_started: 'Não iniciada',
     in_progress: 'Em andamento',
     blocked: 'Bloqueada',
-    pending_validation: 'Aguardando validaÃ§Ã£o',
-    completed: 'ConcluÃ­da',
+    pending_validation: 'Aguardando validação',
+    completed: 'Concluída',
     cancelled: 'Cancelada',
   }
 
@@ -132,7 +133,7 @@ function getProjectStatusLabel(status: string) {
     draft: 'Rascunho',
     active: 'Ativo',
     suspended: 'Suspenso',
-    completed: 'ConcluÃ­do',
+    completed: 'Concluído',
     cancelled: 'Cancelado',
     archived: 'Arquivado',
   }
@@ -147,8 +148,8 @@ function getItemTypeLabel(itemType: JourneyRow['item_type']) {
     stage: 'Etapa',
     meta_stage: 'Metaetapa',
     activity: 'Atividade',
-    deliverable: 'EntregÃ¡vel',
-    gate: 'Gate de validaÃ§Ã£o',
+    deliverable: 'Entregável',
+    gate: 'Gate de validação',
   }
 
   return labels[itemType]
@@ -157,13 +158,13 @@ function getItemTypeLabel(itemType: JourneyRow['item_type']) {
 function getTemporalStateLabel(state: JourneyTemporalState) {
   const labels: Record<JourneyTemporalState, string> = {
     cancelled: 'Cancelado',
-    unscheduled: 'Sem programaÃ§Ã£o institucional',
-    completed_without_actual_end: 'ConcluÃ­do sem data real de tÃ©rmino',
-    completed_on_time: 'ConcluÃ­do no prazo',
-    completed_late: 'ConcluÃ­do com atraso',
+    unscheduled: 'Sem programação institucional',
+    completed_without_actual_end: 'Concluído sem data real de término',
+    completed_on_time: 'Concluído no prazo',
+    completed_late: 'Concluído com atraso',
     blocked: 'Bloqueado',
-    completion_overdue: 'ConclusÃ£o em atraso',
-    start_overdue: 'InÃ­cio em atraso',
+    completion_overdue: 'Conclusão em atraso',
+    start_overdue: 'Início em atraso',
     on_schedule: 'No prazo',
   }
 
@@ -177,8 +178,8 @@ function getPlanKindLabel(kind: JourneyTemporalRow['current_plan_kind']) {
 }
 
 function formatVariance(value: number | null) {
-  if (value === null) return 'NÃ£o aplicÃ¡vel'
-  if (value === 0) return 'Sem variaÃ§Ã£o'
+  if (value === null) return 'Não aplicável'
+  if (value === 0) return 'Sem variação'
   return value > 0 ? `+${value} dias` : `${value} dias`
 }
 
@@ -187,10 +188,10 @@ function formatPeriod(
   end: string | null,
   formatDate: (value: string | null) => string,
 ) {
-  if (!start && !end) return 'NÃ£o programado'
+  if (!start && !end) return 'Não programado'
   if (start && end) return `${formatDate(start)} a ${formatDate(end)}`
   if (start) return `A partir de ${formatDate(start)}`
-  return `AtÃ© ${formatDate(end)}`
+  return `Até ${formatDate(end)}`
 }
 
 function buildJourneyTree(rows: JourneyTemporalRow[]): JourneyItem[] {
@@ -292,7 +293,12 @@ export function JourneySection({
   const workspace = useSkpeWorkspace()
   const [rows, setRows] = useState<JourneyTemporalRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [savingItemId, setSavingItemId] = useState<string | null>(null)
+  const [statusDialogRequest, setStatusDialogRequest] =
+    useState<{
+      item: JourneyItem
+      targetStatus: JourneyStatus
+      targetProgress: number
+    } | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
@@ -396,47 +402,6 @@ export function JourneySection({
     void loadJourney()
   }, [organizationId, workspace.route.projectId])
 
-  const updateJourneyItem = async (
-    item: JourneyItem,
-    targetStatus: JourneyStatus,
-    targetProgress: number,
-  ) => {
-    const actionLabel =
-      targetStatus === 'completed'
-        ? 'concluir'
-        : targetStatus === 'in_progress'
-          ? 'iniciar'
-          : 'atualizar'
-
-    const reason = window.prompt(
-      `Informe a justificativa para ${actionLabel} "${item.item_name}".`,
-    )
-
-    if (!reason) return
-
-    if (reason.trim().length < 10) {
-      window.alert('A justificativa deve ter pelo menos 10 caracteres.')
-      return
-    }
-
-    setSavingItemId(item.item_id)
-
-    const { error } = await supabase.rpc('set_skpe_journey_item_status', {
-      target_item_id: item.item_id,
-      target_status: targetStatus,
-      target_progress: targetProgress,
-      change_reason: reason.trim(),
-    })
-
-    if (error) {
-      window.alert(translateBackendMessage(error.message))
-      setSavingItemId(null)
-      return
-    }
-
-    await loadJourney()
-    setSavingItemId(null)
-  }
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems((current) => {
@@ -477,7 +442,7 @@ export function JourneySection({
             <div className="skpe-phase-heading">
               <div>
                 <p>
-                  {getItemTypeLabel(item.item_type)} Â· {item.item_code}
+                  {getItemTypeLabel(item.item_type)} · {item.item_code}
                 </p>
                 <h2>{methodologyTextPtBr(item.item_name)}</h2>
               </div>
@@ -508,7 +473,7 @@ export function JourneySection({
                     aria-expanded={isExpanded}
                     title={
                       isExpanded
-                        ? 'Recolher nÃ­veis subordinados'
+                        ? 'Recolher níveis subordinados'
                         : 'Abrir fases, etapas e atividades'
                     }
                   >
@@ -526,7 +491,7 @@ export function JourneySection({
             <div className="skpe-journey-meta">
               {item.responsible_name && (
                 <span>
-                  ResponsÃ¡vel: <strong>{item.responsible_name}</strong>
+                  Responsável: <strong>{item.responsible_name}</strong>
                 </span>
               )}
 
@@ -569,7 +534,7 @@ export function JourneySection({
 
               {item.validation_required && (
                 <span>
-                  ValidaÃ§Ã£o:{' '}
+                  Validação:{' '}
                   <strong>{statusLabelPtBr(item.validation_status)}</strong>
                 </span>
               )}
@@ -577,7 +542,7 @@ export function JourneySection({
 
             {!item.plan_projection_consistent && (
               <div className="skpe-journey-blocked-message">
-                DivergÃªncia detectada entre o plano institucional vigente e a projeÃ§Ã£o materializada da jornada.
+                Divergência detectada entre o plano institucional vigente e a projeção materializada da jornada.
               </div>
             )}
 
@@ -603,13 +568,16 @@ export function JourneySection({
                   <button
                     type="button"
                     onClick={() =>
-                      void updateJourneyItem(
+                      setStatusDialogRequest({
                         item,
-                        'in_progress',
-                        Math.max(item.item_progress, 1),
-                      )
+                        targetStatus: 'in_progress',
+                        targetProgress: Math.max(
+                          item.item_progress,
+                          1,
+                        ),
+                      })
                     }
-                    disabled={savingItemId === item.item_id}
+                    disabled={statusDialogRequest !== null}
                   >
                     Iniciar
                   </button>
@@ -619,9 +587,13 @@ export function JourneySection({
                   <button
                     type="button"
                     onClick={() =>
-                      void updateJourneyItem(item, 'completed', 100)
+                      setStatusDialogRequest({
+                        item,
+                        targetStatus: 'completed',
+                        targetProgress: 100,
+                      })
                     }
-                    disabled={savingItemId === item.item_id}
+                    disabled={statusDialogRequest !== null}
                   >
                     Concluir
                   </button>
@@ -631,13 +603,16 @@ export function JourneySection({
                   <button
                     type="button"
                     onClick={() =>
-                      void updateJourneyItem(
+                      setStatusDialogRequest({
                         item,
-                        'in_progress',
-                        Math.min(item.item_progress, 99),
-                      )
+                        targetStatus: 'in_progress',
+                        targetProgress: Math.min(
+                          item.item_progress,
+                          99,
+                        ),
+                      })
                     }
-                    disabled={savingItemId === item.item_id}
+                    disabled={statusDialogRequest !== null}
                   >
                     Reabrir
                   </button>
@@ -649,7 +624,7 @@ export function JourneySection({
                     className="skpe-generate-deliverables-button"
                     onClick={() => onGenerateDeliverables(item)}
                   >
-                    Gerar entregÃ¡veis
+                    Gerar entregáveis
                   </button>
                 )}
               </div>
@@ -670,10 +645,10 @@ export function JourneySection({
     <>
       <section className="skpe-page-heading skpe-administration-heading">
         <div>
-          <p className="skpe-eyebrow">Metodologia de Planejamento EstratÃ©gico</p>
-          <h1>Jornada EstratÃ©gica</h1>
+          <p className="skpe-eyebrow">Metodologia de Planejamento Estratégico</p>
+          <h1>Jornada Estratégica</h1>
           <p>
-            ExecuÃ§Ã£o, compromisso institucional e previsÃ£o operacional da jornada em uma Ãºnica leitura temporal governada.
+            Execução, compromisso institucional e previsão operacional da jornada em uma única leitura temporal governada.
           </p>
         </div>
 
@@ -692,7 +667,7 @@ export function JourneySection({
         <>
           <section className="skpe-project-context-card">
             <div>
-              <span>Projeto estratÃ©gico</span>
+              <span>Projeto estratégico</span>
               <strong>{project.project_name}</strong>
               <small>{project.project_code}</small>
             </div>
@@ -701,12 +676,12 @@ export function JourneySection({
               <span>Progresso geral</span>
               <strong>{project.project_progress}%</strong>
               <small>
-                SituaÃ§Ã£o: {getProjectStatusLabel(project.project_status)}
+                Situação: {getProjectStatusLabel(project.project_status)}
               </small>
             </div>
 
             <div>
-              <span>Data de referÃªncia</span>
+              <span>Data de referência</span>
               <strong>{formatDate(project.reference_date)}</strong>
               <small>{project.organization_timezone}</small>
             </div>
@@ -718,7 +693,7 @@ export function JourneySection({
               <strong>
                 {temporalSummary.planRow?.current_plan_version_number
                   ? `v${temporalSummary.planRow.current_plan_version_number}`
-                  : 'â€”'}
+                  : '—'}
               </strong>
               <small>
                 {temporalSummary.planRow
@@ -732,28 +707,28 @@ export function JourneySection({
               <strong>
                 {temporalSummary.forecastRow?.current_forecast_version_number
                   ? `v${temporalSummary.forecastRow.current_forecast_version_number}`
-                  : 'â€”'}
+                  : '—'}
               </strong>
               <small>
                 {temporalSummary.forecastRow
-                  ? 'PrevisÃ£o operacional ativa'
+                  ? 'Previsão operacional ativa'
                   : 'Sem forecast ativo'}
               </small>
             </article>
 
             <article className="skpe-admin-kpi-card">
-              <span>ObrigatÃ³rios em atraso</span>
+              <span>Obrigatórios em atraso</span>
               <strong>{temporalSummary.overdueCount}</strong>
               <small>
-                de {temporalSummary.mandatoryCount} itens obrigatÃ³rios
+                de {temporalSummary.mandatoryCount} itens obrigatórios
                 {temporalSummary.blockedCount > 0
-                  ? ` Â· ${temporalSummary.blockedCount} bloqueados`
+                  ? ` · ${temporalSummary.blockedCount} bloqueados`
                   : ''}
               </small>
             </article>
 
             <article className="skpe-admin-kpi-card">
-              <span>ObrigatÃ³rios sem programaÃ§Ã£o</span>
+              <span>Obrigatórios sem programação</span>
               <strong>{temporalSummary.unscheduledCount}</strong>
               <small>Estado calculado pelo backend</small>
             </article>
@@ -788,12 +763,12 @@ export function JourneySection({
 
       {loading ? (
         <section className="skpe-admin-state-card">
-          <p>Carregando a Jornada EstratÃ©gica...</p>
+          <p>Carregando a Jornada Estratégica...</p>
         </section>
       ) : journeyTree.length === 0 ? (
         <section className="skpe-admin-state-card">
           <h2>Nenhuma jornada encontrada</h2>
-          <p>Verifique se o projeto estratÃ©gico foi criado para esta organizaÃ§Ã£o.</p>
+          <p>Verifique se o projeto estratégico foi criado para esta organização.</p>
         </section>
       ) : journeyView === 'gantt' ? (
         <JourneyGantt
@@ -818,7 +793,7 @@ export function JourneySection({
                 <div className="skpe-journey-breadcrumb">
                   {selectedBreadcrumb.map((breadcrumbItem, index) => (
                     <span key={breadcrumbItem.item_id}>
-                      {index > 0 && <b>â€º</b>}
+                      {index > 0 && <b>›</b>}
                       {breadcrumbItem.item_code}
                     </span>
                   ))}
@@ -830,12 +805,12 @@ export function JourneySection({
                 <h2>{methodologyTextPtBr(selectedItem.item_name)}</h2>
                 <p>
                   {selectedItem.item_description ??
-                    'NÃ£o hÃ¡ descriÃ§Ã£o complementar cadastrada.'}
+                    'Não há descrição complementar cadastrada.'}
                 </p>
 
                 <dl className="skpe-journey-detail-list">
                   <div>
-                    <dt>SituaÃ§Ã£o da execuÃ§Ã£o</dt>
+                    <dt>Situação da execução</dt>
                     <dd>{getStatusLabel(selectedItem.item_status)}</dd>
                   </div>
                   <div>
@@ -847,14 +822,14 @@ export function JourneySection({
                     <dd>{selectedItem.item_progress}%</dd>
                   </div>
                   <div>
-                    <dt>ResponsÃ¡vel</dt>
-                    <dd>{selectedItem.responsible_name ?? 'NÃ£o definido'}</dd>
+                    <dt>Responsável</dt>
+                    <dd>{selectedItem.responsible_name ?? 'Não definido'}</dd>
                   </div>
                   <div>
                     <dt>Baseline original</dt>
                     <dd>
                       {selectedItem.baseline_version_number
-                        ? `v${selectedItem.baseline_version_number} Â· `
+                        ? `v${selectedItem.baseline_version_number} · `
                         : ''}
                       {formatPeriod(
                         selectedItem.baseline_start_date,
@@ -867,7 +842,7 @@ export function JourneySection({
                     <dt>Plano institucional vigente</dt>
                     <dd>
                       {selectedItem.current_plan_version_number
-                        ? `v${selectedItem.current_plan_version_number} Â· ${getPlanKindLabel(selectedItem.current_plan_kind)} Â· `
+                        ? `v${selectedItem.current_plan_version_number} · ${getPlanKindLabel(selectedItem.current_plan_kind)} · `
                         : ''}
                       {formatPeriod(
                         selectedItem.current_plan_start_date,
@@ -880,7 +855,7 @@ export function JourneySection({
                     <dt>Forecast operacional</dt>
                     <dd>
                       {selectedItem.current_forecast_version_number
-                        ? `v${selectedItem.current_forecast_version_number} Â· `
+                        ? `v${selectedItem.current_forecast_version_number} · `
                         : ''}
                       {formatPeriod(
                         selectedItem.forecast_start_date,
@@ -900,7 +875,7 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>Plano Ã— baseline</dt>
+                    <dt>Plano × baseline</dt>
                     <dd>
                       {formatVariance(
                         selectedItem.current_plan_end_variance_vs_baseline_days,
@@ -908,7 +883,7 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>Forecast Ã— plano</dt>
+                    <dt>Forecast × plano</dt>
                     <dd>
                       {formatVariance(
                         selectedItem.forecast_end_variance_vs_current_plan_days,
@@ -916,7 +891,7 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>Realizado inÃ­cio Ã— plano</dt>
+                    <dt>Realizado início × plano</dt>
                     <dd>
                       {formatVariance(
                         selectedItem.actual_start_variance_vs_current_plan_days,
@@ -924,7 +899,7 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>Realizado fim Ã— plano</dt>
+                    <dt>Realizado fim × plano</dt>
                     <dd>
                       {formatVariance(
                         selectedItem.actual_end_variance_vs_current_plan_days,
@@ -932,11 +907,11 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>ValidaÃ§Ã£o</dt>
+                    <dt>Validação</dt>
                     <dd>
                       {selectedItem.validation_required
                         ? statusLabelPtBr(selectedItem.validation_status)
-                        : 'ValidaÃ§Ã£o nÃ£o obrigatÃ³ria'}
+                        : 'Validação não obrigatória'}
                     </dd>
                   </div>
                 </dl>
@@ -945,8 +920,8 @@ export function JourneySection({
                   selectedItem.is_completion_overdue) && (
                   <div className="skpe-journey-detail-hint">
                     {selectedItem.is_completion_overdue
-                      ? `ConclusÃ£o em atraso hÃ¡ ${selectedItem.days_completion_overdue} dias na data de referÃªncia.`
-                      : `InÃ­cio em atraso hÃ¡ ${selectedItem.days_start_overdue} dias na data de referÃªncia.`}
+                      ? `Conclusão em atraso há ${selectedItem.days_completion_overdue} dias na data de referência.`
+                      : `Início em atraso há ${selectedItem.days_start_overdue} dias na data de referência.`}
                   </div>
                 )}
 
@@ -964,7 +939,7 @@ export function JourneySection({
 
                 {selectedItem.item_type === 'macrophase' && (
                   <div className="skpe-journey-detail-hint">
-                    Clique novamente no cartÃ£o ou no Ã­cone de expansÃ£o para navegar pelos nÃ­veis subordinados.
+                    Clique novamente no cartão ou no ícone de expansão para navegar pelos níveis subordinados.
                   </div>
                 )}
               </>
@@ -972,12 +947,38 @@ export function JourneySection({
               <div className="skpe-user-detail-empty">
                 <JourneyIcon />
                 <h2>Selecione um item</h2>
-                <p>Consulte seus detalhes e navegue pela estrutura metodolÃ³gica.</p>
+                <p>Consulte seus detalhes e navegue pela estrutura metodológica.</p>
               </div>
             )}
           </aside>
         </div>
       )}
+
+      {statusDialogRequest ? (
+        <JourneyItemStatusDialog
+          itemId={statusDialogRequest.item.item_id}
+          itemCode={statusDialogRequest.item.item_code}
+          itemName={methodologyTextPtBr(
+            statusDialogRequest.item.item_name,
+          )}
+          currentStatus={
+            statusDialogRequest.item.item_status
+          }
+          targetStatus={
+            statusDialogRequest.targetStatus
+          }
+          targetProgress={
+            statusDialogRequest.targetProgress
+          }
+          onClose={() =>
+            setStatusDialogRequest(null)
+          }
+          onSaved={async () => {
+            await loadJourney()
+            setStatusDialogRequest(null)
+          }}
+        />
+      ) : null}
 
       {eventDialogItem && (
         <JourneyEventCreateDialog
