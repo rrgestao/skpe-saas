@@ -720,3 +720,184 @@ button.skpe-management-timeline-row {
     justify-content: flex-start;
   }
 }
+.skpe-execution-matrix {
+  padding: 1rem;
+  border: 1px solid #dfe8e4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.skpe-execution-matrix > header,
+.skpe-execution-matrix > footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-execution-matrix > header span {
+  display: block;
+  color: #61726a;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skpe-execution-matrix h2 {
+  margin: 0.2rem 0 0;
+  color: #183c31;
+}
+
+.skpe-execution-matrix > header p {
+  max-width: 760px;
+  margin: 0.45rem 0 0;
+  color: #687870;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.skpe-execution-matrix > header > strong {
+  color: #315148;
+  font-size: 1rem;
+}
+
+.skpe-execution-matrix-scroll {
+  margin-top: 0.85rem;
+  overflow: auto;
+  border: 1px solid #e0e8e5;
+  border-radius: 10px;
+}
+
+.skpe-execution-matrix table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+}
+
+.skpe-execution-matrix th,
+.skpe-execution-matrix td {
+  padding: 0.65rem;
+  border-bottom: 1px solid #edf2f0;
+  border-right: 1px solid #edf2f0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.skpe-execution-matrix th:last-child,
+.skpe-execution-matrix td:last-child {
+  border-right: 0;
+}
+
+.skpe-execution-matrix tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.skpe-execution-matrix th {
+  background: #f4f8f6;
+  color: #52645d;
+  font-size: 0.65rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.skpe-execution-matrix td {
+  color: #53665e;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.skpe-execution-matrix td > strong,
+.skpe-execution-matrix td > span,
+.skpe-execution-matrix td > small {
+  display: block;
+}
+
+.skpe-execution-matrix td > strong {
+  color: #29473d;
+}
+
+.skpe-execution-matrix td > span {
+  margin-top: 0.2rem;
+}
+
+.skpe-execution-matrix td > small {
+  margin-top: 0.22rem;
+  color: #75847d;
+}
+
+.skpe-execution-matrix-action {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.skpe-execution-matrix-action strong {
+  color: #245445;
+  font-size: 0.74rem;
+}
+
+.skpe-execution-matrix-action span {
+  color: #718078;
+  font-size: 0.64rem;
+}
+
+.skpe-execution-matrix-action:hover strong,
+.skpe-execution-matrix-action:focus-visible strong {
+  text-decoration: underline;
+}
+
+.skpe-execution-matrix-alerts,
+.skpe-execution-matrix-capacity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.45rem;
+}
+
+.skpe-execution-matrix-alerts span,
+.skpe-execution-matrix-capacity span {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.skpe-execution-matrix-alerts span {
+  background: #fff3df;
+  color: #835916;
+}
+
+.skpe-execution-matrix-capacity span {
+  background: #edf3f0;
+  color: #4e6259;
+}
+
+.skpe-execution-matrix small.is-warning {
+  color: #8a5710;
+  font-weight: 800;
+}
+
+.skpe-execution-matrix > footer {
+  margin-top: 0.75rem;
+  color: #718078;
+  font-size: 0.66rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-execution-matrix > header,
+  .skpe-execution-matrix > footer {
+    display: grid;
+  }
+}

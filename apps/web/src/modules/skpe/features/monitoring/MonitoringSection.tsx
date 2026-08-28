@@ -8,6 +8,12 @@ import {
 } from './InitiativeEconomicExecutionDialog'
 import { PersonCapacityManagementDialog } from './PersonCapacityManagementDialog'
 import { ManagementTimeline } from './ManagementTimeline'
+import { ManagementExecutionMatrix } from './ManagementExecutionMatrix'
+import type {
+  ActionBoardExecutionRow,
+  CapacityAllocationExecutionRow,
+  PersonCapacityExecutionRow,
+} from './monitoringExecutionMatrix'
 import type {
   InitiativeTemporalTimelineRow,
   JourneyEventTimelineRow,
@@ -29,26 +35,13 @@ type MonitoringSectionProps = {
 }
 
 
-type ActionBoardRow = {
-  action_id: string
-  status: string
-}
-
-
-type PersonCapacity = {
-  capacity_period_id: string
-  person_name: string
-  capacity_unit: string
-  overallocation_amount: number
-  is_overallocated: boolean
-}
 
 type OperationalProjection = {
   referenceDate?: string
   journeyTemporal?: JourneyTemporalTimelineRow[]
   journeyEvents?: JourneyEventTimelineRow[]
   initiativeTemporal?: InitiativeTemporalTimelineRow[]
-  actionBoard?: ActionBoardRow[]
+  actionBoard?: ActionBoardExecutionRow[]
   economic?: {
     initiative?: {
       initiativeId: string
@@ -79,8 +72,8 @@ type OperationalProjection = {
   }
   capacity?: {
     visible?: boolean
-    allocations?: unknown[]
-    involvedPeopleCapacity?: PersonCapacity[]
+    allocations?: CapacityAllocationExecutionRow[]
+    involvedPeopleCapacity?: PersonCapacityExecutionRow[]
   }
   governance?: {
     readOnlyProjection?: boolean
@@ -462,6 +455,17 @@ export function MonitoringSection({
             events={events}
             referenceDate={projection.referenceDate}
             onOpenJourney={onOpenJourney}
+            onOpenInitiatives={onOpenInitiatives}
+          />
+
+          <ManagementExecutionMatrix
+            actions={actionBoard}
+            temporalRows={initiativeTemporal}
+            allocations={allocations}
+            capacityRows={capacityRows}
+            capacityVisible={
+              projection.capacity?.visible !== false
+            }
             onOpenInitiatives={onOpenInitiatives}
           />
 
