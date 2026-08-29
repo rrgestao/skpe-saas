@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react'
 
@@ -67,6 +68,15 @@ export function InitiativeKanbanBoard({
     useState(false)
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
+
+  const activeActionCount = useMemo(
+    () =>
+      columns.reduce(
+        (total, column) => total + column.cards.length,
+        0,
+      ),
+    [columns],
+  )
 
   const loadBoard = useCallback(async () => {
     setLoading(true)
@@ -148,40 +158,87 @@ export function InitiativeKanbanBoard({
 
   return (
     <>
-      {canManageInitiatives ? (
-        <div className="initiative-kanban-toolbar">
-          <button
-            type="button"
-            onClick={() =>
-              setShowCreateDialog(true)
-            }
-          >
-            Nova ação
-          </button>
-        </div>
-      ) : null}
-
-      <div
-        className="initiative-kanban-board"
-        aria-label="Kanban de ações da iniciativa"
+      <section
+        className="initiative-kanban-guide"
+        aria-label="Como usar o quadro de ações"
       >
-        {columns.map((column) => (
-          <InitiativeKanbanColumn
-            key={column.status}
-            column={column}
-            canManageInitiatives={canManageInitiatives}
-            draggingCard={draggingCard}
-            onOpenCard={setSelectedCard}
-            onDragStart={setDraggingCard}
-            onDragEnd={() =>
-              setDraggingCard(null)
-            }
-            onRequestTransition={
-              requestTransition
-            }
-          />
-        ))}
-      </div>
+        <div className="initiative-kanban-guide__copy">
+          <p className="initiative-kanban-guide__eyebrow">
+            Gestão das ações
+          </p>
+          <h3>Do planejamento à execução, no mesmo registro</h3>
+          <p>
+            Cada cartão é uma ação real desta iniciativa. Abra para consultar
+            ou editar detalhes e, quando permitido, mova o cartão para avançar
+            seu ciclo de vida governado. O Kanban não cria uma cópia da ação.
+          </p>
+        </div>
+
+        <div className="initiative-kanban-guide__actions">
+          <span className="initiative-kanban-guide__count">
+            <strong>{activeActionCount}</strong>
+            {activeActionCount === 1
+              ? ' ação no quadro'
+              : ' ações no quadro'}
+          </span>
+
+          {canManageInitiatives ? (
+            <button
+              type="button"
+              className="initiative-kanban-primary-action"
+              onClick={() =>
+                setShowCreateDialog(true)
+              }
+            >
+              Criar ação
+            </button>
+          ) : null}
+        </div>
+      </section>
+
+      {activeActionCount === 0 ? (
+        <section className="initiative-kanban-empty">
+          <h3>Nenhuma ação ativa nesta iniciativa</h3>
+          <p>
+            O quadro ficará organizado por etapa de execução assim que a
+            iniciativa possuir ações. A mesma ação poderá ser acompanhada e
+            atualizada aqui sem duplicação de dados.
+          </p>
+          {canManageInitiatives ? (
+            <button
+              type="button"
+              className="initiative-kanban-primary-action"
+              onClick={() =>
+                setShowCreateDialog(true)
+              }
+            >
+              Criar primeira ação
+            </button>
+          ) : null}
+        </section>
+      ) : (
+        <div
+          className="initiative-kanban-board"
+          aria-label="Kanban de ações da iniciativa"
+        >
+          {columns.map((column) => (
+            <InitiativeKanbanColumn
+              key={column.status}
+              column={column}
+              canManageInitiatives={canManageInitiatives}
+              draggingCard={draggingCard}
+              onOpenCard={setSelectedCard}
+              onDragStart={setDraggingCard}
+              onDragEnd={() =>
+                setDraggingCard(null)
+              }
+              onRequestTransition={
+                requestTransition
+              }
+            />
+          ))}
+        </div>
+      )}
 
       {selectedCard ? (
         <InitiativeActionDrawer
