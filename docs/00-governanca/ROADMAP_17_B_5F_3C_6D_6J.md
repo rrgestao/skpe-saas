@@ -1,15 +1,15 @@
 ---
 id: SKPE-ROADMAP-17-B-5F-3C-6D-6J
-version: 1.3.0
+version: 1.4.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
 canonical_context: SK-PE-CONT-01
 created_at: 2026-08-21
-updated_at: 2026-08-21
+updated_at: 2026-08-29
 starts_after: 17-B.5F.3C.6C
 ends_at: 17-B.5F.3C.6J
-remaining_gates: 4
+remaining_gates: 3
 ---
 
 # Roadmap Governado 17-B.5F.3C.6D–6J — Operação e Visões Transversais de Iniciativas
@@ -82,6 +82,16 @@ Não inclui: entidade `kanban_card` paralela nem lifecycle próprio do quadro.
 
 Critério de saída: Kanban funcional sobre o domínio existente, consistência bidirecional pela camada operacional e UX validada.
 
+**Status: PASS / CLOSED em 2026-08-29.**
+
+Commit técnico de fechamento: `f7919f4daa036ea6916d90e375ec77c793fff97c`.
+
+Migration final do read model: `20260829151019_harden_sparks_initiative_action_board_filters`.
+
+Evidência documental: `docs/auditoria/RELATORIO_FECHAMENTO_17_B_5F_3C_6G.md`.
+
+Guardrail UX: `docs/00-governanca/GUARDRAIL_UX_BASILAR_6G_6H_JORNADA.md`.
+
 ### 17-B.5F.3C.6H — Gantt, Baseline e Desvio Temporal
 
 Objetivo: oferecer visão temporal previsto x vigente x realizado para iniciativas e ações.
@@ -91,6 +101,10 @@ Inclui: baseline; planejamento vigente; datas reais; dependências somente se ju
 Não inclui: duplicação de datas em entidade gráfica de Gantt.
 
 Critério de saída: projeção Gantt derivada do domínio canônico, métricas de desvio reproduzíveis e rastreabilidade de replanejamento.
+
+**Status: OPEN em 2026-08-29.**
+
+Guardrail UX obrigatório: o Gantt deve nascer hierárquico, colapsável e condensável, com experiência inicial resumida e sem renderização profunda desnecessária.
 
 ### 17-B.5F.3C.6I — Agenda, Calendário e Eventos Operacionais
 
@@ -130,12 +144,11 @@ Dependências principais:
 
 ## 4. Contagem congelada
 
-Após o fechamento do `17-B.5F.3C.6F`, restam **4 gates** nesta trilha:
+Após o fechamento do `17-B.5F.3C.6G`, restam **3 gates** nesta trilha:
 
-1. `17-B.5F.3C.6G`
-2. `17-B.5F.3C.6H`
-3. `17-B.5F.3C.6I`
-4. `17-B.5F.3C.6J`
+1. `17-B.5F.3C.6H`
+2. `17-B.5F.3C.6I`
+3. `17-B.5F.3C.6J`
 
 A criação de subgates de hardening, testes ou reconciliação não altera esta contagem funcional; subgates existem para controle de implementação e não para expandir o roadmap funcional.
 
@@ -147,4 +160,4 @@ Projeções de UX devem consumir autoridades existentes, nunca criar fontes de v
 
 Qualquer necessidade nova que não se encaixe claramente em `6D–6J` deve ser registrada como proposta separada e não incorporada silenciosamente a esta trilha.
 
-**ROADMAP 17-B.5F.3C.6D–6J — 6F CLOSED / 4 GATES RESTANTES — 6G OPEN.**
+**ROADMAP 17-B.5F.3C.6D–6J — 6G CLOSED / 3 GATES RESTANTES — 6H OPEN.**
