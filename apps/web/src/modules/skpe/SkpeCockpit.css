@@ -4765,3 +4765,31 @@ tr.skpe-interactive-record:focus-visible {
 .skpe-kpi-card .skpe-card-link-button {
   justify-self: center;
 }
+/* SK-PE UX SIDEBAR TRANSVERSAL V3 */
+.skpe-sidebar-icon-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-sidebar-icon-button {
+  width: 42px;
+  min-width: 42px;
+  height: 38px;
+}
+
+.skpe-sidebar-footer button svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-sidebar-footer button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+  flex: 0 0 auto;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-navigation button[title] {
+  position: relative;
+}

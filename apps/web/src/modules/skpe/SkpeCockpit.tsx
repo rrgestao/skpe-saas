@@ -246,6 +246,37 @@ function ArrowLeftIcon() {
   )
 }
 
+function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect
+        x="3.5"
+        y="4"
+        width="17"
+        height="16"
+        rx="2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M9 4v16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d={collapsed ? 'M13 8l4 4-4 4' : 'M17 8l-4 4 4 4'}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function DashboardIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -433,6 +464,17 @@ function OrganizationIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  )
+}
+
+function StructureIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="15" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 7v5M6 17v-3h12v3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -6802,7 +6844,15 @@ export function SkpeCockpit({
           <div className="skpe-sidebar-brand-text">
             <strong>Plataforma SPARKs</strong>
 </div>
-          <button type="button" className="skpe-sidebar-icon-button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'} title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}>☰</button>
+          <button
+            type="button"
+            className="skpe-sidebar-icon-button"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}
+            title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}
+          >
+            <SidebarToggleIcon collapsed={sidebarCollapsed} />
+          </button>
         </div>
 
         <nav
@@ -6955,6 +7005,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('administration')
                 }
+                title="Administração do SK-PE"
                hidden={!canOpenAdministration}>
                 <AdministrationIcon />
                 <span>Administração do SK-PE</span>
@@ -6972,6 +7023,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('organization')
                 }
+                title="Cadastro institucional"
               >
                 <OrganizationIcon />
                 <span>Cadastro institucional</span>
@@ -6988,8 +7040,9 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('organizational-areas')
                 }
+                title="Estrutura organizacional"
               >
-                <OrganizationIcon />
+                <StructureIcon />
                 <span>Estrutura organizacional</span>
               </button>
 
@@ -7004,6 +7057,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   setActiveSection('administration')
                 }
+                title="Usuários"
                 hidden={!canOpenAdministration}
               >
                 <UserIcon />
