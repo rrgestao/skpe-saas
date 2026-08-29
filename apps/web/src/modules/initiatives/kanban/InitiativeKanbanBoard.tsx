@@ -25,6 +25,9 @@ import {
   InitiativeLifecycleDialog,
 } from './InitiativeLifecycleDialog'
 import {
+  JourneyEventCreateDialog,
+} from '../../skpe/features/journey/JourneyEventCreateDialog'
+import {
   loadInitiativeKanbanFilteredBoard,
   type InitiativeKanbanFilteredColumnModel,
 } from './initiativeKanbanFilteredBoardData'
@@ -71,6 +74,8 @@ export function InitiativeKanbanBoard({
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] =
     useState(false)
+  const [eventCard, setEventCard] =
+    useState<InitiativeKanbanCardModel | null>(null)
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
@@ -190,6 +195,7 @@ export function InitiativeKanbanBoard({
     setDraggingCard(null)
     setPendingTransition(null)
     setShowCreateDialog(false)
+    setEventCard(null)
     setSelectedAreaId('all')
     setSelectedPersonName('all')
   }, [initiativeId])
@@ -383,13 +389,42 @@ export function InitiativeKanbanBoard({
       )}
 
       {selectedCard ? (
-        <InitiativeActionDrawer
-          card={selectedCard}
-          canManageInitiatives={canManageInitiatives}
-          onClose={() =>
-            setSelectedCard(null)
-          }
-          onChanged={handleActionChanged}
+        <>
+          {canManageInitiatives ? (
+            <div className="initiative-kanban-context-action">
+              <button
+                type="button"
+                className="initiative-kanban-primary-action"
+                onClick={() => setEventCard(selectedCard)}
+              >
+                Novo evento da ação
+              </button>
+            </div>
+          ) : null}
+          <InitiativeActionDrawer
+            card={selectedCard}
+            canManageInitiatives={canManageInitiatives}
+            onClose={() =>
+              setSelectedCard(null)
+            }
+            onChanged={handleActionChanged}
+          />
+        </>
+      ) : null}
+
+      {eventCard ? (
+        <JourneyEventCreateDialog
+          organizationId={eventCard.organizationId}
+          itemId={eventCard.actionId}
+          itemCode={eventCard.code}
+          itemName={eventCard.name}
+          suggestedStartDate={eventCard.plannedStartDate}
+          sourceEntityType="sparks_initiative_action"
+          initiativeId={initiativeId}
+          dialogTitle="Novo evento da ação"
+          contextLabel="ação"
+          onClose={() => setEventCard(null)}
+          onCreated={() => setEventCard(null)}
         />
       ) : null}
 

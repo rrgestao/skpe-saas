@@ -18,6 +18,7 @@ import { MonitoringSection } from './features/monitoring/MonitoringSection'
 import { AgendaSection } from './features/agenda/AgendaSection'
 import { EvolutionCyclesSection } from './features/evolution/EvolutionCyclesSection'
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
+import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateDialog'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
@@ -1757,6 +1758,8 @@ function InitiativesSection({
     useState<'portfolio' | 'kanban'>('portfolio')
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
+  const [eventInitiativeId, setEventInitiativeId] =
+    useState<string | null>(null)
 
   useEffect(() => {
     if (!drilldownTarget?.initiativeId) return
@@ -2756,6 +2759,16 @@ function InitiativesSection({
                   Abrir Kanban
                 </button>
 
+                {canManageInitiatives && (
+                  <button
+                    type="button"
+                    className="skpe-user-details-button"
+                    onClick={() => setEventInitiativeId(initiative.initiative_id)}
+                  >
+                    Novo evento
+                  </button>
+                )}
+
                 {canManageInitiatives &&
                   initiative.initiative_status === 'proposed' && (
                     <button
@@ -2852,6 +2865,28 @@ function InitiativesSection({
           ))}
         </section>
       )}
+
+      {eventInitiativeId && (() => {
+        const target = initiatives.find(
+          (initiative) => initiative.initiative_id === eventInitiativeId,
+        )
+
+        return target ? (
+          <JourneyEventCreateDialog
+            organizationId={organizationId}
+            itemId={target.initiative_id}
+            itemCode={target.initiative_code}
+            itemName={target.initiative_name}
+            suggestedStartDate={target.start_date}
+            sourceEntityType="sparks_initiative"
+            initiativeId={target.initiative_id}
+            dialogTitle="Novo evento da iniciativa"
+            contextLabel="iniciativa"
+            onClose={() => setEventInitiativeId(null)}
+            onCreated={() => setEventInitiativeId(null)}
+          />
+        ) : null
+      })()}
 
     </>
   )

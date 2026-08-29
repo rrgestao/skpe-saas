@@ -14,8 +14,12 @@ type JourneyEventCreateDialogProps = {
   itemId: string
   itemCode: string
   itemName: string
-  timezoneName: string
+  timezoneName?: string
   suggestedStartDate: string | null
+  sourceEntityType?: 'skpe_journey_item' | 'sparks_initiative' | 'sparks_initiative_action'
+  initiativeId?: string | null
+  dialogTitle?: string
+  contextLabel?: string
   onClose: () => void
   onCreated: () => void
 }
@@ -45,9 +49,15 @@ export function JourneyEventCreateDialog({
   itemName,
   timezoneName,
   suggestedStartDate,
+  sourceEntityType = 'skpe_journey_item',
+  initiativeId = null,
+  dialogTitle = 'Novo evento da Jornada',
+  contextLabel = 'item da Jornada',
   onClose,
   onCreated,
 }: JourneyEventCreateDialogProps) {
+  const [resolvedTimezoneName, setResolvedTimezoneName] = useState(timezoneName ?? '')
+  const [timezoneLoading, setTimezoneLoading] = useState(!timezoneName)
   const [eventType, setEventType] = useState<EventType>('meeting')
   const [title, setTitle] = useState(`${itemCode} - ${itemName}`)
   const [description, setDescription] = useState('')
@@ -63,13 +73,66 @@ export function JourneyEventCreateDialog({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const normalizedStart = useMemo(
-    () => zonedLocalDateTimeToIso(startsAt, timezoneName),
-    [startsAt, timezoneName],
+    () => zonedLocalDateTimeToIso(startsAt, resolvedTimezoneName),
+    [startsAt, resolvedTimezoneName],
   )
   const normalizedEnd = useMemo(
-    () => zonedLocalDateTimeToIso(endsAt, timezoneName),
-    [endsAt, timezoneName],
+    () => zonedLocalDateTimeToIso(endsAt, resolvedTimezoneName),
+    [endsAt, resolvedTimezoneName],
   )
+
+  useEffect(() => {
+    if (timezoneName) {
+      setResolvedTimezoneName(timezoneName)
+      setTimezoneLoading(false)
+      return
+    }
+
+    if (!initiativeId) {
+      setErrorMessage('Nao foi possivel resolver o fuso horario da origem.')
+      setTimezoneLoading(false)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadTimezone() {
+      setTimezoneLoading(true)
+
+      const { data, error } = await supabase.rpc(
+        'get_sparks_initiative_temporal_projection',
+        {
+          target_organization_id: organizationId,
+          target_initiative_id: initiativeId,
+          target_as_of_date: null,
+          target_include_archived: false,
+        },
+      )
+
+      if (cancelled) return
+
+      if (error) {
+        setErrorMessage(translateBackendMessage(error.message))
+        setTimezoneLoading(false)
+        return
+      }
+
+      const first = ((data ?? []) as Array<{ organization_timezone: string }>)[0]
+      const resolved = first?.organization_timezone ?? ''
+
+      if (!resolved || !isValidTimeZone(resolved)) {
+        setErrorMessage('O fuso horario da organizacao nao pode ser resolvido.')
+        setTimezoneLoading(false)
+        return
+      }
+
+      setResolvedTimezoneName(resolved)
+      setTimezoneLoading(false)
+    }
+
+    void loadTimezone()
+    return () => { cancelled = true }
+  }, [initiativeId, organizationId, timezoneName])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -89,7 +152,7 @@ export function JourneyEventCreateDialog({
       return
     }
 
-    if (!isValidTimeZone(timezoneName)) {
+    if (timezoneLoading || !isValidTimeZone(resolvedTimezoneName)) {
       setErrorMessage('O fuso hor\u00e1rio configurado para o evento \u00e9 inv\u00e1lido.')
       return
     }
@@ -131,10 +194,10 @@ export function JourneyEventCreateDialog({
       target_starts_at: normalizedStart,
       target_ends_at: normalizedEnd,
       target_all_day: false,
-      target_timezone_name: timezoneName,
+      target_timezone_name: resolvedTimezoneName,
       target_priority: priority,
       target_source_module_code: 'SK-PE',
-      target_source_entity_type: 'skpe_journey_item',
+      target_source_entity_type: sourceEntityType,
       target_source_entity_id: itemId,
       target_location_text: locationText.trim() || null,
       target_meeting_reference: meetingReference.trim() || null,
@@ -167,7 +230,7 @@ export function JourneyEventCreateDialog({
         <header>
           <div>
             <span>Agenda transversal governada</span>
-            <h3 id="skpe-journey-event-dialog-title">Novo evento da Jornada</h3>
+            <h3 id="skpe-journey-event-dialog-title">{dialogTitle}</h3>
             <p>
               {itemCode} - {itemName}
             </p>
@@ -283,7 +346,7 @@ export function JourneyEventCreateDialog({
 
         <div className="skpe-journey-event-dialog-note">
           O evento ser\u00e1 persistido em SPARKs Agenda e apenas vinculado a este
-          item da Jornada. Timezone: {timezoneName}.
+          {contextLabel}. Timezone: {resolvedTimezoneName || 'carregando...'}.
         </div>
 
         {errorMessage && (
@@ -300,9 +363,9 @@ export function JourneyEventCreateDialog({
             type="button"
             className="is-primary"
             onClick={() => void handleSubmit()}
-            disabled={saving}
+            disabled={saving || timezoneLoading}
           >
-            {saving ? 'Salvando...' : 'Criar evento'}
+            {saving ? 'Salvando...' : timezoneLoading ? 'Carregando fuso...' : 'Criar evento'}
           </button>
         </footer>
       </section>
