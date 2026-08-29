@@ -1,6 +1,6 @@
 ---
 id: SKPE-ROADMAP-17-B-5F-3C-6D-6J
-version: 1.5.0
+version: 1.6.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
@@ -9,7 +9,7 @@ created_at: 2026-08-21
 updated_at: 2026-08-29
 starts_after: 17-B.5F.3C.6C
 ends_at: 17-B.5F.3C.6J
-remaining_gates: 2
+remaining_gates: 1
 ---
 
 # Roadmap Governado 17-B.5F.3C.6D–6J — Operação e Visões Transversais de Iniciativas
@@ -123,6 +123,26 @@ Não inclui: transformar MegaFases/Fases/Etapas em eventos; elas podem possuir e
 
 Critério de saída: autoridade única para eventos, vínculos rastreáveis, calendário derivado e ausência de duplicação de cronograma.
 
+**Status: PASS / CLOSED em 2026-08-29.**
+
+Fundação reutilizada: `sparks_events`, `sparks_event_participants`, preferências pessoais de agenda, contratos governados de lifecycle, participantes e presença, `get_my_sparks_agenda` e `get_my_skpe_agenda_projection`.
+
+Migrations finais do gate:
+
+- `20260829190418_extend_sparks_event_source_to_initiatives_actions` — amplia vínculos autorizados para `sparks_initiative` e `sparks_initiative_action`;
+- `20260829190604_harden_sparks_event_source_polymorphic_links` — exige tipo de origem reconhecido e objeto real, eliminando passagem genérica de vínculo;
+- `20260829232922_extend_skpe_agenda_projection_with_initiative_deadlines` — projeta reuniões, prazos de iniciativas e prazos/marcos de ações diretamente das autoridades canônicas, sem persistência paralela.
+
+Commits técnicos e de UX relevantes:
+
+- `e17bccf2de1dd30da90ec56c0eb68043b0f146e4` — criação contextual de eventos a partir de iniciativas e ações reutilizando o diálogo governado;
+- `f84cc5114f08ca0a01ced3f773beec007269159c` — projeção de prazos e marcos canônicos na agenda;
+- `ab48a2b148cac3209a9eea3af265a60809e9c9ac` e `f4f1c68a1f214d1901ec553aab4616d63613ac1d` — hardenings de legibilidade e comportamento transversal do shell observados durante a validação do gate, sem alterar sua semântica funcional.
+
+Evidência documental: `docs/auditoria/RELATORIO_FECHAMENTO_17_B_5F_3C_6I.md`.
+
+A recorrência permanece condicional: não foi criado mecanismo recorrente sem necessidade funcional comprovada, conforme o próprio escopo “quando necessária”.
+
 ### 17-B.5F.3C.6J — Custos, Esforço e Controle Econômico de Execução
 
 Objetivo: consolidar o controle econômico mínimo necessário para comparar planejado x realizado em iniciativas e ações, preservando a futura integração com módulos financeiros especializados.
@@ -151,10 +171,9 @@ Dependências principais:
 
 ## 4. Contagem congelada
 
-Após o fechamento do `17-B.5F.3C.6H`, restam **2 gates** nesta trilha:
+Após o fechamento do `17-B.5F.3C.6I`, resta **1 gate** nesta trilha:
 
-1. `17-B.5F.3C.6I`
-2. `17-B.5F.3C.6J`
+1. `17-B.5F.3C.6J`
 
 A criação de subgates de hardening, testes ou reconciliação não altera esta contagem funcional; subgates existem para controle de implementação e não para expandir o roadmap funcional.
 
@@ -166,4 +185,4 @@ Projeções de UX devem consumir autoridades existentes, nunca criar fontes de v
 
 Qualquer necessidade nova que não se encaixe claramente em `6D–6J` deve ser registrada como proposta separada e não incorporada silenciosamente a esta trilha.
 
-**ROADMAP 17-B.5F.3C.6D–6J — 6H CLOSED / 2 GATES RESTANTES — 6I OPEN.**
+**ROADMAP 17-B.5F.3C.6D–6J — 6I CLOSED / 1 GATE RESTANTE — 6J OPEN.**
