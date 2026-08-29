@@ -294,6 +294,43 @@ function DashboardIcon() {
   )
 }
 
+function MonitoringIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 19V9M10 19V5M16 19v-7M22 19H2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M3 8l5-3 5 4 7-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3.5" y="5" width="17" height="15" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M7 3v4M17 3v4M3.5 10h17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ArtifactsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 3h8l4 4v14H6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M14 3v5h5M9 12h6M9 16h6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function EvolutionIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 17a8 8 0 1113.5 1.5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M18 14v5h-5M8 12l3 3 5-6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function JourneyIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -6745,7 +6782,7 @@ export function SkpeCockpit({
                 }
                 hidden={!canViewEvolution}
               >
-                <JourneyIcon />
+                <EvolutionIcon />
                 Ciclos de Evolução
               </button>
 
@@ -6776,7 +6813,7 @@ export function SkpeCockpit({
                 }
                 hidden={!canViewMonitoring}
               >
-                <DashboardIcon />
+                <MonitoringIcon />
                 Monitoramento
               </button>
 
@@ -6792,7 +6829,7 @@ export function SkpeCockpit({
                 }
                 hidden={!canViewAgenda}
               >
-                <DashboardIcon />
+                <CalendarIcon />
                 Agenda
               </button>
 
@@ -6807,7 +6844,7 @@ export function SkpeCockpit({
                   navigateToSection('artifacts')
                 }
                hidden={!canViewArtifacts}>
-                <DashboardIcon />
+                <ArtifactsIcon />
                 Artefatos e evidências
               </button>
 

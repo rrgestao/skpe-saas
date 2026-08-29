@@ -17,6 +17,84 @@
   color: #ffffff;
 }
 
+.skpe-shell,
+.skpe-sidebar,
+.skpe-main {
+  transition:
+    grid-template-columns 180ms ease,
+    padding 180ms ease,
+    width 180ms ease;
+}
+
+.skpe-sidebar-collapsed {
+  grid-template-columns: 82px minmax(0, 1fr);
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar {
+  padding: 0.9rem 0.65rem;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-brand {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-brand-text {
+  display: none;
+}
+
+.skpe-sidebar-collapsed .skpe-platform-mascot {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-icon-button {
+  width: 38px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.skpe-sidebar-collapsed .skpe-navigation {
+  justify-items: center;
+}
+
+.skpe-sidebar-collapsed .skpe-navigation button {
+  width: 46px;
+  min-width: 46px;
+  justify-content: center;
+  gap: 0;
+  padding: 0.7rem;
+  overflow: hidden;
+  font-size: 0;
+}
+
+.skpe-sidebar-collapsed .skpe-navigation button svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-footer {
+  justify-items: center;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-footer button {
+  width: 46px;
+  justify-content: center;
+  gap: 0;
+  padding: 0.65rem;
+  overflow: hidden;
+  font-size: 0;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-footer button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 .skpe-sidebar-brand {
   display: flex;
   align-items: center;
