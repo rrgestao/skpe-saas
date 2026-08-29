@@ -546,6 +546,26 @@ function getTemporalAlert(row: InitiativeTemporalRow) {
   return null
 }
 
+type TemporalVarianceSource = {
+  current_plan_end_variance_vs_baseline_days: number | null
+  forecast_end_variance_vs_current_plan_days: number | null
+  actual_end_variance_vs_current_plan_days: number | null
+}
+
+function getTemporalVarianceLabels(row: TemporalVarianceSource) {
+  const labels: string[] = []
+  const append = (label: string, value: number | null) => {
+    if (value === null || value === 0) return
+    labels.push(`${label}: ${value > 0 ? '+' : ''}${value}d`)
+  }
+
+  append('Plano × baseline', row.current_plan_end_variance_vs_baseline_days)
+  append('Forecast × plano', row.forecast_end_variance_vs_current_plan_days)
+  append('Realizado × plano', row.actual_end_variance_vs_current_plan_days)
+
+  return labels
+}
+
 function formatQuantity(value: number | null | undefined) {
   if (value === null || value === undefined) return '—'
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)
@@ -911,6 +931,7 @@ export function JourneyGantt({
           {displayRows.map(({ row, depth, hasChildren }) => {
             const rowEvents = eventsByItem.get(row.item_id) ?? []
             const isExpanded = expandedJourneyIds.has(row.item_id)
+            const varianceLabels = getTemporalVarianceLabels(row)
 
             return (
               <div className="skpe-gantt-row" key={`journey-${row.item_id}`}>
@@ -936,6 +957,13 @@ export function JourneyGantt({
                     </small>
                     <strong>{row.item_name}</strong>
                   </span>
+                  {varianceLabels.length > 0 && (
+                    <span className="skpe-gantt-row-meta" aria-label="Desvios temporais">
+                      {varianceLabels.map((label) => (
+                        <em key={label}>{label}</em>
+                      ))}
+                    </span>
+                  )}
                   {rowEvents.length > 0 && (
                     <em className="skpe-gantt-row-event-count">
                       {rowEvents.length} evento(s)
@@ -1030,6 +1058,7 @@ export function JourneyGantt({
               {initiativeRows.map(({ row, depth, hasChildren }) => {
                 const alert = getTemporalAlert(row)
                 const isExpanded = expandedInitiativeIds.has(row.entity_id)
+                const varianceLabels = getTemporalVarianceLabels(row)
 
                 return (
                   <div className="skpe-gantt-row" key={`initiative-${row.entity_id}`}>
@@ -1053,6 +1082,9 @@ export function JourneyGantt({
                       </span>
                       <span className="skpe-gantt-row-meta">
                         <em>{row.lifecycle_status}</em>
+                        {varianceLabels.map((label) => (
+                          <em key={label}>{label}</em>
+                        ))}
                         {alert && <b className="skpe-gantt-alert">{alert}</b>}
                       </span>
                     </button>
