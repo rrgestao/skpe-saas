@@ -28,7 +28,7 @@ type AdminTab =
 type ViewMode = 'cards' | 'grid' | 'hierarchy'
 type SortDirection = 'asc' | 'desc'
 type OrganizationDetailTab = 'data' | 'users' | 'modules' | 'hierarchy'
-type UserDetailTab = 'profile' | 'organizations' | 'roles' | 'moduleRoles' | 'audit'
+type UserDetailTab = 'profile' | 'organizations' | 'organizationalRoles' | 'roles' | 'moduleRoles' | 'audit'
 
 type Summary = {
   organizations_total: number
@@ -186,6 +186,34 @@ type UserModuleRole = {
   user_module_role_id: string | null
   valid_from: string | null
   valid_until: string | null
+}
+
+type UserOrganizationalRole = {
+  organization_id: string
+  organization_code: string
+  organization_name: string
+  membership_id: string
+  membership_status: string
+  organization_person_id: string
+  job_title: string | null
+  role_id: string
+  role_code: string
+  role_name: string
+  role_type: string
+  organizational_area: string | null
+  authority_level: string | null
+  is_governance_role: boolean
+  requires_mandate: boolean
+  assigned: boolean
+  assignment_id: string | null
+  assignment_status: string | null
+  mandate_start_date: string | null
+  mandate_end_date: string | null
+  appointment_document_reference: string | null
+  appointment_document_id: string | null
+  document_code: string | null
+  document_title: string | null
+  document_status: string | null
 }
 
 type UserAuditEvent = {
@@ -1000,6 +1028,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [organizationModuleRoles, setOrganizationModuleRoles] = useState<OrganizationModuleRole[]>([])
   const [loadingOrganizationModuleRoles, setLoadingOrganizationModuleRoles] = useState(false)
   const [userModuleRoles, setUserModuleRoles] = useState<UserModuleRole[]>([])
+  const [userOrganizationalRoles, setUserOrganizationalRoles] = useState<UserOrganizationalRole[]>([])
   const [userAudit, setUserAudit] = useState<UserAuditEvent[]>([])
   const [loadingUserRelations, setLoadingUserRelations] = useState(false)
 
@@ -1286,13 +1315,21 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   useEffect(() => {
     if (!selectedUserForRoles) {
       setUserModuleRoles([])
+      setUserOrganizationalRoles([])
       setUserAudit([])
       return
     }
 
     const loadUserRelatedAccess = async () => {
       setLoadingUserRelations(true)
-      const [moduleRolesResponse, auditResponse] = await Promise.all([
+      const [
+        organizationalRolesResponse,
+        moduleRolesResponse,
+        auditResponse,
+      ] = await Promise.all([
+        supabase.rpc('get_platform_admin_user_organizational_roles', {
+          target_user_id: selectedUserForRoles,
+        }),
         supabase.rpc('get_platform_admin_user_module_roles', {
           target_user_id: selectedUserForRoles,
         }),
@@ -1301,6 +1338,18 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
           limit_count: 150,
         }),
       ])
+
+      if (organizationalRolesResponse.error) {
+        showMessage(
+          `Erro ao carregar papéis na Organização: ${organizationalRolesResponse.error.message}`,
+          'error',
+        )
+        setUserOrganizationalRoles([])
+      } else {
+        setUserOrganizationalRoles(
+          (organizationalRolesResponse.data ?? []) as UserOrganizationalRole[],
+        )
+      }
 
       if (moduleRolesResponse.error) {
         showMessage(`Erro ao carregar perfis por módulo: ${moduleRolesResponse.error.message}`, 'error')
@@ -3431,6 +3480,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
             <nav className="pa-detail-tabs" aria-label="Dados relacionados ao usuário">
               <button type="button" className={userDetailTab === 'profile' ? 'active' : ''} onClick={() => setUserDetailTab('profile')}>Dados do usuário</button>
               <button type="button" className={userDetailTab === 'organizations' ? 'active' : ''} onClick={() => setUserDetailTab('organizations')}>Organizações e acessos <span>{userMemberships.length}</span></button>
+              <button type="button" className={userDetailTab === 'organizationalRoles' ? 'active' : ''} onClick={() => setUserDetailTab('organizationalRoles')}>Papéis na Organização <span>{userOrganizationalRoles.filter((role) => role.assigned).length}</span></button>
               <button type="button" className={userDetailTab === 'roles' ? 'active' : ''} onClick={() => setUserDetailTab('roles')}>Perfis globais <span>{userRoles.filter((role) => role.assigned).length}</span></button>
               <button type="button" className={userDetailTab === 'moduleRoles' ? 'active' : ''} onClick={() => setUserDetailTab('moduleRoles')}>Perfis por módulo <span>{assignedModuleRolesCount}</span></button>
               <button type="button" className={userDetailTab === 'audit' ? 'active' : ''} onClick={() => setUserDetailTab('audit')}>Auditoria <span>{userAudit.length}</span></button>
@@ -3448,6 +3498,44 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               <section className="pa-related-section">
                 <div className="pa-related-heading"><div><h3>Organizações e acessos</h3><p>Um mesmo usuário pode atuar em várias organizações, com cargo, vigência e acessos próprios em cada vínculo. Clique no cartão para editar.</p></div><button type="button" className="pa-primary-button" onClick={() => openNewMembershipForUser(userForm.userId)}>+ Vincular organização</button></div>
                 {userMemberships.length === 0 ? <div className="pa-empty-state">Este usuário ainda não possui vínculo organizacional.</div> : <div className="pa-related-grid">{userMemberships.map((membership) => <article key={membership.membership_id} className="pa-related-card pa-interactive-record" role="button" tabIndex={0} onClick={() => openMembershipEdit(membership)} onKeyDown={(event) => activateWithKeyboard(event, () => openMembershipEdit(membership))}><div><small>{membership.organization_code}</small><h4>{membership.organization_name}</h4><p>{membership.job_title ?? 'Função não informada'}</p></div><dl><div><dt>Situação</dt><dd>{labelStatus(membership.membership_status)}</dd></div><div><dt>Admin local</dt><dd>{membership.is_organization_admin ? 'Sim' : 'Não'}</dd></div></dl></article>)}</div>}
+              </section>
+            ) : userDetailTab === 'organizationalRoles' ? (
+              <section className="pa-related-section">
+                <div className="pa-related-heading">
+                  <div>
+                    <h3>Papéis na Organização</h3>
+                    <p>Papéis institucionais e de governança exercidos pela pessoa. Cargo/função, administrador local e perfis de acesso permanecem conceitos distintos.</p>
+                  </div>
+                </div>
+                {loadingUserRelations ? (
+                  <div className="pa-empty-state">Carregando papéis organizacionais...</div>
+                ) : userOrganizationalRoles.filter((role) => role.assigned).length === 0 ? (
+                  <div className="pa-empty-state">Nenhum papel institucional ativo está atribuído a este usuário nas organizações em que possui vínculo ativo.</div>
+                ) : (
+                  <div className="pa-related-grid">
+                    {userOrganizationalRoles
+                      .filter((role) => role.assigned)
+                      .map((role) => (
+                        <article
+                          key={role.assignment_id ?? `${role.organization_id}:${role.role_id}`}
+                          className="pa-related-card"
+                        >
+                          <div>
+                            <small>{role.organization_code} · {role.organization_name}</small>
+                            <h4>{role.role_name}</h4>
+                            <p>{role.organizational_area ?? 'Área/instância não informada'}</p>
+                          </div>
+                          <dl>
+                            <div><dt>Autoridade</dt><dd>{role.authority_level ?? 'Não informada'}</dd></div>
+                            <div><dt>Situação</dt><dd>{labelStatus(role.assignment_status)}</dd></div>
+                            <div><dt>Início</dt><dd>{formatDate(role.mandate_start_date)}</dd></div>
+                            <div><dt>Término</dt><dd>{role.mandate_end_date ? formatDate(role.mandate_end_date) : 'Prazo indeterminado'}</dd></div>
+                            <div><dt>Documento/designação</dt><dd>{role.document_code ?? role.appointment_document_reference ?? 'Não informado'}</dd></div>
+                          </dl>
+                        </article>
+                      ))}
+                  </div>
+                )}
               </section>
             ) : userDetailTab === 'roles' ? (
               <section className="pa-related-section">
