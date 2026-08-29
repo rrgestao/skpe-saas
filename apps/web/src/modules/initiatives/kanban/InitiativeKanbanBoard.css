@@ -1,3 +1,85 @@
+.initiative-kanban-guide {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color, #dfe3e8);
+  border-radius: 0.875rem;
+  background: var(--surface, #ffffff);
+  padding: 1rem;
+}
+
+.initiative-kanban-guide__copy {
+  max-width: 48rem;
+}
+
+.initiative-kanban-guide__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.initiative-kanban-guide__copy h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.initiative-kanban-guide__copy > p:last-child {
+  margin: 0.45rem 0 0;
+  max-width: 44rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.initiative-kanban-guide__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.initiative-kanban-guide__count {
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
+.initiative-kanban-primary-action {
+  border: 0;
+  border-radius: 0.65rem;
+  background: var(--primary-color, #111827);
+  color: var(--primary-contrast, #ffffff);
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.initiative-kanban-empty {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px dashed var(--border-color, #dfe3e8);
+  border-radius: 0.875rem;
+  padding: 1.25rem;
+}
+
+.initiative-kanban-empty h3,
+.initiative-kanban-empty p {
+  margin: 0;
+}
+
+.initiative-kanban-empty p {
+  max-width: 42rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .initiative-kanban-board {
   display: grid;
   grid-template-columns: repeat(5, minmax(15rem, 1fr));
@@ -290,15 +372,19 @@
 }
 
 @media (max-width: 640px) {
+  .initiative-kanban-guide {
+    display: grid;
+  }
+
+  .initiative-kanban-guide__actions {
+    justify-content: flex-start;
+  }
+
   .initiative-action-drawer__facts {
     grid-template-columns: 1fr;
   }
 }
-.initiative-kanban-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.75rem;
-}
+
 .initiative-kanban-card__economics {
   display: grid;
   gap: 0.45rem;
