@@ -2664,6 +2664,96 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     await loadAll()
   }
 
+  const refreshUserOrganizationalRoleData = async () => {
+    const [organizationalRolesResponse, auditResponse] = await Promise.all([
+      supabase.rpc('get_platform_admin_user_organizational_roles', {
+        target_user_id: userForm.userId,
+      }),
+      supabase.rpc('get_platform_admin_user_audit', {
+        target_user_id: userForm.userId,
+        limit_count: 150,
+      }),
+    ])
+
+    if (organizationalRolesResponse.error) {
+      showMessage(
+        `O papel foi alterado, mas nao foi possivel reler os papeis organizacionais: ${organizationalRolesResponse.error.message}`,
+        'error',
+      )
+    } else {
+      setUserOrganizationalRoles(
+        (organizationalRolesResponse.data ?? []) as UserOrganizationalRole[],
+      )
+    }
+
+    if (!auditResponse.error) {
+      setUserAudit((auditResponse.data ?? []) as UserAuditEvent[])
+    }
+  }
+
+  const toggleUserOrganizationalRole = async (role: UserOrganizationalRole) => {
+    const nextAssigned = !role.assigned
+    const reason = window.prompt(
+      nextAssigned
+        ? `Informe a justificativa para atribuir ${role.role_name} em ${role.organization_name}:`
+        : `Informe a justificativa para revogar ${role.role_name} em ${role.organization_name}:`,
+      'Manutencao realizada pela Administracao da Plataforma.',
+    )
+
+    if (!reason?.trim()) return
+
+    let mandateStartDate: string | null = null
+    let mandateEndDate: string | null = null
+
+    if (nextAssigned && role.requires_mandate) {
+      const startDate = window.prompt(
+        `O papel ${role.role_name} exige mandato. Informe a data de inicio (AAAA-MM-DD):`,
+        role.mandate_start_date ?? new Date().toISOString().slice(0, 10),
+      )
+
+      if (startDate === null) return
+      if (!startDate.trim()) {
+        showMessage('Informe a data de inicio do mandato para concluir a atribuicao.', 'error')
+        return
+      }
+
+      const endDate = window.prompt(
+        'Informe a data de termino do mandato (AAAA-MM-DD) ou deixe em branco para prazo indeterminado:',
+        role.mandate_end_date ?? '',
+      )
+
+      if (endDate === null) return
+      mandateStartDate = startDate.trim()
+      mandateEndDate = endDate.trim() || null
+    }
+
+    const { error } = await supabase.rpc('set_platform_admin_user_organizational_role', {
+      target_user_id: userForm.userId,
+      target_organization_id: role.organization_id,
+      target_organizational_role_id: role.role_id,
+      input_assigned: nextAssigned,
+      input_mandate_start_date: mandateStartDate,
+      input_mandate_end_date: mandateEndDate,
+      input_appointment_document_reference: null,
+      input_notes: null,
+      input_reason: reason.trim(),
+    })
+
+    if (error) {
+      showMessage(`Nao foi possivel alterar o papel na Organizacao: ${error.message}`, 'error')
+      return
+    }
+
+    await refreshUserOrganizationalRoleData()
+    showMessage(
+      nextAssigned
+        ? 'Papel na Organizacao atribuido com sucesso.'
+        : 'Papel na Organizacao revogado com sucesso.',
+      'success',
+    )
+    await loadAll()
+  }
+
   const toggleUserRole = async (role: UserRole) => {
     const reason = window.prompt(
       role.assigned
@@ -3473,6 +3563,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
             <div className="pa-user-maintenance-actions" aria-label="Ações de manutenção do usuário">
               <button type="button" onClick={() => setUserDetailTab('profile')}>Editar dados</button>
               <button type="button" onClick={() => setUserDetailTab('organizations')}>Vincular organização</button>
+              <button type="button" onClick={() => setUserDetailTab('organizationalRoles')}>Gerenciar papéis na Organização</button>
               <button type="button" onClick={() => setUserDetailTab('roles')}>Gerenciar perfis globais</button>
               <button type="button" onClick={() => setUserDetailTab('moduleRoles')}>Gerenciar perfis por módulo</button>
             </div>
@@ -3504,36 +3595,43 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 <div className="pa-related-heading">
                   <div>
                     <h3>Papéis na Organização</h3>
-                    <p>Papéis institucionais e de governança exercidos pela pessoa. Cargo/função, administrador local e perfis de acesso permanecem conceitos distintos.</p>
+                    <p>Atribua ou revogue papéis institucionais e de governança sem misturá-los com cargo/função, administrador local ou perfis de acesso.</p>
                   </div>
                 </div>
                 {loadingUserRelations ? (
                   <div className="pa-empty-state">Carregando papéis organizacionais...</div>
-                ) : userOrganizationalRoles.filter((role) => role.assigned).length === 0 ? (
-                  <div className="pa-empty-state">Nenhum papel institucional ativo está atribuído a este usuário nas organizações em que possui vínculo ativo.</div>
+                ) : userOrganizationalRoles.length === 0 ? (
+                  <div className="pa-empty-state">Não há papéis organizacionais disponíveis nas organizações em que este usuário possui vínculo ativo.</div>
                 ) : (
                   <div className="pa-related-grid">
-                    {userOrganizationalRoles
-                      .filter((role) => role.assigned)
-                      .map((role) => (
-                        <article
-                          key={role.assignment_id ?? `${role.organization_id}:${role.role_id}`}
-                          className="pa-related-card"
+                    {userOrganizationalRoles.map((role) => (
+                      <article
+                        key={`${role.organization_id}:${role.role_id}`}
+                        className="pa-related-card"
+                      >
+                        <div>
+                          <small>{role.organization_code} · {role.organization_name}</small>
+                          <h4>{role.role_name}</h4>
+                          <p>{role.organizational_area ?? 'Área/instância não informada'}</p>
+                        </div>
+                        <dl>
+                          <div><dt>Autoridade</dt><dd>{role.authority_level ?? 'Não informada'}</dd></div>
+                          <div><dt>Governança</dt><dd>{role.is_governance_role ? 'Sim' : 'Não'}</dd></div>
+                          <div><dt>Mandato</dt><dd>{role.requires_mandate ? 'Obrigatório' : 'Não obrigatório'}</dd></div>
+                          <div><dt>Situação</dt><dd>{role.assigned ? labelStatus(role.assignment_status) : 'Não atribuído'}</dd></div>
+                          {role.assigned && <div><dt>Início</dt><dd>{formatDate(role.mandate_start_date)}</dd></div>}
+                          {role.assigned && <div><dt>Término</dt><dd>{role.mandate_end_date ? formatDate(role.mandate_end_date) : 'Prazo indeterminado'}</dd></div>}
+                          {role.assigned && <div><dt>Documento/designação</dt><dd>{role.document_code ?? role.appointment_document_reference ?? 'Não informado'}</dd></div>}
+                        </dl>
+                        <button
+                          type="button"
+                          className={role.assigned ? 'pa-danger-button' : 'pa-primary-button'}
+                          onClick={() => void toggleUserOrganizationalRole(role)}
                         >
-                          <div>
-                            <small>{role.organization_code} · {role.organization_name}</small>
-                            <h4>{role.role_name}</h4>
-                            <p>{role.organizational_area ?? 'Área/instância não informada'}</p>
-                          </div>
-                          <dl>
-                            <div><dt>Autoridade</dt><dd>{role.authority_level ?? 'Não informada'}</dd></div>
-                            <div><dt>Situação</dt><dd>{labelStatus(role.assignment_status)}</dd></div>
-                            <div><dt>Início</dt><dd>{formatDate(role.mandate_start_date)}</dd></div>
-                            <div><dt>Término</dt><dd>{role.mandate_end_date ? formatDate(role.mandate_end_date) : 'Prazo indeterminado'}</dd></div>
-                            <div><dt>Documento/designação</dt><dd>{role.document_code ?? role.appointment_document_reference ?? 'Não informado'}</dd></div>
-                          </dl>
-                        </article>
-                      ))}
+                          {role.assigned ? 'Revogar papel' : 'Atribuir papel'}
+                        </button>
+                      </article>
+                    ))}
                   </div>
                 )}
               </section>
