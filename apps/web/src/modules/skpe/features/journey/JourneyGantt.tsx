@@ -197,11 +197,13 @@ type GanttBarKind = 'baseline' | 'plan' | 'forecast' | 'actual'
 type GanttDisplayRow = {
   row: JourneyTemporalRow
   depth: number
+  hasChildren: boolean
 }
 
 type InitiativeDisplayRow = {
   row: InitiativeTemporalRow
   depth: number
+  hasChildren: boolean
 }
 
 type DateRange = {
@@ -312,7 +314,10 @@ function getEventRange(event: JourneyEventRow): DateRange | null {
   return normalizeRange(start, end)
 }
 
-function flattenJourney(rows: JourneyTemporalRow[]): GanttDisplayRow[] {
+function flattenJourney(
+  rows: JourneyTemporalRow[],
+  expandedIds: Set<string>,
+): GanttDisplayRow[] {
   const childrenByParent = new Map<string | null, JourneyTemporalRow[]>()
   const rowIds = new Set(rows.map((row) => row.item_id))
 
@@ -336,8 +341,12 @@ function flattenJourney(rows: JourneyTemporalRow[]): GanttDisplayRow[] {
   const result: GanttDisplayRow[] = []
   const visit = (parentId: string | null, depth: number) => {
     for (const row of childrenByParent.get(parentId) ?? []) {
-      result.push({ row, depth })
-      visit(row.item_id, depth + 1)
+      const hasChildren = (childrenByParent.get(row.item_id)?.length ?? 0) > 0
+      result.push({ row, depth, hasChildren })
+
+      if (hasChildren && expandedIds.has(row.item_id)) {
+        visit(row.item_id, depth + 1)
+      }
     }
   }
 
@@ -345,7 +354,10 @@ function flattenJourney(rows: JourneyTemporalRow[]): GanttDisplayRow[] {
   return result
 }
 
-function flattenInitiative(rows: InitiativeTemporalRow[]): InitiativeDisplayRow[] {
+function flattenInitiative(
+  rows: InitiativeTemporalRow[],
+  expandedIds: Set<string>,
+): InitiativeDisplayRow[] {
   const initiative = rows.find((row) => row.entity_type === 'initiative')
   const actions = rows
     .filter((row) => row.entity_type === 'action')
@@ -365,17 +377,24 @@ function flattenInitiative(rows: InitiativeTemporalRow[]): InitiativeDisplayRow[
   const result: InitiativeDisplayRow[] = []
 
   if (initiative) {
-    result.push({ row: initiative, depth: 0 })
+    result.push({ row: initiative, depth: 0, hasChildren: actions.length > 0 })
   }
 
   const visit = (parentId: string | null, depth: number) => {
     for (const action of byParent.get(parentId) ?? []) {
-      result.push({ row: action, depth })
-      visit(action.entity_id, depth + 1)
+      const hasChildren = (byParent.get(action.entity_id)?.length ?? 0) > 0
+      result.push({ row: action, depth, hasChildren })
+
+      if (hasChildren && expandedIds.has(action.entity_id)) {
+        visit(action.entity_id, depth + 1)
+      }
     }
   }
 
-  visit(null, 1)
+  if (!initiative || expandedIds.has(initiative.entity_id)) {
+    visit(null, initiative ? 1 : 0)
+  }
+
   return result
 }
 
@@ -618,9 +637,16 @@ export function JourneyGantt({
   const [projectionError, setProjectionError] = useState('')
   const [selectedEvent, setSelectedEvent] = useState<JourneyEventRow | null>(null)
   const [localEventRevision, setLocalEventRevision] = useState(0)
+  const [expandedJourneyIds, setExpandedJourneyIds] = useState<Set<string>>(() => new Set())
+  const [expandedInitiativeIds, setExpandedInitiativeIds] = useState<Set<string>>(() => new Set())
 
   const organizationId = rows[0]?.organization_id ?? null
   const projectId = rows[0]?.project_id ?? null
+
+  useEffect(() => {
+    setExpandedJourneyIds(new Set())
+    setExpandedInitiativeIds(new Set())
+  }, [projectId])
 
   useEffect(() => {
     let active = true
@@ -676,7 +702,28 @@ export function JourneyGantt({
     }
   }, [organizationId, projectId, referenceDate, eventProjectionRevision, localEventRevision])
 
-  const flattenedRows = useMemo(() => flattenJourney(rows), [rows])
+  const journeyExpandableIds = useMemo(() => {
+    const parentIds = new Set(rows.map((row) => row.parent_item_id).filter(Boolean) as string[])
+    return parentIds
+  }, [rows])
+  const initiativeExpandableIds = useMemo(() => {
+    const parentIds = new Set<string>()
+    const initiative = initiativeTemporal.find((row) => row.entity_type === 'initiative')
+    const actions = initiativeTemporal.filter((row) => row.entity_type === 'action')
+
+    if (initiative && actions.length > 0) {
+      parentIds.add(initiative.entity_id)
+    }
+    for (const action of actions) {
+      if (action.parent_action_id) parentIds.add(action.parent_action_id)
+    }
+
+    return parentIds
+  }, [initiativeTemporal])
+  const flattenedRows = useMemo(
+    () => flattenJourney(rows, expandedJourneyIds),
+    [rows, expandedJourneyIds],
+  )
   const displayRows = useMemo(
     () =>
       visibility === 'mandatory'
@@ -685,9 +732,37 @@ export function JourneyGantt({
     [flattenedRows, visibility],
   )
   const initiativeRows = useMemo(
-    () => flattenInitiative(initiativeTemporal),
-    [initiativeTemporal],
+    () => flattenInitiative(initiativeTemporal, expandedInitiativeIds),
+    [initiativeTemporal, expandedInitiativeIds],
   )
+
+  const toggleJourneyExpansion = (itemId: string) => {
+    setExpandedJourneyIds((current) => {
+      const next = new Set(current)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
+
+  const toggleInitiativeExpansion = (entityId: string) => {
+    setExpandedInitiativeIds((current) => {
+      const next = new Set(current)
+      if (next.has(entityId)) next.delete(entityId)
+      else next.add(entityId)
+      return next
+    })
+  }
+
+  const collapseAll = () => {
+    setExpandedJourneyIds(new Set())
+    setExpandedInitiativeIds(new Set())
+  }
+
+  const expandAll = () => {
+    setExpandedJourneyIds(new Set(journeyExpandableIds))
+    setExpandedInitiativeIds(new Set(initiativeExpandableIds))
+  }
   const eventsByItem = useMemo(() => {
     const grouped = new Map<string, JourneyEventRow[]>()
 
@@ -779,20 +854,29 @@ export function JourneyGantt({
           )}
 
           <div className="skpe-gantt-filter" role="group" aria-label="Escopo da Jornada no Gantt">
-          <button
-            type="button"
-            className={visibility === 'all' ? 'is-active' : ''}
-            onClick={() => setVisibility('all')}
-          >
-            Jornada completa
-          </button>
-          <button
-            type="button"
-            className={visibility === 'mandatory' ? 'is-active' : ''}
-            onClick={() => setVisibility('mandatory')}
-          >
-            Jornada obrigatória
-          </button>
+            <button
+              type="button"
+              className={visibility === 'all' ? 'is-active' : ''}
+              onClick={() => setVisibility('all')}
+            >
+              Jornada completa
+            </button>
+            <button
+              type="button"
+              className={visibility === 'mandatory' ? 'is-active' : ''}
+              onClick={() => setVisibility('mandatory')}
+            >
+              Jornada obrigatória
+            </button>
+          </div>
+
+          <div className="skpe-gantt-filter" role="group" aria-label="Expansão hierárquica do Gantt">
+            <button type="button" onClick={collapseAll}>
+              Recolher tudo
+            </button>
+            <button type="button" onClick={expandAll}>
+              Expandir tudo
+            </button>
           </div>
         </div>
       </header>
@@ -824,8 +908,9 @@ export function JourneyGantt({
           <div className="skpe-gantt-section-label">Jornada Estratégica</div>
           <div className="skpe-gantt-section-timeline">{renderTimelineBackground(timeline)}</div>
 
-          {displayRows.map(({ row, depth }) => {
+          {displayRows.map(({ row, depth, hasChildren }) => {
             const rowEvents = eventsByItem.get(row.item_id) ?? []
+            const isExpanded = expandedJourneyIds.has(row.item_id)
 
             return (
               <div className="skpe-gantt-row" key={`journey-${row.item_id}`}>
@@ -837,11 +922,18 @@ export function JourneyGantt({
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  onClick={() => onSelectItem(row.item_id)}
+                  onClick={() => {
+                    onSelectItem(row.item_id)
+                    if (hasChildren) toggleJourneyExpansion(row.item_id)
+                  }}
+                  aria-expanded={hasChildren ? isExpanded : undefined}
                   title={`${getItemTypeLabel(row.item_type)} · ${row.item_code} · ${row.item_name}`}
                 >
                   <span style={{ paddingLeft: `${Math.min(depth, 5) * 14}px` }}>
-                    <small>{getItemTypeLabel(row.item_type)} · {row.item_code}</small>
+                    <small>
+                      {hasChildren ? `${isExpanded ? '▾' : '▸'} ` : ''}
+                      {getItemTypeLabel(row.item_type)} · {row.item_code}
+                    </small>
                     <strong>{row.item_name}</strong>
                   </span>
                   {rowEvents.length > 0 && (
@@ -935,14 +1027,26 @@ export function JourneyGantt({
               <div className="skpe-gantt-section-label">Execução Estratégica</div>
               <div className="skpe-gantt-section-timeline">{renderTimelineBackground(timeline)}</div>
 
-              {initiativeRows.map(({ row, depth }) => {
+              {initiativeRows.map(({ row, depth, hasChildren }) => {
                 const alert = getTemporalAlert(row)
+                const isExpanded = expandedInitiativeIds.has(row.entity_id)
 
                 return (
                   <div className="skpe-gantt-row" key={`initiative-${row.entity_id}`}>
-                    <div className="skpe-gantt-row-label skpe-gantt-row-label-readonly">
+                    <button
+                      type="button"
+                      className={[
+                        'skpe-gantt-row-label',
+                        hasChildren ? '' : 'skpe-gantt-row-label-readonly',
+                      ].filter(Boolean).join(' ')}
+                      onClick={() => {
+                        if (hasChildren) toggleInitiativeExpansion(row.entity_id)
+                      }}
+                      aria-expanded={hasChildren ? isExpanded : undefined}
+                    >
                       <span style={{ paddingLeft: `${Math.min(depth, 5) * 14}px` }}>
                         <small>
+                          {hasChildren ? `${isExpanded ? '▾' : '▸'} ` : ''}
                           {row.entity_type === 'initiative' ? 'Iniciativa' : 'Ação'} · {row.code}
                         </small>
                         <strong>{row.name}</strong>
@@ -951,7 +1055,7 @@ export function JourneyGantt({
                         <em>{row.lifecycle_status}</em>
                         {alert && <b className="skpe-gantt-alert">{alert}</b>}
                       </span>
-                    </div>
+                    </button>
 
                     <div className="skpe-gantt-timeline-cell skpe-gantt-timeline-cell-readonly">
                       {renderTimelineBackground(timeline)}
