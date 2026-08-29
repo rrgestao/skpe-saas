@@ -15,6 +15,7 @@ import './SkpeCockpit.css'
 import type { JourneyRow } from './contracts/journey'
 import { MethodologyArtifactsSection } from './features/artifacts/MethodologyArtifactsSection'
 import { MonitoringSection } from './features/monitoring/MonitoringSection'
+import { AgendaSection } from './features/agenda/AgendaSection'
 import { EvolutionCyclesSection } from './features/evolution/EvolutionCyclesSection'
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
@@ -40,6 +41,7 @@ export type CockpitSection =
   | 'evolution-cycles'
   | 'initiatives'
   | 'monitoring'
+  | 'agenda'
   | 'artifacts'
   | 'governance'
   | 'organization'
@@ -6627,6 +6629,7 @@ export function SkpeCockpit({
 
   const canViewInitiatives = capabilities?.can_view_initiatives ?? legacyCanView
   const canViewMonitoring = canViewJourney || canViewInitiatives
+  const canViewAgenda = canViewJourney
   const canViewArtifacts = capabilities?.can_view_artifacts ?? legacyCanView
   const canViewGovernance = capabilities?.can_view_governance ?? legacyCanView
   const canManageJourney = capabilities?.can_manage_journey ?? legacyCanManageJourney
@@ -6656,12 +6659,13 @@ export function SkpeCockpit({
       'evolution-cycles': canViewEvolution,
       initiatives: canViewInitiatives,
       monitoring: canViewMonitoring,
+      agenda: canViewAgenda,
       artifacts: canViewArtifacts,
       governance: canViewGovernance,
       administration: canOpenAdministration,
     }
     if (allowedBySection[activeSection] === false) setActiveSection('overview')
-  }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewArtifacts, canViewEvolution, canViewGovernance, canViewInitiatives, canViewJourney, canViewMonitoring, canViewOverview, mode])
+  }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewAgenda, canViewArtifacts, canViewEvolution, canViewGovernance, canViewInitiatives, canViewJourney, canViewMonitoring, canViewOverview, mode])
 
   const activeSectionLabel: Record<CockpitSection, string> = {
     overview: 'Visão Geral',
@@ -6669,6 +6673,7 @@ export function SkpeCockpit({
     'evolution-cycles': 'Ciclos de Evolução',
     initiatives: 'Iniciativas',
     monitoring: 'Monitoramento',
+    agenda: 'Agenda',
     artifacts: 'Artefatos e evidências',
     governance: 'Governança',
     organization: 'Cadastro institucional',
@@ -6773,6 +6778,22 @@ export function SkpeCockpit({
               >
                 <DashboardIcon />
                 Monitoramento
+              </button>
+
+              <button
+                type="button"
+                className={
+                  activeSection === 'agenda'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  navigateToSection('agenda')
+                }
+                hidden={!canViewAgenda}
+              >
+                <DashboardIcon />
+                Agenda
               </button>
 
               <button
@@ -7155,6 +7176,10 @@ export function SkpeCockpit({
               navigateToSection('initiatives')
             }}
           />
+        )}
+
+        {activeSection === 'agenda' && canViewAgenda && (
+          <AgendaSection organizationId={organizationId} />
         )}
 
         {activeSection === 'artifacts' && canViewArtifacts && (

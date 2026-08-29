@@ -11,6 +11,7 @@ export type SkpeRouteSection =
   | 'evolution-cycles'
   | 'initiatives'
   | 'monitoring'
+  | 'agenda'
   | 'governance'
   | 'artifacts'
 
@@ -47,6 +48,7 @@ const SKPE_SECTIONS = new Set<SkpeRouteSection>([
   'evolution-cycles',
   'initiatives',
   'monitoring',
+  'agenda',
   'governance',
   'artifacts',
 ])

@@ -31,6 +31,7 @@ const ROUTABLE_COCKPIT_SECTIONS =
     'evolution-cycles',
     'initiatives',
     'monitoring',
+    'agenda',
     'artifacts',
     'governance',
   ])
