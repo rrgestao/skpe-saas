@@ -98,6 +98,7 @@ type StrategicProjectContext = {
   project_status: string
   project_progress: number
   current_phase_code: string | null
+  current_phase_name: string | null
   planning_horizon_start_year: number | null
   planning_horizon_end_year: number | null
   reference_year: number | null
@@ -940,6 +941,8 @@ function OverviewSection({
               progress: Number(projectContext.project_progress ?? 0),
               currentPhaseCode:
                 projectContext.current_phase_code ?? 'A definir',
+              currentPhaseName:
+                projectContext.current_phase_name ?? null,
               strategicHorizon: formatStrategicHorizon(projectContext),
               reviewCycle:
                 projectContext.review_cycle ??
@@ -6624,7 +6627,43 @@ export function SkpeCockpit({
       return
     }
 
-    setProjectContext(((data ?? [])[0] ?? null) as StrategicProjectContext | null)
+    const loaded = ((data ?? [])[0] ?? null) as
+      | Omit<StrategicProjectContext, 'current_phase_name'>
+      | null
+
+    if (!loaded) {
+      setProjectContext(null)
+      return
+    }
+
+    let currentPhaseName: string | null = null
+
+    if (loaded.current_phase_code) {
+      const { data: journeyData, error: journeyError } = await supabase.rpc(
+        'get_skpe_journey_temporal_read_model',
+        {
+          target_organization_id: organizationId,
+          target_project_id: loaded.project_id,
+          target_as_of_date: null,
+        },
+      )
+
+      if (!journeyError) {
+        const currentPhase = (
+          (journeyData ?? []) as Array<{
+            item_code: string
+            item_name: string
+          }>
+        ).find((row) => row.item_code === loaded.current_phase_code)
+
+        currentPhaseName = currentPhase?.item_name ?? null
+      }
+    }
+
+    setProjectContext({
+      ...loaded,
+      current_phase_name: currentPhaseName,
+    })
   }
 
   const startStrategicProject = async () => {
@@ -6786,6 +6825,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('overview')
                 }
+                title="Visão Geral"
               >
                 <DashboardIcon />
                 Visão Geral
@@ -6801,6 +6841,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('journey')
                 }
+                title="Jornada Estratégica"
                hidden={!canViewJourney}>
                 <JourneyIcon />
                 Jornada Estratégica
@@ -6815,6 +6856,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('evolution-cycles')
                 }
+                title="Ciclos de Evolução"
                 hidden={!canViewEvolution}
               >
                 <EvolutionIcon />
@@ -6831,6 +6873,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('initiatives')
                 }
+                title="Iniciativas"
                hidden={!canViewInitiatives}>
                 <InitiativesIcon />
                 Iniciativas
@@ -6846,6 +6889,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('monitoring')
                 }
+                title="Monitoramento"
                 hidden={!canViewMonitoring}
               >
                 <MonitoringIcon />
@@ -6862,6 +6906,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('agenda')
                 }
+                title="Agenda"
                 hidden={!canViewAgenda}
               >
                 <CalendarIcon />
@@ -6878,6 +6923,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('artifacts')
                 }
+                title="Artefatos e evidências"
                hidden={!canViewArtifacts}>
                 <ArtifactsIcon />
                 Artefatos e evidências
@@ -6893,6 +6939,7 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('governance')
                 }
+                title="Governança"
                hidden={!canViewGovernance}>
                 <GovernanceIcon />
                 Governança
@@ -6967,14 +7014,26 @@ export function SkpeCockpit({
         </nav>
 
         <div className="skpe-sidebar-footer">
-<button
+          <button
             type="button"
             onClick={onReturnToModules}
+            title={
+              mode === 'organization-admin'
+                ? 'Voltar à organização'
+                : 'Voltar aos módulos'
+            }
+            aria-label={
+              mode === 'organization-admin'
+                ? 'Voltar à organização'
+                : 'Voltar aos módulos'
+            }
           >
             <ArrowLeftIcon />
-            {mode === 'organization-admin'
-              ? 'Voltar à organização'
-              : 'Voltar aos módulos'}
+            <span>
+              {mode === 'organization-admin'
+                ? 'Voltar à organização'
+                : 'Voltar aos módulos'}
+            </span>
           </button>
         </div>
       </aside>

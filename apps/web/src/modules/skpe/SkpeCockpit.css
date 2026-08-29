@@ -4664,3 +4664,104 @@ tr.skpe-interactive-record:focus-visible {
 .skpe-initiative-kanban-context strong {
   font-size: 1rem;
 }
+/* SK-PE UX SHELL OVERVIEW HARDENING V2 */
+.skpe-sidebar {
+  box-sizing: border-box;
+}
+
+.skpe-shell.skpe-sidebar-collapsed {
+  grid-template-columns: 82px minmax(0, 1fr) !important;
+}
+
+.skpe-shell.skpe-sidebar-collapsed > .skpe-sidebar {
+  width: 82px !important;
+  min-width: 82px !important;
+  max-width: 82px !important;
+  box-sizing: border-box;
+  padding: 0.9rem 0.65rem;
+  overflow: hidden;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-sidebar-brand {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-navigation {
+  width: 100%;
+  min-width: 0;
+  justify-items: center;
+  padding-right: 0;
+  overflow-x: hidden;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-navigation button {
+  width: 46px;
+  min-width: 46px;
+  max-width: 46px;
+  justify-content: center;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-sidebar-footer {
+  width: 100%;
+  min-height: 58px;
+  flex: 0 0 auto;
+  justify-items: center;
+  padding-top: 0.65rem;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-sidebar-footer button {
+  width: 46px;
+  min-width: 46px;
+  min-height: 42px;
+  justify-content: center;
+  gap: 0;
+  margin-top: 0;
+  padding: 0.65rem;
+  overflow: visible;
+  font-size: inherit;
+}
+
+.skpe-shell.skpe-sidebar-collapsed .skpe-sidebar-footer button span {
+  display: none;
+}
+
+.skpe-kpi-card {
+  min-height: 178px;
+  align-content: center;
+  justify-items: center;
+  gap: 0.55rem;
+  text-align: center;
+}
+
+.skpe-kpi-card > * {
+  max-width: 100%;
+}
+
+.skpe-kpi-card span,
+.skpe-kpi-card small {
+  text-align: center;
+}
+
+.skpe-kpi-card strong {
+  max-width: 100%;
+  font-size: clamp(1.05rem, 1.35vw, 1.5rem);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.skpe-kpi-card--progress strong,
+.skpe-kpi-card--horizon strong {
+  font-size: clamp(1.4rem, 1.7vw, 1.8rem);
+}
+
+.skpe-kpi-card--phase strong {
+  font-size: clamp(1rem, 1.22vw, 1.35rem);
+  line-height: 1.28;
+}
+
+.skpe-kpi-card .skpe-card-link-button {
+  justify-self: center;
+}

@@ -26,6 +26,7 @@ type WorkspaceProjectSummary = {
   statusLabel: string
   progress: number
   currentPhaseCode: string
+  currentPhaseName: string | null
   strategicHorizon: string
   reviewCycle: string
 }
@@ -806,7 +807,7 @@ export function MyWorkspacePage({
           className="skpe-kpi-grid"
           aria-label="Síntese do projeto estratégico"
         >
-          <article className="skpe-kpi-card">
+          <article className="skpe-kpi-card skpe-kpi-card--progress">
             <span>Avanço geral estimado</span>
             <strong>
               {project.progress.toLocaleString('pt-BR', {
@@ -823,19 +824,25 @@ export function MyWorkspacePage({
             </button>
           </article>
 
-          <article className="skpe-kpi-card">
+          <article className="skpe-kpi-card skpe-kpi-card--project">
             <span>Projeto estratégico</span>
             <strong>{project.code}</strong>
             <small>{project.name}</small>
           </article>
 
-          <article className="skpe-kpi-card">
+          <article className="skpe-kpi-card skpe-kpi-card--phase">
             <span>Etapa atual</span>
-            <strong>{project.currentPhaseCode}</strong>
-            <small>{project.statusLabel}</small>
+            <strong>
+              {project.currentPhaseName ?? project.currentPhaseCode}
+            </strong>
+            <small>
+              {project.currentPhaseName
+                ? `${project.currentPhaseCode} · ${project.statusLabel}`
+                : project.statusLabel}
+            </small>
           </article>
 
-          <article className="skpe-kpi-card">
+          <article className="skpe-kpi-card skpe-kpi-card--horizon">
             <span>Horizonte estratégico</span>
             <strong>{project.strategicHorizon}</strong>
             <button
