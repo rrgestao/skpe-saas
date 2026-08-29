@@ -7,12 +7,8 @@ import {
 
 import type {
   InitiativeKanbanCardModel,
-  InitiativeKanbanColumnModel,
   InitiativeKanbanStatus,
 } from '../contracts/initiativeActions'
-import {
-  loadInitiativeActionBoard,
-} from '../data/initiativeActionsData'
 import {
   InitiativeActionDrawer,
 } from './InitiativeActionDrawer'
@@ -28,8 +24,13 @@ import {
 import {
   InitiativeLifecycleDialog,
 } from './InitiativeLifecycleDialog'
+import {
+  loadInitiativeKanbanFilteredBoard,
+  type InitiativeKanbanFilteredColumnModel,
+} from './initiativeKanbanFilteredBoardData'
 
 import './InitiativeKanbanBoard.css'
+import './InitiativeKanbanFilters.css'
 
 type InitiativeKanbanBoardProps = {
   initiativeId: string
@@ -48,8 +49,12 @@ export function InitiativeKanbanBoard({
   initialActionId = null,
 }: InitiativeKanbanBoardProps) {
   const [columns, setColumns] = useState<
-    InitiativeKanbanColumnModel[]
+    InitiativeKanbanFilteredColumnModel[]
   >([])
+  const [selectedAreaId, setSelectedAreaId] =
+    useState('all')
+  const [selectedPersonName, setSelectedPersonName] =
+    useState('all')
   const [selectedCard, setSelectedCard] =
     useState<InitiativeKanbanCardModel | null>(
       null,
@@ -69,14 +74,81 @@ export function InitiativeKanbanBoard({
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
-  const activeActionCount = useMemo(
+  const allCards = useMemo(
+    () => columns.flatMap((column) => column.cards),
+    [columns],
+  )
+
+  const activeActionCount = allCards.length
+
+  const areaOptions = useMemo(() => {
+    const byId = new Map<string, string>()
+
+    allCards.forEach((card) => {
+      if (
+        card.responsibleAreaId &&
+        card.responsibleAreaName
+      ) {
+        byId.set(
+          card.responsibleAreaId,
+          card.responsibleAreaName,
+        )
+      }
+    })
+
+    return Array.from(byId.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((first, second) =>
+        first.name.localeCompare(second.name, 'pt-BR'),
+      )
+  }, [allCards])
+
+  const personOptions = useMemo(
     () =>
-      columns.reduce(
+      Array.from(
+        new Set(
+          allCards.flatMap(
+            (card) => card.responsiblePersonNames,
+          ),
+        ),
+      ).sort((first, second) =>
+        first.localeCompare(second, 'pt-BR'),
+      ),
+    [allCards],
+  )
+
+  const filteredColumns = useMemo(
+    () =>
+      columns.map((column) => ({
+        ...column,
+        cards: column.cards.filter((card) => {
+          const matchesArea =
+            selectedAreaId === 'all' ||
+            card.responsibleAreaId === selectedAreaId
+          const matchesPerson =
+            selectedPersonName === 'all' ||
+            card.responsiblePersonNames.includes(
+              selectedPersonName,
+            )
+
+          return matchesArea && matchesPerson
+        }),
+      })),
+    [columns, selectedAreaId, selectedPersonName],
+  )
+
+  const filteredActionCount = useMemo(
+    () =>
+      filteredColumns.reduce(
         (total, column) => total + column.cards.length,
         0,
       ),
-    [columns],
+    [filteredColumns],
   )
+
+  const hasActiveFilters =
+    selectedAreaId !== 'all' ||
+    selectedPersonName !== 'all'
 
   const loadBoard = useCallback(async () => {
     setLoading(true)
@@ -84,7 +156,7 @@ export function InitiativeKanbanBoard({
 
     try {
       const nextColumns =
-        await loadInitiativeActionBoard(
+        await loadInitiativeKanbanFilteredBoard(
           initiativeId,
         )
 
@@ -118,6 +190,8 @@ export function InitiativeKanbanBoard({
     setDraggingCard(null)
     setPendingTransition(null)
     setShowCreateDialog(false)
+    setSelectedAreaId('all')
+    setSelectedPersonName('all')
   }, [initiativeId])
 
   async function handleActionChanged() {
@@ -135,6 +209,11 @@ export function InitiativeKanbanBoard({
       card,
       targetStatus,
     })
+  }
+
+  function clearFilters() {
+    setSelectedAreaId('all')
+    setSelectedPersonName('all')
   }
 
   if (loading) {
@@ -196,6 +275,63 @@ export function InitiativeKanbanBoard({
         </div>
       </section>
 
+      {activeActionCount > 0 ? (
+        <section
+          className="initiative-kanban-filters"
+          aria-label="Filtros do Kanban"
+        >
+          <label>
+            <span>Área responsável</span>
+            <select
+              value={selectedAreaId}
+              onChange={(event) =>
+                setSelectedAreaId(event.target.value)
+              }
+            >
+              <option value="all">Todas as áreas</option>
+              {areaOptions.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>Responsável</span>
+            <select
+              value={selectedPersonName}
+              onChange={(event) =>
+                setSelectedPersonName(event.target.value)
+              }
+            >
+              <option value="all">Todas as pessoas</option>
+              {personOptions.map((personName) => (
+                <option key={personName} value={personName}>
+                  {personName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <span className="initiative-kanban-filters__summary">
+            {filteredActionCount === activeActionCount
+              ? `${activeActionCount} no quadro`
+              : `${filteredActionCount} de ${activeActionCount} visíveis`}
+          </span>
+
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              className="initiative-kanban-filters__clear"
+              onClick={clearFilters}
+            >
+              Limpar filtros
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+
       {activeActionCount === 0 ? (
         <section className="initiative-kanban-empty">
           <h3>Nenhuma ação ativa nesta iniciativa</h3>
@@ -216,12 +352,20 @@ export function InitiativeKanbanBoard({
             </button>
           ) : null}
         </section>
+      ) : filteredActionCount === 0 ? (
+        <section className="initiative-kanban-filter-empty">
+          <h3>Nenhuma ação corresponde aos filtros</h3>
+          <p>
+            Ajuste a área ou o responsável para reencontrar as ações desta
+            iniciativa.
+          </p>
+        </section>
       ) : (
         <div
           className="initiative-kanban-board"
           aria-label="Kanban de ações da iniciativa"
         >
-          {columns.map((column) => (
+          {filteredColumns.map((column) => (
             <InitiativeKanbanColumn
               key={column.status}
               column={column}
@@ -232,9 +376,7 @@ export function InitiativeKanbanBoard({
               onDragEnd={() =>
                 setDraggingCard(null)
               }
-              onRequestTransition={
-                requestTransition
-              }
+              onRequestTransition={requestTransition}
             />
           ))}
         </div>
