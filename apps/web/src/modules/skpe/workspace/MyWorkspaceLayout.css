@@ -1,0 +1,228 @@
+/*
+ * SK-PE — Meu Espaco de Trabalho
+ * Anatomia transversal dos paineis pessoais.
+ *
+ * Regra:
+ * 1. titulo/descricao sempre a esquerda;
+ * 2. filtros sempre a direita na mesma faixa, quando houver largura;
+ * 3. total isolado e redundante nao aparece quando "Todos" ja informa contagem;
+ * 4. conteudo sempre abaixo, ocupando a largura inteira;
+ * 5. espacamento vertical unico entre todos os blocos;
+ * 6. em viewport estreito, filtros descem para uma segunda linha alinhada a esquerda.
+ */
+
+:root {
+  --skpe-workspace-section-gap: 1rem;
+  --skpe-workspace-panel-padding-y: 1.1rem;
+  --skpe-workspace-panel-padding-x: 1.25rem;
+  --skpe-workspace-header-gap: 1rem;
+}
+
+/* O primeiro titulo da pagina nunca deve nascer colado/sob a faixa persistente. */
+.skpe-main > .skpe-cockpit-header ~ .skpe-page-heading {
+  margin-top: var(--skpe-workspace-section-gap);
+  scroll-margin-top: 5rem;
+}
+
+/* Ritmo vertical unico entre sintese, responsabilidades e demais paineis. */
+.skpe-primary-dashboard-panel,
+.skpe-kpi-grid,
+.skpe-pending-panel,
+.skpe-indicators-panel,
+.skpe-key-results-panel,
+.skpe-initiatives-panel,
+.skpe-decisions-panel,
+.skpe-meetings-panel,
+.skpe-notifications-panel {
+  margin-top: 0;
+  margin-bottom: var(--skpe-workspace-section-gap);
+}
+
+.skpe-primary-dashboard-panel ~ .skpe-kpi-grid {
+  margin-top: var(--skpe-workspace-section-gap);
+}
+
+.skpe-kpi-grid {
+  margin-bottom: var(--skpe-workspace-section-gap);
+}
+
+/* Todos os paineis pessoais usam a mesma grade de cabecalho. */
+.skpe-pending-panel,
+.skpe-indicators-panel,
+.skpe-key-results-panel,
+.skpe-initiatives-panel,
+.skpe-decisions-panel,
+.skpe-meetings-panel,
+.skpe-notifications-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem var(--skpe-workspace-header-gap);
+  padding:
+    var(--skpe-workspace-panel-padding-y)
+    var(--skpe-workspace-panel-padding-x);
+}
+
+/* Cabecalho textual sempre ocupa a coluna esquerda. */
+.skpe-pending-heading,
+.skpe-indicators-heading,
+.skpe-key-results-heading,
+.skpe-initiatives-heading,
+.skpe-decisions-heading,
+.skpe-meetings-heading,
+.skpe-notifications-heading {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  display: block;
+}
+
+/* Normaliza ritmo interno de titulo e descricao. */
+.skpe-pending-heading h2,
+.skpe-indicators-heading h2,
+.skpe-key-results-heading h2,
+.skpe-initiatives-heading h2,
+.skpe-decisions-heading h2,
+.skpe-meetings-heading h2,
+.skpe-notifications-heading h2 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.skpe-pending-heading p:not(.skpe-card-code),
+.skpe-indicators-heading p:not(.skpe-card-code),
+.skpe-key-results-heading p:not(.skpe-card-code),
+.skpe-initiatives-heading p:not(.skpe-card-code),
+.skpe-decisions-heading p:not(.skpe-card-code),
+.skpe-meetings-heading p:not(.skpe-card-code),
+.skpe-notifications-heading p:not(.skpe-card-code) {
+  margin: 0;
+  max-width: 62rem;
+  line-height: 1.5;
+}
+
+/*
+ * Total isolado e redundante e eliminado.
+ * A contagem permanece nos filtros, especialmente em "Todos".
+ */
+.skpe-pending-total,
+.skpe-indicators-total,
+.skpe-key-results-total,
+.skpe-initiatives-total,
+.skpe-decisions-total,
+.skpe-meetings-total,
+.skpe-notifications-total {
+  display: none !important;
+}
+
+/* Filtros: sempre mesma posicao no desktop. */
+.skpe-pending-filters,
+.skpe-indicators-filters,
+.skpe-key-results-filters,
+.skpe-initiatives-filters,
+.skpe-decisions-filters,
+.skpe-meetings-filters,
+.skpe-notifications-filters {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  width: auto;
+  max-width: 46rem;
+  margin: 1rem 0 0;
+}
+
+/* Conteudo e estados sempre com largura total abaixo do cabecalho. */
+.skpe-pending-state,
+.skpe-pending-list,
+.skpe-indicators-state,
+.skpe-indicators-list,
+.skpe-key-results-state,
+.skpe-key-results-list,
+.skpe-initiatives-state,
+.skpe-initiatives-list,
+.skpe-decisions-state,
+.skpe-decisions-list,
+.skpe-meetings-state,
+.skpe-meetings-list,
+.skpe-notifications-state,
+.skpe-notifications-list {
+  grid-column: 1 / -1;
+}
+
+/* Elimina espacos residuais que faziam dois frames parecerem colados ou distantes demais. */
+.skpe-pending-panel + .skpe-indicators-panel,
+.skpe-indicators-panel + .skpe-key-results-panel,
+.skpe-key-results-panel + .skpe-initiatives-panel,
+.skpe-initiatives-panel + .skpe-decisions-panel,
+.skpe-decisions-panel + .skpe-meetings-panel,
+.skpe-meetings-panel + .skpe-notifications-panel {
+  margin-top: 0;
+}
+
+@media (max-width: 1080px) {
+  .skpe-pending-panel,
+  .skpe-indicators-panel,
+  .skpe-key-results-panel,
+  .skpe-initiatives-panel,
+  .skpe-decisions-panel,
+  .skpe-meetings-panel,
+  .skpe-notifications-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-pending-filters,
+  .skpe-indicators-filters,
+  .skpe-key-results-filters,
+  .skpe-initiatives-filters,
+  .skpe-decisions-filters,
+  .skpe-meetings-filters,
+  .skpe-notifications-filters {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: stretch;
+    justify-content: flex-start;
+    max-width: none;
+    margin-top: 0;
+  }
+
+  .skpe-pending-state,
+  .skpe-pending-list,
+  .skpe-indicators-state,
+  .skpe-indicators-list,
+  .skpe-key-results-state,
+  .skpe-key-results-list,
+  .skpe-initiatives-state,
+  .skpe-initiatives-list,
+  .skpe-decisions-state,
+  .skpe-decisions-list,
+  .skpe-meetings-state,
+  .skpe-meetings-list,
+  .skpe-notifications-state,
+  .skpe-notifications-list {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --skpe-workspace-section-gap: 0.8rem;
+    --skpe-workspace-panel-padding-y: 0.95rem;
+    --skpe-workspace-panel-padding-x: 0.95rem;
+  }
+
+  .skpe-pending-filters,
+  .skpe-indicators-filters,
+  .skpe-key-results-filters,
+  .skpe-initiatives-filters,
+  .skpe-decisions-filters,
+  .skpe-meetings-filters,
+  .skpe-notifications-filters {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.15rem;
+  }
+}

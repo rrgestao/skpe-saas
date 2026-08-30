@@ -13,6 +13,7 @@ import { MyKeyResultsPanel } from './MyKeyResultsPanel'
 import { MyMeetingsPanel } from './MyMeetingsPanel'
 import { MyNotificationsPanel } from './MyNotificationsPanel'
 import { MyPendingItemsPanel } from './MyPendingItemsPanel'
+import './MyWorkspaceLayout.css'
 import {
   WORKSPACE_DASHBOARDS,
   isWorkspaceDashboardId,
