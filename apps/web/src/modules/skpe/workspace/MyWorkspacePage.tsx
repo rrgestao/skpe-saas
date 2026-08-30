@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import {
+  EmptyState,
+  MetricCard,
+} from '../../../components/design-system'
 import { supabase } from '../../../lib/supabase'
 import { FavoriteButton } from './FavoriteButton'
 import { MyDecisionsPanel } from './MyDecisionsPanel'
@@ -843,71 +847,64 @@ export function MyWorkspacePage({
           className="skpe-kpi-grid"
           aria-label="Síntese do projeto estratégico"
         >
-          <article className="skpe-kpi-card skpe-kpi-card--progress">
-            <span>Avanço geral estimado</span>
-            <strong>
-              {project.progress.toLocaleString('pt-BR', {
-                maximumFractionDigits: 1,
-              })}
-              %
-            </strong>
-            <button
-              type="button"
-              className="skpe-card-link-button"
-              onClick={() => onNavigate('journey')}
-            >
-              Abrir Jornada Estratégica
-            </button>
-          </article>
+          <MetricCard
+            label="Avanço geral estimado"
+            value={`${project.progress.toLocaleString('pt-BR', {
+              maximumFractionDigits: 1,
+            })}%`}
+            footer={
+              <button
+                type="button"
+                className="skpe-card-link-button"
+                onClick={() => onNavigate('journey')}
+              >
+                Abrir Jornada Estratégica
+              </button>
+            }
+          />
 
-          <article className="skpe-kpi-card skpe-kpi-card--project">
-            <span>Projeto estratégico</span>
-            <strong>{project.code}</strong>
-            <small>{project.name}</small>
-          </article>
+          <MetricCard
+            label="Projeto estratégico"
+            value={project.code}
+            helper={project.name}
+          />
 
-          <article className="skpe-kpi-card skpe-kpi-card--phase">
-            <span>Etapa atual</span>
-            <strong>
-              {project.currentPhaseName ?? project.currentPhaseCode}
-            </strong>
-            <small>
-              {project.currentPhaseName
+          <MetricCard
+            label="Etapa atual"
+            value={project.currentPhaseName ?? project.currentPhaseCode}
+            helper={
+              project.currentPhaseName
                 ? `${project.currentPhaseCode} · ${project.statusLabel}`
-                : project.statusLabel}
-            </small>
-          </article>
+                : project.statusLabel
+            }
+          />
 
-          <article className="skpe-kpi-card skpe-kpi-card--horizon">
-            <span>Horizonte estratégico</span>
-            <strong>{project.strategicHorizon}</strong>
-            <button
-              type="button"
-              className="skpe-card-link-button"
-              onClick={() => onNavigate('governance')}
-            >
-              {project.reviewCycle}
-            </button>
-          </article>
+          <MetricCard
+            label="Horizonte estratégico"
+            value={project.strategicHorizon}
+            footer={
+              <button
+                type="button"
+                className="skpe-card-link-button"
+                onClick={() => onNavigate('governance')}
+              >
+                {project.reviewCycle}
+              </button>
+            }
+          />
         </section>
       ) : (
-        <section
-          className="skpe-onboarding-panel"
-          aria-label="Projeto estratégico não disponível"
-        >
-          <div className="skpe-onboarding-content">
-            <p className="skpe-card-code">Contexto da organização</p>
-            <h2>Jornada ainda não iniciada</h2>
-            <p>
+        <EmptyState
+          title="Jornada ainda não iniciada"
+          description={
+            <>
               Não existe um projeto estratégico ativo para esta organização.
-              Nenhum dado de outra organização será utilizado como
-              preenchimento alternativo.
-            </p>
-            <small>
-              Organização: {organizationCode} · contexto local e exclusivo.
-            </small>
-
-            {canStartProject && (
+              Nenhum dado de outra organização será usado como preenchimento
+              alternativo. Organização: {organizationCode}.
+            </>
+          }
+          action={
+            canStartProject ? (
               <button
                 type="button"
                 className="skpe-primary-button"
@@ -918,9 +915,9 @@ export function MyWorkspacePage({
                   ? 'Iniciando jornada...'
                   : 'Iniciar Jornada Estratégica'}
               </button>
-            )}
-          </div>
-        </section>
+            ) : undefined
+          }
+        />
       )}
 
       <MyPendingItemsPanel

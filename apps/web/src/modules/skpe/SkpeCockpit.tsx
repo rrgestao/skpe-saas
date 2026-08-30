@@ -7,6 +7,12 @@ import {
   useState,
 } from 'react'
 
+import {
+  EmptyState,
+  MetricCard,
+  ObjectWorkspaceHeader,
+  WorkspaceTabs,
+} from '../../components/design-system'
 import { supabase } from '../../lib/supabase'
 
 import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
@@ -2417,83 +2423,49 @@ function InitiativesSection({
           className="skpe-initiative-kpi-grid"
           aria-label="Visão consolidada do portfólio transversal"
         >
-          <button
-            type="button"
-            className={
-              quickFilter === 'all'
-                ? 'skpe-initiative-kpi-active'
-                : ''
-            }
+          <MetricCard
+            label="Total"
+            value={dashboard.total_initiatives}
+            helper="Ver todas"
+            active={quickFilter === 'all'}
             onClick={() => applyQuickFilter('all')}
-          >
-            <span>Total</span>
-            <strong>{dashboard.total_initiatives}</strong>
-            <small>Ver todas</small>
-          </button>
+          />
 
-          <button
-            type="button"
-            className={
-              quickFilter === 'in_progress'
-                ? 'skpe-initiative-kpi-active'
-                : ''
-            }
-            onClick={() =>
-              applyQuickFilter('in_progress')
-            }
-          >
-            <span>Em execução</span>
-            <strong>
-              {dashboard.in_progress_count}
-            </strong>
-            <small>Filtrar portfólio</small>
-          </button>
+          <MetricCard
+            label="Em execução"
+            value={dashboard.in_progress_count}
+            helper="Filtrar portfólio"
+            active={quickFilter === 'in_progress'}
+            onClick={() => applyQuickFilter('in_progress')}
+          />
 
-          <button
-            type="button"
-            className={
-              quickFilter === 'blocked'
-                ? 'skpe-initiative-kpi-active'
-                : ''
-            }
-            onClick={() =>
-              applyQuickFilter('blocked')
-            }
-          >
-            <span>Bloqueadas</span>
-            <strong>{dashboard.blocked_count}</strong>
-            <small>Filtrar portfólio</small>
-          </button>
+          <MetricCard
+            label="Bloqueadas"
+            value={dashboard.blocked_count}
+            helper="Filtrar portfólio"
+            active={quickFilter === 'blocked'}
+            onClick={() => applyQuickFilter('blocked')}
+          />
 
-          <button
-            type="button"
-            className={
-              quickFilter === 'completed'
-                ? 'skpe-initiative-kpi-active'
-                : ''
-            }
-            onClick={() =>
-              applyQuickFilter('completed')
-            }
-          >
-            <span>Concluídas</span>
-            <strong>{dashboard.completed_count}</strong>
-            <small>Filtrar portfólio</small>
-          </button>
+          <MetricCard
+            label="Concluídas"
+            value={dashboard.completed_count}
+            helper="Filtrar portfólio"
+            active={quickFilter === 'completed'}
+            onClick={() => applyQuickFilter('completed')}
+          />
 
-          <button type="button" disabled>
-            <span>Críticas</span>
-            <strong>{dashboard.critical_count}</strong>
-            <small>Visão consolidada</small>
-          </button>
+          <MetricCard
+            label="Críticas"
+            value={dashboard.critical_count}
+            helper="Visão consolidada"
+          />
 
-          <button type="button" disabled>
-            <span>Progresso médio</span>
-            <strong>
-              {dashboard.average_progress}%
-            </strong>
-            <small>Visão consolidada</small>
-          </button>
+          <MetricCard
+            label="Progresso médio"
+            value={`${dashboard.average_progress}%`}
+            helper="Visão consolidada"
+          />
         </section>
       )}
       <section className="skpe-initiative-filters">
@@ -2645,28 +2617,28 @@ function InitiativesSection({
       {initiativeViewMode === 'kanban' ? (
         kanbanInitiativeId ? (
           <section className="skpe-initiative-kanban-host">
-            <div className="skpe-initiative-kanban-context">
-              <span>Iniciativa selecionada</span>
-              <strong>
-                {
-                  initiatives.find(
-                    (initiative) =>
-                      initiative.initiative_id ===
-                      kanbanInitiativeId,
-                  )?.initiative_code
-                }
-                {' — '}
-                {
-                  initiatives.find(
-                    (initiative) =>
-                      initiative.initiative_id ===
-                      kanbanInitiativeId,
-                  )?.initiative_name
-                }
-              </strong>
-
-              <div className="skpe-initiative-workspace-actions">
-                {canManageInitiatives && (
+            <ObjectWorkspaceHeader
+              eyebrow="Iniciativa selecionada"
+              title={
+                <>
+                  {
+                    initiatives.find(
+                      (initiative) =>
+                        initiative.initiative_id === kanbanInitiativeId,
+                    )?.initiative_code
+                  }
+                  {' — '}
+                  {
+                    initiatives.find(
+                      (initiative) =>
+                        initiative.initiative_id === kanbanInitiativeId,
+                    )?.initiative_name
+                  }
+                </>
+              }
+              subtitle="Trabalhe sobre a mesma iniciativa alternando apenas a visão necessária."
+              actions={
+                canManageInitiatives ? (
                   <button
                     type="button"
                     className="skpe-user-details-button"
@@ -2677,42 +2649,19 @@ function InitiativesSection({
                   >
                     Adicionar à agenda
                   </button>
-                )}
-              </div>
-            </div>
+                ) : undefined
+              }
+            />
 
-            <nav
-              className="skpe-initiative-workspace-tabs"
-              aria-label="Visões da iniciativa"
-            >
-              <button
-                type="button"
-                className={
-                  initiativeWorkspaceTab === 'kanban'
-                    ? 'active'
-                    : ''
-                }
-                onClick={() =>
-                  setInitiativeWorkspaceTab('kanban')
-                }
-              >
-                Kanban
-              </button>
-
-              <button
-                type="button"
-                className={
-                  initiativeWorkspaceTab === 'economics'
-                    ? 'active'
-                    : ''
-                }
-                onClick={() =>
-                  setInitiativeWorkspaceTab('economics')
-                }
-              >
-                Custos e esforço
-              </button>
-            </nav>
+            <WorkspaceTabs
+              ariaLabel="Visões da iniciativa"
+              activeId={initiativeWorkspaceTab}
+              onChange={setInitiativeWorkspaceTab}
+              tabs={[
+                { id: 'kanban', label: 'Kanban' },
+                { id: 'economics', label: 'Custos e esforço' },
+              ]}
+            />
 
             {initiativeWorkspaceTab === 'kanban' ? (
               <InitiativeKanbanBoard
@@ -2747,32 +2696,30 @@ function InitiativesSection({
             })()}
           </section>
         ) : (
-          <section className="skpe-admin-state-card">
-            <h2>Selecione uma iniciativa</h2>
-            <p>
-              Abra o Portfólio e escolha a iniciativa
-              cujas ações deseja acompanhar no Kanban.
-            </p>
-            <button
-              type="button"
-              className="skpe-primary-action-button"
-              onClick={() =>
-                setInitiativeViewMode('portfolio')
-              }
-            >
-              Ir para o Portfólio
-            </button>
-          </section>
+          <EmptyState
+            title="Selecione uma iniciativa"
+            description="Abra o Portfólio e escolha a iniciativa que deseja acompanhar."
+            action={
+              <button
+                type="button"
+                className="skpe-primary-action-button"
+                onClick={() => setInitiativeViewMode('portfolio')}
+              >
+                Ir para o Portfólio
+              </button>
+            }
+          />
         )
       ) : loading ? (
         <section className="skpe-admin-state-card">
           <p>Carregando iniciativas...</p>
         </section>
       ) : filteredInitiatives.length === 0 ? (
-        <section className="skpe-admin-state-card">
-          <h2>Nenhuma iniciativa encontrada</h2>
-          <p>Cadastre, importe ou ajuste os filtros.</p>
-        </section>
+        <EmptyState
+          compact
+          title="Nenhuma iniciativa encontrada"
+          description="Cadastre uma iniciativa ou ajuste os filtros para continuar."
+        />
       ) : (
         <section className="skpe-initiative-list">
           {filteredInitiatives.map((initiative) => (
