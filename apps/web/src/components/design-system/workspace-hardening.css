@@ -1,9 +1,22 @@
 /*
- * Hardening incremental das superfícies de trabalho.
- * Mantém contratos funcionais intactos e reduz concorrência visual.
+ * Hardening incremental das superficies de trabalho.
+ * Mantem contratos funcionais intactos e reduz concorrencia visual.
  */
 
-/* A ação principal de criação permanece acessível durante a rolagem. */
+/* Painel de Iniciativas: seis indicadores em duas linhas de tres no desktop. */
+.skpe-initiative-kpi-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Ordem semantica: Total, Em execucao, Progresso medio / Concluidas, Bloqueadas, Criticas. */
+.skpe-initiative-kpi-grid > :nth-child(1) { order: 1; }
+.skpe-initiative-kpi-grid > :nth-child(2) { order: 2; }
+.skpe-initiative-kpi-grid > :nth-child(6) { order: 3; }
+.skpe-initiative-kpi-grid > :nth-child(4) { order: 4; }
+.skpe-initiative-kpi-grid > :nth-child(3) { order: 5; }
+.skpe-initiative-kpi-grid > :nth-child(5) { order: 6; }
+
+/* A acao principal de criacao permanece acessivel durante a rolagem. */
 .skpe-new-initiative-button {
   position: fixed;
   right: 1.5rem;
@@ -19,7 +32,31 @@
   transform: translateY(-1px);
 }
 
-/* Atualização é ação secundária: mantém o texto no DOM, mas mostra só o ícone. */
+/* O botao global de retorno ao topo so se torna interativo apos rolagem real. */
+.skpe-scroll-top-button {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+.skpe-shell.skpe-scroll-top-visible .skpe-scroll-top-button {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Quando o drawer de criacao estiver aberto, nao ha concorrencia com acoes flutuantes. */
+.skpe-shell:has(.skpe-initiative-form-card) .skpe-scroll-top-button,
+.skpe-shell:has(.skpe-initiative-form-card) .skpe-new-initiative-button {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Atualizacao e acao secundaria: mantem o texto no DOM, mas mostra so o icone. */
 .skpe-page-heading .skpe-refresh-button {
   position: relative;
   width: 42px;
@@ -64,8 +101,8 @@
 }
 
 /*
- * O cadastro deixa de empilhar conteúdo no portfólio e passa a operar
- * como uma tarefa focal em drawer lateral, reutilizando o formulário atual.
+ * O cadastro deixa de empilhar conteudo no portfolio e passa a operar
+ * como uma tarefa focal em drawer lateral, reutilizando o formulario atual.
  */
 .skpe-initiative-form-card {
   position: fixed;
@@ -93,6 +130,22 @@
   padding: 1.2rem;
   border-bottom: 1px solid #dce5e1;
   background: inherit;
+}
+
+.skpe-initiative-form-card .skpe-card-heading .skpe-drawer-cancel-button {
+  min-height: 40px;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #bfd0c9;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
+
+.skpe-initiative-form-card .skpe-card-heading .skpe-drawer-cancel-button:hover:not(:disabled),
+.skpe-initiative-form-card .skpe-card-heading .skpe-drawer-cancel-button:focus-visible {
+  background: rgba(23, 107, 83, 0.07);
+  border-color: #8fb2a5;
 }
 
 .skpe-initiative-form-card .skpe-initiative-form-grid {
@@ -131,12 +184,23 @@
   }
 
   .skpe-new-initiative-button,
+  .skpe-scroll-top-button,
   .skpe-page-heading .skpe-refresh-button::after {
     transition: none;
   }
 }
 
+@media (max-width: 980px) {
+  .skpe-initiative-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
+  .skpe-initiative-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
   .skpe-new-initiative-button {
     right: 1rem;
     bottom: 1rem;
