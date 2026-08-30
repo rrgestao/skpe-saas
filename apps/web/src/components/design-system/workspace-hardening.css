@@ -3,6 +3,53 @@
  * Mantem contratos funcionais intactos e reduz concorrencia visual.
  */
 
+/* UX-6L-A: o shell ocupa a altura util, sem afastar o header do topo. */
+.skpe-shell .skpe-main {
+  min-height: 100dvh;
+  padding-top: 0;
+}
+
+/*
+ * O header e a fronteira superior permanente da area de trabalho.
+ * A especificidade intencional impede que breakpoints legados o devolvam
+ * para position: relative e evita conteudo rolando visualmente acima dele.
+ */
+.skpe-shell .skpe-cockpit-header {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  isolation: isolate;
+  background: var(--skpe-surface, #ffffff);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 5px 18px rgba(18, 58, 45, 0.08);
+}
+
+/*
+ * O footer fecha estruturalmente o shell. Nao fica sobre o conteudo:
+ * ocupa o final da viewport em telas curtas e o final natural da pagina
+ * quando o conteudo ultrapassa a altura disponivel.
+ */
+.skpe-shell .skpe-cockpit-footer {
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0;
+}
+
+/* "Plataforma SPARKs" ja esta identificada no shell e nao precisa repetir. */
+.skpe-shell .skpe-cockpit-footer strong {
+  display: none;
+}
+
+.skpe-shell .skpe-cockpit-footer span {
+  width: 100%;
+  text-align: center;
+}
+
 /* Painel de Iniciativas: seis indicadores em duas linhas de tres no desktop. */
 .skpe-initiative-kpi-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
