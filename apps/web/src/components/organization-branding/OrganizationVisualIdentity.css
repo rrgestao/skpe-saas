@@ -1,0 +1,201 @@
+.skpe-visual-identity-card {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1.15rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 14px;
+  background: var(--skpe-surface, #ffffff);
+}
+
+.skpe-visual-identity-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.skpe-visual-identity-heading h2,
+.skpe-visual-identity-heading p {
+  margin: 0;
+}
+
+.skpe-visual-identity-heading > div:first-child > p:last-child {
+  max-width: 620px;
+  margin-top: 0.45rem;
+  color: #66756f;
+  line-height: 1.45;
+}
+
+.skpe-visual-identity-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid #d6e0dc;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.skpe-visual-identity-preview span {
+  height: 28px;
+}
+
+.skpe-visual-identity-preview span:nth-child(1) { background: var(--preview-primary); }
+.skpe-visual-identity-preview span:nth-child(2) { background: var(--preview-secondary); }
+.skpe-visual-identity-preview span:nth-child(3) { background: var(--preview-accent); }
+
+.skpe-visual-identity-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.skpe-visual-identity-mode > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.9rem;
+  border: 1px solid #d7e2dd;
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.skpe-visual-identity-mode > label:has(input:checked) {
+  border-color: var(--organization-primary, #176b53);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--organization-primary, #176b53) 15%, transparent);
+}
+
+.skpe-visual-identity-mode span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.skpe-visual-identity-mode small {
+  color: #6e7b76;
+  line-height: 1.35;
+}
+
+.skpe-visual-identity-colors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.skpe-visual-identity-colors > label,
+.skpe-visual-identity-save > label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.skpe-visual-identity-colors > label > div {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.skpe-visual-identity-colors input[type='color'] {
+  width: 46px;
+  min-height: 42px;
+  padding: 0.15rem;
+  border: 1px solid #ccd8d3;
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.skpe-visual-identity-colors input[type='text'],
+.skpe-visual-identity-colors input:not([type]),
+.skpe-visual-identity-save input {
+  min-height: 42px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #ccd8d3;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.skpe-visual-identity-logo-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.skpe-visual-identity-logo-actions button,
+.skpe-visual-identity-save button {
+  min-height: 42px;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--organization-primary, #176b53);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--organization-primary, #176b53);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-visual-identity-save button {
+  align-self: end;
+  background: var(--organization-primary, #176b53);
+  color: var(--organization-on-primary, #fff);
+}
+
+.skpe-visual-identity-logo-actions button:disabled,
+.skpe-visual-identity-save button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.skpe-visual-identity-logo-actions small {
+  color: #6e7b76;
+}
+
+.skpe-visual-identity-swatches {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.skpe-visual-identity-swatches button {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px #c8d5d0;
+  cursor: pointer;
+}
+
+.skpe-visual-identity-save {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.skpe-visual-identity-message {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 9px;
+  font-size: 0.86rem;
+}
+
+.skpe-visual-identity-message-success {
+  background: #e9f6f1;
+  color: #176b53;
+}
+
+.skpe-visual-identity-message-error {
+  background: #fff0ef;
+  color: #9b342d;
+}
+
+@media (max-width: 900px) {
+  .skpe-visual-identity-mode,
+  .skpe-visual-identity-colors {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-visual-identity-save {
+    grid-template-columns: 1fr;
+  }
+}
