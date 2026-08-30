@@ -1,0 +1,62 @@
+/*
+ * UX-6L shell transversal.
+ * Reconciliacao visual entre a pagina inicial da plataforma e o shell SK-PE.
+ */
+
+.platform-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A pagina inicial deve usar a mesma fronteira superior persistente. */
+.platform-shell .topbar {
+  position: sticky !important;
+  top: 0;
+  z-index: 80;
+  isolation: isolate;
+  flex: 0 0 auto;
+  background: var(--platform-surface, #ffffff);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 5px 18px rgba(18, 58, 45, 0.08);
+}
+
+.platform-shell .platform-content {
+  flex: 1 0 auto;
+}
+
+/*
+ * O footer fecha a pagina sem competir com o conteudo.
+ * A marca da plataforma ja esta declarada no header, portanto o rodape
+ * exibe apenas o copyright institucional centralizado.
+ */
+.platform-shell .platform-footer {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  text-align: center;
+}
+
+.platform-shell .platform-footer strong {
+  display: none;
+}
+
+.platform-shell .platform-footer span {
+  width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .platform-shell .platform-footer {
+    align-items: center;
+    flex-direction: row;
+    justify-content: center;
+    padding: 0.85rem 1rem;
+    text-align: center;
+  }
+}
