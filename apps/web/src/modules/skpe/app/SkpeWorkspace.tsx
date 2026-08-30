@@ -85,6 +85,12 @@ export function SkpeWorkspace(props: SkpeWorkspaceProps) {
       ? parseLegacyCockpitSection(location.search)
       : null
 
+  const shouldApplyPrimaryLanding =
+    !explicitRoute &&
+    !legacySection &&
+    props.mode !== 'organization-admin' &&
+    !props.initialSection
+
   const contextValue: SkpeWorkspaceContextValue = {
     organization: {
       id: props.organizationId,
@@ -151,6 +157,7 @@ export function SkpeWorkspace(props: SkpeWorkspaceProps) {
     <SkpeWorkspaceProvider value={contextValue}>
       <SkpeCockpit
         {...props}
+        applyPrimaryLanding={shouldApplyPrimaryLanding}
         initialSection={
           explicitSection ??
           legacySection ??

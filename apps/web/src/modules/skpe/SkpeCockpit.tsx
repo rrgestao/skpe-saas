@@ -66,6 +66,7 @@ type SkpeCockpitProps = {
   isOrganizationAdmin: boolean
   isPlatformSuperAdmin: boolean
   mode?: SkpeCockpitMode
+  applyPrimaryLanding?: boolean
   initialSection?: CockpitSection
   onNavigateSection?: (section: CockpitSection) => void
   onReturnToModules: () => void
@@ -951,6 +952,7 @@ function OverviewSection({
   canViewInitiatives,
   canViewArtifacts,
   canViewGovernance,
+  applyPrimaryLanding,
   startingProject,
   onStartProject,
   onNavigate,
@@ -965,6 +967,7 @@ function OverviewSection({
   canViewInitiatives: boolean
   canViewArtifacts: boolean
   canViewGovernance: boolean
+  applyPrimaryLanding: boolean
   startingProject: boolean
   onStartProject: () => void
   onNavigate: (section: CockpitSection) => void
@@ -1009,6 +1012,7 @@ function OverviewSection({
         can_manage_journey: canManageJourney,
       }}
       isReadOnly={!canManageJourney}
+      applyPrimaryLanding={applyPrimaryLanding}
       canStartProject={canManageJourney}
       startingProject={startingProject}
       onStartProject={onStartProject}
@@ -6613,6 +6617,7 @@ export function SkpeCockpit({
   isOrganizationAdmin,
   isPlatformSuperAdmin,
   mode = 'module',
+  applyPrimaryLanding = false,
   initialSection,
   onNavigateSection,
   onReturnToModules,
@@ -7309,9 +7314,10 @@ export function SkpeCockpit({
             canViewInitiatives={canViewInitiatives}
             canViewArtifacts={canViewArtifacts}
             canViewGovernance={canViewGovernance}
+            applyPrimaryLanding={applyPrimaryLanding}
             startingProject={startingProject}
             onStartProject={() => void startStrategicProject()}
-            onNavigate={setActiveSection}
+            onNavigate={navigateToSection}
           />
         )}
 

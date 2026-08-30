@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
 import { FavoriteButton } from './FavoriteButton'
@@ -57,6 +57,7 @@ type MyWorkspacePageProps = {
   availableContext: WorkspaceAvailableContext
   capabilities: WorkspaceCapabilities
   isReadOnly: boolean
+  applyPrimaryLanding?: boolean
   canStartProject: boolean
   startingProject: boolean
   onStartProject: () => void
@@ -256,11 +257,14 @@ export function MyWorkspacePage({
   availableContext,
   capabilities,
   isReadOnly,
+  applyPrimaryLanding = false,
   canStartProject,
   startingProject,
   onStartProject,
   onNavigate,
 }: MyWorkspacePageProps) {
+  const primaryLandingAppliedRef = useRef(false)
+
   const [persistedPrimaryId, setPersistedPrimaryId] =
     useState<WorkspaceDashboardId | null>(null)
   const [preferenceStatus, setPreferenceStatus] =
@@ -349,6 +353,10 @@ export function MyWorkspacePage({
         ),
     [dashboards, favoriteDashboardIds],
   )
+
+  useEffect(() => {
+    primaryLandingAppliedRef.current = false
+  }, [organizationId, applyPrimaryLanding])
 
   useEffect(() => {
     let active = true
@@ -471,6 +479,34 @@ export function MyWorkspacePage({
   }, [
     persistedDashboardIsEligible,
     persistedPrimaryId,
+    preferenceStatus,
+  ])
+
+  useEffect(() => {
+    if (
+      !applyPrimaryLanding ||
+      primaryLandingAppliedRef.current ||
+      preferenceStatus === 'loading' ||
+      preferenceStatus === 'read-error'
+    ) {
+      return
+    }
+
+    primaryLandingAppliedRef.current = true
+
+    if (!effectivePrimaryId) {
+      return
+    }
+
+    const destination = dashboardNavigation[effectivePrimaryId]
+
+    if (destination) {
+      onNavigate(destination)
+    }
+  }, [
+    applyPrimaryLanding,
+    effectivePrimaryId,
+    onNavigate,
     preferenceStatus,
   ])
 
