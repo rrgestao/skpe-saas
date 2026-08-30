@@ -1,14 +1,19 @@
 ---
 id: SKPE-ROADMAP-POS-6J-WORKSPACE-JOURNEY-PROJECT
-version: 1.1.0
+version: 1.2.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
 canonical_context: SK-PE-CONT-01
 created_at: 2026-08-29
-updated_at: 2026-08-29
+updated_at: 2026-08-30
 starts_after: 17-B.5F.3C.6J
 remaining_gates: 2
+ux_governance:
+  manifesto: MANIFESTO_UX_SPARKS.md
+  checklist: CHECKLIST_PRONTIDAO_UX_SPARKS.md
+  benchmark: BENCHMARK_UX_SMARTKANVAS_PARA_SPARKS.md
+  required_exit_classification: UX-READY
 ---
 
 # Roadmap pós-6J — Workspace Principal e Visibilidade Jornada ↔ Projeto
@@ -21,6 +26,15 @@ A reconciliação pós-6J confirmou duas lacunas de experiência apoiadas por co
 
 1. completar a família canônica `FE-09.A.06 — Painel Principal`, fazendo a entrada padrão do módulo aplicar a preferência `workspace.primary_dashboard` já persistida e governada;
 2. tornar suficientemente visível e operacional a relação entre Projeto Estratégico e Jornada sem duplicar entidades ou fontes de verdade.
+
+A partir da versão 1.2.0, qualquer entrega com superfície de usuário neste roadmap está subordinada a:
+
+- `MANIFESTO_UX_SPARKS.md`;
+- `CHECKLIST_PRONTIDAO_UX_SPARKS.md`;
+- `BENCHMARK_UX_SMARTKANVAS_PARA_SPARKS.md`;
+- `GUARDRAIL_UX_BASILAR_6G_6H_JORNADA.md`.
+
+Teste automatizado e build aprovados permanecem obrigatórios, porém nenhuma entrega visual pode ser formalmente fechada sem classificação `UX-READY`.
 
 ## 2. Sequência canônica
 
@@ -53,13 +67,15 @@ Evidência técnica materializada:
 - commit `e97a946f08e7d959b1f9e0f09cfb183168bd4772` — `feat(skpe): apply primary dashboard on module entry`;
 - testes web: `112/112 PASS`;
 - build de produção: `PASS`;
-- worktree local após push: limpa;
 - DEV sem nova migration; última migration permanece `20260829232922`;
-- contratos reutilizados: `get_my_module_preference`, `set_my_module_preference`, `delete_my_module_preference`.
+- contratos reutilizados: `get_my_module_preference`, `set_my_module_preference`, `delete_my_module_preference`;
+- hardening operacional posterior em `de6da85a5c6b4679fa0289189a955f6aa70bff15` — iniciativa como espaço de trabalho, cards métricos centralizados e redução de ações concorrentes.
 
-Critério de saída: ao entrar pela rota padrão do módulo, o usuário é direcionado uma única vez para o Painel Principal elegível; rotas explícitas continuam soberanas; fallback permanece determinístico e não há loop de navegação.
+Critério de saída funcional: ao entrar pela rota padrão do módulo, o usuário é direcionado uma única vez para o Painel Principal elegível; rotas explícitas continuam soberanas; fallback permanece determinístico e não há loop de navegação.
 
-**Status: IMPLEMENTED — validação final de comportamento ainda pendente antes de PASS/CLOSED.**
+Critério de saída UX adicional: a entrada, a tela destino e os fluxos tocados devem alcançar `UX-READY` no checklist canônico, incluindo inspeção visual com dados reais.
+
+**Status: IMPLEMENTED — validação UX final ainda pendente antes de PASS/CLOSED.**
 
 ### PÓS-6J.02 — Visibilidade e wiring Projeto Estratégico ↔ Jornada
 
@@ -91,7 +107,9 @@ Não inclui:
 - novo lifecycle;
 - recriação automática de hierarquia já existente.
 
-Critério de saída: o usuário compreende e navega a relação Projeto ↔ Jornada sem duplicidade de fonte de verdade.
+Critério de saída funcional: o usuário compreende e navega a relação Projeto ↔ Jornada sem duplicidade de fonte de verdade.
+
+Critério de saída UX: a jornada deve deixar permanentemente perceptível onde o usuário está, o que já avançou, o que vem depois e como retornar ao Projeto; deve alcançar `UX-READY` antes de fechamento.
 
 **Status: PLANNED — inicia somente após FE-09.A.06-H PASS/CLOSED.**
 
@@ -101,12 +119,16 @@ Critério de saída: o usuário compreende e navega a relação Projeto ↔ Jorn
 
 Enquanto `FE-09.A.06-H` não estiver formalmente fechado, restam **2 gates** neste roadmap pós-6J.
 
+O guardrail UX não aumenta a contagem de gates; ele qualifica o critério de saída dos gates existentes.
+
 ## 4. Regra de governança
 
 - 6D–6J permanecem fechados;
 - a família FE-09.A.06 existente é reutilizada e não renomeada;
 - preferências existentes são reutilizadas, não remodeladas sem necessidade;
 - Projeto e Jornada mantêm suas autoridades canônicas atuais;
-- novas necessidades fora desta sequência devem ser propostas separadamente.
+- novas necessidades fora desta sequência devem ser propostas separadamente;
+- nenhuma superfície nova ou alterada poderá ser declarada encerrada apenas por `tests/build PASS`;
+- recorrência do mesmo defeito visual em telas diferentes deve ser tratada preferencialmente por componente/design system transversal.
 
-**ROADMAP PÓS-6J — FE-09.A.06-H IMPLEMENTED / VALIDATION PENDING — PÓS-6J.02 PLANNED.**
+**ROADMAP PÓS-6J — FE-09.A.06-H IMPLEMENTED / UX VALIDATION PENDING — PÓS-6J.02 PLANNED — UX-READY REQUIRED.**
