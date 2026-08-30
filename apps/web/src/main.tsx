@@ -7,6 +7,7 @@ import './index.css'
 import App from './App.tsx'
 import './responsive.css'
 import './responsive-stabilization.css'
+import './components/design-system/platform-shell-hardening.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
