@@ -340,3 +340,170 @@
     flex: 0 0 auto;
   }
 }
+/* PERSONAL-RESPONSIBILITIES-MASTER-FRAME */
+.skpe-personal-responsibilities-master {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: var(--skpe-workspace-section-gap);
+  padding: 1.2rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 18px;
+  background: var(--skpe-surface, #ffffff);
+  box-shadow: 0 10px 30px rgba(25, 44, 37, 0.06);
+}
+
+.skpe-personal-responsibilities-master-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.2rem;
+}
+
+.skpe-personal-responsibilities-master-heading h2 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 1.3rem;
+}
+
+.skpe-personal-responsibilities-master-heading p:not(.skpe-card-code) {
+  max-width: 48rem;
+  margin: 0;
+  color: var(--skpe-text-muted, #64748b);
+  line-height: 1.5;
+}
+
+.skpe-personal-responsibilities-view-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 999px;
+  background: var(--skpe-surface-soft, #f7faf8);
+}
+
+.skpe-personal-responsibilities-view-switch button {
+  min-height: 2rem;
+  padding: 0.3rem 0.72rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--skpe-text-muted, #64748b);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.skpe-personal-responsibilities-view-switch button.active {
+  background: #176b53;
+  color: #ffffff;
+}
+
+.skpe-personal-responsibilities-view-switch button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.skpe-personal-responsibilities-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.15rem 0 0.2rem;
+  border-bottom: 1px solid var(--skpe-border, #dce5e1);
+}
+
+.skpe-personal-responsibilities-tabs button {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.82rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--skpe-text-muted, #64748b);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-personal-responsibilities-tabs button:hover,
+.skpe-personal-responsibilities-tabs button:focus-visible {
+  border-color: var(--skpe-border, #dce5e1);
+  color: var(--skpe-text, #20332c);
+}
+
+.skpe-personal-responsibilities-tabs button.active {
+  border-color: #176b53;
+  background: #eaf7f1;
+  color: #176b53;
+}
+
+.skpe-personal-responsibilities-content {
+  min-width: 0;
+}
+
+/*
+ * Os componentes filhos continuam sendo as fontes de verdade funcionais,
+ * mas deixam de parecer cards independentes empilhados.
+ */
+.skpe-personal-responsibilities-content > .skpe-pending-panel,
+.skpe-personal-responsibilities-content > .skpe-indicators-panel,
+.skpe-personal-responsibilities-content > .skpe-key-results-panel,
+.skpe-personal-responsibilities-content > .skpe-initiatives-panel,
+.skpe-personal-responsibilities-content > .skpe-decisions-panel {
+  margin: 0;
+  border: 0;
+  border-radius: 14px;
+  box-shadow: none;
+  background: var(--skpe-surface-soft, #f8faf9);
+}
+
+/* O eyebrow passa a pertencer ao MASTER FRAME, evitando repetição. */
+.skpe-personal-responsibilities-content
+  > .skpe-pending-panel
+  .skpe-card-code,
+.skpe-personal-responsibilities-content
+  > .skpe-indicators-panel
+  .skpe-card-code,
+.skpe-personal-responsibilities-content
+  > .skpe-key-results-panel
+  .skpe-card-code,
+.skpe-personal-responsibilities-content
+  > .skpe-initiatives-panel
+  .skpe-card-code,
+.skpe-personal-responsibilities-content
+  > .skpe-decisions-panel
+  .skpe-card-code {
+  display: none;
+}
+
+/* Dentro do master frame, a altura minima do heading pode ser menor. */
+.skpe-personal-responsibilities-content .skpe-pending-heading,
+.skpe-personal-responsibilities-content .skpe-indicators-heading,
+.skpe-personal-responsibilities-content .skpe-key-results-heading,
+.skpe-personal-responsibilities-content .skpe-initiatives-heading,
+.skpe-personal-responsibilities-content .skpe-decisions-heading {
+  min-height: 4rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-personal-responsibilities-master-heading {
+    display: grid;
+  }
+
+  .skpe-personal-responsibilities-view-switch {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-personal-responsibilities-master {
+    padding: 0.95rem;
+  }
+
+  .skpe-personal-responsibilities-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .skpe-personal-responsibilities-tabs button {
+    flex: 0 0 auto;
+  }
+}

@@ -89,6 +89,24 @@ type PreferenceFeedback = {
   text: string
 } | null
 
+type PersonalResponsibilityPanel =
+  | 'pending'
+  | 'indicators'
+  | 'key-results'
+  | 'initiatives'
+  | 'decisions'
+
+const PERSONAL_RESPONSIBILITY_TABS: Array<{
+  id: PersonalResponsibilityPanel
+  label: string
+}> = [
+  { id: 'pending', label: 'Pendências' },
+  { id: 'indicators', label: 'Indicadores' },
+  { id: 'key-results', label: 'KRs' },
+  { id: 'initiatives', label: 'Iniciativas' },
+  { id: 'decisions', label: 'Decisões' },
+]
+
 type PreferenceRow = {
   preference_value: unknown
 }
@@ -290,6 +308,8 @@ export function MyWorkspacePage({
     useState<PreferenceFeedback>(null)
 
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [activeResponsibilityPanel, setActiveResponsibilityPanel] =
+    useState<PersonalResponsibilityPanel>('pending')
 
   const dashboards = useMemo(
     () =>
@@ -907,31 +927,105 @@ export function MyWorkspacePage({
         />
       )}
 
-      <MyPendingItemsPanel
-        organizationId={organizationId}
-        projectId={project?.id ?? null}
-        onNavigate={onNavigate}
-      />
+      <section
+        className="skpe-personal-responsibilities-master"
+        aria-labelledby="personal-responsibilities-title"
+      >
+        <header className="skpe-personal-responsibilities-master-heading">
+          <div>
+            <p className="skpe-card-code">Meu trabalho</p>
+            <h2 id="personal-responsibilities-title">
+              Responsabilidades Pessoais
+            </h2>
+            <p>
+              Acompanhe o que exige sua atenção, medição, execução ou decisão
+              no contexto estratégico atual.
+            </p>
+          </div>
 
-      <MyIndicatorsPanel
-        organizationId={organizationId}
-        projectId={project?.id ?? null}
-      />
+          <div
+            className="skpe-personal-responsibilities-view-switch"
+            aria-label="Modo de visualização das responsabilidades"
+          >
+            <button
+              type="button"
+              className="active"
+              aria-pressed="true"
+            >
+              Resumo
+            </button>
+            <button
+              type="button"
+              disabled
+              title="A visão hierárquica será habilitada após a reconciliação dos vínculos do modelo."
+            >
+              Árvore
+            </button>
+          </div>
+        </header>
 
-      <MyKeyResultsPanel
-        organizationId={organizationId}
-        projectId={project?.id ?? null}
-      />
+        <nav
+          className="skpe-personal-responsibilities-tabs"
+          aria-label="Responsabilidades pessoais"
+          role="tablist"
+        >
+          {PERSONAL_RESPONSIBILITY_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeResponsibilityPanel === tab.id}
+              className={
+                activeResponsibilityPanel === tab.id ? 'active' : ''
+              }
+              onClick={() => setActiveResponsibilityPanel(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-      <MyInitiativesPanel
-        organizationId={organizationId}
-        projectId={project?.id ?? null}
-      />
+        <div
+          className="skpe-personal-responsibilities-content"
+          role="tabpanel"
+        >
+          {activeResponsibilityPanel === 'pending' && (
+            <MyPendingItemsPanel
+              organizationId={organizationId}
+              projectId={project?.id ?? null}
+              onNavigate={onNavigate}
+            />
+          )}
 
-      <MyDecisionsPanel
-        organizationId={organizationId}
-        projectId={project?.id ?? null}
-      />
+          {activeResponsibilityPanel === 'indicators' && (
+            <MyIndicatorsPanel
+              organizationId={organizationId}
+              projectId={project?.id ?? null}
+            />
+          )}
+
+          {activeResponsibilityPanel === 'key-results' && (
+            <MyKeyResultsPanel
+              organizationId={organizationId}
+              projectId={project?.id ?? null}
+            />
+          )}
+
+          {activeResponsibilityPanel === 'initiatives' && (
+            <MyInitiativesPanel
+              organizationId={organizationId}
+              projectId={project?.id ?? null}
+            />
+          )}
+
+          {activeResponsibilityPanel === 'decisions' && (
+            <MyDecisionsPanel
+              organizationId={organizationId}
+              projectId={project?.id ?? null}
+            />
+          )}
+        </div>
+      </section>
 
       <MyMeetingsPanel
         organizationId={organizationId}
