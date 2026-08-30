@@ -1,0 +1,162 @@
+/*
+ * Hardening incremental das superfícies de trabalho.
+ * Mantém contratos funcionais intactos e reduz concorrência visual.
+ */
+
+/* A ação principal de criação permanece acessível durante a rolagem. */
+.skpe-new-initiative-button {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 45;
+  min-height: 48px;
+  padding-inline: 1.1rem;
+  border-radius: 999px;
+  box-shadow: 0 14px 32px rgba(23, 107, 83, 0.24);
+}
+
+.skpe-new-initiative-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Atualização é ação secundária: mantém o texto no DOM, mas mostra só o ícone. */
+.skpe-page-heading .skpe-refresh-button {
+  position: relative;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  gap: 0;
+  overflow: visible;
+  font-size: 0;
+}
+
+.skpe-page-heading .skpe-refresh-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.skpe-page-heading .skpe-refresh-button::after {
+  content: 'Atualizar painel';
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 80;
+  width: max-content;
+  max-width: 180px;
+  padding: 0.4rem 0.55rem;
+  border-radius: 7px;
+  background: #183f34;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.skpe-page-heading .skpe-refresh-button:hover::after,
+.skpe-page-heading .skpe-refresh-button:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/*
+ * O cadastro deixa de empilhar conteúdo no portfólio e passa a operar
+ * como uma tarefa focal em drawer lateral, reutilizando o formulário atual.
+ */
+.skpe-initiative-form-card {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  width: min(720px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 18px;
+  box-shadow:
+    0 24px 60px rgba(15, 35, 28, 0.24),
+    0 0 0 100vmax rgba(9, 24, 19, 0.22);
+  animation: sparks-drawer-enter 160ms ease-out;
+}
+
+.skpe-initiative-form-card > .skpe-card-heading {
+  position: sticky;
+  top: -1.2rem;
+  z-index: 2;
+  margin: -1.2rem -1.2rem 0;
+  padding: 1.2rem;
+  border-bottom: 1px solid #dce5e1;
+  background: inherit;
+}
+
+.skpe-initiative-form-card .skpe-initiative-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.skpe-initiative-form-card .skpe-form-field-wide,
+.skpe-initiative-form-card .skpe-form-field-full {
+  grid-column: 1 / -1;
+}
+
+.skpe-initiative-form-card .skpe-initiative-form-actions {
+  position: sticky;
+  bottom: -1.2rem;
+  z-index: 2;
+  margin: 1rem -1.2rem -1.2rem;
+  padding: 0.9rem 1.2rem 1.2rem;
+  border-top: 1px solid #dce5e1;
+  background: inherit;
+}
+
+@keyframes sparks-drawer-enter {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skpe-initiative-form-card {
+    animation: none;
+  }
+
+  .skpe-new-initiative-button,
+  .skpe-page-heading .skpe-refresh-button::after {
+    transition: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-new-initiative-button {
+    right: 1rem;
+    bottom: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .skpe-initiative-form-card {
+    top: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+  }
+
+  .skpe-initiative-form-card .skpe-initiative-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-initiative-form-card .skpe-form-field-wide,
+  .skpe-initiative-form-card .skpe-form-field-full {
+    grid-column: auto;
+  }
+}
