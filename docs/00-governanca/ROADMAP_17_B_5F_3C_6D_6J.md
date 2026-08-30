@@ -1,6 +1,6 @@
 ---
 id: SKPE-ROADMAP-17-B-5F-3C-6D-6J
-version: 1.6.0
+version: 1.7.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
@@ -9,7 +9,7 @@ created_at: 2026-08-21
 updated_at: 2026-08-29
 starts_after: 17-B.5F.3C.6C
 ends_at: 17-B.5F.3C.6J
-remaining_gates: 1
+remaining_gates: 0
 ---
 
 # Roadmap Governado 17-B.5F.3C.6D–6J — Operação e Visões Transversais de Iniciativas
@@ -153,6 +153,31 @@ Não inclui: contabilidade, orçamento corporativo completo, contas a pagar/rece
 
 Critério de saída: totalizações determinísticas, variações rastreáveis, integração semântica com iniciativa/ação e fronteira explícita com domínio financeiro especializado.
 
+**Status: PASS / CLOSED em 2026-08-29.**
+
+Fundação reutilizada:
+
+- campos econômicos canônicos em `sparks_initiatives` e `sparks_initiative_actions`;
+- `set_sparks_initiative_economic_execution` para mutação governada da iniciativa;
+- `update_sparks_initiative_action` para mutação governada de custo/esforço da ação;
+- `get_sparks_initiative_economic_projection` para consolidação determinística por moeda e por unidade de esforço.
+
+Regras de consolidação confirmadas:
+
+- custo planejado e realizado permanecem separados por `currency_code`;
+- esforço estimado e realizado permanecem separados por `effort_unit`;
+- não existe conversão cambial implícita;
+- não existe conversão implícita entre unidades de esforço;
+- valores planejados de ações canceladas/arquivadas ficam fora do plano vigente;
+- valores realizados são preservados para rastreabilidade histórica;
+- a iniciativa não é automaticamente sobrescrita pela soma das ações.
+
+Commit técnico final: `2fb371365891f1436f682a134f9f698e89fa54bf` — expõe no Portfólio o controle governado de custos e esforço da iniciativa e a consolidação derivada das ações.
+
+Validação local final: 112/112 testes PASS, build PASS e worktree limpa.
+
+Evidência documental: `docs/auditoria/RELATORIO_FECHAMENTO_17_B_5F_3C_6J.md`.
+
 ## 3. Ordem e dependências
 
 A ordem canônica é:
@@ -171,9 +196,9 @@ Dependências principais:
 
 ## 4. Contagem congelada
 
-Após o fechamento do `17-B.5F.3C.6I`, resta **1 gate** nesta trilha:
+Após o fechamento do `17-B.5F.3C.6J`, restam **0 gates** nesta trilha.
 
-1. `17-B.5F.3C.6J`
+A sequência funcional `17-B.5F.3C.6D–6J` está integralmente encerrada. Qualquer necessidade posterior deve entrar em roadmap ou gate próprio, sem reabrir silenciosamente esta sequência.
 
 A criação de subgates de hardening, testes ou reconciliação não altera esta contagem funcional; subgates existem para controle de implementação e não para expandir o roadmap funcional.
 
@@ -185,4 +210,4 @@ Projeções de UX devem consumir autoridades existentes, nunca criar fontes de v
 
 Qualquer necessidade nova que não se encaixe claramente em `6D–6J` deve ser registrada como proposta separada e não incorporada silenciosamente a esta trilha.
 
-**ROADMAP 17-B.5F.3C.6D–6J — 6I CLOSED / 1 GATE RESTANTE — 6J OPEN.**
+**ROADMAP 17-B.5F.3C.6D–6J — COMPLETE / 0 GATES RESTANTES — 6J CLOSED.**
