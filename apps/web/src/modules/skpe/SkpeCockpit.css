@@ -4915,3 +4915,129 @@ tr.skpe-interactive-record:focus-visible {
     margin-left: 0;
   }
 }
+/* UX-6L-CLEAN-HEADER-AND-WORKSPACE-RHYTHM */
+/*
+ * Restaura a leitura clean do cockpit:
+ * - topo compacto;
+ * - contexto preservado sem transformar o header em um segundo dashboard;
+ * - informacao secundaria da organizacao retirada da faixa persistente;
+ * - fundo permanece opaco conforme o hardening anterior.
+ */
+.skpe-main > .skpe-cockpit-header {
+  min-height: 62px;
+  grid-template-columns: minmax(190px, 0.9fr) minmax(360px, 1.65fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 1rem;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-branding {
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-branding img {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  object-fit: contain;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-branding small {
+  display: none;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-context {
+  min-width: 0;
+  gap: 0;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-context > div {
+  min-width: 0;
+  padding: 0.15rem 0.7rem;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-context span {
+  margin: 0 0 0.12rem;
+  font-size: 0.62rem;
+  line-height: 1;
+  letter-spacing: 0.055em;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-context strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-actions {
+  gap: 0.45rem;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-user {
+  gap: 0.45rem;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-user-button {
+  min-height: 40px;
+  gap: 0.5rem;
+  padding: 0.28rem 0.45rem;
+}
+
+.skpe-main > .skpe-cockpit-header .skpe-cockpit-user-button img {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+}
+
+/*
+ * Ritmo vertical da home:
+ * Painel Principal e sintese estrategica pertencem a mesma sequencia visual.
+ * O grid nao deve abrir um intervalo maior que os demais blocos.
+ */
+.skpe-primary-dashboard-panel {
+  margin-bottom: 0;
+}
+
+.skpe-primary-dashboard-panel ~ .skpe-kpi-grid {
+  margin-top: 1rem;
+}
+
+/* Mantem respiracao consistente entre a sintese e o bloco seguinte. */
+.skpe-kpi-grid {
+  margin-bottom: 1.2rem;
+}
+
+@media (max-width: 1180px) {
+  .skpe-main > .skpe-cockpit-header {
+    grid-template-columns: minmax(190px, 1fr) auto;
+    min-height: 58px;
+  }
+
+  .skpe-main > .skpe-cockpit-header .skpe-cockpit-context {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 960px) {
+  .skpe-main > .skpe-cockpit-header {
+    padding: 0.65rem 0.8rem;
+  }
+}
+
+@media (max-width: 820px) {
+  .skpe-main > .skpe-cockpit-header {
+    min-height: auto;
+    margin-top: 0;
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .skpe-main > .skpe-cockpit-header .skpe-cockpit-branding small {
+    display: initial;
+  }
+}
