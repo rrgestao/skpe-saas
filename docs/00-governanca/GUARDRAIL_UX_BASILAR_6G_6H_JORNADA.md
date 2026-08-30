@@ -1,16 +1,17 @@
 ---
 id: SKPE-GUARDRAIL-UX-BASILAR-6G-6H-JORNADA
-version: 1.0.0
+version: 1.1.0
 status: approved
 domain: SPARKs PaaS
 owner: SPARKs PE
 canonical_context: SK-PE-CONT-01
 created_at: 2026-08-29
-updated_at: 2026-08-29
+updated_at: 2026-08-30
 applies_to:
   - 17-B.5F.3C.6G
   - 17-B.5F.3C.6H
   - FE-09.A
+  - all-future-user-facing-surfaces
 ---
 
 # Guardrail Basilar de UX — Kanban, Gantt, Painéis e Jornada Estratégica
@@ -23,7 +24,11 @@ Este guardrail **não cria novo gate funcional, não aumenta a contagem do roadm
 
 Referências canônicas:
 
+- `MANIFESTO_UX_SPARKS.md`;
+- `CHECKLIST_PRONTIDAO_UX_SPARKS.md`;
+- `BENCHMARK_UX_SMARTKANVAS_PARA_SPARKS.md`;
 - `ROADMAP_17_B_5F_3C_6D_6J.md`;
+- `ROADMAP_POS_6J_WORKSPACE_JOURNEY_PROJECT.md`;
 - `CONTRATO_MEU_ESPACO_TRABALHO_FE09A05.md`;
 - `CONTRATO_PAINEL_PRINCIPAL_FE09A06.md`;
 - `MATRIZ_PREFERENCIAS_USUARIO_FE09A06.md`;
@@ -36,6 +41,8 @@ A experiência deve obedecer ao princípio já aprovado de **simplicidade na sup
 
 A evolução funcional não poderá considerar uma capacidade encerrada apenas porque seus contratos ou componentes técnicos existem. O fechamento de uma projeção visual exige que o usuário consiga compreender seu propósito, alternar entre visões equivalentes sem confusão e operar com densidade compatível com o contexto.
 
+A partir da versão 1.1.0, toda superfície voltada ao usuário também fica subordinada ao `MANIFESTO_UX_SPARKS.md` e ao `CHECKLIST_PRONTIDAO_UX_SPARKS.md`.
+
 ## 3. Painel Principal
 
 O modelo mental principal permanece singular:
@@ -46,7 +53,7 @@ O modelo mental principal permanece singular:
 - a interface deve apresentar claramente qual painel é o Principal;
 - painéis alternativos continuam disponíveis como outras formas de visualizar o mesmo contexto quando elegíveis, mas não devem competir visualmente como se vários fossem simultaneamente o painel principal.
 
-A funcionalidade futura de `workspace.favorites` permanece distinta e não deve ser confundida com `workspace.primary_dashboard`. Até existir contrato funcional próprio para Favoritos, a interface não deve usar Favoritos como substituto ou concorrente do Painel Principal.
+A funcionalidade de `workspace.favorites` permanece distinta e não deve ser confundida com `workspace.primary_dashboard`. Favoritos não substituem nem concorrem semanticamente com o Painel Principal.
 
 ## 4. Abas e densidade de informação
 
@@ -128,13 +135,31 @@ Princípios mínimos:
 
 Sem criar novo gate funcional, a continuidade passa a observar:
 
-1. **17-B.5F.3C.6G — Kanban:** concluir com hardening de compreensão, navegação e densidade antes de declarar `PASS/CLOSED`;
-2. **17-B.5F.3C.6H — Gantt:** implementar desde o início com hierarquia colapsável/condensável e performance compatível;
-3. **FE-09.A / Painéis:** reconciliar a interface atual com o contrato singular de Painel Principal e impedir que Favoritos não contratados gerem um modelo mental concorrente;
-4. **Jornada Estratégica:** garantir que o Projeto Estratégico transversal e a Jornada gerada pelo template sejam claramente expostos como uma única experiência operacional.
-
-Esses itens são critérios de implementação e aceite dentro do escopo já aprovado.
+1. gates já fechados permanecem fechados e seus aprendizados viram padrão transversal;
+2. **FE-09.A / Painéis:** reconciliar a interface com o contrato singular de Painel Principal e manter Favoritos semanticamente separados;
+3. **Jornada Estratégica:** garantir que o Projeto Estratégico transversal e a Jornada gerada pelo template sejam claramente expostos como uma única experiência operacional;
+4. qualquer nova superfície deverá aplicar o padrão `Objeto → Espaço de Trabalho` quando houver múltiplas visões do mesmo objeto;
+5. toda entrega voltada ao usuário deverá alcançar classificação `UX-READY` no checklist canônico antes de `PASS/CLOSED`.
 
 ## 10. Regra de fechamento
 
 Nenhum dos itens acima deverá ser adiado genericamente para uma etapa final de “polimento”. Quando o gate funcional correspondente tocar a superfície afetada, simplicidade, legibilidade, navegabilidade e performance percebida passam a integrar seu critério de saída.
+
+Teste automatizado e build aprovados são necessários, mas não suficientes para fechamento de superfície de usuário.
+
+## 11. Extensão transversal — Design System e benchmark competitivo
+
+O benchmark externo registrado em `BENCHMARK_UX_SMARTKANVAS_PARA_SPARKS.md` passa a ser referência comparativa de experiência, não de arquitetura ou identidade visual.
+
+A régua SPARKs é superior quando combina:
+
+- simplicidade equivalente ou melhor na superfície;
+- governança mais forte por baixo;
+- contexto transversal entre módulos;
+- inteligência contextual;
+- explicabilidade;
+- uma única autoridade projetada em múltiplas visões.
+
+O padrão visual deverá ser progressivamente consolidado em componentes reutilizáveis. Correções recorrentes de alinhamento, tipografia, cards, abas, botões, estados vazios ou menus devem ser tratadas como sinal de ausência de Design System suficientemente aplicado, e não como exceções isoladas por tela.
+
+**Regra final:** toda superfície nova ou alterada deve ser avaliada com o `CHECKLIST_PRONTIDAO_UX_SPARKS.md`; somente `UX-READY` sustenta fechamento funcional.
