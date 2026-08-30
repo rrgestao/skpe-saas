@@ -4793,3 +4793,89 @@ tr.skpe-interactive-record:focus-visible {
 .skpe-shell.skpe-sidebar-collapsed .skpe-navigation button[title] {
   position: relative;
 }
+/* SK-PE UX - METRIC CARDS AND INITIATIVE WORKSPACE */
+.skpe-kpi-card,
+.skpe-admin-kpi-card,
+.skpe-initiative-kpi-grid article,
+.skpe-initiative-kpi-grid button,
+.skpe-initiative-financial-strip > * {
+  text-align: center;
+  justify-items: center;
+  align-content: center;
+}
+
+.skpe-initiative-kpi-grid article,
+.skpe-initiative-kpi-grid button {
+  min-height: 116px;
+}
+
+.skpe-initiative-kpi-grid article > *,
+.skpe-initiative-kpi-grid button > *,
+.skpe-initiative-financial-strip > * > * {
+  max-width: 100%;
+  text-align: center;
+}
+
+.skpe-initiative-kpi-grid strong,
+.skpe-initiative-financial-strip strong,
+.skpe-admin-kpi-card strong {
+  font-size: clamp(1.15rem, 1.5vw, 1.6rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.skpe-initiative-card-openable {
+  cursor: pointer;
+  border-radius: 12px;
+  outline: none;
+}
+
+.skpe-initiative-card-openable:hover {
+  background: #f6faf8;
+}
+
+.skpe-initiative-card-openable:focus-visible {
+  box-shadow: 0 0 0 3px rgba(23, 107, 83, 0.18);
+}
+
+.skpe-initiative-workspace-actions {
+  margin-left: auto;
+}
+
+.skpe-initiative-workspace-tabs {
+  display: flex;
+  gap: .45rem;
+  margin: 1rem 0;
+  padding: .35rem;
+  width: fit-content;
+  border: 1px solid #dce5e1;
+  border-radius: 12px;
+  background: #f4f8f6;
+}
+
+.skpe-initiative-workspace-tabs button {
+  min-height: 38px;
+  padding: .55rem .85rem;
+  border-radius: 9px;
+  background: transparent;
+  color: #4f625b;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-initiative-workspace-tabs button:hover,
+.skpe-initiative-workspace-tabs button.active {
+  background: #ffffff;
+  color: #176b53;
+  box-shadow: 0 2px 8px rgba(25, 44, 37, .08);
+}
+
+.skpe-initiative-economic-embedded {
+  width: 100%;
+}
+
+.skpe-initiative-economic-panel {
+  width: 100%;
+  display: grid;
+  gap: 1rem;
+}

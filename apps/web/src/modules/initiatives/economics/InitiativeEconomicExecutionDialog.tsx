@@ -60,6 +60,7 @@ type Props = {
   initiativeCode: string
   initiativeName: string
   canManage: boolean
+  presentation?: 'dialog' | 'panel'
   onClose: () => void
   onSaved: () => Promise<void> | void
 }
@@ -125,6 +126,7 @@ export function InitiativeEconomicExecutionDialog({
   initiativeCode,
   initiativeName,
   canManage,
+  presentation = 'dialog',
   onClose,
   onSaved,
 }: Props) {
@@ -184,12 +186,14 @@ export function InitiativeEconomicExecutionDialog({
   }, [initiativeId, organizationId])
 
   useEffect(() => {
+    if (presentation !== 'dialog') return
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !saving) onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, saving])
+  }, [onClose, presentation, saving])
 
   const lifecycleStatus = projection?.initiative.lifecycleStatus ?? null
   const editable =
@@ -270,16 +274,30 @@ export function InitiativeEconomicExecutionDialog({
 
   return (
     <div
-      className="skpe-modal-backdrop"
-      role="presentation"
+      className={
+        presentation === 'dialog'
+          ? 'skpe-modal-backdrop'
+          : 'skpe-initiative-economic-embedded'
+      }
+      role={presentation === 'dialog' ? 'presentation' : undefined}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !saving) onClose()
+        if (
+          presentation === 'dialog' &&
+          event.target === event.currentTarget &&
+          !saving
+        ) {
+          onClose()
+        }
       }}
     >
       <aside
-        className="skpe-modal-panel"
-        role="dialog"
-        aria-modal="true"
+        className={
+          presentation === 'dialog'
+            ? 'skpe-modal-panel'
+            : 'skpe-initiative-economic-panel'
+        }
+        role={presentation === 'dialog' ? 'dialog' : 'region'}
+        aria-modal={presentation === 'dialog' ? true : undefined}
         aria-labelledby="skpe-initiative-economic-title"
       >
         <div className="skpe-card-heading">
@@ -288,9 +306,16 @@ export function InitiativeEconomicExecutionDialog({
             <h2 id="skpe-initiative-economic-title">Custos e esforço</h2>
             <p>{initiativeName}</p>
           </div>
-          <button type="button" className="skpe-user-details-button" onClick={onClose} disabled={saving}>
-            Fechar
-          </button>
+          {presentation === 'dialog' && (
+            <button
+              type="button"
+              className="skpe-user-details-button"
+              onClick={onClose}
+              disabled={saving}
+            >
+              Fechar
+            </button>
+          )}
         </div>
 
         <div className="skpe-admin-state-card">

@@ -1808,6 +1808,8 @@ function InitiativesSection({
     useState<'portfolio' | 'kanban'>('portfolio')
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
+  const [initiativeWorkspaceTab, setInitiativeWorkspaceTab] =
+    useState<'kanban' | 'economics'>('kanban')
   const [eventInitiativeId, setEventInitiativeId] =
     useState<string | null>(null)
   const [economicInitiativeId, setEconomicInitiativeId] =
@@ -2133,6 +2135,7 @@ function InitiativesSection({
     setKanbanInitiativeId(
       initiative.initiative_id,
     )
+    setInitiativeWorkspaceTab('kanban')
     setInitiativeViewMode('kanban')
   }
 
@@ -2661,17 +2664,87 @@ function InitiativesSection({
                   )?.initiative_name
                 }
               </strong>
+
+              <div className="skpe-initiative-workspace-actions">
+                {canManageInitiatives && (
+                  <button
+                    type="button"
+                    className="skpe-user-details-button"
+                    title="Criar reunião, compromisso, prazo ou marco vinculado à iniciativa"
+                    onClick={() =>
+                      setEventInitiativeId(kanbanInitiativeId)
+                    }
+                  >
+                    Adicionar à agenda
+                  </button>
+                )}
+              </div>
             </div>
 
-            <InitiativeKanbanBoard
-              initiativeId={kanbanInitiativeId}
-              canManageInitiatives={canManageInitiatives}
-              initialActionId={
-                drilldownTarget?.initiativeId === kanbanInitiativeId
-                  ? drilldownTarget.actionId
-                  : null
-              }
-            />
+            <nav
+              className="skpe-initiative-workspace-tabs"
+              aria-label="Visões da iniciativa"
+            >
+              <button
+                type="button"
+                className={
+                  initiativeWorkspaceTab === 'kanban'
+                    ? 'active'
+                    : ''
+                }
+                onClick={() =>
+                  setInitiativeWorkspaceTab('kanban')
+                }
+              >
+                Kanban
+              </button>
+
+              <button
+                type="button"
+                className={
+                  initiativeWorkspaceTab === 'economics'
+                    ? 'active'
+                    : ''
+                }
+                onClick={() =>
+                  setInitiativeWorkspaceTab('economics')
+                }
+              >
+                Custos e esforço
+              </button>
+            </nav>
+
+            {initiativeWorkspaceTab === 'kanban' ? (
+              <InitiativeKanbanBoard
+                initiativeId={kanbanInitiativeId}
+                canManageInitiatives={canManageInitiatives}
+                initialActionId={
+                  drilldownTarget?.initiativeId === kanbanInitiativeId
+                    ? drilldownTarget.actionId
+                    : null
+                }
+              />
+            ) : (() => {
+              const selectedInitiative = initiatives.find(
+                (initiative) =>
+                  initiative.initiative_id === kanbanInitiativeId,
+              )
+
+              return selectedInitiative ? (
+                <InitiativeEconomicExecutionDialog
+                  organizationId={organizationId}
+                  initiativeId={selectedInitiative.initiative_id}
+                  initiativeCode={selectedInitiative.initiative_code}
+                  initiativeName={selectedInitiative.initiative_name}
+                  canManage={canManageInitiatives}
+                  presentation="panel"
+                  onClose={() =>
+                    setInitiativeWorkspaceTab('kanban')
+                  }
+                  onSaved={loadInitiatives}
+                />
+              ) : null
+            })()}
           </section>
         ) : (
           <section className="skpe-admin-state-card">
@@ -2707,7 +2780,19 @@ function InitiativesSection({
               key={initiative.initiative_id}
               className="skpe-initiative-card"
             >
-              <div className="skpe-initiative-card-main">
+              <div
+                className="skpe-initiative-card-main skpe-initiative-card-openable"
+                role="button"
+                tabIndex={0}
+                aria-label={`Abrir iniciativa ${initiative.initiative_name}`}
+                onClick={() => openInitiativeKanban(initiative)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    openInitiativeKanban(initiative)
+                  }
+                }}
+              >
                 <div className="skpe-initiative-card-heading">
                   <div>
                     <p>{initiative.initiative_code}</p>
@@ -2801,37 +2886,8 @@ function InitiativesSection({
               </div>
 
               <aside className="skpe-initiative-actions">
-                <button
-                  type="button"
-                  className="skpe-user-details-button"
-                  onClick={() =>
-                    openInitiativeKanban(initiative)
-                  }
-                >
-                  Abrir Kanban
-                </button>
 
-                <button
-                  type="button"
-                  className="skpe-user-details-button"
-                  onClick={() =>
-                    setEconomicInitiativeId(
-                      initiative.initiative_id,
-                    )
-                  }
-                >
-                  Custos e esforço
-                </button>
 
-                {canManageInitiatives && (
-                  <button
-                    type="button"
-                    className="skpe-user-details-button"
-                    onClick={() => setEventInitiativeId(initiative.initiative_id)}
-                  >
-                    Novo evento
-                  </button>
-                )}
 
                 {canManageInitiatives &&
                   initiative.initiative_status === 'proposed' && (
