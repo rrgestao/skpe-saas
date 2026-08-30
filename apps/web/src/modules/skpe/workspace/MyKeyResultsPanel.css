@@ -1,7 +1,8 @@
 .skpe-key-results-panel {
   display: grid;
-  gap: 1rem;
-  padding: 1.1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.9rem 1rem;
+  padding: 1.15rem 1.25rem;
   border: 1px solid var(--skpe-border-subtle, rgba(15, 23, 42, 0.1));
   border-radius: 1rem;
   background: var(--skpe-surface, #ffffff);
@@ -9,38 +10,35 @@
 }
 
 .skpe-key-results-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  min-width: 0;
 }
 
 .skpe-key-results-heading h2 {
-  margin: 0.15rem 0 0;
+  margin: 0.15rem 0 0.3rem;
   font-size: 1.15rem;
 }
 
 .skpe-key-results-heading p:not(.skpe-card-code) {
-  margin: 0.4rem 0 0;
+  margin: 0.35rem 0 0;
   max-width: 58rem;
   color: var(--skpe-text-muted, #64748b);
   line-height: 1.5;
 }
 
+/* O filtro "Todos" ja comunica o total; evita duplicacao visual no cabecalho. */
 .skpe-key-results-total {
-  flex: 0 0 auto;
-  padding: 0.4rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.06);
-  color: var(--skpe-text, #0f172a);
-  font-size: 0.82rem;
-  font-weight: 700;
+  display: none;
 }
 
+/* Filtros compartilham a faixa do titulo no desktop. */
 .skpe-key-results-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  align-self: start;
+  gap: 0.45rem;
+  margin-top: 1.15rem;
+  max-width: 42rem;
 }
 
 .skpe-key-results-filter {
@@ -55,8 +53,9 @@
   color: var(--skpe-text-muted, #64748b);
   cursor: pointer;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .skpe-key-results-filter:hover,
@@ -78,7 +77,7 @@
   padding: 0 0.3rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.07);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
 }
 
 .skpe-key-results-filter-active {
@@ -87,12 +86,17 @@
   color: #1d4ed8;
 }
 
+.skpe-key-results-state,
+.skpe-key-results-list {
+  grid-column: 1 / -1;
+}
+
 .skpe-key-results-state {
   display: grid;
   gap: 0.35rem;
-  min-height: 5.5rem;
+  min-height: 4.75rem;
   align-content: center;
-  padding: 1rem;
+  padding: 0.95rem 1rem;
   border: 1px dashed var(--skpe-border-subtle, rgba(15, 23, 42, 0.14));
   border-radius: 0.85rem;
   color: var(--skpe-text-muted, #64748b);
@@ -334,7 +338,6 @@
   background: rgba(15, 23, 42, 0.72);
 }
 
-[data-theme='dark'] .skpe-key-results-total,
 [data-theme='dark'] .skpe-key-results-filter span,
 [data-theme='dark'] .skpe-key-results-item-labels span,
 [data-theme='dark'] .skpe-key-results-objective,
@@ -347,13 +350,27 @@
   background: rgba(255, 255, 255, 0.11);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1100px) {
   .skpe-key-results-panel {
-    padding: 0.9rem;
+    grid-template-columns: 1fr;
   }
 
-  .skpe-key-results-heading {
-    flex-direction: column;
+  .skpe-key-results-filters {
+    justify-content: flex-start;
+    margin-top: 0;
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-key-results-panel {
+    padding: 0.95rem;
+  }
+
+  .skpe-key-results-filters {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.15rem;
   }
 
   .skpe-key-results-item {
