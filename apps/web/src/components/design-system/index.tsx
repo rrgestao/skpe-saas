@@ -4,6 +4,7 @@ import type {
 } from 'react'
 
 import './design-system.css'
+import './workspace-hardening.css'
 
 type MetricCardProps = {
   label: ReactNode
