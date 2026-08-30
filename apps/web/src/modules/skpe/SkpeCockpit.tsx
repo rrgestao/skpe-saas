@@ -13,6 +13,10 @@ import {
   ObjectWorkspaceHeader,
   WorkspaceTabs,
 } from '../../components/design-system'
+import {
+  OrganizationVisualIdentityCard,
+  OrganizationVisualIdentityTheme,
+} from '../../components/organization-branding/OrganizationVisualIdentity'
 import { supabase } from '../../lib/supabase'
 
 import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
@@ -3541,6 +3545,12 @@ function OrganizationSection({
           </aside>
 
           <div className="skpe-organization-form-card">
+            <OrganizationVisualIdentityCard
+              organizationId={organizationId}
+              canManage={canManageOrganization}
+              logoUrl={logoUrl}
+            />
+
             <div className="skpe-organization-form-section">
               <div><p className="skpe-card-code">Identidade institucional</p><h2>Dados oficiais</h2></div>
               <div className="skpe-organization-form-grid">
@@ -6880,6 +6890,8 @@ export function SkpeCockpit({
   }
   return (
     <div className={`skpe-shell skpe-theme-${theme} ${sidebarCollapsed ? 'skpe-sidebar-collapsed' : ''}`}>
+      <OrganizationVisualIdentityTheme organizationId={organizationId} />
+
       <aside className="skpe-sidebar">
         <div className="skpe-sidebar-brand">
           <img className="skpe-platform-mascot" src="/sparkoop-mascot.png" alt="Mascote da SPARKOOP" />

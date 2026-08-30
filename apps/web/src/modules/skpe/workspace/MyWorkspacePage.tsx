@@ -472,19 +472,6 @@ export function MyWorkspacePage({
     }
   }, [organizationId])
 
-  useEffect(() => {
-    if (
-      preferenceStatus === 'valid' &&
-      persistedPrimaryId &&
-      !persistedDashboardIsEligible
-    ) {
-      setPreferenceStatus('invalid')
-    }
-  }, [
-    persistedDashboardIsEligible,
-    persistedPrimaryId,
-    preferenceStatus,
-  ])
 
   useEffect(() => {
     if (
@@ -724,6 +711,11 @@ export function MyWorkspacePage({
   const favoritesLoading = favoritesStatus === 'loading'
   const favoritesBusy = savingFavoriteId !== null
 
+  const showPrimaryPreferencePanel =
+    preferenceLoading ||
+    persistedPrimaryId === null ||
+    persistedDashboardIsEligible
+
   return (
     <>
       <section className="skpe-page-heading">
@@ -779,10 +771,11 @@ export function MyWorkspacePage({
         </div>
       </section>
 
-      <section
-        className="skpe-primary-dashboard-panel"
-        aria-labelledby="primary-dashboard-title"
-      >
+      {showPrimaryPreferencePanel && (
+        <section
+          className="skpe-primary-dashboard-panel"
+          aria-labelledby="primary-dashboard-title"
+        >
         <div>
           <p className="skpe-card-code">Preferência pessoal</p>
           <h2 id="primary-dashboard-title">Painel Principal</h2>
@@ -798,15 +791,7 @@ export function MyWorkspacePage({
                   : ' está sendo utilizado como painel padrão neste contexto.'}
               </p>
 
-              {preferenceStatus === 'invalid' && (
-                <p
-                  className="skpe-primary-dashboard-warning"
-                  role="status"
-                >
-                  A preferência salva não está disponível no contexto atual e
-                  não foi substituída automaticamente.
-                </p>
-              )}
+
             </>
           ) : (
             <p>
@@ -818,7 +803,7 @@ export function MyWorkspacePage({
         </div>
 
         <div className="skpe-primary-dashboard-actions">
-          {persistedPrimaryId && (
+          {persistedPrimaryId && persistedDashboardIsEligible && (
             <button
               type="button"
               className="skpe-secondary-button"
@@ -831,7 +816,8 @@ export function MyWorkspacePage({
             </button>
           )}
         </div>
-      </section>
+        </section>
+      )}
 
       {feedback && (
         <div
