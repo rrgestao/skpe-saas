@@ -22,6 +22,7 @@ import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateD
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
+import { InitiativeEconomicExecutionDialog } from '../initiatives/economics/InitiativeEconomicExecutionDialog'
 import type {
   InitiativePortfolioDashboardRow,
   InitiativePortfolioRow,
@@ -1805,6 +1806,8 @@ function InitiativesSection({
     useState<string | null>(null)
   const [eventInitiativeId, setEventInitiativeId] =
     useState<string | null>(null)
+  const [economicInitiativeId, setEconomicInitiativeId] =
+    useState<string | null>(null)
 
   useEffect(() => {
     if (!drilldownTarget?.initiativeId) return
@@ -2804,6 +2807,18 @@ function InitiativesSection({
                   Abrir Kanban
                 </button>
 
+                <button
+                  type="button"
+                  className="skpe-user-details-button"
+                  onClick={() =>
+                    setEconomicInitiativeId(
+                      initiative.initiative_id,
+                    )
+                  }
+                >
+                  Custos e esforço
+                </button>
+
                 {canManageInitiatives && (
                   <button
                     type="button"
@@ -2929,6 +2944,25 @@ function InitiativesSection({
             contextLabel="iniciativa"
             onClose={() => setEventInitiativeId(null)}
             onCreated={() => setEventInitiativeId(null)}
+          />
+        ) : null
+      })()}
+
+      {economicInitiativeId && (() => {
+        const target = initiatives.find(
+          (initiative) =>
+            initiative.initiative_id === economicInitiativeId,
+        )
+
+        return target ? (
+          <InitiativeEconomicExecutionDialog
+            organizationId={organizationId}
+            initiativeId={target.initiative_id}
+            initiativeCode={target.initiative_code}
+            initiativeName={target.initiative_name}
+            canManage={canManageInitiatives}
+            onClose={() => setEconomicInitiativeId(null)}
+            onSaved={loadInitiatives}
           />
         ) : null
       })()}
