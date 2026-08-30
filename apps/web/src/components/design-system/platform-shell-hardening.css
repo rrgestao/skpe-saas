@@ -1,21 +1,28 @@
 /*
  * UX-6L shell transversal.
- * Reconciliacao visual entre a pagina inicial da plataforma e o shell SK-PE.
+ * Header e footer permanentes nas superficies da plataforma.
  */
 
 .platform-shell {
+  --platform-fixed-header-height: 78px;
+  --platform-fixed-footer-height: 44px;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  padding-top: var(--platform-fixed-header-height);
+  padding-bottom: var(--platform-fixed-footer-height);
 }
 
-/* A pagina inicial deve usar a mesma fronteira superior persistente. */
+/* Header sempre visivel no topo da viewport. */
 .platform-shell .topbar {
-  position: sticky !important;
+  position: fixed !important;
   top: 0;
-  z-index: 80;
+  left: 0;
+  right: 0;
+  z-index: 100;
   isolation: isolate;
-  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
   background: var(--platform-surface, #ffffff);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -26,28 +33,35 @@
   flex: 1 0 auto;
 }
 
-/*
- * O footer fecha a pagina sem competir com o conteudo.
- * A marca da plataforma ja esta declarada no header, portanto o rodape
- * exibe apenas o copyright institucional centralizado.
- */
+/* Footer sempre visivel no final da viewport, sem sobrepor o conteudo. */
 .platform-shell .platform-footer {
-  flex: 0 0 auto;
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
   width: 100%;
-  margin-top: auto;
+  min-height: var(--platform-fixed-footer-height);
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0;
+  padding-inline: 1rem;
   text-align: center;
+  background: var(--platform-surface, #ffffff);
+  border-top: 1px solid var(--platform-border, #dce4e1);
+  box-shadow: 0 -4px 14px rgba(18, 58, 45, 0.05);
 }
 
+/* A marca ja esta no header; o rodape exibe apenas o copyright. */
 .platform-shell .platform-footer strong {
-  display: none;
+  display: none !important;
 }
 
 .platform-shell .platform-footer span {
   width: 100%;
+  margin: 0;
   text-align: center;
 }
 
@@ -56,7 +70,6 @@
     align-items: center;
     flex-direction: row;
     justify-content: center;
-    padding: 0.85rem 1rem;
     text-align: center;
   }
 }
