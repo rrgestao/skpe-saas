@@ -19,6 +19,20 @@ function getPageScrollTop() {
   )
 }
 
+function syncHeaderMetrics() {
+  const shell = getShell()
+  const header = document.querySelector<HTMLElement>(
+    '.skpe-cockpit-header',
+  )
+
+  if (!shell || !header) return
+
+  shell.style.setProperty(
+    '--skpe-cockpit-header-height',
+    `${Math.ceil(header.getBoundingClientRect().height)}px`,
+  )
+}
+
 function syncScrollTopVisibility() {
   const shell = getShell()
   if (!shell) return
@@ -34,6 +48,27 @@ function syncScrollTopVisibility() {
   )
 }
 
+function getInitiativeDrawerCloseButton() {
+  const drawer = document.querySelector<HTMLElement>(
+    '.skpe-initiative-form-card',
+  )
+
+  if (!drawer) return null
+
+  const headingButtons = Array.from(
+    drawer.querySelectorAll<HTMLButtonElement>(
+      '.skpe-card-heading button',
+    ),
+  )
+
+  return (
+    headingButtons.find((button) => {
+      const label = button.textContent?.trim()
+      return label === 'Fechar' || label === 'Cancelar'
+    }) ?? null
+  )
+}
+
 function hardenInitiativeDrawerCopy() {
   const drawer = document.querySelector<HTMLElement>(
     '.skpe-initiative-form-card',
@@ -46,15 +81,7 @@ function hardenInitiativeDrawerCopy() {
     title.textContent = 'Nova iniciativa'
   }
 
-  const headingButtons = Array.from(
-    drawer.querySelectorAll<HTMLButtonElement>(
-      '.skpe-card-heading button',
-    ),
-  )
-
-  const closeButton = headingButtons.find(
-    (button) => button.textContent?.trim() === 'Fechar',
-  )
+  const closeButton = getInitiativeDrawerCloseButton()
 
   if (closeButton) {
     closeButton.textContent = 'Cancelar'
@@ -64,6 +91,17 @@ function hardenInitiativeDrawerCopy() {
       'Cancelar cadastro da iniciativa',
     )
   }
+}
+
+function dismissInitiativeDrawerOnEscape(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return
+
+  const closeButton = getInitiativeDrawerCloseButton()
+  if (!closeButton || closeButton.disabled) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  closeButton.click()
 }
 
 function attachMainScrollListener() {
@@ -86,6 +124,7 @@ function attachMainScrollListener() {
 function refreshWorkspaceHardening() {
   refreshScheduled = false
   attachMainScrollListener()
+  syncHeaderMetrics()
   syncScrollTopVisibility()
   hardenInitiativeDrawerCopy()
 }
@@ -100,6 +139,14 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   window.addEventListener('scroll', syncScrollTopVisibility, {
     passive: true,
   })
+  window.addEventListener('resize', scheduleRefresh, {
+    passive: true,
+  })
+  document.addEventListener(
+    'keydown',
+    dismissInitiativeDrawerOnEscape,
+    true,
+  )
 
   const observer = new MutationObserver(scheduleRefresh)
   observer.observe(document.documentElement, {
