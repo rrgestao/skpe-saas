@@ -1,4 +1,9 @@
-import { useMemo } from 'react'
+import {
+  Component,
+  useMemo,
+  type ErrorInfo,
+  type ReactNode,
+} from 'react'
 import { Gantt, Willow } from '@svar-ui/react-gantt'
 
 import type { JourneyTemporalRow } from '../../contracts/journey'
@@ -8,6 +13,15 @@ import './SvarJourneyGantt.css'
 
 type SvarJourneyGanttProps = {
   rows: JourneyTemporalRow[]
+}
+
+type SvarBoundaryProps = {
+  children: ReactNode
+}
+
+type SvarBoundaryState = {
+  hasError: boolean
+  message: string
 }
 
 type TemporalSource = 'actual' | 'plan' | 'forecast' | 'baseline'
@@ -20,14 +34,11 @@ type ProjectableRange = {
 
 type SvarTask = {
   id: string
-  parent?: string
   text: string
-  code: string
   start: Date
   end: Date
   progress: number
-  type?: 'summary'
-  open?: boolean
+  code: string
   responsible_name: string
   temporal_source: string
 }
@@ -37,6 +48,49 @@ const sourceLabels: Record<TemporalSource, string> = {
   plan: 'Plano vigente',
   forecast: 'Forecast',
   baseline: 'Baseline',
+}
+
+class SvarRuntimeBoundary extends Component<
+  SvarBoundaryProps,
+  SvarBoundaryState
+> {
+  state: SvarBoundaryState = {
+    hasError: false,
+    message: '',
+  }
+
+  static getDerivedStateFromError(error: unknown): SvarBoundaryState {
+    return {
+      hasError: true,
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Falha inesperada ao renderizar o Gantt interativo.',
+    }
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    console.error('SVAR Gantt Beta runtime error:', error, info)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <section className="skpe-svar-gantt-runtime-error" role="alert">
+          <strong>O Gantt interativo Beta não pôde ser renderizado.</strong>
+          <p>
+            A Jornada continua disponível. Use as abas Estrutura ou Cronograma
+            (Gantt) acima enquanto este Beta é estabilizado.
+          </p>
+          {this.state.message ? (
+            <small>Detalhe técnico: {this.state.message}</small>
+          ) : null}
+        </section>
+      )
+    }
+
+    return this.props.children
+  }
 }
 
 function parseDateOnly(value: string) {
@@ -58,6 +112,13 @@ function normalizeRange(
 
   const start = parseDateOnly(resolvedStart)
   const end = parseDateOnly(resolvedEnd)
+
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime())
+  ) {
+    return null
+  }
 
   return start.getTime() <= end.getTime()
     ? { start, end, source }
@@ -81,58 +142,31 @@ function clampProgress(value: number) {
   return Math.max(0, Math.min(100, value))
 }
 
-export function SvarJourneyGantt({ rows }: SvarJourneyGanttProps) {
+function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
   const projection = useMemo(() => {
-    const rangeById = new Map<string, ProjectableRange>()
+    const tasks: SvarTask[] = []
 
     for (const row of rows) {
       const range = getProjectableRange(row)
-      if (range) rangeById.set(row.item_id, range)
-    }
+      if (!range) continue
 
-    const projectableIds = new Set(rangeById.keys())
-    const childCount = new Map<string, number>()
-
-    for (const row of rows) {
-      if (
-        row.parent_item_id &&
-        projectableIds.has(row.item_id) &&
-        projectableIds.has(row.parent_item_id)
-      ) {
-        childCount.set(
-          row.parent_item_id,
-          (childCount.get(row.parent_item_id) ?? 0) + 1,
-        )
-      }
-    }
-
-    const tasks: SvarTask[] = rows
-      .filter((row) => projectableIds.has(row.item_id))
-      .sort(
-        (first, second) =>
-          first.display_order - second.display_order ||
-          first.item_code.localeCompare(second.item_code, 'pt-BR'),
-      )
-      .map((row) => {
-        const range = rangeById.get(row.item_id)!
-
-        return {
-          id: row.item_id,
-          parent:
-            row.parent_item_id && projectableIds.has(row.parent_item_id)
-              ? row.parent_item_id
-              : undefined,
-          text: row.item_name,
-          code: row.item_code,
-          start: range.start,
-          end: range.end,
-          progress: clampProgress(row.item_progress),
-          type: (childCount.get(row.item_id) ?? 0) > 0 ? 'summary' : undefined,
-          open: row.item_type === 'macrophase' || row.is_current,
-          responsible_name: row.responsible_name ?? 'Não definido',
-          temporal_source: sourceLabels[range.source],
-        }
+      tasks.push({
+        id: row.item_id,
+        text: `${row.item_code} · ${row.item_name}`,
+        start: range.start,
+        end: range.end,
+        progress: clampProgress(row.item_progress),
+        code: row.item_code,
+        responsible_name: row.responsible_name ?? 'Não definido',
+        temporal_source: sourceLabels[range.source],
       })
+    }
+
+    tasks.sort((first, second) => {
+      const byStart = first.start.getTime() - second.start.getTime()
+      if (byStart !== 0) return byStart
+      return first.code.localeCompare(second.code, 'pt-BR')
+    })
 
     return {
       tasks,
@@ -144,33 +178,6 @@ export function SvarJourneyGantt({ rows }: SvarJourneyGanttProps) {
     () => [
       { unit: 'month', step: 1, format: '%F %Y' },
       { unit: 'week', step: 1, format: 'Sem. %w' },
-    ],
-    [],
-  )
-
-  const columns = useMemo(
-    () => [
-      { id: 'code', header: 'Código', width: 105, sort: true },
-      { id: 'text', header: 'Jornada Estratégica', flexgrow: 2, sort: true },
-      {
-        id: 'responsible_name',
-        header: 'Responsável',
-        width: 180,
-        sort: true,
-      },
-      {
-        id: 'temporal_source',
-        header: 'Fonte temporal',
-        width: 125,
-        sort: true,
-      },
-      {
-        id: 'progress',
-        header: 'Progresso',
-        width: 90,
-        align: 'center' as const,
-        sort: true,
-      },
     ],
     [],
   )
@@ -194,9 +201,9 @@ export function SvarJourneyGantt({ rows }: SvarJourneyGanttProps) {
           <span className="skpe-svar-gantt-beta-kicker">SVAR Gantt OSS</span>
           <h2>Gantt interativo · Beta</h2>
           <p>
-            Visualização somente leitura sobre o read-model temporal governado
-            do SPARKs. A fonte temporal exibida em cada linha preserva a origem
-            canônica da data.
+            Primeira projeção estabilizada em modo somente leitura. Nesta etapa,
+            a hierarquia foi temporariamente removida do componente Beta para
+            isolar a renderização do motor SVAR sem alterar a fonte canônica.
           </p>
         </div>
 
@@ -208,7 +215,7 @@ export function SvarJourneyGantt({ rows }: SvarJourneyGanttProps) {
       {projection.omittedCount > 0 && (
         <div className="skpe-svar-gantt-notice">
           {projection.omittedCount} item(ns) sem intervalo temporal canônico
-          foram mantidos fora deste Beta. Nenhuma data foi inferida.
+          não foram projetados. Nenhuma data foi inferida.
         </div>
       )}
 
@@ -217,7 +224,6 @@ export function SvarJourneyGantt({ rows }: SvarJourneyGanttProps) {
           <Gantt
             tasks={projection.tasks}
             scales={scales}
-            columns={columns}
             readonly
             cellHeight={42}
             cellWidth={54}
@@ -225,5 +231,13 @@ export function SvarJourneyGantt({ rows }: SvarJourneyGanttProps) {
         </Willow>
       </div>
     </section>
+  )
+}
+
+export function SvarJourneyGantt(props: SvarJourneyGanttProps) {
+  return (
+    <SvarRuntimeBoundary>
+      <SvarJourneyGanttCore {...props} />
+    </SvarRuntimeBoundary>
   )
 }

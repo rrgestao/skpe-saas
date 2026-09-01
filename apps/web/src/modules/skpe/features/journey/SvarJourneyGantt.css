@@ -91,3 +91,23 @@
     height: 560px;
   }
 }
+.skpe-svar-gantt-runtime-error {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #e7c7c7;
+  border-radius: 16px;
+  background: #fff8f8;
+  color: #653737;
+}
+
+.skpe-svar-gantt-runtime-error p,
+.skpe-svar-gantt-runtime-error small {
+  margin: 0;
+}
+
+.skpe-svar-gantt-runtime-error small {
+  overflow-wrap: anywhere;
+  color: #815757;
+}
