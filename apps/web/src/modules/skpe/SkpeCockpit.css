@@ -6993,3 +6993,84 @@ button.skpe-admin-kpi-card:hover,
     max-width: 11rem;
   }
 }
+/* UX-SHELL-00 V2 - cleaner organization identity and contextual header */
+.skpe-organization-brand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.55rem;
+}
+
+.skpe-organization-brand-identity {
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.skpe-organization-brand-identity .skpe-sidebar-brand-text {
+  width: 100%;
+  text-align: center;
+}
+
+.skpe-organization-brand-identity .skpe-sidebar-brand-text strong {
+  display: block;
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skpe-product-signature {
+  gap: 0.5rem;
+}
+
+.skpe-product-signature strong {
+  font-size: 0.72rem;
+}
+
+.skpe-cockpit-header {
+  min-height: 58px;
+  align-items: center;
+}
+
+.skpe-cockpit-context {
+  gap: 0.05rem;
+}
+
+.skpe-cockpit-context span {
+  font-size: 0.58rem;
+}
+
+.skpe-cockpit-context strong {
+  font-size: clamp(1rem, 1.8vw, 1.3rem);
+  font-weight: 780;
+}
+
+.skpe-shell-consumed-page-heading {
+  display: none;
+}
+
+.skpe-initiatives-context-actions {
+  min-height: 0;
+  margin: 0 0 0.55rem;
+  justify-content: flex-end;
+}
+
+.skpe-initiatives-context-actions .skpe-heading-actions {
+  margin-left: auto;
+}
+
+.skpe-sidebar-collapsed .skpe-organization-brand {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.skpe-sidebar-collapsed .skpe-organization-brand-identity {
+  gap: 0;
+}
+
+.skpe-sidebar-collapsed .skpe-organization-brand-identity .skpe-sidebar-brand-text {
+  display: none;
+}

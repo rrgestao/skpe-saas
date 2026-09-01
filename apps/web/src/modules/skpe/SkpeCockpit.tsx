@@ -2215,8 +2215,8 @@ function InitiativesSection({
         />
       )}
 
-      <section className={`skpe-page-heading skpe-administration-heading ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
-        <div>
+      <section className={`skpe-page-heading skpe-administration-heading skpe-initiatives-context-actions ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
+        <div className="skpe-shell-consumed-page-heading" aria-hidden="true">
           <p className="skpe-eyebrow">Execução da estratégia</p>
           <h1>Painel de Iniciativas</h1>
           <p>Acompanhe as iniciativas estratégicas e sua execução governada.</p>
@@ -7097,7 +7097,7 @@ export function SkpeCockpit({
       case 'evolution-cycles':
         return 'Ciclos de Evolução'
       case 'initiatives':
-        return 'Iniciativas'
+        return 'Painel de Iniciativas'
       case 'monitoring':
         return 'Monitoramento'
       case 'agenda':
@@ -7131,28 +7131,30 @@ export function SkpeCockpit({
 
       <aside className="skpe-sidebar">
         <div className="skpe-sidebar-brand skpe-organization-brand">
-          <div
-            className="skpe-organization-brand-mark"
-            title={organizationProfile?.trade_name ?? organizationName}
-          >
-            {organizationLogoUrl ? (
-              <img
-                src={organizationLogoUrl}
-                alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`}
-              />
-            ) : (
-              <span>
-                {getOrganizationInitials(
-                  organizationProfile?.trade_name ?? organizationName,
-                )}
-              </span>
-            )}
-          </div>
+          <div className="skpe-organization-brand-identity">
+            <div
+              className="skpe-organization-brand-mark"
+              title={organizationProfile?.trade_name ?? organizationName}
+            >
+              {organizationLogoUrl ? (
+                <img
+                  src={organizationLogoUrl}
+                  alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`}
+                />
+              ) : (
+                <span>
+                  {getOrganizationInitials(
+                    organizationProfile?.trade_name ?? organizationName,
+                  )}
+                </span>
+              )}
+            </div>
 
-          <div className="skpe-sidebar-brand-text">
-            <strong>
-              {organizationProfile?.trade_name ?? organizationName}
-            </strong>
+            <div className="skpe-sidebar-brand-text">
+              <strong>
+                {organizationProfile?.trade_name ?? organizationName}
+              </strong>
+            </div>
           </div>
 
           <button
@@ -7392,7 +7394,6 @@ export function SkpeCockpit({
               <strong>
                 {mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
               </strong>
-              <span>by SPARKOOP</span>
             </div>
           </div>
 
@@ -7429,7 +7430,14 @@ export function SkpeCockpit({
           }`}
         >
 
-          <div className="skpe-cockpit-context">
+          <div
+            className="skpe-cockpit-context"
+            title={
+              mode === 'module' && activeSection === 'initiatives'
+                ? 'Acompanhe as iniciativas estratégicas e sua execução governada.'
+                : activeSectionTitle
+            }
+          >
             <span>
               {mode === 'module'
                 ? 'Gestão Estratégica'
