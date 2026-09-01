@@ -190,12 +190,14 @@ export function InitiativeEconomicExecutionDialog({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !saving) {
         event.preventDefault()
+        event.stopPropagation()
         onClose()
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () =>
+      document.removeEventListener('keydown', handleKeyDown, true)
   }, [onClose, saving])
 
   const lifecycleStatus = projection?.initiative.lifecycleStatus ?? null
@@ -277,12 +279,9 @@ export function InitiativeEconomicExecutionDialog({
 
   return (
     <div
-      className={
-        presentation === 'dialog'
-          ? 'skpe-modal-backdrop'
-          : 'skpe-initiative-economic-embedded'
-      }
-      role={presentation === 'dialog' ? 'presentation' : undefined}
+      className="skpe-modal-backdrop skpe-initiative-economic-overlay"
+      role="presentation"
+      data-presentation={presentation}
       onMouseDown={(event) => {
         if (
           event.target === event.currentTarget &&
@@ -293,16 +292,13 @@ export function InitiativeEconomicExecutionDialog({
       }}
     >
       <aside
-        className={
-          presentation === 'dialog'
-            ? 'skpe-modal-panel'
-            : 'skpe-initiative-economic-panel'
-        }
-        role={presentation === 'dialog' ? 'dialog' : 'region'}
-        aria-modal={presentation === 'dialog' ? true : undefined}
+        className="skpe-modal-panel skpe-initiative-economic-dialog"
+        role="dialog"
+        aria-modal="true"
         aria-labelledby="skpe-initiative-economic-title"
+        onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="skpe-card-heading">
+        <div className="skpe-card-heading skpe-initiative-economic-dialog-header">
           <div>
             <p className="skpe-card-code">{initiativeCode}</p>
             <h2 id="skpe-initiative-economic-title">Custos e esforço</h2>
