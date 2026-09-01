@@ -1827,3 +1827,170 @@ td,
     display: none;
   }
 }
+/* SPARKS-TRANSVERSAL-HEADER-CONTRACT-V25B */
+/*
+ * Portal e contexto da organizacao compartilham o mesmo contrato de header.
+ * O conteudo pode variar; altura, ritmo e hierarquia visual nao.
+ */
+:root {
+  --sparks-header-height: 64px;
+  --sparks-header-padding-x: 1.35rem;
+  --sparks-header-border: #dce4e1;
+  --sparks-header-bg: #ffffff;
+}
+
+.topbar {
+  min-height: var(--sparks-header-height);
+  padding: 0.45rem var(--sparks-header-padding-x);
+  border-bottom: 1px solid var(--sparks-header-border);
+  background: var(--sparks-header-bg);
+  box-shadow: 0 4px 16px rgba(31, 45, 61, 0.035);
+}
+
+.brand-area {
+  gap: 0.72rem;
+}
+
+.brand-symbol {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+}
+
+.brand-name {
+  font-size: 0.92rem;
+  font-weight: 720;
+  line-height: 1.15;
+}
+
+.brand-caption {
+  margin-top: 0.12rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.user-area {
+  gap: 0.65rem;
+}
+
+.user-identification {
+  gap: 0.2rem;
+  font-size: 0.86rem;
+}
+
+.user-identification > strong {
+  font-weight: 680;
+}
+
+.badge {
+  font-weight: 700;
+}
+
+/* Marca organizacional central: imagem institucional, nao botao. */
+.topbar-organization-branding {
+  min-width: 76px;
+  max-width: 220px;
+}
+
+.topbar-organization-branding img {
+  max-width: 88px;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    min-height: auto;
+    padding: 0.75rem 1rem;
+  }
+}
+/* NEUTRAL-ROLE-LOGIN-IDENTITY-V25D */
+/*
+ * Identidade de login deve estar sempre legivel.
+ * Papel/permissao usa badge neutro; cor fica reservada para estado/semantica.
+ */
+.user-login-identity {
+  display: block;
+  max-width: 190px;
+  overflow: hidden;
+  color: #68757c;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge-platform,
+.badge-organization {
+  border: 1px solid #d9e1e4;
+  background: #f1f4f5;
+  color: #526168;
+  font-weight: 700;
+}
+
+/* Mantem diferenca por texto, nao por cor. */
+.badge-platform {
+  letter-spacing: 0.03em;
+}
+
+.badge-organization {
+  letter-spacing: 0;
+}
+
+.user-profile-summary .user-identification {
+  gap: 0.14rem;
+}
+
+.user-profile-summary .user-badges {
+  margin-top: 0.08rem;
+}
+/* CONTEXTUAL-ROLE-NOT-LOGIN-V25E */
+/*
+ * O header distingue identidade de autorizacao:
+ * nome/avatar = usuario;
+ * badge = papel efetivo no contexto.
+ * Login/e-mail pertence ao dialogo Meu perfil.
+ */
+.user-profile-summary .user-identification {
+  gap: 0.2rem;
+}
+
+.user-profile-summary .user-badges:empty {
+  display: none;
+}
+
+.badge-platform,
+.badge-organization {
+  min-height: 22px;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid #d9e1e4;
+  border-radius: 999px;
+  background: #f1f4f5;
+  color: #526168;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: none;
+}
+/* FRAMELESS-HEADER-AVATAR-V25F-B */
+.user-avatar {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.user-profile-trigger:hover .user-avatar,
+.user-profile-trigger:focus-visible .user-avatar {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.badge-context-role {
+  border: 1px solid #d9e1e4;
+  background: #f1f4f5;
+  color: #526168;
+  font-weight: 700;
+  text-transform: none;
+}

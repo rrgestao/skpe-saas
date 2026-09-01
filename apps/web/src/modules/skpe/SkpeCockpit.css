@@ -5041,3 +5041,1630 @@ tr.skpe-interactive-record:focus-visible {
     display: initial;
   }
 }
+/* USER-AVATAR-POPOVER */
+.skpe-cockpit-user-menu {
+  position: relative;
+  z-index: 72;
+}
+
+.skpe-user-menu-chevron {
+  margin-left: 0.15rem;
+  color: var(--skpe-muted, #607069);
+  font-size: 0.72rem;
+}
+
+.skpe-user-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 69;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.skpe-user-menu-popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 71;
+  width: min(280px, calc(100vw - 2rem));
+  overflow: hidden;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 14px;
+  background: var(--skpe-surface, #ffffff);
+  box-shadow: 0 18px 45px rgba(12, 29, 24, 0.18);
+}
+
+.skpe-user-menu-identity {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--skpe-border, #dce5e1);
+}
+
+.skpe-user-menu-identity span {
+  overflow: hidden;
+  color: var(--skpe-muted, #607069);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skpe-user-menu-popover > button {
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--skpe-border, #eef2f0);
+  background: transparent;
+  color: var(--skpe-text, #20332c);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.skpe-user-menu-popover > button:last-child {
+  border-bottom: 0;
+}
+
+.skpe-user-menu-popover > button:hover,
+.skpe-user-menu-popover > button:focus-visible {
+  background: var(--skpe-surface-soft, #f7faf8);
+  color: #176b53;
+  outline: none;
+}
+
+.skpe-user-menu-popover > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+/* NOTIFICATION-HEADER-CENTER */
+.skpe-cockpit-notifications-button {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.skpe-cockpit-notifications-count {
+  position: absolute;
+  top: -0.2rem;
+  right: -0.2rem;
+  display: grid;
+  min-width: 1.15rem;
+  min-height: 1.15rem;
+  place-items: center;
+  padding: 0 0.25rem;
+  border: 2px solid var(--skpe-surface, #ffffff);
+  border-radius: 999px;
+  background: #b42318;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.skpe-user-menu-section-label {
+  padding: 0.55rem 1rem 0.35rem;
+  border-top: 1px solid var(--skpe-border, #eef2f0);
+  color: var(--skpe-muted, #607069);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.skpe-user-menu-identity + .skpe-user-menu-section-label {
+  border-top: 0;
+}
+/* ORGANIZATION-ADAPTIVE-THEME */
+/*
+ * A identidade institucional colore superficies de marca e destaques.
+ * Cores semanticas de erro, alerta, sucesso, bloqueio e leitura permanecem
+ * independentes para preservar significado operacional e acessibilidade.
+ */
+:root[data-organization-visual-identity='organization'] .skpe-shell {
+  --skpe-brand-primary: var(--organization-primary, #176b53);
+  --skpe-brand-secondary: var(--organization-secondary, #123f34);
+  --skpe-brand-accent: var(--organization-accent, #1f8c69);
+  --skpe-brand-on-primary: var(--organization-on-primary, #ffffff);
+}
+
+:root[data-organization-visual-identity='organization'] .skpe-sidebar {
+  background: var(--skpe-brand-secondary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-navigation button:hover,
+:root[data-organization-visual-identity='organization']
+  .skpe-navigation .skpe-nav-active {
+  background: color-mix(
+    in srgb,
+    var(--skpe-brand-primary) 38%,
+    transparent
+  );
+  color: var(--skpe-brand-on-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-sidebar-icon-button:focus-visible,
+:root[data-organization-visual-identity='organization']
+  .skpe-navigation button:focus-visible {
+  outline: 2px solid var(--skpe-brand-accent);
+  outline-offset: 2px;
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-eyebrow,
+:root[data-organization-visual-identity='organization']
+  .skpe-card-code,
+:root[data-organization-visual-identity='organization']
+  .skpe-phase-heading p,
+:root[data-organization-visual-identity='organization']
+  .skpe-card-link-button,
+:root[data-organization-visual-identity='organization']
+  .skpe-refresh-button,
+:root[data-organization-visual-identity='organization']
+  .skpe-governance-card strong,
+:root[data-organization-visual-identity='organization']
+  .skpe-current-items svg,
+:root[data-organization-visual-identity='organization']
+  .skpe-user-menu-popover > button:hover,
+:root[data-organization-visual-identity='organization']
+  .skpe-user-menu-popover > button:focus-visible {
+  color: var(--skpe-brand-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-progress-track span {
+  background: var(--skpe-brand-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-decision-box {
+  border-left-color: var(--skpe-brand-accent);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-governance-number {
+  background: color-mix(
+    in srgb,
+    var(--skpe-brand-primary) 12%,
+    white
+  );
+  color: var(--skpe-brand-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-refresh-button {
+  border-color: color-mix(
+    in srgb,
+    var(--skpe-brand-primary) 42%,
+    white
+  );
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-primary-button {
+  border-color: var(--skpe-brand-primary);
+  background: var(--skpe-brand-primary);
+  color: var(--skpe-brand-on-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-secondary-button {
+  border-color: color-mix(
+    in srgb,
+    var(--skpe-brand-primary) 42%,
+    white
+  );
+  color: var(--skpe-brand-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-personal-responsibilities-tabs button.active,
+:root[data-organization-visual-identity='organization']
+  .skpe-personal-responsibilities-tabs button:hover,
+:root[data-organization-visual-identity='organization']
+  .skpe-personal-responsibilities-tabs button:focus-visible {
+  color: var(--skpe-brand-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-personal-responsibilities-tabs button.active::after {
+  background: var(--skpe-brand-accent);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-personal-responsibilities-view-switch button.active {
+  border-color: var(--skpe-brand-primary);
+  background: var(--skpe-brand-primary);
+  color: var(--skpe-brand-on-primary);
+}
+
+:root[data-organization-visual-identity='organization']
+  .skpe-cockpit-icon-button:hover,
+:root[data-organization-visual-identity='organization']
+  .skpe-cockpit-icon-button:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--skpe-brand-primary) 38%,
+    white
+  );
+  color: var(--skpe-brand-primary);
+  outline-color: var(--skpe-brand-accent);
+}
+/* JOURNEY-DIRECT-SUMMARY-CARDS */
+.skpe-journey-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.skpe-journey-summary-card {
+  min-width: 0;
+}
+
+.skpe-journey-summary-card strong {
+  overflow-wrap: anywhere;
+}
+
+.skpe-journey-summary-card small {
+  line-height: 1.4;
+}
+
+.skpe-journey-summary-card:nth-child(1) {
+  grid-column: span 2;
+}
+
+@media (max-width: 1100px) {
+  .skpe-journey-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skpe-journey-summary-card:nth-child(1) {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-journey-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* JOURNEY-INTERACTION-HIERARCHY-V9 */
+.skpe-journey-refresh-button {
+  align-self: flex-end;
+  margin-top: 1rem;
+}
+
+.skpe-journey-summary-stack {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.skpe-journey-summary-grid-primary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.skpe-journey-summary-grid-planning {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.skpe-journey-summary-grid-primary
+  .skpe-journey-summary-card:nth-child(1) {
+  grid-column: auto;
+}
+
+.skpe-journey-workspace-full {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.skpe-journey-workspace-with-detail {
+  grid-template-columns: minmax(0, 1.75fr) minmax(320px, 0.9fr);
+}
+
+.skpe-journey-detail-panel {
+  position: relative;
+}
+
+.skpe-journey-detail-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 999px;
+  background: var(--skpe-surface, #ffffff);
+  color: var(--skpe-muted, #607069);
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.skpe-journey-detail-close:hover,
+.skpe-journey-detail-close:focus-visible {
+  border-color: var(--organization-primary, #176b53);
+  color: var(--organization-primary, #176b53);
+  outline: none;
+}
+
+@media (max-width: 1100px) {
+  .skpe-journey-summary-grid-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skpe-journey-workspace-with-detail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-journey-summary-grid-primary,
+  .skpe-journey-summary-grid-planning {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-journey-refresh-button {
+    align-self: flex-start;
+    margin-top: 0.75rem;
+  }
+}
+/* JOURNEY-V10-CLOSEOUT */
+.skpe-journey-summary-grid-planning
+  .skpe-journey-summary-card:nth-child(1) {
+  grid-column: auto;
+}
+
+.skpe-journey-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.skpe-journey-toolbar .skpe-journey-refresh-button {
+  align-self: auto;
+  margin-top: 0;
+}
+
+.skpe-journey-toolbar .skpe-gantt-view-switch {
+  margin: 0 0 0 auto;
+}
+
+@media (max-width: 720px) {
+  .skpe-journey-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .skpe-journey-toolbar .skpe-gantt-view-switch {
+    margin-left: 0;
+  }
+
+  .skpe-journey-toolbar .skpe-journey-refresh-button {
+    align-self: flex-start;
+    margin-top: 0;
+  }
+}
+/* JOURNEY-V11-RHYTHM-AND-HEADER-ACTIONS */
+.skpe-cockpit-refresh-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.skpe-journey-summary-stack {
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.skpe-journey-summary-grid {
+  gap: 0.75rem;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.skpe-journey-summary-card {
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+}
+
+.skpe-journey-summary-card strong {
+  line-height: 1.15;
+}
+
+.skpe-journey-view-switch-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.55rem 0 0.75rem;
+}
+
+.skpe-journey-view-switch-row .skpe-gantt-view-switch {
+  margin: 0;
+}
+
+.skpe-journey-workspace {
+  gap: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .skpe-journey-summary-stack,
+  .skpe-journey-summary-grid {
+    gap: 0.65rem;
+  }
+
+  .skpe-journey-view-switch-row {
+    justify-content: stretch;
+  }
+
+  .skpe-journey-view-switch-row .skpe-gantt-view-switch {
+    width: 100%;
+  }
+}
+/* HEADER-CENTERED-BRAND-HORIZON-TITLE-V13 */
+.skpe-cockpit-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  align-items: center;
+  column-gap: 1rem;
+}
+
+.skpe-cockpit-organization-context {
+  justify-self: start;
+  min-width: 0;
+}
+
+.skpe-cockpit-logo-centered {
+  justify-self: center;
+  width: 48px;
+  height: 48px;
+}
+
+.skpe-cockpit-logo-centered img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.skpe-cockpit-actions {
+  justify-self: end;
+}
+
+.skpe-cockpit-header + .skpe-page-heading,
+.skpe-cockpit-header ~ .skpe-page-heading {
+  margin-top: 0.9rem;
+}
+
+.skpe-page-heading h1 {
+  line-height: 1.08;
+}
+
+@media (max-width: 980px) {
+  .skpe-cockpit-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .skpe-cockpit-logo-centered {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-cockpit-header {
+    gap: 0.65rem;
+  }
+
+  .skpe-cockpit-organization-context small {
+    display: none;
+  }
+}
+/* HEADER-BREATHING-JOURNEY-TABS-V17 */
+.skpe-cockpit-organization-context {
+  padding-left: 1.35rem;
+}
+
+.skpe-journey-view-switch-row {
+  margin-top: 0.35rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid var(--skpe-border, #dce5e1);
+}
+
+.skpe-journey-view-tabs {
+  display: flex;
+  gap: 1.35rem;
+  margin-left: auto;
+}
+
+.skpe-journey-view-tabs button {
+  position: relative;
+  min-height: 2.75rem;
+  padding: 0.25rem 0 0.7rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--skpe-muted, #607069);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.skpe-journey-view-tabs button:hover,
+.skpe-journey-view-tabs button:focus-visible {
+  color: var(--organization-primary, #176b53);
+  outline: none;
+}
+
+.skpe-journey-view-tabs button.active {
+  color: var(--organization-primary, #176b53);
+}
+
+.skpe-journey-view-tabs button.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: var(--organization-accent, #1f8c69);
+}
+
+@media (max-width: 720px) {
+  .skpe-cockpit-organization-context {
+    padding-left: 0.8rem;
+  }
+
+  .skpe-journey-view-switch-row {
+    overflow-x: auto;
+  }
+
+  .skpe-journey-view-tabs {
+    min-width: max-content;
+    gap: 1rem;
+  }
+}
+/* SKPE-SECTION-HEADER-CLEARANCE-V18 */
+/*
+ * Todas as secoes funcionais do SK-PE devem iniciar abaixo do header sticky.
+ * Visao Geral e Jornada ja possuem ritmo proprio; estas regras cobrem as
+ * secoes com headers especializados.
+ */
+.skpe-main > .skpe-cockpit-header ~ .skpe-evolution,
+.skpe-main > .skpe-cockpit-header ~ .skpe-monitoring,
+.skpe-main > .skpe-cockpit-header ~ .skpe-agenda-page,
+.skpe-main > .skpe-cockpit-header ~ .skpe-artifacts-page {
+  margin-top: 1rem;
+  scroll-margin-top: 5rem;
+}
+
+.skpe-main
+  > .skpe-cockpit-header
+  ~ .skpe-evolution
+  > .skpe-evolution-header,
+.skpe-main
+  > .skpe-cockpit-header
+  ~ .skpe-monitoring
+  > .skpe-monitoring-header,
+.skpe-main
+  > .skpe-cockpit-header
+  ~ .skpe-agenda-page
+  > .skpe-agenda-heading,
+.skpe-main
+  > .skpe-cockpit-header
+  ~ .skpe-artifacts-page
+  > .skpe-artifacts-header {
+  position: relative;
+  z-index: 1;
+}
+
+/* A sintese da Visao Geral passa de quatro para tres cards. */
+.skpe-kpi-grid[aria-label="Síntese do projeto estratégico"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+@media (max-width: 1050px) {
+  .skpe-kpi-grid[aria-label="Síntese do projeto estratégico"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .skpe-main > .skpe-cockpit-header ~ .skpe-evolution,
+  .skpe-main > .skpe-cockpit-header ~ .skpe-monitoring,
+  .skpe-main > .skpe-cockpit-header ~ .skpe-agenda-page,
+  .skpe-main > .skpe-cockpit-header ~ .skpe-artifacts-page {
+    margin-top: 0.75rem;
+    scroll-margin-top: 0;
+  }
+
+  .skpe-kpi-grid[aria-label="Síntese do projeto estratégico"] {
+    grid-template-columns: 1fr;
+  }
+}
+/* ORGANIZATION-LOGO-INITIATIVE-KPI-V19 */
+/*
+ * A marca da organizacao assume papel institucional no centro do header.
+ * O aumento e controlado para nao alterar de forma excessiva a altura da faixa.
+ */
+.skpe-cockpit-logo-centered {
+  width: 58px;
+  height: 58px;
+  padding: 0.3rem;
+}
+
+.skpe-cockpit-logo-centered img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/*
+ * O Painel de Iniciativas possui seis indicadores canônicos.
+ * Em desktop, a leitura natural e 3 x 2.
+ */
+.skpe-initiative-kpi-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1050px) {
+  .skpe-initiative-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skpe-cockpit-logo-centered {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+@media (max-width: 640px) {
+  .skpe-initiative-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* FRAMELESS-ORGANIZATION-LOGO-V20 */
+/*
+ * A marca institucional central nao e uma acao.
+ * Remove a aparencia de botao/card e exibe somente a imagem.
+ */
+.skpe-cockpit-logo-centered {
+  width: 76px;
+  height: 50px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.skpe-cockpit-logo-centered img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 1050px) {
+  .skpe-cockpit-logo-centered {
+    width: 68px;
+    height: 46px;
+  }
+}
+/* FIXED-GEOMETRIC-HEADER-LOGO-V22 */
+/*
+ * A logomarca institucional deve permanecer no centro geometrico real
+ * do header, independentemente da quantidade ou largura das acoes
+ * contextuais exibidas a direita.
+ */
+.skpe-cockpit-header {
+  position: sticky;
+}
+
+.skpe-cockpit-logo-centered {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.skpe-cockpit-organization-context,
+.skpe-cockpit-actions {
+  position: relative;
+  z-index: 2;
+}
+
+/*
+ * Em larguras intermediarias, protege a marca de sobreposicao com
+ * textos/acoes sem permitir que esses elementos desloquem seu centro.
+ */
+@media (max-width: 1100px) and (min-width: 981px) {
+  .skpe-cockpit-logo-centered {
+    width: 64px;
+  }
+}
+/* PROFILE-VISUAL-PARITY-OVERVIEW-TITLE-V23 */
+/*
+ * Paridade visual entre o resumo de perfil da Plataforma SPARKs e o
+ * gatilho de perfil do SK-PE. O menu funcional existente e preservado.
+ */
+.skpe-cockpit-user,
+.skpe-cockpit-user-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 46px;
+  padding: 0.25rem 0.35rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.skpe-cockpit-user:hover,
+.skpe-cockpit-user-button:hover,
+.skpe-cockpit-user:focus-visible,
+.skpe-cockpit-user-button:focus-visible {
+  background: color-mix(
+    in srgb,
+    var(--organization-primary, #176b53) 7%,
+    transparent
+  );
+  outline: none;
+}
+
+.skpe-cockpit-avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #edf2f0;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.skpe-cockpit-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.skpe-cockpit-user > div:last-child,
+.skpe-cockpit-user-button > div:last-child {
+  display: grid;
+  justify-items: start;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.88rem;
+}
+
+.skpe-cockpit-user strong,
+.skpe-cockpit-user-button strong {
+  max-width: 180px;
+  overflow: hidden;
+  color: #17202a;
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skpe-cockpit-user small,
+.skpe-cockpit-user-button small {
+  max-width: 180px;
+  overflow: hidden;
+  color: #176b53;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Visao Geral: objeto + horizonte como titulo institucional unico. */
+.skpe-overview-heading {
+  width: 100%;
+  justify-content: center;
+}
+
+.skpe-overview-heading > div {
+  width: 100%;
+}
+
+.skpe-overview-title {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  text-wrap: balance;
+}
+
+@media (max-width: 760px) {
+  .skpe-cockpit-user strong,
+  .skpe-cockpit-user-button strong,
+  .skpe-cockpit-user small,
+  .skpe-cockpit-user-button small {
+    max-width: 120px;
+  }
+
+  .skpe-overview-title {
+    text-align: left;
+  }
+}
+/* SPARKS-TRANSVERSAL-KPI-CARD-NORMALIZATION-V24 */
+.skpe-shell {
+  --sparks-card-border: #dfe5e8;
+  --sparks-card-radius: 16px;
+  --sparks-card-shadow: 0 8px 24px rgba(31, 45, 61, 0.05);
+  --sparks-card-label: #657179;
+  --sparks-card-value: #183f34;
+  --sparks-card-helper: #68757c;
+  --sparks-card-padding: 1.2rem;
+  --sparks-card-gap: 0.42rem;
+}
+
+.skpe-kpi-card,
+.skpe-admin-kpi-card,
+.skpe-journey-summary-card,
+.skpe-monitoring-kpi-card,
+.skpe-evolution-summary-card {
+  min-height: 116px;
+  display: grid;
+  align-content: center;
+  gap: var(--sparks-card-gap);
+  padding: var(--sparks-card-padding);
+  border: 1px solid var(--sparks-card-border);
+  border-radius: var(--sparks-card-radius);
+  background: #ffffff;
+  box-shadow: var(--sparks-card-shadow);
+}
+
+.skpe-kpi-card > span:first-child,
+.skpe-admin-kpi-card > span:first-child,
+.skpe-journey-summary-card > span:first-child,
+.skpe-monitoring-kpi-card > span:first-child,
+.skpe-evolution-summary-card > span:first-child {
+  color: var(--sparks-card-label);
+  font-family: var(--font-family-interface, Manrope, sans-serif);
+  font-size: 0.8rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.skpe-kpi-card > strong,
+.skpe-admin-kpi-card > strong,
+.skpe-journey-summary-card > strong,
+.skpe-monitoring-kpi-card > strong,
+.skpe-evolution-summary-card > strong {
+  color: var(--sparks-card-value);
+  font-family: var(--font-family-interface, Manrope, sans-serif);
+  font-size: clamp(1.35rem, 1.5vw, 1.65rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.skpe-kpi-card > small,
+.skpe-admin-kpi-card > small,
+.skpe-journey-summary-card > small,
+.skpe-monitoring-kpi-card > small,
+.skpe-evolution-summary-card > small {
+  color: var(--sparks-card-helper);
+  font-family: var(--font-family-interface, Manrope, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+button.skpe-kpi-card,
+button.skpe-admin-kpi-card,
+.skpe-kpi-card[role="button"],
+.skpe-admin-kpi-card[role="button"] {
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+button.skpe-kpi-card:hover,
+button.skpe-admin-kpi-card:hover,
+.skpe-kpi-card[role="button"]:hover,
+.skpe-admin-kpi-card[role="button"]:hover {
+  border-color: #b8cbc3;
+  box-shadow: 0 12px 30px rgba(31, 45, 61, 0.08);
+  transform: translateY(-1px);
+}
+
+.skpe-kpi-grid,
+.skpe-initiative-kpi-grid,
+.skpe-journey-summary-grid {
+  gap: 1rem;
+}
+
+.skpe-journey-summary-card,
+.skpe-initiative-kpi-grid .skpe-kpi-card,
+.skpe-initiative-kpi-grid .skpe-admin-kpi-card,
+.skpe-kpi-grid .skpe-kpi-card {
+  border-color: var(--sparks-card-border);
+  border-radius: var(--sparks-card-radius);
+  box-shadow: var(--sparks-card-shadow);
+}
+
+@media (max-width: 720px) {
+  .skpe-kpi-card,
+  .skpe-admin-kpi-card,
+  .skpe-journey-summary-card,
+  .skpe-monitoring-kpi-card,
+  .skpe-evolution-summary-card {
+    min-height: 104px;
+    padding: 1rem;
+  }
+}
+/* SKPE-HEADER-RHYTHM-SOFT-NAV-V25B */
+/*
+ * O cockpit segue a mesma escala transversal da Plataforma:
+ * 64px de referencia, fundo branco, divisoria leve e acoes compactas.
+ */
+.skpe-cockpit-header {
+  min-height: var(--sparks-header-height, 64px);
+  padding: 0.45rem 1.05rem;
+  border-bottom: 1px solid var(--sparks-header-border, #dce4e1);
+  background: var(--sparks-header-bg, #ffffff);
+  box-shadow: 0 4px 16px rgba(31, 45, 61, 0.035);
+}
+
+.skpe-cockpit-organization-context {
+  padding-left: 0.45rem;
+}
+
+.skpe-cockpit-organization-context span {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.skpe-cockpit-organization-context strong {
+  font-size: 0.9rem;
+  font-weight: 680;
+}
+
+.skpe-cockpit-actions {
+  gap: 0.5rem;
+}
+
+.skpe-cockpit-icon-button {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border-radius: 11px;
+}
+
+.skpe-cockpit-user,
+.skpe-cockpit-user-button {
+  gap: 0.65rem;
+  min-height: 46px;
+}
+
+.skpe-cockpit-user strong,
+.skpe-cockpit-user-button strong {
+  font-weight: 680;
+}
+
+.skpe-cockpit-user small,
+.skpe-cockpit-user-button small {
+  font-weight: 700;
+}
+
+/*
+ * Navegacao: peso visual menor no estado normal.
+ * O item ativo continua com hierarquia suficiente para orientacao.
+ */
+.skpe-navigation button {
+  font-weight: 540;
+}
+
+.skpe-navigation button span {
+  font-weight: inherit;
+}
+
+.skpe-navigation button.skpe-nav-active,
+.skpe-navigation button[aria-current='page'] {
+  font-weight: 680;
+}
+
+.skpe-sidebar-footer button {
+  font-weight: 560;
+}
+
+.skpe-user-menu-popover button {
+  font-weight: 540;
+}
+
+.skpe-user-menu-popover button:hover,
+.skpe-user-menu-popover button:focus-visible {
+  font-weight: 600;
+}
+
+.skpe-user-menu-section-label {
+  font-weight: 680;
+}
+
+.skpe-organization-admin-subnav button {
+  font-weight: 540;
+}
+
+.skpe-organization-admin-subnav button.active {
+  font-weight: 680;
+}
+
+@media (max-width: 760px) {
+  .skpe-cockpit-header {
+    min-height: 58px;
+    padding: 0.4rem 0.75rem;
+  }
+}
+/* ADMIN-CANONICAL-MODULE-HEADER-V25C */
+/*
+ * O header do Admin passa a ser a referencia visual do modulo:
+ * plataforma a esquerda, organizacao ao centro e identidade do usuario a direita.
+ */
+.skpe-cockpit-platform-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 220px;
+}
+
+.skpe-cockpit-platform-context > img {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 3px;
+  border: 1px solid #d9e3df;
+  border-radius: 11px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.skpe-cockpit-platform-context > div {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.skpe-cockpit-platform-context strong {
+  color: #17202a;
+  font-size: 0.92rem;
+  font-weight: 720;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.skpe-cockpit-platform-context small {
+  color: #68757c;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Papel como badge compacto, seguindo o header da Plataforma/Admin. */
+.skpe-cockpit-role-badge {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: 22px;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: #e7f5ee;
+  color: #176b53 !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+  text-transform: none !important;
+}
+
+/* O nome acompanha o Admin: compacto, sem caixa alta ou peso excessivo. */
+.skpe-cockpit-user strong,
+.skpe-cockpit-user-button strong {
+  font-size: 0.86rem;
+  font-weight: 680;
+}
+
+/*
+ * O header nao precisa exibir novamente o nome textual da organizacao:
+ * a marca oficial permanece fixa e central.
+ */
+.skpe-cockpit-logo-centered {
+  z-index: 1;
+}
+
+/* Preserva as acoes e o perfil acima da marca central, se houver colisao. */
+.skpe-cockpit-platform-context,
+.skpe-cockpit-actions {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 980px) {
+  .skpe-cockpit-platform-context {
+    min-width: 0;
+  }
+
+  .skpe-cockpit-platform-context small {
+    display: none;
+  }
+
+  .skpe-cockpit-platform-context strong {
+    font-size: 0.86rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-cockpit-platform-context > img {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+
+  .skpe-cockpit-platform-context strong {
+    display: none;
+  }
+}
+/* NEUTRAL-MODULE-ROLE-BADGE-V25D */
+/*
+ * Papel do usuario nao representa estado. Usa o mesmo badge neutro
+ * da Plataforma/Admin para evitar codificacao semantica por cor.
+ */
+.skpe-cockpit-role-badge {
+  border: 1px solid #d9e1e4;
+  background: #f1f4f5;
+  color: #526168 !important;
+  font-weight: 700 !important;
+}
+/* FRAMELESS-COCKPIT-AVATAR-V25F-B */
+.skpe-cockpit-avatar {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+/* MODULE-HEADER-WITHOUT-REDUNDANT-PLATFORM-BRAND-V25I */
+/*
+ * Dentro do SK-PE, o menu lateral ja identifica o modulo.
+ * O header fica dedicado a marca da organizacao, acoes e identidade do usuario.
+ */
+.skpe-cockpit-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.skpe-cockpit-actions {
+  margin-left: auto;
+}
+
+/* Centro geometrico independe de qualquer conteudo lateral. */
+.skpe-cockpit-logo-centered {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* O bloco antigo nao deve reservar espaco residual. */
+.skpe-cockpit-platform-context {
+  display: none !important;
+}
+/* CLEAN-HEADER-AVATAR-V25J */
+/*
+ * Avatar do header: apenas a foto, sem preenchimento decorativo,
+ * sem clip-path e sem frame residual.
+ */
+.skpe-cockpit-avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+}
+
+.skpe-cockpit-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: inherit !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+  object-fit: cover;
+}
+/* MONITORING-TITLE-TOOLTIP-ACTION-RHYTHM-V25L */
+.skpe-monitoring {
+  padding-top: 0.85rem;
+}
+
+.skpe-monitoring-header {
+  display: block;
+  margin: 0 0 0.9rem;
+}
+
+.skpe-monitoring-title-help {
+  position: relative;
+  display: inline-block;
+  max-width: min(760px, 100%);
+  cursor: help;
+  outline: none;
+}
+
+.skpe-monitoring-title {
+  display: grid;
+  gap: 0.05em;
+  margin: 0;
+  line-height: 1.05;
+}
+
+.skpe-monitoring-title > span {
+  display: block;
+}
+
+.skpe-monitoring-title > span:first-child {
+  font-size: 0.94em;
+}
+
+.skpe-monitoring-title > span:last-child {
+  font-size: 0.72em;
+  font-weight: 650;
+  color: var(--skpe-text-muted, #5d6e68);
+}
+
+.skpe-monitoring-title-help::after {
+  content: attr(data-help);
+  position: absolute;
+  z-index: 220;
+  top: calc(100% + 0.7rem);
+  left: 0;
+  width: min(620px, calc(100vw - 3rem));
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 0.8rem;
+  background: var(--skpe-surface, #ffffff);
+  box-shadow: 0 14px 34px rgba(12, 29, 24, 0.14);
+  color: var(--skpe-text, #17211e);
+  font-size: 0.9rem;
+  font-weight: 450;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.skpe-monitoring-title-help:hover::after,
+.skpe-monitoring-title-help:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.skpe-monitoring-title-help:focus-visible {
+  border-radius: 0.35rem;
+  box-shadow: 0 0 0 3px rgba(23, 107, 83, 0.12);
+}
+
+.skpe-monitoring-actions-row {
+  position: static !important;
+  inset: auto !important;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.skpe-monitoring-actions-row > button {
+  position: static !important;
+  margin: 0;
+}
+
+@media (max-width: 820px) {
+  .skpe-monitoring {
+    padding-top: 0.5rem;
+  }
+
+  .skpe-monitoring-actions-row {
+    justify-content: flex-start;
+  }
+
+  .skpe-monitoring-actions-row > button {
+    flex: 1 1 14rem;
+  }
+
+  .skpe-monitoring-title-help::after {
+    width: min(520px, calc(100vw - 2rem));
+  }
+}
+/* SKPE-KPI-CARD-CENTERING-STANDARD-V25M-C */
+/*
+ * Contrato transversal do SK-PE:
+ * cards KPI/medida usam composicao centralizada.
+ */
+.skpe-admin-kpi-card {
+  text-align: center;
+  justify-items: center;
+}
+
+.skpe-admin-kpi-card > span,
+.skpe-admin-kpi-card > strong,
+.skpe-admin-kpi-card > small {
+  width: 100%;
+  text-align: center;
+}
+
+.skpe-admin-kpi-card > small {
+  margin-inline: auto;
+}
+/* SKPE-KPI-CARD-CENTERING-STANDARD-V25M-C2 */
+/*
+ * Contrato transversal SK-PE:
+ * KPI / medida = composicao centralizada.
+ */
+.skpe-admin-kpi-card {
+  text-align: center;
+  justify-items: center;
+}
+
+.skpe-admin-kpi-card > span,
+.skpe-admin-kpi-card > strong,
+.skpe-admin-kpi-card > small {
+  width: 100%;
+  text-align: center;
+}
+
+.skpe-admin-kpi-card > small {
+  margin-inline: auto;
+}
+/* SKPE-TRANSVERSAL-TEXT-FLOW-STANDARD-V25P */
+/*
+ * Contrato transversal de composicao textual:
+ * - textos descritivos usam toda a largura util do container;
+ * - nao existe max-width editorial arbitrario em telas operacionais;
+ * - a quebra ocorre somente quando a largura real exige;
+ * - controles/acoes continuam livres para ocupar sua propria coluna.
+ */
+.skpe-main p,
+.skpe-main .skpe-description,
+.skpe-main .skpe-helper-text,
+.skpe-main .skpe-supporting-text,
+.skpe-main .skpe-card-description,
+.skpe-main .skpe-section-description {
+  max-width: none;
+  min-width: 0;
+  text-wrap: pretty;
+}
+
+.skpe-main > section,
+.skpe-main article,
+.skpe-main .skpe-card,
+.skpe-main .skpe-panel {
+  min-width: 0;
+}
+
+.skpe-main p {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/*
+ * Em linhas flex/grid com texto e acoes, o bloco textual cresce
+ * e os controles preservam apenas a largura necessaria.
+ */
+.skpe-main :where(
+  .skpe-section-header,
+  .skpe-card-header,
+  .skpe-panel-header,
+  .skpe-content-header
+) > :where(div, section):first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+/* SKPE-V25Q-INITIATIVE-PRODUCT-READABILITY */
+/*
+ * Contrato visual:
+ * - textos narrativos usam toda a largura util;
+ * - metadados nunca sao concatenados;
+ * - controles laterais ocupam apenas o necessario.
+ */
+.skpe-initiative-card-main {
+  min-width: 0;
+}
+
+.skpe-initiative-description {
+  width: 100%;
+  max-width: none;
+}
+
+.skpe-initiative-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+  max-width: none;
+}
+
+.skpe-initiative-meta > span {
+  display: inline-grid;
+  grid-template-columns: auto;
+  gap: 0.08rem;
+  min-width: max-content;
+  padding: 0.28rem 0.48rem;
+  border-radius: 0.55rem;
+  background: var(--skpe-surface-soft, #f4f8f6);
+}
+
+.skpe-initiative-meta small {
+  color: var(--skpe-muted, #607069);
+  font-size: 0.66rem;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.skpe-initiative-meta strong {
+  color: var(--skpe-text, #20332c);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.skpe-initiative-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  width: 100%;
+  max-width: none;
+}
+
+.skpe-initiative-links > span {
+  min-width: 0;
+}
+
+.skpe-initiative-placeholder p:last-child {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 680px) {
+  .skpe-initiative-meta > span {
+    min-width: min(100%, 10rem);
+  }
+}
+/* SKPE-RECIPROCAL-CONTEXT-ICON-ACTIONS-V25S */
+.skpe-context-icon-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.skpe-context-icon-action {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 0.7rem;
+  background: var(--skpe-surface, #ffffff);
+  color: var(--skpe-text, #20332c);
+  cursor: pointer;
+}
+
+.skpe-context-icon-action > svg {
+  width: 1.12rem;
+  height: 1.12rem;
+}
+
+.skpe-context-icon-action:hover,
+.skpe-context-icon-action:focus-visible {
+  border-color: #8fb9aa;
+  background: #edf6f2;
+  color: #176b53;
+}
+
+.skpe-context-icon-action:focus-visible {
+  outline: 3px solid rgba(23, 107, 83, 0.16);
+  outline-offset: 2px;
+}
+
+.skpe-context-icon-action::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 280;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  width: max-content;
+  max-width: min(16rem, 80vw);
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.45rem;
+  background: #183f34;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.2rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  white-space: nowrap;
+}
+
+.skpe-context-icon-action:hover::after,
+.skpe-context-icon-action:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.skpe-heading-actions {
+  align-items: center;
+}
+
+@media (max-width: 680px) {
+  .skpe-context-icon-actions {
+    justify-content: flex-start;
+  }
+
+  .skpe-context-icon-action::after {
+    right: auto;
+    left: 0;
+  }
+}

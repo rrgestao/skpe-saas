@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 
 import { supabase } from '../../lib/supabase'
@@ -61,6 +61,8 @@ export function UserProfileDialog({
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] =
     useState<'info' | 'success' | 'error'>('info')
+  const [requestingPasswordChange, setRequestingPasswordChange] =
+    useState(false)
 
   const initials = useMemo(
     () => getInitials(displayName || fullName, email),
@@ -177,6 +179,40 @@ export function UserProfileDialog({
     setMessageType('info')
   }
 
+  const handlePasswordChangeRequest = async () => {
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (!normalizedEmail) {
+      setMessage('Não foi possível identificar o e-mail da conta.')
+      setMessageType('error')
+      return
+    }
+
+    setRequestingPasswordChange(true)
+    setMessage('')
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+        redirectTo: window.location.origin,
+      },
+    )
+
+    if (error) {
+      setMessage(
+        `Não foi possível solicitar a alteração da senha: ${error.message}`,
+      )
+      setMessageType('error')
+      setRequestingPasswordChange(false)
+      return
+    }
+
+    setMessage(
+      'Enviamos as instruções para alteração da senha ao e-mail da sua conta.',
+    )
+    setMessageType('success')
+    setRequestingPasswordChange(false)
+  }
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
@@ -311,74 +347,115 @@ export function UserProfileDialog({
           className="user-profile-dialog-form"
           onSubmit={handleSubmit}
         >
-          <div className="user-profile-avatar-editor">
-            <button
-              type="button"
-              className="user-profile-avatar-preview"
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={loading}
-              aria-label={
-                avatarUrl
-                  ? 'Alterar foto do perfil'
-                  : 'Adicionar foto do perfil'
-              }
-              title={
-                avatarUrl
-                  ? 'Alterar foto do perfil'
-                  : 'Adicionar foto do perfil'
-              }
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" />
-              ) : (
-                <span aria-hidden="true">{initials}</span>
-              )}
-
-              <span
-                className="user-profile-avatar-overlay"
-                aria-hidden="true"
-              >
-                {avatarUrl ? 'Alterar' : 'Adicionar'}
-              </span>
-            </button>
-
-            <div>
-              <strong>Foto do perfil</strong>
-              <p>PNG, JPG ou WebP com até 5 MB.</p>
-
-              <div className="user-profile-avatar-actions">
-                <input
-                  ref={avatarInputRef}
-                  className="user-profile-avatar-file-input"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleAvatarChange}
-                  disabled={loading}
-                />
-
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={loading}
-                >
-                  Selecionar foto
-                </button>
-
-                {(avatarUrl || avatarPath) && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={handleRemoveAvatar}
-                    disabled={loading}
-                  >
-                    Remover foto
-                  </button>
-                )}
+          <div className="user-profile-account-cards">
+          <section className="user-profile-account-card user-profile-photo-card">
+            <div className="user-profile-account-card-heading">
+              <div>
+                <strong>Foto do perfil</strong>
+                <p>Identidade visual usada em toda a Plataforma SPARKs.</p>
               </div>
             </div>
-          </div>
 
+            <div className="user-profile-avatar-editor">
+              <button
+                type="button"
+                className="user-profile-avatar-preview"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={loading}
+                aria-label={
+                  avatarUrl
+                    ? 'Alterar foto do perfil'
+                    : 'Adicionar foto do perfil'
+                }
+                title={
+                  avatarUrl
+                    ? 'Alterar foto do perfil. PNG, JPG ou WebP, até 5 MB.'
+                    : 'Adicionar foto do perfil. PNG, JPG ou WebP, até 5 MB.'
+                }
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" />
+                ) : (
+                  <span aria-hidden="true">{initials}</span>
+                )}
+
+                <span
+                  className="user-profile-avatar-overlay"
+                  aria-hidden="true"
+                >
+                  PNG, JPG ou WebP · até 5 MB
+                </span>
+              </button>
+
+              <div>
+                <strong>Foto do perfil</strong>
+
+                <div className="user-profile-avatar-actions">
+                  <input
+                    ref={avatarInputRef}
+                    className="user-profile-avatar-file-input"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleAvatarChange}
+                    disabled={loading}
+                  />
+
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={loading}
+                  >
+                    Selecionar foto
+                  </button>
+
+                  {(avatarUrl || avatarPath) && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={handleRemoveAvatar}
+                      disabled={loading}
+                    >
+                      Remover foto
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="user-profile-account-card user-profile-security-card">
+            <button
+              type="button"
+              className="user-profile-security-icon user-profile-security-action"
+              onClick={() => void handlePasswordChangeRequest()}
+              disabled={loading || requestingPasswordChange}
+              aria-label={
+                requestingPasswordChange
+                  ? 'Solicitando alteração de senha'
+                  : 'Alterar senha'
+              }
+              title={
+                requestingPasswordChange
+                  ? 'Solicitando...'
+                  : 'Alterar senha'
+              }
+            >
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path
+                  d="M7 10V8a5 5 0 0 1 10 0v2m-9 0h8a2 2 0 0 1 2 2v7H6v-7a2 2 0 0 1 2-2Zm4 4v2"
+                />
+              </svg>
+            </button>
+
+            <div className="user-profile-security-content">
+              <strong>Segurança da conta</strong>
+              <p>Solicite um link seguro para definir uma nova senha.</p>
+
+
+            </div>
+          </section>
+          </div>
           <div className="user-profile-fields">
             <label>
               Nome completo

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ComponentType } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
 import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
@@ -32,12 +32,46 @@ type MonitoringSectionProps = {
   canManageEconomic: boolean
   canViewJourney: boolean
   canViewInitiatives: boolean
+  JourneyIcon: ComponentType
+  InitiativesIcon: ComponentType
   onOpenJourney: () => void
   onOpenInitiatives: (target?: MonitoringDrilldownTarget) => void
+  refreshRequestKey?: number
 }
 
 
 
+function EconomicExecutionIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M9 9.4c0-1 1.1-1.8 2.6-1.8h.8c1.5 0 2.6.8 2.6 1.8s-1 1.7-2.6 1.9h-.8C10 11.5 9 12.3 9 13.5s1.1 1.8 2.6 1.8h.8c1.5 0 2.6-.8 2.6-1.8M12 6.3v11.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function CapacityManagementIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="8" cy="8" r="2.4" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="16" cy="8" r="2.4" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M3.8 17c.5-2.8 2-4.2 4.2-4.2s3.7 1.4 4.2 4.2M11.8 17c.5-2.8 2-4.2 4.2-4.2s3.7 1.4 4.2 4.2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
 type OperationalProjection = {
   referenceDate?: string
   journeyTemporal?: JourneyTemporalTimelineRow[]
@@ -97,6 +131,31 @@ function countBy<T>(rows: T[], read: (row: T) => string) {
   )
 }
 
+function describeTemporalDataQuality(state: string) {
+  switch (state) {
+    case 'actual_start_unknown':
+      return 'A execução foi sinalizada, mas a data real de início ainda não foi registrada.'
+    case 'actual_end_unknown':
+      return 'A conclusão foi sinalizada, mas a data real de término ainda não foi registrada.'
+    case 'planned_start_unknown':
+    case 'current_plan_start_unknown':
+      return 'A data planejada de início ainda não foi definida.'
+    case 'planned_end_unknown':
+    case 'current_plan_end_unknown':
+      return 'A data planejada de conclusão ainda não foi definida.'
+    case 'forecast_start_unknown':
+      return 'A previsão operacional de início ainda não possui uma data definida.'
+    case 'forecast_end_unknown':
+      return 'A previsão operacional de conclusão ainda não possui uma data definida.'
+    case 'baseline_start_unknown':
+      return 'A linha de base ainda não possui data de início definida.'
+    case 'baseline_end_unknown':
+      return 'A linha de base ainda não possui data de conclusão definida.'
+    default:
+      return 'Há informações temporais incompletas que precisam ser revisadas.'
+  }
+}
+
 function getTemporalException(
   row: InitiativeTemporalTimelineRow,
 ) {
@@ -104,23 +163,32 @@ function getTemporalException(
     return {
       severity: 3,
       days: row.days_completion_overdue,
-      label: `Conclusão em atraso: ${row.days_completion_overdue} dia(s)`,
+      label: `Conclusão em atraso há ${row.days_completion_overdue} dia(s).`,
+      guidance:
+        'Revisar o prazo, registrar a conclusão ou atualizar a previsão operacional de término.',
     }
   }
+
   if (row.is_start_overdue) {
     return {
       severity: 2,
       days: row.days_start_overdue,
-      label: `Início em atraso: ${row.days_start_overdue} dia(s)`,
+      label: `Início em atraso há ${row.days_start_overdue} dia(s).`,
+      guidance:
+        'Confirmar o início, reprogramar a data ou atualizar a situação da execução.',
     }
   }
+
   if (row.temporal_data_quality_state !== 'ok') {
     return {
       severity: 1,
       days: 0,
-      label: `Qualidade temporal: ${row.temporal_data_quality_state}`,
+      label: describeTemporalDataQuality(row.temporal_data_quality_state),
+      guidance:
+        'Completar ou corrigir as datas de planejamento e execução deste item.',
     }
   }
+
   return null
 }
 
@@ -129,8 +197,11 @@ export function MonitoringSection({
   canManageEconomic,
   canViewJourney,
   canViewInitiatives,
+  JourneyIcon,
+  InitiativesIcon,
   onOpenJourney,
   onOpenInitiatives,
+  refreshRequestKey = 0,
 }: MonitoringSectionProps) {
   const workspace = useSkpeWorkspace()
   const projectId = workspace.route.projectId ?? fallbackProjectId
@@ -233,7 +304,7 @@ export function MonitoringSection({
     return () => {
       active = false
     }
-  }, [organizationId, projectId, reloadToken])
+  }, [organizationId, projectId, reloadToken, refreshRequestKey])
 
   const initiativeTemporal = projection?.initiativeTemporal ?? []
   const actionBoard = projection?.actionBoard ?? []
@@ -293,39 +364,71 @@ export function MonitoringSection({
   return (
     <section className="skpe-monitoring" aria-label="Monitoramento gerencial do Planejamento Estratégico">
       <header className="skpe-monitoring-header">
-        <div>
-          <p className="skpe-eyebrow">Monitoramento governado</p>
-          <h1>Execução estratégica em uma visão gerencial</h1>
-          <p>
-            Leitura integrada da projeção operacional canônica. Jornada, ações, agenda
-            e capacidade permanecem em suas fontes governadas; a execução econômica da
-            iniciativa pode ser registrada aqui por usuários autorizados.
-          </p>
+        <div
+          className="skpe-monitoring-title-help"
+          tabIndex={0}
+          aria-label="Execução Estratégica. Visão Gerencial."
+          data-help="Leitura integrada da projeção operacional canônica. Jornada, ações, agenda e capacidade permanecem em suas fontes governadas; a execução econômica da iniciativa pode ser registrada aqui por usuários autorizados."
+        >
+          <h1 className="skpe-monitoring-title">
+            <span>Execução Estratégica</span>
+            <span>Visão Gerencial</span>
+          </h1>
         </div>
-        <div className="skpe-monitoring-actions">
+
+        <div
+          className="skpe-monitoring-icon-actions"
+          aria-label="Ações do monitoramento"
+        >
           {canViewJourney ? (
-            <button type="button" onClick={onOpenJourney}>
-              Abrir Jornada
+            <button
+              type="button"
+              className="skpe-monitoring-icon-action"
+              onClick={onOpenJourney}
+              aria-label="Abrir Jornada Estratégica"
+              title="Abrir Jornada Estratégica"
+              data-tooltip="Abrir Jornada Estratégica"
+            >
+              <JourneyIcon />
             </button>
           ) : null}
+
           {canViewInitiatives ? (
-            <button type="button" onClick={() => onOpenInitiatives()}>
-              Abrir Iniciativas / Kanban
+            <button
+              type="button"
+              className="skpe-monitoring-icon-action"
+              onClick={() => onOpenInitiatives()}
+              aria-label="Abrir Iniciativas e Kanban"
+              title="Abrir Iniciativas e Kanban"
+              data-tooltip="Abrir Iniciativas e Kanban"
+            >
+              <InitiativesIcon />
             </button>
           ) : null}
+
           {economicEditable ? (
-            <button type="button" onClick={() => setShowEconomicEditor(true)}>
-              Registrar execução econômica
+            <button
+              type="button"
+              className="skpe-monitoring-icon-action"
+              onClick={() => setShowEconomicEditor(true)}
+              aria-label="Registrar execução econômica"
+              title="Registrar execução econômica"
+              data-tooltip="Registrar execução econômica"
+            >
+              <EconomicExecutionIcon />
             </button>
           ) : null}
+
           {canManageCapacity ? (
             <button
               type="button"
-              onClick={() =>
-                setShowCapacityManager(true)
-              }
+              className="skpe-monitoring-icon-action"
+              onClick={() => setShowCapacityManager(true)}
+              aria-label="Gerenciar capacidade"
+              title="Gerenciar capacidade"
+              data-tooltip="Gerenciar capacidade"
             >
-              Gerenciar capacidade
+              <CapacityManagementIcon />
             </button>
           ) : null}
         </div>
@@ -362,9 +465,9 @@ export function MonitoringSection({
               </small>
             </article>
             <article className={temporalExceptions.length > 0 ? 'is-warning' : ''}>
-              <span>Exceções temporais</span>
+              <span>Atenções temporais</span>
               <strong>{temporalExceptions.length}</strong>
-              <small>iniciativa/ações sinalizadas pelo backend</small>
+              <small>itens que requerem revisão gerencial</small>
             </article>
             <article>
               <span>Kanban transversal</span>
@@ -418,14 +521,14 @@ export function MonitoringSection({
             <article className="skpe-monitoring-panel">
               <header>
                 <div>
-                  <span>Prioridade gerencial</span>
-                  <h2>Exceções que exigem atenção</h2>
+                  <span>Atenção gerencial</span>
+                  <h2>Atenções prioritárias</h2>
                 </div>
                 <strong>{temporalExceptions.length + overallocated.length}</strong>
               </header>
 
               {temporalExceptions.length === 0 && overallocated.length === 0 ? (
-                <p className="skpe-monitoring-empty">Nenhuma exceção temporal ou de capacidade sinalizada.</p>
+                <p className="skpe-monitoring-empty">Nenhuma atenção temporal ou de capacidade identificada.</p>
               ) : (
                 <div className="skpe-monitoring-exceptions">
                   {temporalExceptions.slice(0, 8).map(({ row, exception }) => (
@@ -445,10 +548,13 @@ export function MonitoringSection({
                     >
                       <strong>{row.code} · {row.name}</strong>
                       <span>{exception.label}</span>
+                      <span className="skpe-monitoring-attention-guidance">
+                        <b>Próxima ação:</b> {exception.guidance}
+                      </span>
                       <small>
                         {row.entity_type === 'action'
-                          ? 'Abrir a\u00e7\u00e3o no Kanban'
-                          : 'Abrir iniciativa no Kanban'}
+                          ? 'Abrir ação para revisar'
+                          : 'Abrir iniciativa para revisar'}
                       </small>
                     </button>
                   ))}
@@ -496,6 +602,9 @@ export function MonitoringSection({
           </div>
 
           <ManagementTimeline
+            JourneyIcon={JourneyIcon}
+            InitiativesIcon={InitiativesIcon}
+            onOpenEconomicExecution={() => setShowEconomicEditor(true)}
             journeyRows={projection.journeyTemporal ?? []}
             initiativeRows={initiativeTemporal}
             events={events}

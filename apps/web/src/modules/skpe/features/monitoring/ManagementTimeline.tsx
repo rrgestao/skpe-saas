@@ -1,3 +1,5 @@
+import type { ComponentType } from 'react'
+
 import {
   deriveMonitoringTimelineWindow,
   formatMonitoringTimelineDate,
@@ -22,7 +24,9 @@ type ManagementTimelineProps = {
     initiativeId: string
     actionId: string | null
   }) => void
-}
+  JourneyIcon: ComponentType
+  InitiativesIcon: ComponentType
+  onOpenEconomicExecution: () => void}
 
 type TimelineBarsProps = {
   window: MonitoringTimelineWindow
@@ -140,6 +144,27 @@ function TimelineBars({
   )
 }
 
+function TimelineEconomicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M9 9.4c0-1 1.1-1.8 2.6-1.8h.8c1.5 0 2.6.8 2.6 1.8s-1 1.7-2.6 1.9h-.8C10 11.5 9 12.3 9 13.5s1.1 1.8 2.6 1.8h.8c1.5 0 2.6-.8 2.6-1.8M12 6.3v11.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 export function ManagementTimeline({
   journeyRows,
   initiativeRows,
@@ -148,8 +173,9 @@ export function ManagementTimeline({
   journeyVisible,
   initiativesVisible,
   onOpenJourney,
-  onOpenInitiatives,
-}: ManagementTimelineProps) {
+  onOpenInitiatives,  JourneyIcon,
+  InitiativesIcon,
+  onOpenEconomicExecution,}: ManagementTimelineProps) {
   const window = deriveMonitoringTimelineWindow(
     journeyRows,
     initiativeRows,
@@ -229,7 +255,7 @@ export function ManagementTimeline({
 
         <div className="skpe-management-timeline-legend">
           <span className="is-plan">Plano vigente</span>
-          <span className="is-forecast">Forecast</span>
+          <span className="is-forecast">Previsão operacional</span>
           <span className="is-actual">Realizado</span>
           <span className="is-event">Agenda</span>
         </div>
@@ -261,9 +287,45 @@ export function ManagementTimeline({
             <span>Jornada do Planejamento Estratégico</span>
             <h3>MegaFases, fases, etapas e agenda</h3>
           </div>
-          <button type="button" onClick={onOpenJourney}>
-            Abrir Jornada
+          <div
+          className="skpe-timeline-icon-actions"
+          aria-label="Ações da linha do tempo gerencial"
+        >
+          <button
+            type="button"
+            className="skpe-monitoring-icon-action"
+            onClick={onOpenJourney}
+            aria-label="Abrir Jornada Estratégica"
+            title="Abrir Jornada Estratégica"
+            data-tooltip="Abrir Jornada Estratégica"
+          >
+            <JourneyIcon />
           </button>
+
+          {initiativesVisible ? (
+            <button
+              type="button"
+              className="skpe-monitoring-icon-action"
+              onClick={() => onOpenInitiatives()}
+              aria-label="Abrir Iniciativas e Kanban"
+              title="Abrir Iniciativas e Kanban"
+              data-tooltip="Abrir Iniciativas e Kanban"
+            >
+              <InitiativesIcon />
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            className="skpe-monitoring-icon-action"
+            onClick={onOpenEconomicExecution}
+            aria-label="Registrar execução econômica"
+            title="Registrar execução econômica"
+            data-tooltip="Registrar execução econômica"
+          >
+            <TimelineEconomicIcon />
+          </button>
+        </div>
         </header>
 
         <div className="skpe-management-timeline-scroll">

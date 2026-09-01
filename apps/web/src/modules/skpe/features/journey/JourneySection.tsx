@@ -150,7 +150,7 @@ function getItemTypeLabel(itemType: JourneyRow['item_type']) {
     meta_stage: 'Metaetapa',
     activity: 'Atividade',
     deliverable: 'Entregável',
-    gate: 'Gate de validação',
+    gate: 'Ponto de validação',
   }
 
   return labels[itemType]
@@ -173,8 +173,8 @@ function getTemporalStateLabel(state: JourneyTemporalState) {
 }
 
 function getPlanKindLabel(kind: JourneyTemporalRow['current_plan_kind']) {
-  if (kind === 'baseline') return 'Baseline'
-  if (kind === 'rebaseline') return 'Rebaseline'
+  if (kind === 'baseline') return 'Linha de base'
+  if (kind === 'rebaseline') return 'Revisão da linha de base'
   return 'Sem plano aprovado'
 }
 
@@ -273,9 +273,15 @@ function getJourneyStatusIcon(
 type JourneySectionProps = {
   organizationId: string
   formatDate: (value: string | null) => string
-  RefreshIcon: () => ReactNode
-  JourneyIcon: () => ReactNode
+  refreshRequestKey?: number
+  strategicHorizon?: string
   LockIcon: () => ReactNode
+  InitiativesIcon: () => ReactNode
+  MonitoringIcon: () => ReactNode
+  canViewInitiatives: boolean
+  canViewMonitoring: boolean
+  onOpenInitiatives: () => void
+  onOpenMonitoring: () => void
   canManageJourney: boolean
   canGenerateDeliverables: boolean
   onGenerateDeliverables: (item: JourneyRow) => void
@@ -284,9 +290,15 @@ type JourneySectionProps = {
 export function JourneySection({
   organizationId,
   formatDate,
-  RefreshIcon,
-  JourneyIcon,
+  refreshRequestKey = 0,
+  strategicHorizon,
   LockIcon,
+  InitiativesIcon,
+  MonitoringIcon,
+  canViewInitiatives,
+  canViewMonitoring,
+  onOpenInitiatives,
+  onOpenMonitoring,
   canManageJourney,
   canGenerateDeliverables,
   onGenerateDeliverables,
@@ -377,32 +389,27 @@ export function JourneySection({
 
     setRows(journeyRows)
 
-    setExpandedItems(
-      new Set(
-        journeyRows
-          .filter(
-            (row) =>
-              row.item_type === 'macrophase' &&
-              (row.is_current || row.item_status === 'in_progress'),
-          )
-          .map((row) => row.item_id),
-      ),
-    )
-
-    setSelectedItemId((current) =>
-      journeyRows.some((row) => row.item_id === current)
-        ? current
-        : journeyRows.find((row) => row.is_current)?.item_id ??
-          journeyRows.find((row) => row.item_type === 'macrophase')?.item_id ??
-          null,
-    )
+    setExpandedItems(new Set())
+    setSelectedItemId(null)
 
     setLoading(false)
   }
 
   useEffect(() => {
     void loadJourney()
-  }, [organizationId, workspace.route.projectId])
+  }, [organizationId, workspace.route.projectId, refreshRequestKey])
+  useEffect(() => {
+    if (!selectedItemId) return
+
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedItemId(null)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedItemId])
 
 
   const toggleExpanded = (itemId: string) => {
@@ -431,8 +438,9 @@ export function JourneySection({
           .filter(Boolean)
           .join(' ')}
         onClick={() => {
-          setSelectedItemId(item.item_id)
-          if (hasChildren) toggleExpanded(item.item_id)
+          setSelectedItemId((current) =>
+            current === item.item_id ? null : item.item_id,
+          )
         }}
       >
         <div className="skpe-journey-item-main">
@@ -510,7 +518,7 @@ export function JourneySection({
 
               {item.has_active_forecast && (
                 <span>
-                  Forecast:{' '}
+                  Previsão:{' '}
                   <strong>
                     {formatPeriod(
                       item.forecast_start_date,
@@ -648,77 +656,71 @@ export function JourneySection({
       <section className="skpe-page-heading skpe-administration-heading">
         <div>
           <p className="skpe-eyebrow">Metodologia de Planejamento Estratégico</p>
-          <h1>Jornada Estratégica</h1>
-          <p>
-            Execução, compromisso institucional e previsão operacional da jornada em uma única leitura temporal governada.
-          </p>
+          <h1>
+            Jornada Estratégica
+            {strategicHorizon
+              ? ` - ${strategicHorizon.replace(/[–-]/g, ' · ')}`
+              : ''}
+          </h1>
+
+        </div>
+        <div
+          className="skpe-context-icon-actions"
+          aria-label="Atalhos da Jornada Estratégica"
+        >
+          {canViewInitiatives ? (
+            <button
+              type="button"
+              className="skpe-context-icon-action"
+              onClick={onOpenInitiatives}
+              aria-label="Abrir Iniciativas e Kanban"
+              title="Abrir Iniciativas e Kanban"
+              data-tooltip="Abrir Iniciativas e Kanban"
+            >
+              <InitiativesIcon />
+            </button>
+          ) : null}
+
+          {canViewMonitoring ? (
+            <button
+              type="button"
+              className="skpe-context-icon-action"
+              onClick={onOpenMonitoring}
+              aria-label="Abrir Monitoramento"
+              title="Abrir Monitoramento"
+              data-tooltip="Abrir Monitoramento"
+            >
+              <MonitoringIcon />
+            </button>
+          ) : null}
         </div>
 
-        <button
-          type="button"
-          className="skpe-refresh-button"
-          onClick={() => void loadJourney()}
-          disabled={loading}
-        >
-          <RefreshIcon />
-          Atualizar jornada
-        </button>
+
       </section>
 
       {project && (
-        <>
-          <section className="skpe-project-context-card">
-            <div>
-              <span>Projeto estratégico</span>
-              <strong>{project.project_name}</strong>
-              <small>{project.project_code}</small>
-            </div>
-
-            <div>
-              <span>Progresso geral</span>
+        <div className="skpe-journey-summary-stack">
+          <section
+            className="skpe-journey-summary-grid skpe-journey-summary-grid-primary"
+            aria-label="Indicadores principais da Jornada Estratégica"
+          >
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
+              <span>Progresso</span>
               <strong>{project.project_progress}%</strong>
               <small>
                 Situação: {getProjectStatusLabel(project.project_status)}
               </small>
-            </div>
+            </article>
 
-            <div>
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
               <span>Data de referência</span>
               <strong>{formatDate(project.reference_date)}</strong>
-              <small>{project.organization_timezone}</small>
-            </div>
-          </section>
-
-          <section className="skpe-admin-kpi-grid" aria-label="Resumo temporal da jornada">
-            <article className="skpe-admin-kpi-card">
-              <span>Plano institucional</span>
-              <strong>
-                {temporalSummary.planRow?.current_plan_version_number
-                  ? `v${temporalSummary.planRow.current_plan_version_number}`
-                  : '—'}
-              </strong>
               <small>
-                {temporalSummary.planRow
-                  ? getPlanKindLabel(temporalSummary.planRow.current_plan_kind)
-                  : 'Sem baseline/rebaseline aprovado'}
+                Data de corte da análise temporal · {project.organization_timezone}
               </small>
             </article>
 
-            <article className="skpe-admin-kpi-card">
-              <span>Forecast operacional</span>
-              <strong>
-                {temporalSummary.forecastRow?.current_forecast_version_number
-                  ? `v${temporalSummary.forecastRow.current_forecast_version_number}`
-                  : '—'}
-              </strong>
-              <small>
-                {temporalSummary.forecastRow
-                  ? 'Previsão operacional ativa'
-                  : 'Sem forecast ativo'}
-              </small>
-            </article>
-
-            <article className="skpe-admin-kpi-card">
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
               <span>Obrigatórios em atraso</span>
               <strong>{temporalSummary.overdueCount}</strong>
               <small>
@@ -729,40 +731,83 @@ export function JourneySection({
               </small>
             </article>
 
-            <article className="skpe-admin-kpi-card">
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
               <span>Obrigatórios sem programação</span>
               <strong>{temporalSummary.unscheduledCount}</strong>
-              <small>Estado calculado pelo backend</small>
+              <small>Estado calculado pelo sistema</small>
             </article>
           </section>
-        </>
-      )}
 
-      {rows.length > 0 && !loading && (
-        <div className="skpe-gantt-view-switch" role="group" aria-label="Visualizacao da jornada">
-          <button
-            type="button"
-            className={journeyView === 'structure' ? 'is-active' : ''}
-            onClick={() => setJourneyView('structure')}
+          <section
+            className="skpe-journey-summary-grid skpe-journey-summary-grid-planning"
+            aria-label="Planejamento temporal da Jornada Estratégica"
           >
-            Estrutura
-          </button>
-          <button
-            type="button"
-            className={journeyView === 'gantt' ? 'is-active' : ''}
-            onClick={() => setJourneyView('gantt')}
-          >
-            Gantt temporal
-          </button>          <button
-            type="button"
-            className={journeyView === 'svar' ? 'is-active' : ''}
-            onClick={() => setJourneyView('svar')}
-          >
-            Gantt interativo Beta
-          </button>
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
+              <span>Plano institucional</span>
+              <strong>
+                {temporalSummary.planRow?.current_plan_version_number
+                  ? `v${temporalSummary.planRow.current_plan_version_number}`
+                  : '—'}
+              </strong>
+              <small>
+                {temporalSummary.planRow
+                  ? getPlanKindLabel(temporalSummary.planRow.current_plan_kind)
+                  : 'Sem linha de base ou revisão da linha de base aprovada'}
+              </small>
+            </article>
+
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
+              <span>Previsão operacional</span>
+              <strong>
+                {temporalSummary.forecastRow?.current_forecast_version_number
+                  ? `v${temporalSummary.forecastRow.current_forecast_version_number}`
+                  : '—'}
+              </strong>
+              <small>
+                {temporalSummary.forecastRow
+                  ? 'Previsão operacional ativa'
+                  : 'Sem previsão operacional ativa'}
+              </small>
+            </article>
+          </section>
         </div>
       )}
-
+      {rows.length > 0 && !loading && (
+        <div className="skpe-journey-view-switch-row">
+          <div
+            className="skpe-journey-view-tabs"
+            role="tablist"
+            aria-label="Visualização da jornada"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={journeyView === 'structure'}
+              className={journeyView === 'structure' ? 'active' : ''}
+              onClick={() => setJourneyView('structure')}
+            >
+              Estrutura
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={journeyView === 'gantt'}
+              className={journeyView === 'gantt' ? 'active' : ''}
+              onClick={() => setJourneyView('gantt')}
+            >
+              Cronograma (Gantt)
+            </button>            <button
+              type="button"
+              role="tab"
+              aria-selected={journeyView === 'svar'}
+              className={journeyView === 'svar' ? 'active' : ''}
+              onClick={() => setJourneyView('svar')}
+            >
+              Gantt interativo Beta
+            </button>
+          </div>
+        </div>
+      )}
       {errorMessage && (
         <div className="skpe-admin-message skpe-admin-message-error">
           {errorMessage}
@@ -792,13 +837,30 @@ export function JourneySection({
       ) : journeyView === 'svar' ? (
         <SvarJourneyGantt rows={rows} />
       ) : (
-        <div className="skpe-journey-workspace">
+        <div
+          className={[
+            'skpe-journey-workspace',
+            selectedItem
+              ? 'skpe-journey-workspace-with-detail'
+              : 'skpe-journey-workspace-full',
+          ].join(' ')}
+        >
           <section className="skpe-journey-tree">
             {journeyTree.map((item) => renderJourneyItem(item))}
           </section>
 
-          <aside className="skpe-journey-detail-panel">
-            {selectedItem ? (
+          {selectedItem && (
+            <aside className="skpe-journey-detail-panel">
+              <button
+                type="button"
+                className="skpe-journey-detail-close"
+                onClick={() => setSelectedItemId(null)}
+                aria-label="Fechar detalhes"
+                title="Fechar detalhes"
+              >
+                ×
+              </button>
+
               <>
                 <div className="skpe-journey-breadcrumb">
                   {selectedBreadcrumb.map((breadcrumbItem, index) => (
@@ -836,7 +898,7 @@ export function JourneySection({
                     <dd>{selectedItem.responsible_name ?? 'Não definido'}</dd>
                   </div>
                   <div>
-                    <dt>Baseline original</dt>
+                    <dt>Linha de base original</dt>
                     <dd>
                       {selectedItem.baseline_version_number
                         ? `v${selectedItem.baseline_version_number} · `
@@ -862,7 +924,7 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>Forecast operacional</dt>
+                    <dt>Previsão operacional</dt>
                     <dd>
                       {selectedItem.current_forecast_version_number
                         ? `v${selectedItem.current_forecast_version_number} · `
@@ -885,7 +947,7 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>Plano × baseline</dt>
+                    <dt>Plano × linha de base</dt>
                     <dd>
                       {formatVariance(
                         selectedItem.current_plan_end_variance_vs_baseline_days,
@@ -893,7 +955,7 @@ export function JourneySection({
                     </dd>
                   </div>
                   <div>
-                    <dt>Forecast × plano</dt>
+                    <dt>Previsão × plano</dt>
                     <dd>
                       {formatVariance(
                         selectedItem.forecast_end_variance_vs_current_plan_days,
@@ -953,14 +1015,8 @@ export function JourneySection({
                   </div>
                 )}
               </>
-            ) : (
-              <div className="skpe-user-detail-empty">
-                <JourneyIcon />
-                <h2>Selecione um item</h2>
-                <p>Consulte seus detalhes e navegue pela estrutura metodológica.</p>
-              </div>
-            )}
-          </aside>
+            </aside>
+          )}
         </div>
       )}
 

@@ -21,6 +21,7 @@
 /* O primeiro titulo da pagina nunca deve nascer colado/sob a faixa persistente. */
 .skpe-main > .skpe-cockpit-header ~ .skpe-page-heading {
   margin-top: var(--skpe-workspace-section-gap);
+  margin-bottom: var(--skpe-workspace-section-gap);
   scroll-margin-top: 5rem;
 }
 
@@ -506,4 +507,130 @@
   .skpe-personal-responsibilities-tabs button {
     flex: 0 0 auto;
   }
+}
+/* PERSONAL-PANELS-DRAWER */
+.skpe-personal-panels-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(12, 29, 24, 0.24);
+}
+
+.skpe-personal-panels-drawer {
+  width: min(720px, 94vw);
+  height: 100dvh;
+  overflow-y: auto;
+  padding: 1.2rem;
+  background: var(--skpe-surface, #ffffff);
+  box-shadow: -18px 0 48px rgba(12, 29, 24, 0.18);
+}
+
+.skpe-personal-panels-drawer-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -1.2rem -1.2rem 1rem;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--skpe-border, #dce5e1);
+  background: var(--skpe-surface, #ffffff);
+}
+
+.skpe-personal-panels-drawer-header h2 {
+  margin: 0.15rem 0 0;
+}
+
+.skpe-personal-panels-drawer .skpe-favorites-panel,
+.skpe-personal-panels-drawer .skpe-workspace-panels {
+  margin: 0;
+}
+
+.skpe-personal-panels-drawer .skpe-dashboard-grid,
+.skpe-personal-panels-drawer .skpe-favorites-grid {
+  grid-template-columns: 1fr;
+}
+
+/* Abas reais: pertencem ao mesmo MASTER FRAME, nao sao botoes independentes. */
+.skpe-personal-responsibilities-tabs {
+  gap: 1.3rem;
+  padding: 0;
+  border-bottom: 1px solid var(--skpe-border, #dce5e1);
+}
+
+.skpe-personal-responsibilities-tabs button {
+  position: relative;
+  min-height: 2.7rem;
+  padding: 0.25rem 0 0.65rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.skpe-personal-responsibilities-tabs button:hover,
+.skpe-personal-responsibilities-tabs button:focus-visible {
+  border-color: transparent;
+  color: #176b53;
+  outline: none;
+}
+
+.skpe-personal-responsibilities-tabs button.active {
+  border: 0;
+  background: transparent;
+  color: #176b53;
+}
+
+.skpe-personal-responsibilities-tabs button.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: #176b53;
+}
+
+@media (max-width: 720px) {
+  .skpe-personal-panels-drawer {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .skpe-personal-responsibilities-tabs {
+    gap: 1rem;
+  }
+}
+
+/* NOTIFICATION-DRAWER-HARDENING */
+.skpe-notifications-drawer-content {
+  min-width: 0;
+}
+
+.skpe-notifications-drawer-content > .skpe-notifications-panel {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.skpe-notifications-drawer-content
+  > .skpe-notifications-panel
+  .skpe-notifications-heading {
+  padding-top: 0;
+}
+
+/* O cabecalho da pagina volta a ser apenas identificacao do workspace. */
+.skpe-page-heading {
+  position: relative;
+  z-index: 1;
+}
+
+.skpe-page-heading > div:first-child {
+  min-width: 0;
 }

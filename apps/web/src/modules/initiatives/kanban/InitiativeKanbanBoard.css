@@ -411,3 +411,53 @@
 .initiative-kanban-card__economics strong {
   font-weight: 750;
 }
+/* SKPE-V25Q-KANBAN-FULL-WIDTH-TEXT */
+/*
+ * Textos ocupam toda a largura disponivel antes de quebrar.
+ * Acoes laterais preservam somente o espaco necessario.
+ */
+.initiative-kanban-guide__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+}
+
+.initiative-kanban-guide__copy > p:last-child {
+  width: 100%;
+  max-width: none;
+}
+
+.initiative-kanban-guide__actions {
+  flex: 0 0 auto;
+}
+
+.initiative-kanban-empty,
+.initiative-kanban-filter-empty {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+}
+
+.initiative-kanban-empty p,
+.initiative-kanban-filter-empty p {
+  width: 100%;
+  max-width: none;
+}
+
+.initiative-action-drawer__section {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.initiative-action-drawer__section > p {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 640px) {
+  .initiative-kanban-guide__actions {
+    width: 100%;
+  }
+}

@@ -901,3 +901,235 @@ button.skpe-management-timeline-row {
     display: grid;
   }
 }
+/* KPI-CARD-CENTERING-STANDARD-V25M-C */
+/*
+ * Regra visual: cards que representam indicador ou medida
+ * centralizam rotulo, valor e complemento.
+ * Paineis narrativos/operacionais permanecem fora desta regra.
+ */
+.skpe-monitoring-grid > article {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 7rem;
+  text-align: center;
+}
+
+.skpe-monitoring-grid > article > span,
+.skpe-monitoring-grid > article > strong,
+.skpe-monitoring-grid > article > small {
+  width: 100%;
+  text-align: center;
+}
+
+.skpe-monitoring-grid > article > small {
+  max-width: 22rem;
+  margin-inline: auto;
+}
+/* KPI-CARD-CENTERING-STANDARD-V25M-C2 */
+/*
+ * Regra visual transversal:
+ * cards que representam indicador ou medida centralizam
+ * rotulo, valor principal e complemento.
+ */
+.skpe-monitoring-grid > article {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 7rem;
+  text-align: center;
+}
+
+.skpe-monitoring-grid > article > span,
+.skpe-monitoring-grid > article > strong,
+.skpe-monitoring-grid > article > small {
+  width: 100%;
+  text-align: center;
+}
+
+.skpe-monitoring-grid > article > small {
+  max-width: 22rem;
+  margin-inline: auto;
+}
+/* MONITORING-HEADER-ICON-ACTIONS-V25M.1 */
+.skpe-monitoring {
+  padding-top: 1.6rem;
+  scroll-margin-top: 5rem;
+}
+
+.skpe-monitoring-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.35rem;
+}
+
+.skpe-monitoring-title-help {
+  min-width: 0;
+}
+
+.skpe-monitoring-icon-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  padding-bottom: 0.15rem;
+}
+
+.skpe-monitoring-icon-action {
+  position: relative;
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--skpe-border, #d6e0dc);
+  border-radius: 0.75rem;
+  background: var(--skpe-surface, #ffffff);
+  color: var(--skpe-primary, #176b53);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.skpe-monitoring-icon-action:hover,
+.skpe-monitoring-icon-action:focus-visible {
+  border-color: rgba(23, 107, 83, 0.42);
+  background: rgba(23, 107, 83, 0.07);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.skpe-monitoring-icon-action svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.skpe-monitoring-icon-action::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 260;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.45rem;
+  background: #17342c;
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.2rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  white-space: nowrap;
+}
+
+.skpe-monitoring-icon-action:hover::after,
+.skpe-monitoring-icon-action:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 820px) {
+  .skpe-monitoring {
+    padding-top: 1rem;
+  }
+
+  .skpe-monitoring-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .skpe-monitoring-icon-actions {
+    justify-content: flex-start;
+    padding-bottom: 0;
+  }
+
+  .skpe-monitoring-icon-action::after {
+    right: auto;
+    left: 0;
+  }
+}
+/* MONITORING-EXECUTIVE-ATTENTIONS-V25N */
+.skpe-monitoring-attention-guidance {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--skpe-text, #17211e);
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.skpe-monitoring-attention-guidance b {
+  color: var(--skpe-text-muted, #5d6e68);
+  font-weight: 700;
+}
+
+.skpe-monitoring-exception-link > small {
+  margin-top: 0.3rem;
+  color: var(--skpe-primary, #176b53);
+  font-weight: 700;
+}
+/* MANAGEMENT-TIMELINE-ICON-ACTIONS-V25O */
+.skpe-timeline-icon-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+
+.skpe-monitoring-journey-header {
+  align-items: center;
+}
+
+@media (max-width: 820px) {
+  .skpe-timeline-icon-actions {
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+}
+/* MANAGEMENT-TIMELINE-TEXT-FLOW-V25O.2 */
+/*
+ * Textos explicativos devem ocupar a largura util do frame.
+ * A quebra ocorre apenas por necessidade real da viewport,
+ * e nao por max-width artificial.
+ */
+.skpe-monitoring-timeline > p,
+.skpe-monitoring-timeline-header + p,
+.skpe-monitoring-timeline-card > p,
+.skpe-management-timeline > p {
+  width: 100%;
+  max-width: none;
+  margin-right: 0;
+  white-space: normal;
+  text-wrap: pretty;
+}
+
+.skpe-monitoring-timeline-header,
+.skpe-monitoring-journey-header {
+  width: 100%;
+}
+/* MANAGEMENT-TIMELINE-FULL-WIDTH-TEXT-V25P */
+.skpe-monitoring-timeline > p,
+.skpe-monitoring-timeline-card > p,
+.skpe-management-timeline > p,
+.skpe-monitoring-journey-header + p {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-right: 0;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  text-wrap: pretty;
+}
