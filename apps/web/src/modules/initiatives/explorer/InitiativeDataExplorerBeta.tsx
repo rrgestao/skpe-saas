@@ -57,6 +57,44 @@ function statusLabel(value: string) {
   return labels[value] ?? value
 }
 
+function priorityLabel(value: string) {
+  const labels: Record<string, string> = {
+    low: 'Baixa',
+    medium: 'Média',
+    high: 'Alta',
+    critical: 'Crítica',
+  }
+
+  return labels[value] ?? value
+}
+
+function criticalityLabel(value: string) {
+  return priorityLabel(value)
+}
+
+function healthLabel(value: string) {
+  const labels: Record<string, string> = {
+    healthy: 'Saudável',
+    attention: 'Atenção',
+    at_risk: 'Em risco',
+    critical: 'Crítica',
+    unknown: 'Não avaliada',
+  }
+
+  return labels[value] ?? value
+}
+
+function riskLabel(value: string) {
+  const labels: Record<string, string> = {
+    low: 'Baixo',
+    medium: 'Médio',
+    high: 'Alto',
+    critical: 'Crítico',
+    unknown: 'Não avaliado',
+  }
+
+  return labels[value] ?? value
+}
 function formatDate(value: string | null) {
   if (!value) return '—'
 
@@ -84,13 +122,13 @@ function buildTree(initiatives: InitiativePortfolioRow[]) {
       classLabel: classLabel(initiative.initiative_class),
       statusLabel: statusLabel(initiative.initiative_status),
       area: initiative.responsible_area_name ?? 'Não definida',
-      priority: initiative.priority,
-      criticality: initiative.criticality,
+      priority: priorityLabel(initiative.priority),
+      criticality: criticalityLabel(initiative.criticality),
       progressLabel: `${initiative.progress}%`,
       startDate: formatDate(initiative.start_date),
       targetEndDate: formatDate(initiative.target_end_date),
-      health: initiative.health_status,
-      risk: initiative.risk_level,
+      health: healthLabel(initiative.health_status),
+      risk: riskLabel(initiative.risk_level),
       open: true,
       data: [],
     })
@@ -144,45 +182,44 @@ function buildTree(initiatives: InitiativePortfolioRow[]) {
 const columns = [
   {
     id: 'code',
-    header: ['Código', { filter: 'text' as const }],
-    width: 130,
+    header: 'Código',
+    width: 150,
     sort: true,
   },
   {
     id: 'name',
-    header: ['Iniciativa / Projeto', { filter: 'text' as const }],
-    flexgrow: 2,
-    minWidth: 280,
+    header: 'Iniciativa / Projeto',
+    width: 360,
     treetoggle: true,
     sort: true,
   },
   {
     id: 'classLabel',
-    header: ['Classe', { filter: 'text' as const }],
+    header: 'Classe',
     width: 145,
     sort: true,
   },
   {
     id: 'statusLabel',
-    header: ['Situação', { filter: 'text' as const }],
+    header: 'Situação',
     width: 145,
     sort: true,
   },
   {
     id: 'area',
-    header: ['Área', { filter: 'text' as const }],
+    header: 'Área',
     width: 180,
     sort: true,
   },
   {
     id: 'priority',
-    header: ['Prioridade', { filter: 'text' as const }],
+    header: 'Prioridade',
     width: 120,
     sort: true,
   },
   {
     id: 'criticality',
-    header: ['Criticidade', { filter: 'text' as const }],
+    header: 'Criticidade',
     width: 120,
     sort: true,
   },
@@ -206,13 +243,13 @@ const columns = [
   },
   {
     id: 'health',
-    header: ['Saúde', { filter: 'text' as const }],
+    header: 'Saúde',
     width: 125,
     sort: true,
   },
   {
     id: 'risk',
-    header: ['Risco', { filter: 'text' as const }],
+    header: 'Risco',
     width: 115,
     sort: true,
   },
@@ -256,31 +293,32 @@ export function InitiativeDataExplorerBeta({
           <p>SPARKs Data Explorer · Beta</p>
           <strong>Portfólio hierárquico de iniciativas</strong>
           <span>
-            Pesquisa e filtros por coluna, ordenação, hierarquia e seleção
-            sobre o mesmo read-model canônico do Portfólio.
+            Use a busca e os filtros do Portfólio acima. No grid, ordene pelas
+            colunas, navegue pela hierarquia e dê duplo clique para abrir.
           </span>
         </div>
 
-        <div className="sparks-data-explorer-beta__actions">
-          <span>
-            {initiatives.length} registro
-            {initiatives.length === 1 ? '' : 's'}
-          </span>
-          <button
-            type="button"
-            disabled={!selectedInitiative}
-            onClick={() => {
-              if (selectedInitiative) {
-                onOpenInitiative(selectedInitiative)
-              }
-            }}
-          >
-            Abrir selecionada
-          </button>
-        </div>
+
       </div>
 
-      <div className="sparks-data-explorer-beta__grid">
+      <div
+        className="sparks-data-explorer-beta__grid"
+        role="region"
+        aria-label="Portfólio hierárquico de iniciativas"
+        tabIndex={0}
+        title="Selecione uma linha e dê duplo clique para abrir a iniciativa"
+        onDoubleClick={() => {
+          if (selectedInitiative) {
+            onOpenInitiative(selectedInitiative)
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && selectedInitiative) {
+            event.preventDefault()
+            onOpenInitiative(selectedInitiative)
+          }
+        }}
+      >
         <Willow>
           <Grid
             tree
@@ -288,23 +326,28 @@ export function InitiativeDataExplorerBeta({
             columns={columns}
             init={init}
             select
+            rowStyle={() => 'sparks-data-explorer-row'}
           />
         </Willow>
       </div>
 
       <footer>
-        <span>
-          Beta somente leitura: alterações continuam passando pelos fluxos
-          governados do SPARKs.
-        </span>
-        {selectedInitiative ? (
-          <strong>
-            Selecionada: {selectedInitiative.initiative_code} ·{' '}
-            {selectedInitiative.initiative_name}
-          </strong>
-        ) : (
-          <strong>Selecione uma linha para abrir a iniciativa.</strong>
-        )}
+        <div>
+          <span>
+            Beta somente leitura · selecione uma linha e dê duplo clique para
+            abrir. Enter também abre a linha selecionada.
+          </span>
+          {selectedInitiative ? (
+            <strong>
+              Selecionada: {selectedInitiative.initiative_code} ·{' '}
+              {selectedInitiative.initiative_name}
+            </strong>
+          ) : null}
+        </div>
+        <strong>
+          {initiatives.length} registro
+          {initiatives.length === 1 ? '' : 's'}
+        </strong>
       </footer>
     </section>
   )

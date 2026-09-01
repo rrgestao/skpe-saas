@@ -461,3 +461,27 @@
     width: 100%;
   }
 }
+/* UX-01.1 */
+.initiative-kanban-guide__copy {
+  max-width: none;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.initiative-kanban-guide__copy > p:last-child {
+  max-width: none;
+}
+
+.initiative-kanban-board {
+  grid-template-columns: repeat(5, minmax(16rem, 1fr));
+  min-width: 82rem;
+  scrollbar-gutter: stable;
+}
+
+.initiative-kanban-board-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.1rem 0.2rem 0.65rem;
+  color: #65766f;
+  font-size: 0.75rem;
+}

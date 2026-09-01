@@ -58,6 +58,8 @@ export function InitiativeKanbanBoard({
     useState('all')
   const [selectedPersonName, setSelectedPersonName] =
     useState('all')
+  const [selectedTiming, setSelectedTiming] =
+    useState<'all' | 'overdue'>('all')
   const [selectedCard, setSelectedCard] =
     useState<InitiativeKanbanCardModel | null>(
       null,
@@ -122,6 +124,25 @@ export function InitiativeKanbanBoard({
     [allCards],
   )
 
+  const todayDate = useMemo(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }, [])
+
+  const overdueActionCount = useMemo(
+    () =>
+      allCards.filter(
+        (card) =>
+          Boolean(card.plannedDueDate) &&
+          card.plannedDueDate! < todayDate &&
+          card.status !== 'completed',
+      ).length,
+    [allCards, todayDate],
+  )
   const filteredColumns = useMemo(
     () =>
       columns.map((column) => ({
@@ -135,11 +156,19 @@ export function InitiativeKanbanBoard({
             card.responsiblePersonNames.includes(
               selectedPersonName,
             )
+          const matchesTiming =
+            selectedTiming === 'all' ||
+            (
+              selectedTiming === 'overdue' &&
+              Boolean(card.plannedDueDate) &&
+              card.plannedDueDate! < todayDate &&
+              card.status !== 'completed'
+            )
 
-          return matchesArea && matchesPerson
+          return matchesArea && matchesPerson && matchesTiming
         }),
       })),
-    [columns, selectedAreaId, selectedPersonName],
+    [columns, selectedAreaId, selectedPersonName, selectedTiming, todayDate],
   )
 
   const filteredActionCount = useMemo(
@@ -153,7 +182,8 @@ export function InitiativeKanbanBoard({
 
   const hasActiveFilters =
     selectedAreaId !== 'all' ||
-    selectedPersonName !== 'all'
+    selectedPersonName !== 'all' ||
+    selectedTiming !== 'all'
 
   const loadBoard = useCallback(async () => {
     setLoading(true)
@@ -198,6 +228,7 @@ export function InitiativeKanbanBoard({
     setEventCard(null)
     setSelectedAreaId('all')
     setSelectedPersonName('all')
+    setSelectedTiming('all')
   }, [initiativeId])
 
   async function handleActionChanged() {
@@ -220,6 +251,8 @@ export function InitiativeKanbanBoard({
   function clearFilters() {
     setSelectedAreaId('all')
     setSelectedPersonName('all')
+    setSelectedTiming('all')
+    setSelectedTiming('all')
   }
 
   if (loading) {
@@ -260,13 +293,6 @@ export function InitiativeKanbanBoard({
         </div>
 
         <div className="initiative-kanban-guide__actions">
-          <span className="initiative-kanban-guide__count">
-            <strong>{activeActionCount}</strong>
-            {activeActionCount === 1
-              ? ' ação no quadro'
-              : ' ações no quadro'}
-          </span>
-
           {canManageInitiatives ? (
             <button
               type="button"
@@ -320,11 +346,22 @@ export function InitiativeKanbanBoard({
             </select>
           </label>
 
-          <span className="initiative-kanban-filters__summary">
-            {filteredActionCount === activeActionCount
-              ? `${activeActionCount} no quadro`
-              : `${filteredActionCount} de ${activeActionCount} visíveis`}
-          </span>
+          <label>
+            <span>Prazo</span>
+            <select
+              value={selectedTiming}
+              onChange={(event) =>
+                setSelectedTiming(
+                  event.target.value as 'all' | 'overdue',
+                )
+              }
+            >
+              <option value="all">Todos os prazos</option>
+              <option value="overdue">
+                Atrasadas ({overdueActionCount})
+              </option>
+            </select>
+          </label>
 
           {hasActiveFilters ? (
             <button
@@ -387,6 +424,18 @@ export function InitiativeKanbanBoard({
           ))}
         </div>
       )}
+
+      {activeActionCount > 0 ? (
+        <footer className="initiative-kanban-board-footer">
+          <span>
+            {selectedTiming === 'overdue'
+              ? `${filteredActionCount} ação(ões) atrasada(s) visível(is)`
+              : filteredActionCount === activeActionCount
+                ? `${activeActionCount} ação(ões) no quadro`
+                : `${filteredActionCount} de ${activeActionCount} ação(ões) visível(is)`}
+          </span>
+        </footer>
+      ) : null}
 
       {selectedCard ? (
         <>

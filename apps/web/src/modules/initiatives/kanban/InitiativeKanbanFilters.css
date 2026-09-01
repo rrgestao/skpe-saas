@@ -13,7 +13,7 @@
 .initiative-kanban-filters label {
   display: grid;
   gap: 0.3rem;
-  min-width: min(15rem, 100%);
+  min-width: min(13.5rem, 100%);
 }
 
 .initiative-kanban-filters label span {
@@ -30,10 +30,6 @@
   font: inherit;
 }
 
-.initiative-kanban-filters__summary {
-  margin-left: auto;
-  font-size: 0.78rem;
-}
 
 .initiative-kanban-filters__clear {
   min-height: 2.35rem;

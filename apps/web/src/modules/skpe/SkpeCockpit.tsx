@@ -34,6 +34,7 @@ import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
 import { InitiativeDataExplorerBeta } from '../initiatives/explorer/InitiativeDataExplorerBeta'
+import '../initiatives/InitiativeWorkspace.css'
 import { InitiativeEconomicExecutionDialog } from '../initiatives/economics/InitiativeEconomicExecutionDialog'
 import type {
   InitiativePortfolioDashboardRow,
@@ -1829,7 +1830,7 @@ function InitiativesSection({
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
   const [initiativeWorkspaceTab, setInitiativeWorkspaceTab] =
-    useState<'kanban' | 'economics'>('kanban')
+    useState<'summary' | 'kanban' | 'economics'>('summary')
   const [eventInitiativeId, setEventInitiativeId] =
     useState<string | null>(null)
   const [economicInitiativeId, setEconomicInitiativeId] =
@@ -1854,7 +1855,7 @@ function InitiativesSection({
 
     setKanbanInitiativeId(requestedInitiativeId)
     setInitiativeViewMode('kanban')
-    setInitiativeWorkspaceTab('kanban')
+    setInitiativeWorkspaceTab('summary')
   }, [initiatives, requestedInitiativeId])
 
   const [lifecycleInitiativeId, setLifecycleInitiativeId] =
@@ -2171,7 +2172,7 @@ function InitiativesSection({
     setKanbanInitiativeId(
       initiative.initiative_id,
     )
-    setInitiativeWorkspaceTab('kanban')
+    setInitiativeWorkspaceTab('summary')
     setInitiativeViewMode('kanban')
   }
 
@@ -2691,6 +2692,7 @@ function InitiativesSection({
       {initiativeViewMode === 'kanban' ? (
         kanbanInitiativeId ? (
           <section className="skpe-initiative-kanban-host">
+            <div className="skpe-initiative-workspace-sticky">
             {requestedInitiativeId === kanbanInitiativeId ? (
               <div
                 style={{
@@ -2738,7 +2740,7 @@ function InitiativesSection({
                       setEventInitiativeId(kanbanInitiativeId)
                     }
                   >
-                    Adicionar à agenda
+                    Agendar evento
                   </button>
                 ) : undefined
               }
@@ -2749,12 +2751,109 @@ function InitiativesSection({
               activeId={initiativeWorkspaceTab}
               onChange={setInitiativeWorkspaceTab}
               tabs={[
+                { id: 'summary', label: 'Resumo' },
                 { id: 'kanban', label: 'Kanban' },
                 { id: 'economics', label: 'Custos e esforço' },
               ]}
             />
+            </div>
 
-            {initiativeWorkspaceTab === 'kanban' ? (
+            {initiativeWorkspaceTab === 'summary' ? (() => {
+              const selectedInitiative = initiatives.find(
+                (initiative) =>
+                  initiative.initiative_id === kanbanInitiativeId,
+              )
+
+              return selectedInitiative ? (
+                <section className="skpe-initiative-summary">
+                  <header>
+                    <div>
+                      <p className="skpe-eyebrow">Visão da iniciativa</p>
+                      <h3>Resumo executivo</h3>
+                    </div>
+                    <span>
+                      {getInitiativeStatusLabel(
+                        selectedInitiative.initiative_status,
+                      )}
+                    </span>
+                  </header>
+
+                  <div className="skpe-initiative-summary-grid">
+                    <article>
+                      <small>Classe</small>
+                      <strong>
+                        {getInitiativeClassLabel(
+                          selectedInitiative.initiative_class,
+                        )}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Área responsável</small>
+                      <strong>
+                        {selectedInitiative.responsible_area_name ??
+                          'Não definida'}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Progresso</small>
+                      <strong>{selectedInitiative.progress}%</strong>
+                    </article>
+                    <article>
+                      <small>Prioridade</small>
+                      <strong>
+                        {selectedInitiative.priority === 'critical'
+                          ? 'Crítica'
+                          : selectedInitiative.priority === 'high'
+                            ? 'Alta'
+                            : selectedInitiative.priority === 'medium'
+                              ? 'Média'
+                              : 'Baixa'}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Início</small>
+                      <strong>
+                        {selectedInitiative.start_date
+                          ? selectedInitiative.start_date
+                              .slice(0, 10)
+                              .split('-')
+                              .reverse()
+                              .join('/')
+                          : 'Não definido'}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Término-alvo</small>
+                      <strong>
+                        {selectedInitiative.target_end_date
+                          ? selectedInitiative.target_end_date
+                              .slice(0, 10)
+                              .split('-')
+                              .reverse()
+                              .join('/')
+                          : 'Não definido'}
+                      </strong>
+                    </article>
+                  </div>
+
+                  {selectedInitiative.initiative_description ? (
+                    <div className="skpe-initiative-summary-description">
+                      <small>Descrição</small>
+                      <p>{selectedInitiative.initiative_description}</p>
+                    </div>
+                  ) : null}
+
+                  <div className="skpe-initiative-summary-next">
+                    <strong>Workspace integrado em evolução</strong>
+                    <span>
+                      Canvas, Cronograma, Agenda, Recursos e Evidências serão
+                      incorporados como novas perspectivas deste mesmo objeto,
+                      sem duplicar dados.
+                    </span>
+                  </div>
+                </section>
+              ) : null
+            })() : initiativeWorkspaceTab === 'kanban' ? (
               <InitiativeKanbanBoard
                 initiativeId={kanbanInitiativeId}
                 canManageInitiatives={canManageInitiatives}

@@ -96,3 +96,34 @@
     justify-content: space-between;
   }
 }
+/* UX-01.1 */
+.sparks-data-explorer-beta__grid {
+  cursor: default;
+}
+
+.sparks-data-explorer-row .wx-cell {
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.sparks-data-explorer-row:hover .wx-cell {
+  background: #f0f7f4;
+  cursor: pointer;
+}
+
+.sparks-data-explorer-row:hover .wx-cell:first-child {
+  box-shadow: inset 3px 0 #25735b;
+}
+
+.sparks-data-explorer-beta footer > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.sparks-data-explorer-beta footer > div strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
