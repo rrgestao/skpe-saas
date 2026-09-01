@@ -2,7 +2,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react'
 
@@ -82,17 +81,6 @@ export function InitiativeKanbanBoard({
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
-  const boardRef = useRef<HTMLDivElement | null>(null)
-
-  const scrollBoardHorizontally = (direction: -1 | 1) => {
-    const board = boardRef.current
-    if (!board) return
-
-    board.scrollBy({
-      left: direction * Math.max(board.clientWidth * 0.72, 320),
-      behavior: 'smooth',
-    })
-  }
 
   const allCards = useMemo(
     () => columns.flatMap((column) => column.cards),
@@ -417,34 +405,12 @@ export function InitiativeKanbanBoard({
           </p>
         </section>
       ) : (
-        <div className="initiative-kanban-scroll-shell">
+        <div
+          className="initiative-kanban-workspace-viewport"
+          aria-label="Área rolável do Kanban"
+          tabIndex={0}
+        >
           <div
-            className="initiative-kanban-horizontal-nav"
-            aria-label="Navegação horizontal do Kanban"
-          >
-            <span>Deslocar quadro</span>
-            <div>
-              <button
-                type="button"
-                onClick={() => scrollBoardHorizontally(-1)}
-                aria-label="Mover Kanban para a esquerda"
-                title="Mover Kanban para a esquerda"
-              >
-                ←
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollBoardHorizontally(1)}
-                aria-label="Mover Kanban para a direita"
-                title="Mover Kanban para a direita"
-              >
-                →
-              </button>
-            </div>
-          </div>
-
-          <div
-            ref={boardRef}
             className="initiative-kanban-board"
             aria-label="Kanban de ações da iniciativa"
           >
