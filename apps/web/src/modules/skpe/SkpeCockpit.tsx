@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import {
   EmptyState,
@@ -1801,6 +1802,12 @@ function InitiativesSection({
   onOpenJourney,
   onOpenMonitoring,
 }: InitiativesSectionProps) {
+  const location = useLocation()
+  const requestedInitiativeId = useMemo(
+    () => new URLSearchParams(location.search).get('initiativeId'),
+    [location.search],
+  )
+
   const [dashboard, setDashboard] = useState<InitiativePortfolioDashboardRow | null>(null)
   const [initiatives, setInitiatives] = useState<InitiativePortfolioRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -1833,6 +1840,21 @@ function InitiativesSection({
     setKanbanInitiativeId(drilldownTarget.initiativeId)
     setInitiativeViewMode('kanban')
   }, [drilldownTarget?.initiativeId, drilldownTarget?.actionId])
+
+  useEffect(() => {
+    if (!requestedInitiativeId) return
+
+    const exists = initiatives.some(
+      (initiative) =>
+        initiative.initiative_id === requestedInitiativeId,
+    )
+
+    if (!exists) return
+
+    setKanbanInitiativeId(requestedInitiativeId)
+    setInitiativeViewMode('kanban')
+    setInitiativeWorkspaceTab('kanban')
+  }, [initiatives, requestedInitiativeId])
 
   const [lifecycleInitiativeId, setLifecycleInitiativeId] =
     useState<string | null>(null)
@@ -2652,6 +2674,23 @@ function InitiativesSection({
       {initiativeViewMode === 'kanban' ? (
         kanbanInitiativeId ? (
           <section className="skpe-initiative-kanban-host">
+            {requestedInitiativeId === kanbanInitiativeId ? (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  marginBottom: '0.6rem',
+                }}
+              >
+                <button
+                  type="button"
+                  className="skpe-user-details-button"
+                  onClick={onOpenJourney}
+                >
+                  Abrir Jornada Estratégica
+                </button>
+              </div>
+            ) : null}
             <ObjectWorkspaceHeader
               eyebrow="Iniciativa selecionada"
               title={

@@ -1,6 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import { useNavigate } from 'react-router-dom'
+
+import { supabase } from '../../../../lib/supabase'
+import { platformRoutes } from '../../app/skpeRoutes'
+import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
 import type { JourneyTemporalRow } from '../../contracts/journey'
+import {
+  loadInitiativeKanbanFilteredBoard,
+  type InitiativeKanbanFilteredCardModel,
+} from '../../../initiatives/kanban/initiativeKanbanFilteredBoardData'
 import { JourneySchedulePlanner } from './JourneySchedulePlanner'
 
 import './JourneyProjectPlan.css'
@@ -13,6 +22,31 @@ type ProjectPlanStage =
   | 'review'
   | 'baseline'
 
+type StrategicProjectBinding = {
+  initiative_id: string
+  binding_type: string
+}
+
+type StrategicProjectInitiative = {
+  id: string
+  code: string
+  name: string
+  initiative_class: string
+  status: string
+  progress: number | string
+  start_date: string | null
+  target_end_date: string | null
+  baseline_start_date: string | null
+  baseline_target_end_date: string | null
+}
+
+type OperationalProjectState = {
+  binding: StrategicProjectBinding | null
+  initiative: StrategicProjectInitiative | null
+  actions: InitiativeKanbanFilteredCardModel[]
+  loading: boolean
+  error: string
+}
 type JourneyProjectPlanProps = {
   organizationId: string
   projectId: string
@@ -81,9 +115,147 @@ export function JourneyProjectPlan({
   formatDate,
   onPlanMaterialized,
 }: JourneyProjectPlanProps) {
+  const navigate = useNavigate()
+  const workspace = useSkpeWorkspace()
   const [activeStage, setActiveStage] = useState<ProjectPlanStage>('scope')
+  const [operational, setOperational] = useState<OperationalProjectState>({
+    binding: null,
+    initiative: null,
+    actions: [],
+    loading: true,
+    error: '',
+  })
 
   const project = rows[0] ?? null
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadOperationalProject() {
+      setOperational((current) => ({
+        ...current,
+        loading: true,
+        error: '',
+      }))
+
+      const bindingResponse = await supabase
+        .from('skpe_project_initiative_bindings')
+        .select('initiative_id, binding_type')
+        .eq('organization_id', organizationId)
+        .eq('skpe_project_id', projectId)
+        .eq('binding_type', 'strategic_plan_implementation')
+        .limit(2)
+
+      if (!mounted) return
+
+      if (bindingResponse.error) {
+        setOperational({
+          binding: null,
+          initiative: null,
+          actions: [],
+          loading: false,
+          error: `Não foi possível carregar o vínculo Jornada ↔ Projeto: ${bindingResponse.error.message}`,
+        })
+        return
+      }
+
+      const bindings = (bindingResponse.data ?? []) as StrategicProjectBinding[]
+
+      if (bindings.length !== 1) {
+        setOperational({
+          binding: bindings[0] ?? null,
+          initiative: null,
+          actions: [],
+          loading: false,
+          error:
+            bindings.length === 0
+              ? 'A Jornada ainda não possui Projeto Estratégico vinculado.'
+              : 'Há mais de um Projeto Estratégico vinculado à mesma Jornada.',
+        })
+        return
+      }
+
+      const binding = bindings[0]
+
+      const initiativeResponse = await supabase
+        .from('sparks_initiatives')
+        .select(
+          'id, code, name, initiative_class, status, progress, start_date, target_end_date, baseline_start_date, baseline_target_end_date',
+        )
+        .eq('organization_id', organizationId)
+        .eq('id', binding.initiative_id)
+        .is('archived_at', null)
+        .maybeSingle()
+
+      if (!mounted) return
+
+      if (initiativeResponse.error || !initiativeResponse.data) {
+        setOperational({
+          binding,
+          initiative: null,
+          actions: [],
+          loading: false,
+          error: initiativeResponse.error
+            ? `Não foi possível carregar o Projeto Estratégico: ${initiativeResponse.error.message}`
+            : 'O vínculo existe, mas a iniciativa correspondente não foi localizada.',
+        })
+        return
+      }
+
+      const initiative =
+        initiativeResponse.data as StrategicProjectInitiative
+
+      try {
+        const columns =
+          await loadInitiativeKanbanFilteredBoard(initiative.id)
+
+        if (!mounted) return
+
+        setOperational({
+          binding,
+          initiative,
+          actions: columns.flatMap((column) => column.cards),
+          loading: false,
+          error: '',
+        })
+      } catch (error) {
+        if (!mounted) return
+
+        setOperational({
+          binding,
+          initiative,
+          actions: [],
+          loading: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Não foi possível carregar as ações do Projeto Estratégico.',
+        })
+      }
+    }
+
+    void loadOperationalProject()
+
+    return () => {
+      mounted = false
+    }
+  }, [organizationId, projectId])
+
+  function openStrategicProject() {
+    if (!operational.initiative || !workspace.route.formulationId) return
+
+    navigate({
+      pathname: platformRoutes.skpe({
+        organizationId,
+        projectId,
+        formulationId: workspace.route.formulationId,
+        section: 'initiatives',
+      }),
+      search: `?initiativeId=${encodeURIComponent(
+        operational.initiative.id,
+      )}`,
+    })
+  }
 
   const metrics = useMemo(() => {
     const activeRows = rows.filter((row) => row.item_status !== 'cancelled')
@@ -112,6 +284,16 @@ export function JourneyProjectPlan({
           first.name.localeCompare(second.name, 'pt-BR'),
       )
 
+    const operationalPeople = Array.from(
+      new Set(
+        operational.actions.flatMap(
+          (action) => action.responsiblePersonNames,
+        ),
+      ),
+    ).sort((first, second) =>
+      first.localeCompare(second, 'pt-BR'),
+    )
+
     return {
       activeRows,
       topLevel,
@@ -125,8 +307,16 @@ export function JourneyProjectPlan({
         (row) =>
           !activeRows.some((candidate) => candidate.parent_item_id === row.item_id),
       ).length,
+      operationalActionCount: operational.actions.length,
+      operationalRootCount: operational.actions.filter(
+        (action) => action.isRoot,
+      ).length,
+      operationalMilestoneCount: operational.actions.filter(
+        (action) => action.actionType === 'milestone',
+      ).length,
+      operationalPeople,
     }
-  }, [rows])
+  }, [rows, operational.actions])
 
   if (!project) return null
 
@@ -159,6 +349,65 @@ export function JourneyProjectPlan({
         </div>
       </header>
 
+      <section
+        className={[
+          'skpe-project-plan-binding',
+          operational.error ? 'has-error' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        aria-label="Vínculo Jornada Estratégica e Projeto Estratégico"
+      >
+        {operational.loading ? (
+          <span>Carregando vínculo Jornada ↔ Projeto...</span>
+        ) : operational.initiative ? (
+          <>
+            <div className="skpe-project-plan-binding-copy">
+              <small>Projeto Estratégico vinculado</small>
+              <strong>
+                {operational.initiative.code} · {operational.initiative.name}
+              </strong>
+              <span>
+                {operational.initiative.status}
+                {' · '}
+                {Number(operational.initiative.progress).toLocaleString(
+                  'pt-BR',
+                  { maximumFractionDigits: 1 },
+                )}
+                %
+              </span>
+            </div>
+
+            <div className="skpe-project-plan-binding-actions">
+              <div className="skpe-project-plan-binding-kpis">
+                <span>
+                  <strong>{metrics.operationalActionCount}</strong> ações/marcos
+                </span>
+                <span>
+                  <strong>{metrics.operationalRootCount}</strong> raízes
+                </span>
+                <span>
+                  <strong>{metrics.operationalMilestoneCount}</strong> marcos
+                </span>
+                <span>
+                  <strong>{metrics.operationalPeople.length}</strong> pessoas
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={openStrategicProject}
+                disabled={!workspace.route.formulationId}
+              >
+                Abrir Projeto Estratégico
+              </button>
+            </div>
+          </>
+        ) : (
+          <span>{operational.error}</span>
+        )}
+      </section>
+
       <nav
         className="skpe-project-plan-stages"
         aria-label="Etapas do Plano do Projeto"
@@ -184,10 +433,11 @@ export function JourneyProjectPlan({
           <div className="skpe-project-plan-panel-heading">
             <div>
               <p className="skpe-eyebrow">1 · Escopo</p>
-              <h3>Estrutura metodológica sugerida</h3>
+              <h3>Estrutura metodológica e Projeto operacional</h3>
               <p>
-                O projeto já nasce com o conteúdo metodológico da Jornada. Antes
-                da Linha de Base, essa estrutura deve ser revisada e confirmada.
+                A Jornada permanece como fonte metodológica. A iniciativa
+                vinculada materializa a execução do mesmo Projeto Estratégico,
+                sem criar uma estrutura operacional concorrente.
               </p>
             </div>
             <div className="skpe-project-plan-kpis">
@@ -195,6 +445,7 @@ export function JourneyProjectPlan({
               <span><strong>{metrics.activeRows.length}</strong> itens ativos</span>
               <span><strong>{metrics.leafCount}</strong> folhas planejáveis</span>
               <span><strong>{metrics.mandatoryCount}</strong> obrigatórios</span>
+              <span><strong>{metrics.operationalActionCount}</strong> materializados</span>
             </div>
           </div>
 
@@ -261,9 +512,16 @@ export function JourneyProjectPlan({
           )}
 
           <div className="skpe-project-plan-callout">
-            Atribuições detalhadas continuam governadas pela Jornada. Este Plano
-            consolida e evidencia essas responsabilidades antes do fechamento da
-            Linha de Base.
+            <strong>Responsabilidades formais no Projeto:</strong>{' '}
+            {metrics.operationalPeople.length > 0
+              ? metrics.operationalPeople.join(', ')
+              : 'ainda não materializadas nas ações.'}
+          </div>
+
+          <div className="skpe-project-plan-callout">
+            A Jornada governa a responsabilidade metodológica; a iniciativa
+            governa a responsabilidade operacional. O Plano do Projeto reconcilia
+            as duas visões antes da Linha de Base.
           </div>
 
           <div className="skpe-project-plan-navigation">
@@ -325,9 +583,11 @@ export function JourneyProjectPlan({
 
           <div className="skpe-project-resource-grid">
             <article>
-              <strong>Equipe identificada</strong>
-              <span>{metrics.people.length} pessoa(s)</span>
-              <small>Derivado das responsabilidades atuais da Jornada.</small>
+              <strong>Equipe formal do Projeto</strong>
+              <span>{metrics.operationalPeople.length} pessoa(s)</span>
+              <small>
+                Fonte: responsabilidades ativas das ações da iniciativa vinculada.
+              </small>
             </article>
             <article>
               <strong>Capacidade quantitativa</strong>

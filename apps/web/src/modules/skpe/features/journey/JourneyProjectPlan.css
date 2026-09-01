@@ -339,3 +339,87 @@
     border-bottom: 0;
   }
 }
+/* JOURNEY-PROJECT-CANONICAL-BINDING-V2 */
+.skpe-project-plan-binding {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #cfe0d9;
+  border-radius: 14px;
+  background: #f5faf8;
+}
+
+.skpe-project-plan-binding.has-error {
+  border-color: #ead8b5;
+  background: #fffaf1;
+}
+
+.skpe-project-plan-binding-copy {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.skpe-project-plan-binding-copy small,
+.skpe-project-plan-binding-copy span,
+.skpe-project-plan-binding > span {
+  color: #65766f;
+  font-size: 0.7rem;
+}
+
+.skpe-project-plan-binding-copy strong {
+  color: #1a4f3f;
+}
+
+.skpe-project-plan-binding-actions {
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+}
+
+.skpe-project-plan-binding-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.skpe-project-plan-binding-kpis span {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #d3e2dc;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #65766f;
+  font-size: 0.68rem;
+}
+
+.skpe-project-plan-binding-actions button {
+  min-height: 38px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #176b53;
+  border-radius: 9px;
+  background: #176b53;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-project-plan-binding-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 900px) {
+  .skpe-project-plan-binding {
+    display: grid;
+  }
+
+  .skpe-project-plan-binding-actions {
+    justify-items: start;
+  }
+
+  .skpe-project-plan-binding-kpis {
+    justify-content: flex-start;
+  }
+}
