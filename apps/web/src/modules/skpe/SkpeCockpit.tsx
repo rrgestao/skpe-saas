@@ -371,15 +371,6 @@ function ArtifactsIcon() {
   )
 }
 
-function EvolutionIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 17a8 8 0 1113.5 1.5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M18 14v5h-5M8 12l3 3 5-6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 function JourneyIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -440,29 +431,6 @@ function InitiativesIcon() {
         stroke="currentColor"
         strokeWidth="1.7"
         strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
-function GovernanceIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M12 3l8 4v5c0 4.5-3.2 7.5-8 9-4.8-1.5-8-4.5-8-9V7l8-4z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-
-      <path
-        d="M9 12l2 2 4-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   )
@@ -7219,22 +7187,6 @@ export function SkpeCockpit({
                 <JourneyIcon />
                 Jornada Estratégica
               </button>
-              <button
-                type="button"
-                className={
-                  activeSection === 'evolution-cycles'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('evolution-cycles')
-                }
-                title="Ciclos de Evolução"
-                hidden={!canViewEvolution}
-              >
-                <EvolutionIcon />
-                Ciclos de Evolução
-              </button>
 
               <button
                 type="button"
@@ -7250,72 +7202,6 @@ export function SkpeCockpit({
                hidden={!canViewInitiatives}>
                 <InitiativesIcon />
                 Iniciativas
-              </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'monitoring'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('monitoring')
-                }
-                title="Monitoramento"
-                hidden={!canViewMonitoring}
-              >
-                <MonitoringIcon />
-                Monitoramento
-              </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'agenda'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('agenda')
-                }
-                title="Agenda"
-                hidden={!canViewAgenda}
-              >
-                <CalendarIcon />
-                Agenda
-              </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'artifacts'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('artifacts')
-                }
-                title="Artefatos e evidências"
-               hidden={!canViewArtifacts}>
-                <ArtifactsIcon />
-                Artefatos e evidências
-              </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'governance'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('governance')
-                }
-                title="Governança"
-               hidden={!canViewGovernance}>
-                <GovernanceIcon />
-                Governança
               </button>
 
               <button
@@ -7512,6 +7398,18 @@ export function SkpeCockpit({
                 <RefreshIcon />
               </button>
             )}
+            {mode === 'module' && canViewAgenda && (
+              <button
+                type="button"
+                className="skpe-cockpit-icon-button"
+                onClick={() => navigateToSection('agenda')}
+                aria-label="Abrir Agenda transversal"
+                title="Agenda"
+              >
+                <CalendarIcon />
+              </button>
+            )}
+
             {mode === 'module' && (
               <button
                 type="button"
@@ -7773,13 +7671,16 @@ export function SkpeCockpit({
             LockIcon={LockIcon}
             InitiativesIcon={InitiativesIcon}
             MonitoringIcon={MonitoringIcon}
+            ArtifactsIcon={ArtifactsIcon}
             canViewInitiatives={canViewInitiatives}
             canViewMonitoring={canViewMonitoring}
+            canViewArtifacts={canViewArtifacts}
             onOpenInitiatives={() => {
               setInitiativeDrilldown(null)
               navigateToSection('initiatives')
             }}
             onOpenMonitoring={() => navigateToSection('monitoring')}
+            onOpenArtifacts={() => navigateToSection('artifacts')}
             organizationId={
               organizationId
             }

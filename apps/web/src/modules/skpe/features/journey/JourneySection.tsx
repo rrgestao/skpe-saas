@@ -231,6 +231,59 @@ function buildJourneyTree(rows: JourneyTemporalRow[]): JourneyItem[] {
   return roots
 }
 
+function getDefaultJourneyFocus(rows: JourneyTemporalRow[]) {
+  const rowMap = new Map(rows.map((row) => [row.item_id, row]))
+  const inProgress = rows.filter((row) => row.item_status === 'in_progress')
+  const expandedIds = new Set<string>()
+
+  for (const row of inProgress) {
+    let current: JourneyTemporalRow | undefined = row
+    const visited = new Set<string>()
+
+    while (current && !visited.has(current.item_id)) {
+      visited.add(current.item_id)
+
+      if (
+        rows.some(
+          (candidate) => candidate.parent_item_id === current?.item_id,
+        )
+      ) {
+        expandedIds.add(current.item_id)
+      }
+
+      current = current.parent_item_id
+        ? rowMap.get(current.parent_item_id)
+        : undefined
+    }
+  }
+
+  const depthOf = (row: JourneyTemporalRow) => {
+    let depth = 0
+    let current: JourneyTemporalRow | undefined = row
+    const visited = new Set<string>()
+
+    while (current?.parent_item_id && !visited.has(current.item_id)) {
+      visited.add(current.item_id)
+      depth += 1
+      current = rowMap.get(current.parent_item_id)
+    }
+
+    return depth
+  }
+
+  const selected =
+    [...inProgress].sort(
+      (first, second) =>
+        depthOf(second) - depthOf(first) ||
+        first.display_order - second.display_order,
+    )[0] ?? null
+
+  return {
+    expandedIds,
+    selectedItemId: selected?.item_id ?? null,
+  }
+}
+
 function countJourneyDescendants(item: JourneyItem): number {
   return item.children.reduce(
     (total, child) => total + 1 + countJourneyDescendants(child),
@@ -279,10 +332,13 @@ type JourneySectionProps = {
   LockIcon: () => ReactNode
   InitiativesIcon: () => ReactNode
   MonitoringIcon: () => ReactNode
+  ArtifactsIcon: () => ReactNode
   canViewInitiatives: boolean
   canViewMonitoring: boolean
+  canViewArtifacts: boolean
   onOpenInitiatives: () => void
   onOpenMonitoring: () => void
+  onOpenArtifacts: () => void
   canManageJourney: boolean
   canGenerateDeliverables: boolean
   onGenerateDeliverables: (item: JourneyRow) => void
@@ -296,10 +352,13 @@ export function JourneySection({
   LockIcon,
   InitiativesIcon,
   MonitoringIcon,
+  ArtifactsIcon,
   canViewInitiatives,
   canViewMonitoring,
+  canViewArtifacts,
   onOpenInitiatives,
   onOpenMonitoring,
+  onOpenArtifacts,
   canManageJourney,
   canGenerateDeliverables,
   onGenerateDeliverables,
@@ -390,8 +449,9 @@ export function JourneySection({
 
     setRows(journeyRows)
 
-    setExpandedItems(new Set())
-    setSelectedItemId(null)
+    const defaultFocus = getDefaultJourneyFocus(journeyRows)
+    setExpandedItems(defaultFocus.expandedIds)
+    setSelectedItemId(defaultFocus.selectedItemId)
 
     setLoading(false)
   }
@@ -629,15 +689,17 @@ export function JourneySection({
                   </button>
                 )}
 
-                {level === 0 && canGenerateDeliverables && (
-                  <button
-                    type="button"
-                    className="skpe-generate-deliverables-button"
-                    onClick={() => onGenerateDeliverables(item)}
-                  >
-                    Gerar entregáveis
-                  </button>
-                )}
+                {canGenerateDeliverables &&
+                  (item.item_type === 'macrophase' ||
+                    item.item_type === 'stage') && (
+                    <button
+                      type="button"
+                      className="skpe-generate-deliverables-button"
+                      onClick={() => onGenerateDeliverables(item)}
+                    >
+                      Gerar artefatos e evidências
+                    </button>
+                  )}
               </div>
             )}
           </div>
@@ -692,6 +754,19 @@ export function JourneySection({
               data-tooltip="Abrir Monitoramento"
             >
               <MonitoringIcon />
+            </button>
+          ) : null}
+
+          {canViewArtifacts ? (
+            <button
+              type="button"
+              className="skpe-context-icon-action"
+              onClick={onOpenArtifacts}
+              aria-label="Abrir Artefatos e evidências"
+              title="Artefatos e evidências"
+              data-tooltip="Artefatos e evidências"
+            >
+              <ArtifactsIcon />
             </button>
           ) : null}
         </div>

@@ -41,14 +41,16 @@ type SvarTask = {
   code: string
   responsible_name: string
   temporal_source: string
+  parent?: string
+  open?: boolean
   type?: 'milestone'
 }
 
 const sourceLabels: Record<TemporalSource, string> = {
   actual: 'Realizado',
   plan: 'Plano vigente',
-  forecast: 'Forecast',
-  baseline: 'Baseline',
+  forecast: 'Previsão operacional',
+  baseline: 'Linha de base',
 }
 
 class SvarRuntimeBoundary extends Component<
@@ -147,6 +149,26 @@ function formatMonth(date: Date) {
 function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
   const projection = useMemo(() => {
     const tasks: SvarTask[] = []
+    const projectableIds = new Set(
+      rows
+        .filter((row) => getProjectableRange(row) !== null)
+        .map((row) => row.item_id),
+    )
+    const currentPath = new Set<string>()
+    const rowMap = new Map(rows.map((row) => [row.item_id, row]))
+
+    for (const row of rows.filter((item) => item.item_status === 'in_progress')) {
+      let current: JourneyTemporalRow | undefined = row
+      const visited = new Set<string>()
+
+      while (current && !visited.has(current.item_id)) {
+        visited.add(current.item_id)
+        currentPath.add(current.item_id)
+        current = current.parent_item_id
+          ? rowMap.get(current.parent_item_id)
+          : undefined
+      }
+    }
 
     for (const row of rows) {
       const range = getProjectableRange(row)
@@ -165,6 +187,11 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
         code: row.item_code,
         responsible_name: row.responsible_name ?? 'Não definido',
         temporal_source: sourceLabels[range.source],
+        parent:
+          row.parent_item_id && projectableIds.has(row.parent_item_id)
+            ? row.parent_item_id
+            : 'skpe-project-program-window',
+        open: currentPath.has(row.item_id),
         type: isActualMilestone ? 'milestone' : undefined,
       })
     }
@@ -194,13 +221,14 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
     ) {
       tasks.unshift({
         id: 'skpe-project-program-window',
-        text: 'Programação global da Jornada',
+        text: 'Projeto Estratégico · Programação global da Jornada',
         start: projectStart,
         end: projectEnd,
-        progress: 0,
+        progress: clampProgress(rows[0]?.project_progress ?? 0),
         code: 'PE',
         responsible_name: 'SPARKs PE',
         temporal_source: 'Janela institucional',
+        open: true,
       })
     }
 
@@ -231,7 +259,7 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
     () => [
       {
         id: 'text',
-        header: 'Tarefa',
+        header: 'Item',
         flexgrow: 2,
       },
       {
@@ -255,7 +283,7 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
       <section className="skpe-svar-gantt-empty">
         <strong>Gantt interativo ainda sem intervalos projetáveis</strong>
         <p>
-          Nenhuma data canônica de realizado, plano, forecast ou baseline está
+          Nenhuma data canônica de realizado, plano, previsão operacional ou linha de base está
           disponível para os itens desta Jornada.
         </p>
       </section>
@@ -283,8 +311,8 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
       {projection.omittedCount > 0 && (
         <div className="skpe-svar-gantt-notice">
           {projection.omittedCount} item(ns) ainda não possuem intervalo
-          planejado, forecast, baseline ou realizado materializado. Nenhuma data
-          de MEGAFASE foi inferida.
+          planejado, previsão operacional, linha de base ou realizado materializado. Nenhuma data
+          de Macrofase foi inferida.
         </div>
       )}
 
