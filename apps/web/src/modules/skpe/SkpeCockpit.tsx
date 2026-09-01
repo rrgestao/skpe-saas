@@ -33,6 +33,7 @@ import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateD
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
+import { InitiativeDataExplorerBeta } from '../initiatives/explorer/InitiativeDataExplorerBeta'
 import { InitiativeEconomicExecutionDialog } from '../initiatives/economics/InitiativeEconomicExecutionDialog'
 import type {
   InitiativePortfolioDashboardRow,
@@ -1824,7 +1825,7 @@ function InitiativesSection({
   const [formMessage, setFormMessage] = useState<ActionMessage | null>(null)
   const [quickFilter, setQuickFilter] = useState('all')
   const [initiativeViewMode, setInitiativeViewMode] =
-    useState<'portfolio' | 'kanban'>('portfolio')
+    useState<'portfolio' | 'explorer' | 'kanban'>('portfolio')
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
   const [initiativeWorkspaceTab, setInitiativeWorkspaceTab] =
@@ -2598,10 +2599,14 @@ function InitiativesSection({
           <h2>
             {initiativeViewMode === 'portfolio'
               ? 'Iniciativas sinalizadas'
-              : 'Kanban da iniciativa'}
+              : initiativeViewMode === 'explorer'
+                ? 'Data Explorer hierárquico'
+                : 'Kanban da iniciativa'}
           </h2>
           <span>
-            {initiativeViewMode === 'portfolio' ? (
+            {initiativeViewMode === 'kanban' ? (
+              'Execução transversal das ações da iniciativa selecionada'
+            ) : (
               <>
                 {filteredInitiatives.length}{' '}
                 iniciativa
@@ -2609,8 +2614,6 @@ function InitiativesSection({
                 encontrada
                 {filteredInitiatives.length === 1 ? '' : 's'}
               </>
-            ) : (
-              'Execução transversal das ações da iniciativa selecionada'
             )}
           </span>
         </div>
@@ -2638,6 +2641,20 @@ function InitiativesSection({
             <button
               type="button"
               className={
+                initiativeViewMode === 'explorer'
+                  ? 'skpe-initiative-view-toggle-active'
+                  : ''
+              }
+              onClick={() =>
+                setInitiativeViewMode('explorer')
+              }
+            >
+              Data Explorer · Beta
+            </button>
+
+            <button
+              type="button"
+              className={
                 initiativeViewMode === 'kanban'
                   ? 'skpe-initiative-view-toggle-active'
                   : ''
@@ -2651,7 +2668,7 @@ function InitiativesSection({
           </div>
 
           {quickFilter !== 'all' &&
-            initiativeViewMode === 'portfolio' && (
+            initiativeViewMode !== 'kanban' && (
               <button
                 type="button"
                 className="skpe-user-details-button"
@@ -2793,6 +2810,11 @@ function InitiativesSection({
           compact
           title="Nenhuma iniciativa encontrada"
           description="Cadastre uma iniciativa ou ajuste os filtros para continuar."
+        />
+      ) : initiativeViewMode === 'explorer' ? (
+        <InitiativeDataExplorerBeta
+          initiatives={filteredInitiatives}
+          onOpenInitiative={openInitiativeKanban}
         />
       ) : (
         <section className="skpe-initiative-list">

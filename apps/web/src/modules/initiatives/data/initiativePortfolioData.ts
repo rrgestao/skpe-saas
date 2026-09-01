@@ -90,13 +90,56 @@ export async function loadInitiativePortfolio(
       InitiativePortfolioDashboardRow[]
   )[0]
 
+  const portfolioRows = (
+    (portfolioResponse.data ?? []) as
+      Omit<InitiativePortfolioRow, 'parent_initiative_id'>[]
+  ).map((row) =>
+    mapPortfolioRow({
+      ...row,
+      parent_initiative_id: null,
+    }),
+  )
+
+  if (portfolioRows.length === 0) {
+    return {
+      dashboard: rawDashboard
+        ? mapDashboardRow(rawDashboard)
+        : null,
+      initiatives: [],
+    }
+  }
+
+  const { data: hierarchyData, error: hierarchyError } =
+    await supabase
+      .from('sparks_initiatives')
+      .select('id, parent_initiative_id')
+      .eq('organization_id', organizationId)
+      .in(
+        'id',
+        portfolioRows.map((initiative) => initiative.initiative_id),
+      )
+
+  if (hierarchyError) {
+    throw new Error(
+      `Não foi possível carregar a hierarquia das iniciativas: ${hierarchyError.message}`,
+    )
+  }
+
+  const parentByInitiative = new Map(
+    (hierarchyData ?? []).map((row) => [
+      row.id as string,
+      (row.parent_initiative_id as string | null) ?? null,
+    ]),
+  )
+
   return {
     dashboard: rawDashboard
       ? mapDashboardRow(rawDashboard)
       : null,
-    initiatives: (
-      (portfolioResponse.data ?? []) as
-        InitiativePortfolioRow[]
-    ).map(mapPortfolioRow),
+    initiatives: portfolioRows.map((initiative) => ({
+      ...initiative,
+      parent_initiative_id:
+        parentByInitiative.get(initiative.initiative_id) ?? null,
+    })),
   }
 }
