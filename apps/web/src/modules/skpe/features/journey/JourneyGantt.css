@@ -634,3 +634,73 @@ button.skpe-gantt-event:focus-visible {
     justify-content: flex-start;
   }
 }
+/* GANTT-UX-REFINEMENT-V27 */
+.skpe-gantt-header > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.skpe-gantt-header > div:first-child > p:not(.skpe-eyebrow):not(.skpe-gantt-event-status) {
+  max-width: none;
+  text-wrap: pretty;
+}
+
+.skpe-gantt-header-actions {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.skpe-gantt-legend {
+  align-items: center;
+}
+
+.skpe-gantt-legend-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  margin-left: auto;
+}
+
+.skpe-gantt-legend-actions .skpe-gantt-icon-action {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid #c8d7d1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #315148;
+  cursor: pointer;
+}
+
+.skpe-gantt-legend-actions .skpe-gantt-icon-action:hover {
+  border-color: #6ca68f;
+  background: #e9f5f0;
+  color: #145d48;
+}
+
+.skpe-gantt-legend-actions .skpe-gantt-icon-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (min-width: 1180px) {
+  .skpe-gantt-header > div:first-child > p:not(.skpe-eyebrow):not(.skpe-gantt-event-status) {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1179px) {
+  .skpe-gantt-header > div:first-child > p:not(.skpe-eyebrow):not(.skpe-gantt-event-status) {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 760px) {
+  .skpe-gantt-legend-actions {
+    margin-left: 0;
+  }
+}

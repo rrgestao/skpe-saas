@@ -879,45 +879,18 @@ export function JourneyGantt({
               className={visibility === 'all' ? 'is-active' : ''}
               onClick={() => setVisibility('all')}
             >
-              Jornada completa
+              Todos os itens
             </button>
             <button
               type="button"
               className={visibility === 'mandatory' ? 'is-active' : ''}
               onClick={() => setVisibility('mandatory')}
             >
-              Jornada obrigatória
+              Somente obrigatórios
             </button>
           </div>
 
-          <div
-            className="skpe-gantt-filter skpe-gantt-hierarchy-actions"
-            role="group"
-            aria-label="Expansão hierárquica do Gantt"
-          >
-            <button
-              type="button"
-              className="skpe-gantt-icon-action"
-              onClick={collapseAll}
-              aria-label="Recolher tudo"
-              title="Recolher tudo"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="skpe-gantt-icon-action"
-              onClick={expandAll}
-              aria-label="Expandir tudo"
-              title="Expandir tudo"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 15l6-6 6 6" />
-              </svg>
-            </button>
-          </div>
+
         </div>
       </header>
 
@@ -928,6 +901,34 @@ export function JourneyGantt({
         <span><i className="skpe-gantt-legend-actual" />Realizado</span>
         <span><i className="skpe-gantt-legend-event" />Evento / agenda</span>
         <span><i className="skpe-gantt-legend-reference" />Data de referência</span>
+        <span
+          className="skpe-gantt-legend-actions"
+          role="group"
+          aria-label="Expansão hierárquica do Gantt"
+        >
+          <button
+            type="button"
+            className="skpe-gantt-icon-action"
+            onClick={collapseAll}
+            aria-label="Recolher tudo"
+            title="Recolher tudo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="skpe-gantt-icon-action"
+            onClick={expandAll}
+            aria-label="Expandir tudo"
+            title="Expandir tudo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </button>
+        </span>
       </div>
 
       <div className="skpe-gantt-scroll">

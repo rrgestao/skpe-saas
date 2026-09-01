@@ -177,7 +177,6 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
   const scales = useMemo(
     () => [
       { unit: 'month', step: 1, format: '%F %Y' },
-      { unit: 'week', step: 1, format: 'Sem. %w' },
     ],
     [],
   )
@@ -201,9 +200,9 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
           <span className="skpe-svar-gantt-beta-kicker">SVAR Gantt OSS</span>
           <h2>Gantt interativo · Beta</h2>
           <p>
-            Primeira projeção estabilizada em modo somente leitura. Nesta etapa,
-            a hierarquia foi temporariamente removida do componente Beta para
-            isolar a renderização do motor SVAR sem alterar a fonte canônica.
+            Primeira projeção estabilizada em modo somente leitura, iniciando
+            pela visão mensal. A granularidade diária será refinada sem voltar
+            à numeração técnica de semanas.
           </p>
         </div>
 
