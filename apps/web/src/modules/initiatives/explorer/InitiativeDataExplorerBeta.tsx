@@ -32,8 +32,12 @@ function classLabel(value: string) {
   const labels: Record<string, string> = {
     program: 'Programa',
     project: 'Projeto',
-    initiative: 'Iniciativa',
+    initiative: 'Iniciativa legada',
     structuring_action: 'Ação estruturante',
+    process: 'Processo',
+    sprint: 'Sprint',
+    task: 'Tarefa',
+    work: 'Trabalho',
   }
 
   return labels[value] ?? value

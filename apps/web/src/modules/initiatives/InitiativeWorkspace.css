@@ -172,3 +172,33 @@
 .skpe-initiative-economic-dialog-header .sparks-icon-action {
   flex: 0 0 auto;
 }
+/* ECONOMICS-PANEL-RECOVERY */
+.skpe-initiative-economic-overlay[data-presentation='panel'] {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.skpe-initiative-economic-overlay[data-presentation='panel'] .skpe-initiative-economic-dialog {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.skpe-initiative-economic-overlay[data-presentation='panel'] .skpe-initiative-economic-dialog-header {
+  position: static;
+  margin: 0;
+  padding: 0.8rem 0.95rem;
+}
+
+.skpe-initiative-economic-overlay[data-presentation='panel'] .skpe-modal-panel {
+  transform: none !important;
+}

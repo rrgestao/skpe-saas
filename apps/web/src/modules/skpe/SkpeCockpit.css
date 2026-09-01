@@ -7173,3 +7173,13 @@ button.skpe-admin-kpi-card:hover,
 .skpe-cockpit-context span {
   display: none;
 }
+/* UX-SHELL-05 - contextual title scale */
+.skpe-cockpit-header {
+  min-height: 68px;
+}
+
+.skpe-cockpit-context strong {
+  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+  font-weight: 820;
+  line-height: 1.08;
+}

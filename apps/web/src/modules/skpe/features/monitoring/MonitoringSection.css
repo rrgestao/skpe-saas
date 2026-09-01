@@ -1133,3 +1133,24 @@ button.skpe-management-timeline-row {
   word-break: normal;
   text-wrap: pretty;
 }
+/* MONITORING-VIEWPORT-01 */
+.skpe-management-timeline-scroll,
+.skpe-execution-matrix-scroll {
+  max-height: clamp(360px, 60vh, 680px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+.skpe-execution-matrix-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+@media (max-height: 760px) {
+  .skpe-management-timeline-scroll,
+  .skpe-execution-matrix-scroll {
+    max-height: 52vh;
+  }
+}

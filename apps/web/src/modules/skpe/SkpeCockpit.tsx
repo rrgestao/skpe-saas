@@ -1770,8 +1770,12 @@ function getInitiativeClassLabel(value: string) {
   const labels: Record<string, string> = {
     program: 'Programa',
     project: 'Projeto',
-    initiative: 'Iniciativa',
+    initiative: 'Iniciativa legada',
     structuring_action: 'Ação estruturante',
+    process: 'Processo',
+    sprint: 'Sprint',
+    task: 'Tarefa',
+    work: 'Trabalho',
   }
   return labels[value] ?? value
 }
@@ -2320,10 +2324,13 @@ function InitiativesSection({
                   )
                 }
               >
-                <option value="strategic_project">Projeto Estratégico</option>
-                <option value="strategic_program">Programa Estratégico</option>
-                <option value="operational_improvement">Melhoria Operacional</option>
-                <option value="process_initiative">Iniciativa de Processo</option>
+                <option value="strategic_project">Projeto</option>
+                <option value="strategic_program">Programa</option>
+                <option value="structuring_action">Ação estruturante</option>
+                <option value="process">Processo</option>
+                <option value="sprint">Sprint</option>
+                <option value="task">Tarefa</option>
+                <option value="work">Trabalho</option>
               </select>
             </label>
 
@@ -2585,10 +2592,13 @@ function InitiativesSection({
           </option>
           <option value="program">Programas</option>
           <option value="project">Projetos</option>
-          <option value="initiative">Iniciativas</option>
           <option value="structuring_action">
             Ações estruturantes
           </option>
+          <option value="process">Processos</option>
+          <option value="sprint">Sprints</option>
+          <option value="task">Tarefas</option>
+          <option value="work">Trabalhos</option>
         </select>
 
         <select

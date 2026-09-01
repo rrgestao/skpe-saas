@@ -1976,26 +1976,21 @@ function App() {
 
 
               <div className="user-badges">
-                {isPlatformSuperAdmin && (
+                {selectedOrganization ? (
+                  <span className="badge badge-organization">
+                    {selectedOrganization.is_organization_admin
+                      ? 'Administrador'
+                      : selectedOrganizationJobTitle ?? 'Participante'}
+                  </span>
+                ) : isPlatformSuperAdmin ? (
                   <span className="badge badge-platform">
                     Super-admin
                   </span>
-                )}
-
-                {selectedOrganization
-                  ?.is_organization_admin && (
-                  <span className="badge badge-organization">
-                    Administrador
+                ) : platformRoles[0] ? (
+                  <span className="badge badge-platform">
+                    {platformRoles[0].role_name}
                   </span>
-                )}
-                  {selectedOrganization &&
-                    !isPlatformSuperAdmin &&
-                    !selectedOrganization.is_organization_admin &&
-                    selectedOrganizationJobTitle && (
-                      <span className="badge badge-context-role">
-                        {selectedOrganizationJobTitle}
-                      </span>
-                    )}
+                ) : null}
               </div>
             </div>
           </button>
