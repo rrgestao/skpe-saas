@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
   EmptyState,
+  IconActionButton,
   MetricCard,
   ObjectWorkspaceHeader,
   WorkspaceTabs,
@@ -2226,27 +2227,15 @@ function InitiativesSection({
             aria-label="Ações do Painel de Iniciativas"
           >
             {canManageInitiatives ? (
-              <button
-                type="button"
-                className="skpe-context-icon-action skpe-context-icon-action-primary"
+              <IconActionButton
+                action="add"
+                label="Nova iniciativa"
+                variant="primary"
                 onClick={() => {
                   resetInitiativeForm()
                   setShowCreateForm(true)
                 }}
-                aria-label="Nova iniciativa"
-                title="Nova iniciativa"
-                data-tooltip="Nova iniciativa"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M12 5v14M5 12h14"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
+              />
             ) : null}
             {canViewJourney ? (
               <button
@@ -2716,59 +2705,39 @@ function InitiativesSection({
           <section className="skpe-initiative-kanban-host skpe-object-workspace-screen">
             <div className="skpe-initiative-workspace-sticky">
               <div className="skpe-object-workspace-backbar">
-                <button
-                  type="button"
-                  className="skpe-user-details-button"
+                <IconActionButton
+                  action="back"
+                  label="Voltar às iniciativas"
+                  variant="ghost"
                   onClick={closeInitiativeWorkspace}
-                >
-                  ← Voltar às iniciativas
-                </button>
-                <span>Workspace da iniciativa</span>
+                />
               </div>
 
             <ObjectWorkspaceHeader
-              eyebrow="Iniciativa selecionada"
               title={
-                <>
-                  {
-                    initiatives.find(
-                      (initiative) =>
-                        initiative.initiative_id === kanbanInitiativeId,
-                    )?.initiative_code
-                  }
-                  {' — '}
-                  {
-                    initiatives.find(
-                      (initiative) =>
-                        initiative.initiative_id === kanbanInitiativeId,
-                    )?.initiative_name
-                  }
-                </>
+                initiatives.find(
+                  (initiative) =>
+                    initiative.initiative_id === kanbanInitiativeId,
+                )?.initiative_name ?? 'Iniciativa'
               }
-              subtitle="Trabalhe sobre a mesma iniciativa alternando apenas a visão necessária."
               actions={
                 <div className="skpe-object-workspace-actions">
                   {canViewJourney ? (
-                    <button
-                      type="button"
-                      className="skpe-user-details-button"
+                    <IconActionButton
+                      action="open"
+                      label="Abrir Jornada Estratégica"
                       onClick={onOpenJourney}
-                    >
-                      Abrir Jornada Estratégica
-                    </button>
+                    />
                   ) : null}
 
                   {canManageInitiatives ? (
-                    <button
-                      type="button"
-                      className="skpe-user-details-button"
-                      title="Criar reunião, compromisso, prazo ou marco vinculado à iniciativa"
+                    <IconActionButton
+                      action="schedule"
+                      label="Agendar evento"
                       onClick={() =>
                         setEventInitiativeId(kanbanInitiativeId)
                       }
-                    >
-                      Agendar evento
-                    </button>
+                    />
                   ) : null}
                 </div>
               }

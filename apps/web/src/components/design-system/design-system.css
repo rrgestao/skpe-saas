@@ -229,3 +229,111 @@ button.sparks-metric-card {
     flex: 1 1 auto;
   }
 }
+/* UX-ICON-00 - semantic action icon system */
+.sparks-icon-action {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid #d4e0db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #36574c;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.sparks-icon-action--md {
+  width: 40px;
+  height: 40px;
+}
+
+.sparks-icon-action--sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.sparks-icon-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sparks-icon-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #91b8aa;
+  background: #f4faf7;
+  color: var(--sparks-accent);
+}
+
+.sparks-icon-action:focus-visible {
+  outline: 3px solid rgb(23 107 83 / 18%);
+  outline-offset: 2px;
+}
+
+.sparks-icon-action--primary {
+  border-color: var(--sparks-accent);
+  background: var(--sparks-accent);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgb(23 107 83 / 16%);
+}
+
+.sparks-icon-action--primary:hover:not(:disabled) {
+  border-color: #125842;
+  background: #125842;
+  color: #ffffff;
+}
+
+.sparks-icon-action--danger {
+  border-color: #efd4d0;
+  background: #fffafa;
+  color: #a63d32;
+}
+
+.sparks-icon-action--danger:hover:not(:disabled) {
+  border-color: #dca79f;
+  background: #fff2f0;
+  color: #8f3027;
+}
+
+.sparks-icon-action--ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sparks-icon-action::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 80;
+  right: 0;
+  top: calc(100% + 8px);
+  width: max-content;
+  max-width: 240px;
+  padding: 0.38rem 0.52rem;
+  border-radius: 7px;
+  background: #173e33;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.sparks-icon-action:hover::after,
+.sparks-icon-action:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}

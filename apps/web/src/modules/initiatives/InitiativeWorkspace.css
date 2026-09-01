@@ -3,9 +3,9 @@
   top: 0.65rem;
   z-index: 25;
   display: grid;
-  gap: 0.65rem;
-  margin-bottom: 1rem;
-  padding: 0.25rem 0 0.65rem;
+  gap: 0.4rem;
+  margin-bottom: 0.45rem;
+  padding: 0.15rem 0 0.35rem;
   background:
     linear-gradient(
       to bottom,
@@ -104,7 +104,7 @@
 
 .skpe-object-workspace-screen {
   display: grid;
-  gap: 1rem;
+  gap: 0.5rem;
   min-width: 0;
 }
 
@@ -139,4 +139,17 @@
   .skpe-object-workspace-actions {
     justify-content: flex-start;
   }
+}
+/* UX-ICON-00 - compact initiative workspace rhythm */
+.skpe-initiative-workspace-sticky .sparks-workspace-tabs {
+  margin: 0;
+}
+
+.skpe-initiative-workspace-sticky .sparks-object-workspace-header {
+  padding: 0.8rem 0.95rem;
+}
+
+.skpe-object-workspace-backbar {
+  min-height: 34px;
+  justify-content: flex-start;
 }

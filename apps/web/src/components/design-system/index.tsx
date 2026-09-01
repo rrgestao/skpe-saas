@@ -2,11 +2,96 @@ import type {
   ButtonHTMLAttributes,
   ReactNode,
 } from 'react'
+import {
+  ArrowLeft,
+  CalendarPlus,
+  Download,
+  Ellipsis,
+  ExternalLink,
+  Eye,
+  Pencil,
+  Plus,
+  Printer,
+  RefreshCw,
+  Save,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react'
 
 import './design-system.css'
 import './workspace-hardening.css'
 import './workspace-hardening'
 
+export type SparksActionIconName =
+  | 'add'
+  | 'edit'
+  | 'delete'
+  | 'view'
+  | 'print'
+  | 'refresh'
+  | 'back'
+  | 'schedule'
+  | 'more'
+  | 'open'
+  | 'save'
+  | 'export'
+
+const sparksActionIcons: Record<SparksActionIconName, LucideIcon> = {
+  add: Plus,
+  edit: Pencil,
+  delete: Trash2,
+  view: Eye,
+  print: Printer,
+  refresh: RefreshCw,
+  back: ArrowLeft,
+  schedule: CalendarPlus,
+  more: Ellipsis,
+  open: ExternalLink,
+  save: Save,
+  export: Download,
+}
+
+type IconActionButtonProps = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'children' | 'title' | 'aria-label'
+> & {
+  action: SparksActionIconName
+  label: string
+  variant?: 'default' | 'primary' | 'danger' | 'ghost'
+  size?: 'sm' | 'md'
+}
+
+export function IconActionButton({
+  action,
+  label,
+  variant = 'default',
+  size = 'md',
+  className = '',
+  type = 'button',
+  ...buttonProps
+}: IconActionButtonProps) {
+  const Icon = sparksActionIcons[action]
+
+  return (
+    <button
+      {...buttonProps}
+      type={type}
+      className={[
+        'sparks-icon-action',
+        `sparks-icon-action--${variant}`,
+        `sparks-icon-action--${size}`,
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      aria-label={label}
+      title={label}
+      data-tooltip={label}
+    >
+      <Icon aria-hidden="true" strokeWidth={1.8} />
+    </button>
+  )
+}
 type MetricCardProps = {
   label: ReactNode
   value: ReactNode
