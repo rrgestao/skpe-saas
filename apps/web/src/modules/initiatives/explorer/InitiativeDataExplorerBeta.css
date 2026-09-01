@@ -67,7 +67,7 @@
 
 .sparks-data-explorer-beta__grid {
   min-width: 0;
-  height: min(68vh, 720px);
+  height: clamp(300px, 46vh, 540px);
   overflow: hidden;
   border: 1px solid #dbe6e1;
   border-radius: 14px;
@@ -126,4 +126,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* UX-INITIATIVES-03 V2 */
+.sparks-data-explorer-beta__toolbar {
+  cursor: help;
+}
+
+.sparks-data-explorer-beta__grid {
+  scrollbar-gutter: stable both-edges;
 }

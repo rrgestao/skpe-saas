@@ -13,7 +13,6 @@ type InitiativeDataExplorerBetaProps = {
 
 type ExplorerRow = {
   id: string
-  code: string
   name: string
   classLabel: string
   statusLabel: string
@@ -75,10 +74,13 @@ function criticalityLabel(value: string) {
 function healthLabel(value: string) {
   const labels: Record<string, string> = {
     healthy: 'Saudável',
+    on_track: 'Saudável',
     attention: 'Atenção',
     at_risk: 'Em risco',
     critical: 'Crítica',
+    completed: 'Concluída',
     unknown: 'Não avaliada',
+    not_assessed: 'Não avaliada',
   }
 
   return labels[value] ?? value
@@ -91,6 +93,7 @@ function riskLabel(value: string) {
     high: 'Alto',
     critical: 'Crítico',
     unknown: 'Não avaliado',
+    not_assessed: 'Não avaliado',
   }
 
   return labels[value] ?? value
@@ -117,7 +120,6 @@ function buildTree(initiatives: InitiativePortfolioRow[]) {
   for (const initiative of initiatives) {
     rowById.set(initiative.initiative_id, {
       id: initiative.initiative_id,
-      code: initiative.initiative_code,
       name: initiative.initiative_name,
       classLabel: classLabel(initiative.initiative_class),
       statusLabel: statusLabel(initiative.initiative_status),
@@ -162,7 +164,6 @@ function buildTree(initiatives: InitiativePortfolioRow[]) {
   const sortRows = (rows: ExplorerRow[]) => {
     rows.sort(
       (first, second) =>
-        first.code.localeCompare(second.code, 'pt-BR') ||
         first.name.localeCompare(second.name, 'pt-BR'),
     )
 
@@ -181,76 +182,70 @@ function buildTree(initiatives: InitiativePortfolioRow[]) {
 
 const columns = [
   {
-    id: 'code',
-    header: 'Código',
-    width: 150,
+    id: 'classLabel',
+    header: 'Tipo',
+    width: 140,
     sort: true,
   },
   {
     id: 'name',
-    header: 'Iniciativa / Projeto',
+    header: 'Iniciativa',
     width: 360,
     treetoggle: true,
     sort: true,
   },
   {
-    id: 'classLabel',
-    header: 'Classe',
-    width: 145,
+    id: 'progressLabel',
+    header: 'Progresso',
+    width: 105,
     sort: true,
   },
   {
     id: 'statusLabel',
     header: 'Situação',
-    width: 145,
+    width: 140,
     sort: true,
   },
   {
     id: 'area',
     header: 'Área',
-    width: 180,
+    width: 170,
     sort: true,
   },
   {
     id: 'priority',
     header: 'Prioridade',
-    width: 120,
+    width: 115,
     sort: true,
   },
   {
     id: 'criticality',
     header: 'Criticidade',
-    width: 120,
-    sort: true,
-  },
-  {
-    id: 'progressLabel',
-    header: 'Progresso',
-    width: 110,
+    width: 115,
     sort: true,
   },
   {
     id: 'startDate',
     header: 'Início',
-    width: 115,
+    width: 110,
     sort: true,
   },
   {
     id: 'targetEndDate',
     header: 'Término',
-    width: 115,
+    width: 110,
     sort: true,
   },
   {
     id: 'health',
     header: 'Saúde',
-    width: 125,
+    width: 120,
     sort: true,
   },
   {
     id: 'risk',
     header: 'Risco',
-    width: 115,
+    width: 110,
     sort: true,
   },
 ]
@@ -288,23 +283,20 @@ export function InitiativeDataExplorerBeta({
 
   return (
     <section className="sparks-data-explorer-beta">
-      <div className="sparks-data-explorer-beta__toolbar">
+      <div
+        className="sparks-data-explorer-beta__toolbar"
+        title="Use a busca e os filtros do Plano de Iniciativas acima. No grid, ordene pelas colunas, navegue pela hierarquia e dê duplo clique para abrir."
+      >
         <div>
           <p>SPARKs Data Explorer · Beta</p>
-          <strong>Portfólio hierárquico de iniciativas</strong>
-          <span>
-            Use a busca e os filtros do Portfólio acima. No grid, ordene pelas
-            colunas, navegue pela hierarquia e dê duplo clique para abrir.
-          </span>
+          <strong>Exploração hierárquica das iniciativas</strong>
         </div>
-
-
       </div>
 
       <div
         className="sparks-data-explorer-beta__grid"
         role="region"
-        aria-label="Portfólio hierárquico de iniciativas"
+        aria-label="Exploração hierárquica das iniciativas"
         tabIndex={0}
         title="Selecione uma linha e dê duplo clique para abrir a iniciativa"
         onDoubleClick={() => {
@@ -339,8 +331,7 @@ export function InitiativeDataExplorerBeta({
           </span>
           {selectedInitiative ? (
             <strong>
-              Selecionada: {selectedInitiative.initiative_code} ·{' '}
-              {selectedInitiative.initiative_name}
+              Selecionada: {selectedInitiative.initiative_name}
             </strong>
           ) : null}
         </div>
