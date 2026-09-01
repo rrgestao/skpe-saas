@@ -111,3 +111,14 @@
   overflow-wrap: anywhere;
   color: #815757;
 }
+/* SVAR-TEMPORAL-PROJECTION-V28 */
+.skpe-svar-month-scale-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.skpe-svar-gantt-frame {
+  min-width: 0;
+}

@@ -914,7 +914,7 @@ export function JourneyGantt({
             title="Recolher tudo"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" />
+              <path d="M6 15l6-6 6 6" />
             </svg>
           </button>
           <button
@@ -925,7 +925,7 @@ export function JourneyGantt({
             title="Expandir tudo"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 15l6-6 6 6" />
+              <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
         </span>

@@ -41,6 +41,7 @@ type SvarTask = {
   code: string
   responsible_name: string
   temporal_source: string
+  type?: 'milestone'
 }
 
 const sourceLabels: Record<TemporalSource, string> = {
@@ -113,10 +114,7 @@ function normalizeRange(
   const start = parseDateOnly(resolvedStart)
   const end = parseDateOnly(resolvedEnd)
 
-  if (
-    Number.isNaN(start.getTime()) ||
-    Number.isNaN(end.getTime())
-  ) {
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return null
   }
 
@@ -142,6 +140,10 @@ function clampProgress(value: number) {
   return Math.max(0, Math.min(100, value))
 }
 
+function formatMonth(date: Date) {
+  return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+}
+
 function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
   const projection = useMemo(() => {
     const tasks: SvarTask[] = []
@@ -149,6 +151,10 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
     for (const row of rows) {
       const range = getProjectableRange(row)
       if (!range) continue
+
+      const isActualMilestone =
+        range.source === 'actual' &&
+        range.start.getTime() === range.end.getTime()
 
       tasks.push({
         id: row.item_id,
@@ -159,6 +165,7 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
         code: row.item_code,
         responsible_name: row.responsible_name ?? 'Não definido',
         temporal_source: sourceLabels[range.source],
+        type: isActualMilestone ? 'milestone' : undefined,
       })
     }
 
@@ -168,15 +175,77 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
       return first.code.localeCompare(second.code, 'pt-BR')
     })
 
+    const projectStartValue =
+      rows.find((row) => row.project_start_date)?.project_start_date ?? null
+    const projectEndValue =
+      rows.find((row) => row.project_target_end_date)?.project_target_end_date ??
+      null
+
+    const projectStart = projectStartValue
+      ? parseDateOnly(projectStartValue)
+      : null
+    const projectEnd = projectEndValue ? parseDateOnly(projectEndValue) : null
+
+    if (
+      projectStart &&
+      projectEnd &&
+      !Number.isNaN(projectStart.getTime()) &&
+      !Number.isNaN(projectEnd.getTime())
+    ) {
+      tasks.unshift({
+        id: 'skpe-project-program-window',
+        text: 'Programação global da Jornada',
+        start: projectStart,
+        end: projectEnd,
+        progress: 0,
+        code: 'PE',
+        responsible_name: 'SPARKs PE',
+        temporal_source: 'Janela institucional',
+      })
+    }
+
     return {
       tasks,
-      omittedCount: rows.length - tasks.length,
+      omittedCount:
+        rows.length -
+        tasks.filter((task) => task.id !== 'skpe-project-program-window')
+          .length,
+      projectStart,
+      projectEnd,
     }
   }, [rows])
 
   const scales = useMemo(
     () => [
-      { unit: 'month', step: 1, format: '%F %Y' },
+      {
+        unit: 'month',
+        step: 1,
+        format: formatMonth,
+        css: () => 'skpe-svar-month-scale-cell',
+      },
+    ],
+    [],
+  )
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'text',
+        header: 'Tarefa',
+        flexgrow: 2,
+      },
+      {
+        id: 'start',
+        header: 'Início',
+        width: 120,
+        align: 'center' as const,
+      },
+      {
+        id: 'duration',
+        header: 'Duração',
+        width: 90,
+        align: 'center' as const,
+      },
     ],
     [],
   )
@@ -200,9 +269,9 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
           <span className="skpe-svar-gantt-beta-kicker">SVAR Gantt OSS</span>
           <h2>Gantt interativo · Beta</h2>
           <p>
-            Primeira projeção estabilizada em modo somente leitura, iniciando
-            pela visão mensal. A granularidade diária será refinada sem voltar
-            à numeração técnica de semanas.
+            Visão mensal da janela institucional da Jornada e das datas
+            temporais já materializadas. Registros realizados em um único dia
+            são apresentados como marcos.
           </p>
         </div>
 
@@ -213,8 +282,9 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
 
       {projection.omittedCount > 0 && (
         <div className="skpe-svar-gantt-notice">
-          {projection.omittedCount} item(ns) sem intervalo temporal canônico
-          não foram projetados. Nenhuma data foi inferida.
+          {projection.omittedCount} item(ns) ainda não possuem intervalo
+          planejado, forecast, baseline ou realizado materializado. Nenhuma data
+          de MEGAFASE foi inferida.
         </div>
       )}
 
@@ -223,9 +293,12 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
           <Gantt
             tasks={projection.tasks}
             scales={scales}
+            columns={columns}
+            start={projection.projectStart ?? undefined}
+            end={projection.projectEnd ?? undefined}
             readonly
             cellHeight={42}
-            cellWidth={54}
+            cellWidth={72}
           />
         </Willow>
       </div>
