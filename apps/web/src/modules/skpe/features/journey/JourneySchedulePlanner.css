@@ -1,0 +1,311 @@
+.skpe-schedule-planner {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.skpe-schedule-planner-card,
+.skpe-schedule-planner-header,
+.skpe-schedule-planner-empty,
+.skpe-schedule-approved-banner,
+.skpe-schedule-approval-panel,
+.skpe-schedule-readonly-items {
+  border: 1px solid #dce5e1;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.skpe-schedule-planner-card,
+.skpe-schedule-planner-empty,
+.skpe-schedule-approved-banner,
+.skpe-schedule-approval-panel,
+.skpe-schedule-readonly-items {
+  padding: 1rem 1.1rem;
+}
+
+.skpe-schedule-planner-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.skpe-schedule-planner-header h2 {
+  margin: 0.15rem 0 0.35rem;
+}
+
+.skpe-schedule-planner-header p {
+  max-width: 760px;
+  margin: 0;
+  color: #63736c;
+  line-height: 1.45;
+}
+
+.skpe-schedule-planner-rules {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.skpe-schedule-planner-rules span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 34px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #d8e5df;
+  border-radius: 999px;
+  background: #f5f9f7;
+  color: #3d554c;
+  font-size: 0.74rem;
+}
+
+.skpe-schedule-create-form,
+.skpe-schedule-reason-row {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.skpe-schedule-create-form label,
+.skpe-schedule-reason-row label,
+.skpe-schedule-version-bar label {
+  display: grid;
+  gap: 0.35rem;
+  color: #4d6158;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.skpe-schedule-create-form input,
+.skpe-schedule-create-form textarea,
+.skpe-schedule-reason-row input,
+.skpe-schedule-version-bar select,
+.skpe-schedule-table input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ccd9d4;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #243c34;
+  font: inherit;
+}
+
+.skpe-schedule-create-form input,
+.skpe-schedule-reason-row input,
+.skpe-schedule-version-bar select,
+.skpe-schedule-table input {
+  min-height: 38px;
+  padding: 0.45rem 0.6rem;
+}
+
+.skpe-schedule-create-form textarea {
+  padding: 0.55rem 0.6rem;
+  resize: vertical;
+}
+
+.skpe-schedule-create-form button,
+.skpe-schedule-actions button,
+.skpe-schedule-approved-banner button {
+  min-height: 38px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #bcd1c8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #185b48;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-schedule-create-form button:hover,
+.skpe-schedule-actions button:hover,
+.skpe-schedule-approved-banner button:hover {
+  background: #edf7f3;
+}
+
+.skpe-schedule-create-form button:disabled,
+.skpe-schedule-actions button:disabled,
+.skpe-schedule-approved-banner button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.skpe-schedule-actions button.is-primary {
+  border-color: #176b53;
+  background: #176b53;
+  color: #ffffff;
+}
+
+.skpe-schedule-version-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #f8fbfa;
+}
+
+.skpe-schedule-version-bar label {
+  flex: 1 1 420px;
+}
+
+.skpe-schedule-version-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.skpe-schedule-version-status span,
+.skpe-schedule-version-status strong {
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: #edf4f1;
+  color: #39554a;
+  font-size: 0.72rem;
+}
+
+.skpe-schedule-readiness {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.skpe-schedule-readiness > div {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #dce5e1;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.skpe-schedule-readiness span {
+  display: block;
+  color: #617169;
+  font-size: 0.7rem;
+}
+
+.skpe-schedule-readiness strong {
+  display: block;
+  margin-top: 0.2rem;
+  color: #193d31;
+  font-size: 1.2rem;
+}
+
+.skpe-schedule-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.skpe-schedule-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.skpe-schedule-table th,
+.skpe-schedule-table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid #e7eeeb;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.skpe-schedule-table th {
+  background: #f4f8f6;
+  color: #4f625a;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.skpe-schedule-table td:first-child {
+  min-width: 300px;
+}
+
+.skpe-schedule-table td:first-child strong,
+.skpe-schedule-table td:first-child span,
+.skpe-schedule-table td:first-child small {
+  display: block;
+}
+
+.skpe-schedule-table td:first-child span {
+  margin-top: 0.12rem;
+  color: #344e44;
+}
+
+.skpe-schedule-table td:first-child small {
+  margin-top: 0.1rem;
+  color: #76847e;
+}
+
+.skpe-schedule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.skpe-schedule-approved-banner,
+.skpe-schedule-approval-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-schedule-approved-banner div,
+.skpe-schedule-approval-panel > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.skpe-schedule-approved-banner span,
+.skpe-schedule-approval-panel span,
+.skpe-schedule-readonly-items p {
+  color: #65756e;
+  font-size: 0.76rem;
+}
+
+.skpe-schedule-missing {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #ead8b5;
+  border-radius: 12px;
+  background: #fffaf1;
+  color: #72541f;
+}
+
+.skpe-schedule-missing summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.skpe-schedule-missing ul {
+  margin: 0.65rem 0 0;
+  padding-left: 1.2rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-schedule-planner-header,
+  .skpe-schedule-version-bar,
+  .skpe-schedule-approved-banner,
+  .skpe-schedule-approval-panel {
+    display: grid;
+  }
+
+  .skpe-schedule-planner-rules,
+  .skpe-schedule-version-status,
+  .skpe-schedule-actions {
+    justify-content: flex-start;
+  }
+
+  .skpe-schedule-readiness {
+    grid-template-columns: 1fr;
+  }
+}

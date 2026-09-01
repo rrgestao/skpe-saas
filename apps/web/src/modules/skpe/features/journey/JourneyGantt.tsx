@@ -267,6 +267,59 @@ function normalizeRange(
     : { start: resolvedEnd, end: resolvedStart }
 }
 
+function buildJourneyChildrenMap(rows: JourneyTemporalRow[]) {
+  const childrenByParent = new Map<string, JourneyTemporalRow[]>()
+
+  for (const row of rows) {
+    if (!row.parent_item_id) continue
+    const children = childrenByParent.get(row.parent_item_id) ?? []
+    children.push(row)
+    childrenByParent.set(row.parent_item_id, children)
+  }
+
+  return childrenByParent
+}
+
+function mergeRanges(ranges: DateRange[]) {
+  if (ranges.length === 0) return null
+
+  let start = ranges[0].start
+  let end = ranges[0].end
+
+  for (const range of ranges.slice(1)) {
+    if (parseDateOnly(range.start) < parseDateOnly(start)) start = range.start
+    if (parseDateOnly(range.end) > parseDateOnly(end)) end = range.end
+  }
+
+  return { start, end }
+}
+
+function getJourneyActualRollupRange(
+  row: JourneyTemporalRow,
+  childrenByParent: Map<string, JourneyTemporalRow[]>,
+): DateRange | null {
+  const ranges: DateRange[] = []
+
+  const own = normalizeRange(row.actual_start_date, row.actual_end_date)
+  if (own) ranges.push(own)
+
+  const visit = (parentId: string) => {
+    for (const child of childrenByParent.get(parentId) ?? []) {
+      if (child.item_status === 'cancelled') continue
+
+      const childRange = normalizeRange(
+        child.actual_start_date,
+        child.actual_end_date,
+      )
+      if (childRange) ranges.push(childRange)
+
+      visit(child.item_id)
+    }
+  }
+
+  visit(row.item_id)
+  return mergeRanges(ranges)
+}
 function getJourneyRange(row: JourneyTemporalRow, kind: GanttBarKind) {
   if (kind === 'baseline') {
     return normalizeRange(row.baseline_start_date, row.baseline_end_date)
@@ -740,6 +793,10 @@ export function JourneyGantt({
 
     return parentIds
   }, [initiativeTemporal])
+  const journeyChildrenByParent = useMemo(
+    () => buildJourneyChildrenMap(rows),
+    [rows],
+  )
   const flattenedRows = useMemo(
     () => flattenJourney(rows, expandedJourneyIds),
     [rows, expandedJourneyIds],
@@ -1004,7 +1061,14 @@ export function JourneyGantt({
                   {renderTimelineBackground(timeline)}
 
                   {kinds.map((kind) => {
-                    const range = getJourneyRange(row, kind)
+                    const canonicalRange = getJourneyRange(row, kind)
+                    const range =
+                      kind === 'actual' && hasChildren
+                        ? getJourneyActualRollupRange(
+                            row,
+                            journeyChildrenByParent,
+                          ) ?? canonicalRange
+                        : canonicalRange
                     if (!range) return null
 
                     return (
@@ -1018,8 +1082,20 @@ export function JourneyGantt({
                           .filter(Boolean)
                           .join(' ')}
                         style={getBarStyle(range, timeline)}
-                        title={getBarTitle(kind, range, formatDate)}
-                        aria-label={getBarTitle(kind, range, formatDate)}
+                        title={
+                          kind === 'actual' &&
+                          hasChildren &&
+                          canonicalRange &&
+                          (canonicalRange.start !== range.start ||
+                            canonicalRange.end !== range.end)
+                            ? `Realizado consolidado dos descendentes: ${formatDate(range.start)} a ${formatDate(range.end)}`
+                            : getBarTitle(kind, range, formatDate)
+                        }
+                        aria-label={
+                          kind === 'actual' && hasChildren
+                            ? `Realizado consolidado: ${formatDate(range.start)} a ${formatDate(range.end)}`
+                            : getBarTitle(kind, range, formatDate)
+                        }
                       />
                     )
                   })}
