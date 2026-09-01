@@ -6,7 +6,7 @@ import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
 import { JourneyEventCreateDialog } from './JourneyEventCreateDialog'
 import { JourneyItemStatusDialog } from './JourneyItemStatusDialog'
 import { JourneyGantt } from './JourneyGantt'
-import { JourneySchedulePlanner } from './JourneySchedulePlanner'
+import { JourneyProjectPlan } from './JourneyProjectPlan'
 import { SvarJourneyGantt } from './SvarJourneyGantt'
 import type {
   JourneyRow,
@@ -317,7 +317,7 @@ export function JourneySection({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [journeyView, setJourneyView] =
-    useState<'structure' | 'planning' | 'gantt' | 'svar'>('structure')
+    useState<'structure' | 'project-plan' | 'gantt' | 'svar'>('structure')
   const [eventDialogItemId, setEventDialogItemId] = useState<string | null>(null)
   const [eventProjectionRevision, setEventProjectionRevision] = useState(0)
 
@@ -791,11 +791,11 @@ export function JourneySection({
             </button>            <button
               type="button"
               role="tab"
-              aria-selected={journeyView === 'planning'}
-              className={journeyView === 'planning' ? 'active' : ''}
-              onClick={() => setJourneyView('planning')}
+              aria-selected={journeyView === 'project-plan'}
+              className={journeyView === 'project-plan' ? 'active' : ''}
+              onClick={() => setJourneyView('project-plan')}
             >
-              Planejamento
+              Plano do Projeto
             </button>
             <button
               type="button"
@@ -832,8 +832,8 @@ export function JourneySection({
           <h2>Nenhuma jornada encontrada</h2>
           <p>Verifique se o projeto estratégico foi criado para esta organização.</p>
         </section>
-      ) : journeyView === 'planning' && project ? (
-        <JourneySchedulePlanner
+      ) : journeyView === 'project-plan' && project ? (
+        <JourneyProjectPlan
           organizationId={organizationId}
           projectId={project.project_id}
           rows={rows}
