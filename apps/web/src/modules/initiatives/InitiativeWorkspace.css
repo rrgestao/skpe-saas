@@ -97,3 +97,46 @@
     grid-template-columns: 1fr;
   }
 }
+/* UX-01.2 - EXPLORER TO WORKSPACE PATTERN */
+.skpe-initiatives-panel-hidden {
+  display: none !important;
+}
+
+.skpe-object-workspace-screen {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.skpe-object-workspace-backbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-object-workspace-backbar > span {
+  color: #6a7a73;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.skpe-object-workspace-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  .skpe-object-workspace-backbar {
+    display: grid;
+  }
+
+  .skpe-object-workspace-actions {
+    justify-content: flex-start;
+  }
+}

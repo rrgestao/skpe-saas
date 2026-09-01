@@ -6668,3 +6668,16 @@ button.skpe-admin-kpi-card:hover,
     left: 0;
   }
 }
+/* UX-ACTIONS-00 - compact contextual actions */
+.skpe-context-icon-action-primary {
+  border-color: #176b53;
+  background: #176b53;
+  color: #fff;
+  box-shadow: 0 6px 16px rgb(23 107 83 / 18%);
+}
+
+.skpe-context-icon-action-primary:hover {
+  background: #125842;
+  border-color: #125842;
+  transform: translateY(-1px);
+}

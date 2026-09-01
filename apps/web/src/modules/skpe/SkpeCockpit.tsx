@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
   EmptyState,
@@ -1805,6 +1805,7 @@ function InitiativesSection({
   onOpenMonitoring,
 }: InitiativesSectionProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const requestedInitiativeId = useMemo(
     () => new URLSearchParams(location.search).get('initiativeId'),
     [location.search],
@@ -2176,6 +2177,27 @@ function InitiativesSection({
     setInitiativeViewMode('kanban')
   }
 
+  const closeInitiativeWorkspace = () => {
+    setKanbanInitiativeId(null)
+    setInitiativeWorkspaceTab('summary')
+    setInitiativeViewMode('portfolio')
+
+    if (requestedInitiativeId) {
+      const params = new URLSearchParams(location.search)
+      params.delete('initiativeId')
+
+      navigate(
+        {
+          pathname: location.pathname,
+          search: params.toString()
+            ? `?${params.toString()}`
+            : '',
+        },
+        { replace: true },
+      )
+    }
+  }
+
   const applyQuickFilter = (filter: string) => {
     setQuickFilter(filter)
     requestAnimationFrame(() => {
@@ -2192,7 +2214,7 @@ function InitiativesSection({
         />
       )}
 
-      <section className="skpe-page-heading skpe-administration-heading">
+      <section className={`skpe-page-heading skpe-administration-heading ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div>
           <p className="skpe-eyebrow">Execução da estratégia</p>
           <h1>Painel de Iniciativas</h1>
@@ -2201,8 +2223,31 @@ function InitiativesSection({
         <div className="skpe-heading-actions">
           <div
             className="skpe-context-icon-actions"
-            aria-label="Atalhos de Iniciativas"
+            aria-label="Ações do Painel de Iniciativas"
           >
+            {canManageInitiatives ? (
+              <button
+                type="button"
+                className="skpe-context-icon-action skpe-context-icon-action-primary"
+                onClick={() => {
+                  resetInitiativeForm()
+                  setShowCreateForm(true)
+                }}
+                aria-label="Nova iniciativa"
+                title="Nova iniciativa"
+                data-tooltip="Nova iniciativa"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 5v14M5 12h14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            ) : null}
             {canViewJourney ? (
               <button
                 type="button"
@@ -2229,17 +2274,12 @@ function InitiativesSection({
               </button>
             ) : null}
           </div>
-          {canManageInitiatives && (
-            <button type="button" className="skpe-primary-action-button skpe-new-initiative-button" onClick={() => { resetInitiativeForm(); setShowCreateForm(true) }}>
-              Nova iniciativa
-            </button>
-          )}
 
         </div>
       </section>
 
       {showCreateForm && (
-        <section className="skpe-initiative-form-card">
+        <section className={`skpe-initiative-form-card ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
           <div className="skpe-card-heading">
             <div>
               <p className="skpe-card-code">Cadastro governado</p>
@@ -2479,7 +2519,7 @@ function InitiativesSection({
       )}
       {dashboard && (
         <section
-          className="skpe-initiative-kpi-grid"
+          className={`skpe-initiative-kpi-grid ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}
           aria-label="Visão consolidada do portfólio transversal"
         >
           <MetricCard
@@ -2527,7 +2567,7 @@ function InitiativesSection({
           />
         </section>
       )}
-      <section className="skpe-initiative-filters">
+      <section className={`skpe-initiative-filters ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div className="skpe-admin-search">
           <SearchIcon />
           <input
@@ -2594,28 +2634,22 @@ function InitiativesSection({
           <option value="cancelled">Canceladas</option>
         </select>
       </section>
-      <section id="skpe-initiative-results" className="skpe-initiative-results-heading">
+      <section id="skpe-initiative-results" className={`skpe-initiative-results-heading ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div>
           <p className="skpe-card-code">Painel analítico</p>
           <h2>
             {initiativeViewMode === 'portfolio'
               ? 'Iniciativas sinalizadas'
-              : initiativeViewMode === 'explorer'
-                ? 'Data Explorer hierárquico'
-                : 'Kanban da iniciativa'}
+              : 'Data Explorer hierárquico'}
           </h2>
           <span>
-            {initiativeViewMode === 'kanban' ? (
-              'Execução transversal das ações da iniciativa selecionada'
-            ) : (
-              <>
-                {filteredInitiatives.length}{' '}
-                iniciativa
-                {filteredInitiatives.length === 1 ? '' : 's'}{' '}
-                encontrada
-                {filteredInitiatives.length === 1 ? '' : 's'}
-              </>
-            )}
+            <>
+              {filteredInitiatives.length}{' '}
+              iniciativa
+              {filteredInitiatives.length === 1 ? '' : 's'}{' '}
+              encontrada
+              {filteredInitiatives.length === 1 ? '' : 's'}
+            </>
           </span>
         </div>
 
@@ -2623,7 +2657,7 @@ function InitiativesSection({
           <div
             className="skpe-initiative-view-toggle"
             role="group"
-            aria-label="Visualização de iniciativas"
+            aria-label="Visualização do painel de iniciativas"
           >
             <button
               type="button"
@@ -2653,19 +2687,7 @@ function InitiativesSection({
               Data Explorer · Beta
             </button>
 
-            <button
-              type="button"
-              className={
-                initiativeViewMode === 'kanban'
-                  ? 'skpe-initiative-view-toggle-active'
-                  : ''
-              }
-              onClick={() =>
-                setInitiativeViewMode('kanban')
-              }
-            >
-              Kanban
-            </button>
+
           </div>
 
           {quickFilter !== 'all' &&
@@ -2691,25 +2713,19 @@ function InitiativesSection({
 
       {initiativeViewMode === 'kanban' ? (
         kanbanInitiativeId ? (
-          <section className="skpe-initiative-kanban-host">
+          <section className="skpe-initiative-kanban-host skpe-object-workspace-screen">
             <div className="skpe-initiative-workspace-sticky">
-            {requestedInitiativeId === kanbanInitiativeId ? (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  marginBottom: '0.6rem',
-                }}
-              >
+              <div className="skpe-object-workspace-backbar">
                 <button
                   type="button"
                   className="skpe-user-details-button"
-                  onClick={onOpenJourney}
+                  onClick={closeInitiativeWorkspace}
                 >
-                  Abrir Jornada Estratégica
+                  ← Voltar às iniciativas
                 </button>
+                <span>Workspace da iniciativa</span>
               </div>
-            ) : null}
+
             <ObjectWorkspaceHeader
               eyebrow="Iniciativa selecionada"
               title={
@@ -2731,18 +2747,30 @@ function InitiativesSection({
               }
               subtitle="Trabalhe sobre a mesma iniciativa alternando apenas a visão necessária."
               actions={
-                canManageInitiatives ? (
-                  <button
-                    type="button"
-                    className="skpe-user-details-button"
-                    title="Criar reunião, compromisso, prazo ou marco vinculado à iniciativa"
-                    onClick={() =>
-                      setEventInitiativeId(kanbanInitiativeId)
-                    }
-                  >
-                    Agendar evento
-                  </button>
-                ) : undefined
+                <div className="skpe-object-workspace-actions">
+                  {canViewJourney ? (
+                    <button
+                      type="button"
+                      className="skpe-user-details-button"
+                      onClick={onOpenJourney}
+                    >
+                      Abrir Jornada Estratégica
+                    </button>
+                  ) : null}
+
+                  {canManageInitiatives ? (
+                    <button
+                      type="button"
+                      className="skpe-user-details-button"
+                      title="Criar reunião, compromisso, prazo ou marco vinculado à iniciativa"
+                      onClick={() =>
+                        setEventInitiativeId(kanbanInitiativeId)
+                      }
+                    >
+                      Agendar evento
+                    </button>
+                  ) : null}
+                </div>
               }
             />
 
