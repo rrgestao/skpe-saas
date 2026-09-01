@@ -13,6 +13,8 @@ export type InitiativePortfolioRow = {
   organization_id: string
   skpe_project_id: string | null
   parent_initiative_id: string | null
+  responsible_name: string | null
+  is_strategic: boolean
 
   category_id: string
   category_code: string

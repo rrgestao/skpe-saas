@@ -97,6 +97,8 @@ export async function loadInitiativePortfolio(
     mapPortfolioRow({
       ...row,
       parent_initiative_id: null,
+      responsible_name: null,
+      is_strategic: Boolean(row.skpe_project_id),
     }),
   )
 
@@ -112,7 +114,7 @@ export async function loadInitiativePortfolio(
   const { data: hierarchyData, error: hierarchyError } =
     await supabase
       .from('sparks_initiatives')
-      .select('id, parent_initiative_id')
+      .select('id, parent_initiative_id, who_text, strategic_theme')
       .eq('organization_id', organizationId)
       .in(
         'id',
@@ -132,6 +134,39 @@ export async function loadInitiativePortfolio(
     ]),
   )
 
+  const responsibleByInitiative = new Map(
+    (hierarchyData ?? []).map((row) => [
+      row.id as string,
+      ((row.who_text as string | null) ?? '').trim() || null,
+    ]),
+  )
+
+  const strategicThemeByInitiative = new Map(
+    (hierarchyData ?? []).map((row) => [
+      row.id as string,
+      ((row.strategic_theme as string | null) ?? '').trim() || null,
+    ]),
+  )
+
+  const { data: objectiveLinks, error: objectiveLinksError } = await supabase
+    .from('skpe_initiative_objectives')
+    .select('initiative_id')
+    .eq('organization_id', organizationId)
+    .in(
+      'initiative_id',
+      portfolioRows.map((initiative) => initiative.initiative_id),
+    )
+
+  if (objectiveLinksError) {
+    throw new Error(
+      `Não foi possível carregar os vínculos estratégicos das iniciativas: ${objectiveLinksError.message}`,
+    )
+  }
+
+  const objectiveLinkedIds = new Set(
+    (objectiveLinks ?? []).map((row) => row.initiative_id as string),
+  )
+
   return {
     dashboard: rawDashboard
       ? mapDashboardRow(rawDashboard)
@@ -140,6 +175,12 @@ export async function loadInitiativePortfolio(
       ...initiative,
       parent_initiative_id:
         parentByInitiative.get(initiative.initiative_id) ?? null,
+      responsible_name:
+        responsibleByInitiative.get(initiative.initiative_id) ?? null,
+      is_strategic:
+        Boolean(initiative.skpe_project_id) ||
+        Boolean(strategicThemeByInitiative.get(initiative.initiative_id)) ||
+        objectiveLinkedIds.has(initiative.initiative_id),
     })),
   }
 }

@@ -125,6 +125,28 @@ function currencyDisplayLabel(currency: string | null | undefined) {
   return code === 'BRL' ? 'R$' : code
 }
 
+function operationalStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    proposed: 'Proposta',
+    under_analysis: 'Em análise',
+    approved: 'Aprovada',
+    planned: 'Planejada',
+    in_progress: 'Em execução',
+    on_hold: 'Em espera',
+    blocked: 'Bloqueada',
+    completed: 'Concluída',
+    cancelled: 'Cancelada',
+    archived: 'Arquivada',
+    draft: 'Rascunho',
+    scheduled: 'Programado',
+    pending: 'Pendente',
+    confirmed: 'Confirmado',
+    done: 'Concluído',
+  }
+
+  return labels[value] ?? value
+}
+
 function countBy<T>(rows: T[], read: (row: T) => string) {
   const counts = new Map<string, number>()
   for (const row of rows) {
@@ -585,10 +607,10 @@ export function MonitoringSection({
 
               <div className="skpe-monitoring-tags">
                 {statusCounts.map(([status, count]) => (
-                  <span key={`action-${status}`}>Ações · {status}: {count}</span>
+                  <span key={`action-${status}`}>Ações · {operationalStatusLabel(status)}: {count}</span>
                 ))}
                 {eventStatusCounts.map(([status, count]) => (
-                  <span key={`event-${status}`}>Agenda · {status}: {count}</span>
+                  <span key={`event-${status}`}>Agenda · {operationalStatusLabel(status)}: {count}</span>
                 ))}
                 {statusCounts.length === 0 && eventStatusCounts.length === 0 && (
                   <span>Sem ações ou eventos registrados.</span>

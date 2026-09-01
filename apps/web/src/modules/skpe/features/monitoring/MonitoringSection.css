@@ -1170,3 +1170,44 @@ button.skpe-management-timeline-row {
 .skpe-horizontal-scroll-top > div {
   min-width: 100%;
 }
+/* UX-MONITORING-04 - compact single-row executive KPIs */
+.skpe-monitoring-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 0.65rem;
+}
+
+.skpe-monitoring-grid article {
+  min-height: 104px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.skpe-monitoring-grid article > span,
+.skpe-monitoring-grid article > strong {
+  text-align: center;
+}
+
+.skpe-monitoring-grid article > small {
+  display: none;
+}
+
+.skpe-monitoring-grid strong {
+  margin-top: 0.28rem;
+  font-size: 1.65rem;
+}
+
+@media (max-width: 1180px) {
+  .skpe-monitoring-grid {
+    overflow-x: auto;
+    grid-template-columns: repeat(6, minmax(150px, 1fr)) !important;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-width: 900px) {
+  .skpe-monitoring-grid {
+    grid-template-columns: repeat(6, minmax(150px, 1fr)) !important;
+  }
+}

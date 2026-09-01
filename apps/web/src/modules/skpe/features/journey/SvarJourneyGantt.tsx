@@ -41,9 +41,9 @@ type SvarTask = {
   code: string
   responsible_name: string
   temporal_source: string
-  parent?: string
+  parent?: string | number
   open?: boolean
-  type?: 'milestone'
+  type?: 'milestone' | 'summary'
 }
 
 const sourceLabels: Record<TemporalSource, string> = {
@@ -228,7 +228,9 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
         code: 'PE',
         responsible_name: 'SPARKs PE',
         temporal_source: 'Janela institucional',
+        parent: 0,
         open: true,
+        type: 'summary',
       })
     }
 
@@ -320,6 +322,7 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
         <Willow>
           <Gantt
             tasks={projection.tasks}
+            links={[]}
             scales={scales}
             columns={columns}
             start={projection.projectStart ?? undefined}

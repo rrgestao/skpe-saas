@@ -76,6 +76,47 @@ function SyncedHorizontalViewport({
   )
 }
 
+function temporalStateLabel(value: string | null | undefined) {
+  const labels: Record<string, string> = {
+    cancelled: 'Cancelado',
+    unscheduled: 'Sem programação institucional',
+    completed_without_actual_end: 'Concluído sem data real de término',
+    completed_on_time: 'Concluído no prazo',
+    completed_late: 'Concluído com atraso',
+    blocked: 'Bloqueado',
+    completion_overdue: 'Conclusão em atraso',
+    start_overdue: 'Início em atraso',
+    on_schedule: 'No prazo',
+    actual_start_unknown: 'Início real não informado',
+    actual_end_unknown: 'Término real não informado',
+    planned_start_unknown: 'Início planejado não informado',
+    planned_end_unknown: 'Término planejado não informado',
+    current_plan_start_unknown: 'Início do plano vigente não informado',
+    current_plan_end_unknown: 'Término do plano vigente não informado',
+    forecast_start_unknown: 'Início da previsão não informado',
+    forecast_end_unknown: 'Término da previsão não informado',
+    baseline_start_unknown: 'Início da linha de base não informado',
+    baseline_end_unknown: 'Término da linha de base não informado',
+    ok: 'Consistente',
+  }
+
+  return value ? labels[value] ?? value : 'Não informado'
+}
+
+function journeyItemTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    macrophase: 'Macrofase',
+    phase: 'Fase',
+    stage: 'Etapa',
+    activity: 'Atividade',
+    deliverable: 'Entregável',
+    gate: 'Gate',
+    milestone: 'Marco',
+  }
+
+  return labels[value] ?? value
+}
+
 type TimelineBarsProps = {
   window: MonitoringTimelineWindow
   planStart: string | null
@@ -294,7 +335,7 @@ export function ManagementTimeline({
           <span>Prazo previsto × realizado</span>
           <h2>Linha do tempo gerencial</h2>
           <p>
-            Plano vigente, forecast e execução real são
+            Plano vigente, previsão operacional e execução real são
             apresentados separadamente. Os marcos da Agenda
             permanecem eventos canônicos vinculados aos itens
             da Jornada.
@@ -355,9 +396,9 @@ export function ManagementTimeline({
               type="button"
               className="skpe-monitoring-icon-action"
               onClick={() => onOpenInitiatives()}
-              aria-label="Abrir Iniciativas e Kanban"
-              title="Abrir Iniciativas e Kanban"
-              data-tooltip="Abrir Iniciativas e Kanban"
+              aria-label="Abrir Plano de Ação"
+              title="Abrir Plano de Ação"
+              data-tooltip="Abrir Plano de Ação"
             >
               <InitiativesIcon />
             </button>
@@ -397,13 +438,13 @@ export function ManagementTimeline({
                       paddingLeft: `${depth * 0.85}rem`,
                     }}
                   >
-                    <small>{row.item_type}</small>
+                    <small>{journeyItemTypeLabel(row.item_type)}</small>
                     <strong>
                       {row.item_code} · {row.item_name}
                     </strong>
                     <span>
                       {Math.round(row.item_progress)}% ·{' '}
-                      {row.temporal_state}
+                      {temporalStateLabel(row.temporal_state)}
                       {rowEvents.length > 0
                         ? ` · ${rowEvents.length} evento(s)`
                         : ''}
@@ -448,7 +489,7 @@ export function ManagementTimeline({
         <header>
           <div>
             <span>Execução transversal</span>
-            <h3>Iniciativa e ações</h3>
+            <h3>Plano de Ação e execução</h3>
           </div>
           <button
             type="button"
@@ -485,7 +526,7 @@ export function ManagementTimeline({
                     {row.code} · {row.name}
                   </strong>
                   <span>
-                    {row.temporal_state ?? '—'}
+                    {temporalStateLabel(row.temporal_state)}
                     {row.is_completion_overdue
                       ? ` · atraso ${row.days_completion_overdue} dia(s)`
                       : ''}

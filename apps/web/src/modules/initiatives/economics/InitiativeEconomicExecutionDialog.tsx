@@ -287,7 +287,7 @@ export function InitiativeEconomicExecutionDialog({
       className="skpe-modal-backdrop skpe-initiative-economic-overlay"
       role="presentation"
       data-presentation={presentation}
-      onMouseDown={(event) => {
+      onClick={(event) => {
         if (
           event.target === event.currentTarget &&
           !saving
@@ -301,7 +301,7 @@ export function InitiativeEconomicExecutionDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="skpe-initiative-economic-title"
-        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="skpe-card-heading skpe-initiative-economic-dialog-header">
           <div>

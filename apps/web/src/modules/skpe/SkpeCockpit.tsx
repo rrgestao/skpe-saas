@@ -37,6 +37,7 @@ import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoa
 import { InitiativeDataExplorerBeta } from '../initiatives/explorer/InitiativeDataExplorerBeta'
 import '../initiatives/InitiativeWorkspace.css'
 import { InitiativeEconomicExecutionDialog } from '../initiatives/economics/InitiativeEconomicExecutionDialog'
+import { InitiativeScheduleWorkspace } from '../initiatives/schedule/InitiativeScheduleWorkspace'
 import type {
   InitiativePortfolioDashboardRow,
   InitiativePortfolioRow,
@@ -1804,7 +1805,7 @@ function InitiativesSection({
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
   const [initiativeWorkspaceTab, setInitiativeWorkspaceTab] =
-    useState<'summary' | 'kanban' | 'economics'>('summary')
+    useState<'summary' | 'schedule' | 'kanban' | 'economics'>('summary')
   const [eventInitiativeId, setEventInitiativeId] =
     useState<string | null>(null)
   const [economicInitiativeId, setEconomicInitiativeId] =
@@ -2190,7 +2191,7 @@ function InitiativesSection({
       <section className={`skpe-page-heading skpe-administration-heading skpe-initiatives-context-actions ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div className="skpe-shell-consumed-page-heading" aria-hidden="true">
           <p className="skpe-eyebrow">Execução da estratégia</p>
-          <h1>Painel de Iniciativas</h1>
+          <h1>Plano de Ação</h1>
           <p>Acompanhe as iniciativas estratégicas e sua execução governada.</p>
         </div>
         <div className="skpe-heading-actions">
@@ -2545,7 +2546,7 @@ function InitiativesSection({
             onChange={(e) =>
               setSearchTerm(e.target.value)
             }
-            placeholder="Buscar no Plano de Iniciativas"
+            placeholder="Buscar no Plano de Ação"
           />
         </div>
 
@@ -2725,6 +2726,7 @@ function InitiativesSection({
               onChange={setInitiativeWorkspaceTab}
               tabs={[
                 { id: 'summary', label: 'Resumo' },
+                { id: 'schedule', label: 'Cronograma' },
                 { id: 'kanban', label: 'Kanban' },
                 { id: 'economics', label: 'Custos e esforço' },
               ]}
@@ -2819,12 +2821,26 @@ function InitiativesSection({
                   <div className="skpe-initiative-summary-next">
                     <strong>Workspace integrado em evolução</strong>
                     <span>
-                      Canvas, Cronograma, Agenda, Recursos e Evidências serão
+                      Canvas, Agenda, Recursos e Evidências serão
                       incorporados como novas perspectivas deste mesmo objeto,
                       sem duplicar dados.
                     </span>
                   </div>
                 </section>
+              ) : null
+            })() : initiativeWorkspaceTab === 'schedule' ? (() => {
+              const selectedInitiative = initiatives.find(
+                (initiative) =>
+                  initiative.initiative_id === kanbanInitiativeId,
+              )
+
+              return selectedInitiative ? (
+                <InitiativeScheduleWorkspace
+                  organizationId={organizationId}
+                  initiativeId={selectedInitiative.initiative_id}
+                  initiativeName={selectedInitiative.initiative_name}
+                  skpeProjectId={selectedInitiative.skpe_project_id}
+                />
               ) : null
             })() : initiativeWorkspaceTab === 'kanban' ? (
               <InitiativeKanbanBoard
@@ -7075,7 +7091,7 @@ export function SkpeCockpit({
       case 'evolution-cycles':
         return 'Ciclos de Evolução'
       case 'initiatives':
-        return 'Painel de Iniciativas'
+        return 'Plano de Ação'
       case 'monitoring':
         return 'Monitoramento'
       case 'agenda':
@@ -7188,6 +7204,47 @@ export function SkpeCockpit({
                 Jornada Estratégica
               </button>
 
+              {canViewJourney ? (
+                <details className="skpe-nav-journey-disclosure">
+                  <summary title="Abrir conteúdo da Jornada">
+                    Conteúdo da Jornada
+                  </summary>
+
+                  <div className="skpe-nav-submenu" aria-label="Submenu da Jornada Estratégica">
+                    <button
+                      type="button"
+                      className={activeSection === 'journey' ? 'skpe-nav-submenu-active' : ''}
+                      onClick={() => navigateToSection('journey')}
+                      title="Estrutura e evolução da Jornada"
+                    >
+                      <span>Jornada</span>
+                    </button>
+
+                    {canViewMonitoring ? (
+                      <button
+                        type="button"
+                        className={activeSection === 'monitoring' ? 'skpe-nav-submenu-active' : ''}
+                        onClick={() => navigateToSection('monitoring')}
+                        title="Monitoramento estratégico"
+                      >
+                        <span>Monitoramento</span>
+                      </button>
+                    ) : null}
+
+                    {canViewArtifacts ? (
+                      <button
+                        type="button"
+                        className={activeSection === 'artifacts' ? 'skpe-nav-submenu-active' : ''}
+                        onClick={() => navigateToSection('artifacts')}
+                        title="Artefatos e evidências da Jornada"
+                      >
+                        <span>Artefatos e evidências</span>
+                      </button>
+                    ) : null}
+                  </div>
+                </details>
+              ) : null}
+
               <button
                 type="button"
                 className={
@@ -7198,10 +7255,10 @@ export function SkpeCockpit({
                 onClick={() =>
                   navigateToSection('initiatives')
                 }
-                title="Iniciativas"
+                title="Plano de Ação"
                hidden={!canViewInitiatives}>
                 <InitiativesIcon />
-                Iniciativas
+                Plano de Ação
               </button>
 
               <button
@@ -7845,7 +7902,16 @@ export function SkpeCockpit({
         title="Voltar ao início da tela"
         aria-label="Voltar ao início da tela"
       >
-        ↑
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M6.5 14.5 12 9l5.5 5.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
     </div>
   )

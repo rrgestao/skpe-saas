@@ -135,3 +135,29 @@
 .sparks-data-explorer-beta__grid {
   scrollbar-gutter: stable both-edges;
 }
+/* UX-ROADMAP-03 V2 - configurable analytic hierarchy */
+.sparks-data-explorer-beta__toolbar {
+  align-items: end;
+}
+
+.sparks-data-explorer-beta__grouping {
+  display: grid;
+  gap: 0.3rem;
+  min-width: min(520px, 100%);
+}
+
+.sparks-data-explorer-beta__grouping span {
+  color: #64766e;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sparks-data-explorer-beta__grouping select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #d6e0db;
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  background: #fff;
+  color: #1f3029;
+}

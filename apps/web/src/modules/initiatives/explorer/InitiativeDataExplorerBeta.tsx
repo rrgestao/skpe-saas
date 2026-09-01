@@ -11,12 +11,22 @@ type InitiativeDataExplorerBetaProps = {
   onOpenInitiative: (initiative: InitiativePortfolioRow) => void
 }
 
+type GroupMode =
+  | 'initiative_hierarchy'
+  | 'area_strategic'
+  | 'area'
+  | 'area_responsible_strategic'
+  | 'responsible_strategic'
+
 type ExplorerRow = {
   id: string
+  initiativeId: string | null
   name: string
   classLabel: string
   statusLabel: string
   area: string
+  responsible: string
+  strategic: string
   priority: string
   criticality: string
   progressLabel: string
@@ -71,10 +81,6 @@ function priorityLabel(value: string) {
   return labels[value] ?? value
 }
 
-function criticalityLabel(value: string) {
-  return priorityLabel(value)
-}
-
 function healthLabel(value: string) {
   const labels: Record<string, string> = {
     healthy: 'Saudável',
@@ -102,16 +108,52 @@ function riskLabel(value: string) {
 
   return labels[value] ?? value
 }
+
 function formatDate(value: string | null) {
   if (!value) return '—'
-
   const [year, month, day] = value.slice(0, 10).split('-')
   if (!year || !month || !day) return value
-
   return `${day}/${month}/${year}`
 }
 
-function buildTree(initiatives: InitiativePortfolioRow[]) {
+function toInitiativeRow(initiative: InitiativePortfolioRow): ExplorerRow {
+  return {
+    id: initiative.initiative_id,
+    initiativeId: initiative.initiative_id,
+    name: initiative.initiative_name,
+    classLabel: classLabel(initiative.initiative_class),
+    statusLabel: statusLabel(initiative.initiative_status),
+    area: initiative.responsible_area_name ?? 'Área não definida',
+    responsible: initiative.responsible_name ?? 'Responsável não definido',
+    strategic: initiative.is_strategic ? 'Estratégica' : 'Não estratégica',
+    priority: priorityLabel(initiative.priority),
+    criticality: priorityLabel(initiative.criticality),
+    progressLabel: `${initiative.progress}%`,
+    startDate: formatDate(initiative.start_date),
+    targetEndDate: formatDate(initiative.target_end_date),
+    health: healthLabel(initiative.health_status),
+    risk: riskLabel(initiative.risk_level),
+    open: false,
+  }
+}
+
+function sortTree(rows: ExplorerRow[]) {
+  rows.sort((first, second) =>
+    first.name.localeCompare(second.name, 'pt-BR'),
+  )
+
+  for (const row of rows) {
+    if (row.data && row.data.length > 0) {
+      sortTree(row.data)
+    } else {
+      delete row.data
+    }
+  }
+
+  return rows
+}
+
+function buildInitiativeTree(initiatives: InitiativePortfolioRow[]) {
   const sourceById = new Map(
     initiatives.map((initiative) => [
       initiative.initiative_id,
@@ -119,26 +161,12 @@ function buildTree(initiatives: InitiativePortfolioRow[]) {
     ]),
   )
 
-  const rowById = new Map<string, ExplorerRow>()
-
-  for (const initiative of initiatives) {
-    rowById.set(initiative.initiative_id, {
-      id: initiative.initiative_id,
-      name: initiative.initiative_name,
-      classLabel: classLabel(initiative.initiative_class),
-      statusLabel: statusLabel(initiative.initiative_status),
-      area: initiative.responsible_area_name ?? 'Não definida',
-      priority: priorityLabel(initiative.priority),
-      criticality: criticalityLabel(initiative.criticality),
-      progressLabel: `${initiative.progress}%`,
-      startDate: formatDate(initiative.start_date),
-      targetEndDate: formatDate(initiative.target_end_date),
-      health: healthLabel(initiative.health_status),
-      risk: riskLabel(initiative.risk_level),
-      open: true,
-      data: [],
-    })
-  }
+  const rowById = new Map(
+    initiatives.map((initiative) => [
+      initiative.initiative_id,
+      { ...toInitiativeRow(initiative), data: [] as ExplorerRow[] },
+    ]),
+  )
 
   const roots: ExplorerRow[] = []
 
@@ -165,35 +193,132 @@ function buildTree(initiatives: InitiativePortfolioRow[]) {
     parent.data.push(row)
   }
 
-  const sortRows = (rows: ExplorerRow[]) => {
-    rows.sort(
-      (first, second) =>
-        first.name.localeCompare(second.name, 'pt-BR'),
-    )
+  return sortTree(roots)
+}
 
-    for (const row of rows) {
-      if (row.data && row.data.length > 0) {
-        sortRows(row.data)
-      } else {
-        delete row.data
+function groupRows(
+  initiatives: InitiativePortfolioRow[],
+  dimensions: Array<{
+    key: string
+    label: (initiative: InitiativePortfolioRow) => string
+    classLabel: string
+  }>,
+): ExplorerRow[] {
+  const root: ExplorerRow[] = []
+
+  const ensureGroup = (
+    rows: ExplorerRow[],
+    id: string,
+    name: string,
+    groupClassLabel: string,
+  ) => {
+    let group = rows.find((row) => row.id === id)
+
+    if (!group) {
+      group = {
+        id,
+        initiativeId: null,
+        name,
+        classLabel: groupClassLabel,
+        statusLabel: '',
+        area: '',
+        responsible: '',
+        strategic: '',
+        priority: '',
+        criticality: '',
+        progressLabel: '',
+        startDate: '',
+        targetEndDate: '',
+        health: '',
+        risk: '',
+        open: true,
+        data: [],
       }
+      rows.push(group)
     }
+
+    return group
   }
 
-  sortRows(roots)
-  return roots
+  for (const initiative of initiatives) {
+    let currentRows = root
+    const keyParts: string[] = []
+
+    dimensions.forEach((dimension) => {
+      const label = dimension.label(initiative)
+      keyParts.push(`${dimension.key}:${label}`)
+      const id = `group:${keyParts.join('|')}`
+      const group = ensureGroup(
+        currentRows,
+        id,
+        label,
+        dimension.classLabel,
+      )
+
+      group.data ??= []
+      currentRows = group.data
+    })
+
+    currentRows.push(toInitiativeRow(initiative))
+  }
+
+  return sortTree(root)
+}
+
+function buildRows(
+  initiatives: InitiativePortfolioRow[],
+  mode: GroupMode,
+) {
+  if (mode === 'initiative_hierarchy') {
+    return buildInitiativeTree(initiatives)
+  }
+
+  const area = {
+    key: 'area',
+    label: (initiative: InitiativePortfolioRow) =>
+      initiative.responsible_area_name ?? 'Área não definida',
+    classLabel: 'Área',
+  }
+
+  const responsible = {
+    key: 'responsible',
+    label: (initiative: InitiativePortfolioRow) =>
+      initiative.responsible_name ?? 'Responsável não definido',
+    classLabel: 'Responsável',
+  }
+
+  const strategic = {
+    key: 'strategic',
+    label: (initiative: InitiativePortfolioRow) =>
+      initiative.is_strategic ? 'Estratégica' : 'Não estratégica',
+    classLabel: 'Vínculo estratégico',
+  }
+
+  if (mode === 'area_strategic') {
+    return groupRows(initiatives, [area, strategic])
+  }
+
+  if (mode === 'area') {
+    return groupRows(initiatives, [area])
+  }
+
+  if (mode === 'area_responsible_strategic') {
+    return groupRows(initiatives, [area, responsible, strategic])
+  }
+
+  return groupRows(initiatives, [responsible, strategic])
 }
 
 const columns = [
   {
     id: 'classLabel',
     header: 'Tipo',
-    width: 140,
+    width: 150,
     sort: true,
   },
   {
     id: 'name',
-    header: 'Iniciativa',
+    header: 'Iniciativa / agrupamento',
     width: 360,
     treetoggle: true,
     sort: true,
@@ -214,6 +339,18 @@ const columns = [
     id: 'area',
     header: 'Área',
     width: 170,
+    sort: true,
+  },
+  {
+    id: 'responsible',
+    header: 'Responsável',
+    width: 180,
+    sort: true,
+  },
+  {
+    id: 'strategic',
+    header: 'Estratégia',
+    width: 135,
     sort: true,
   },
   {
@@ -259,10 +396,12 @@ export function InitiativeDataExplorerBeta({
   onOpenInitiative,
 }: InitiativeDataExplorerBetaProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [groupMode, setGroupMode] =
+    useState<GroupMode>('area_strategic')
 
   const data = useMemo(
-    () => buildTree(initiatives),
-    [initiatives],
+    () => buildRows(initiatives, groupMode),
+    [groupMode, initiatives],
   )
 
   const selectedInitiative =
@@ -277,10 +416,15 @@ export function InitiativeDataExplorerBeta({
     ) => void
   }) {
     api.on('select-row', (event) => {
-      setSelectedId(
+      const id =
         event.id === undefined || event.id === null
           ? null
-          : String(event.id),
+          : String(event.id)
+
+      setSelectedId(
+        id && !id.startsWith('group:')
+          ? id
+          : null,
       )
     })
   }
@@ -289,20 +433,46 @@ export function InitiativeDataExplorerBeta({
     <section className="sparks-data-explorer-beta">
       <div
         className="sparks-data-explorer-beta__toolbar"
-        title="Use a busca e os filtros do Plano de Iniciativas acima. No grid, ordene pelas colunas, navegue pela hierarquia e dê duplo clique para abrir."
+        title="Escolha uma hierarquia, expanda ou recolha os grupos, ordene as colunas e dê duplo clique numa iniciativa para abrir."
       >
         <div>
           <p>SPARKs Data Explorer · Beta</p>
-          <strong>Exploração hierárquica das iniciativas</strong>
+          <strong>Exploração hierárquica do Plano de Ação</strong>
         </div>
+
+        <label className="sparks-data-explorer-beta__grouping">
+          <span>Organizar por</span>
+          <select
+            value={groupMode}
+            onChange={(event) =>
+              setGroupMode(event.target.value as GroupMode)
+            }
+          >
+            <option value="area_strategic">
+              Área → Estratégico/Não estratégico → Iniciativa
+            </option>
+            <option value="area">
+              Área → Iniciativa
+            </option>
+            <option value="area_responsible_strategic">
+              Área → Responsável → Estratégico/Não estratégico → Iniciativa
+            </option>
+            <option value="responsible_strategic">
+              Responsável → Estratégico/Não estratégico → Iniciativa
+            </option>
+            <option value="initiative_hierarchy">
+              Hierarquia própria das iniciativas
+            </option>
+          </select>
+        </label>
       </div>
 
       <div
         className="sparks-data-explorer-beta__grid"
         role="region"
-        aria-label="Exploração hierárquica das iniciativas"
+        aria-label="Exploração hierárquica do Plano de Ação"
         tabIndex={0}
-        title="Selecione uma linha e dê duplo clique para abrir a iniciativa"
+        title="Expanda ou recolha os agrupamentos. Dê duplo clique numa iniciativa para abrir."
         onDoubleClick={() => {
           if (selectedInitiative) {
             onOpenInitiative(selectedInitiative)
@@ -330,8 +500,8 @@ export function InitiativeDataExplorerBeta({
       <footer>
         <div>
           <span>
-            Beta somente leitura · selecione uma linha e dê duplo clique para
-            abrir. Enter também abre a linha selecionada.
+            Somente leitura · agrupamentos analíticos derivados dos mesmos
+            registros canônicos.
           </span>
           {selectedInitiative ? (
             <strong>
