@@ -108,9 +108,8 @@ export function InitiativeClosedActionsPanel({
       <h3>Ações encerradas</h3>
 
       <p>
-        Ações canceladas permanecem fora das cinco
-        colunas operacionais e podem ser arquivadas
-        por lifecycle governado.
+        Ações canceladas permanecem fora das cinco colunas operacionais e
+        podem ser arquivadas conforme o ciclo de vida governado.
       </p>
 
       {actions.length === 0 ? (

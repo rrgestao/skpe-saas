@@ -532,12 +532,62 @@ function App() {
   const [modules, setModules] =
     useState<PlatformModule[]>([])
 
+  const [
+    selectedOrganizationJobTitle,
+    setSelectedOrganizationJobTitle,
+  ] = useState<string | null>(null)
+
   const [organizationNetwork, setOrganizationNetwork] =
     useState<OrganizationNetworkRow[]>([])
 
   const [loadingOrganizationNetwork, setLoadingOrganizationNetwork] =
     useState(false)
 
+  useEffect(() => {
+    if (!session?.user.id || !selectedOrganization?.organization_id) {
+      setSelectedOrganizationJobTitle(null)
+      return
+    }
+
+    let active = true
+
+    const loadSelectedOrganizationJobTitle = async () => {
+      const { data, error } = await supabase
+        .from('organization_memberships')
+        .select('job_title')
+        .eq('organization_id', selectedOrganization.organization_id)
+        .eq('user_id', session.user.id)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (!active) return
+
+      if (error) {
+        console.error(
+          'Nao foi possivel carregar o papel organizacional do usuario:',
+          error,
+        )
+        setSelectedOrganizationJobTitle(null)
+        return
+      }
+
+      const jobTitle =
+        typeof data?.job_title === 'string'
+          ? data.job_title.trim()
+          : ''
+
+      setSelectedOrganizationJobTitle(jobTitle || null)
+    }
+
+    void loadSelectedOrganizationJobTitle()
+
+    return () => {
+      active = false
+    }
+  }, [
+    selectedOrganization?.organization_id,
+    session?.user.id,
+  ])
   const networkSummary = useMemo(() => {
     const rows = organizationNetwork
     const organizationsTotal = rows.length
@@ -1434,7 +1484,8 @@ function App() {
 
   if (organizationAdminOpen && selectedOrganization) {
     return (
-      <SkpeWorkspace
+      <>
+<SkpeWorkspace
         mode="organization-admin"
         initialSection="organization"
         organizationId={
@@ -1465,12 +1516,23 @@ function App() {
         onOpenPlatformAdmin={handleOpenPlatformAdmin}
         onOpenUserProfile={() => setUserProfileOpen(true)}
       />
+<UserProfileDialog
+  open={userProfileOpen}
+  userId={session?.user.id ?? ''}
+  email={session?.user.email ?? ''}
+  onClose={() => setUserProfileOpen(false)}
+  onSaved={() => {
+    setUserProfileRefresh((current) => current + 1)
+  }}
+/>
+</>
     )
   }
 
   if (openedModule && selectedOrganization) {
     return (
-      <SkpeWorkspace
+      <>
+<SkpeWorkspace
         organizationId={
           selectedOrganization.organization_id
         }
@@ -1498,6 +1560,16 @@ function App() {
         onOpenPlatformAdmin={handleOpenPlatformAdmin}
         onOpenUserProfile={() => setUserProfileOpen(true)}
       />
+<UserProfileDialog
+  open={userProfileOpen}
+  userId={session?.user.id ?? ''}
+  email={session?.user.email ?? ''}
+  onClose={() => setUserProfileOpen(false)}
+  onSaved={() => {
+    setUserProfileRefresh((current) => current + 1)
+  }}
+/>
+</>
     )
   }
 
@@ -1902,19 +1974,28 @@ function App() {
                 {userDisplayName || session.user.email}
               </strong>
 
+
               <div className="user-badges">
                 {isPlatformSuperAdmin && (
                   <span className="badge badge-platform">
-                    SUPER-ADMIN
+                    Super-admin
                   </span>
                 )}
 
                 {selectedOrganization
                   ?.is_organization_admin && (
                   <span className="badge badge-organization">
-                    Admin
+                    Administrador
                   </span>
                 )}
+                  {selectedOrganization &&
+                    !isPlatformSuperAdmin &&
+                    !selectedOrganization.is_organization_admin &&
+                    selectedOrganizationJobTitle && (
+                      <span className="badge badge-context-role">
+                        {selectedOrganizationJobTitle}
+                      </span>
+                    )}
               </div>
             </div>
           </button>

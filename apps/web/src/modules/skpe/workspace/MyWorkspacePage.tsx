@@ -67,6 +67,9 @@ type MyWorkspacePageProps = {
   startingProject: boolean
   onStartProject: () => void
   onNavigate: (section: WorkspaceNavigationSection) => void
+  personalWorkspaceOverlay?: 'favorites' | 'dashboards' | 'notifications' | null
+  onClosePersonalWorkspaceOverlay?: () => void
+  onUnreadNotificationCountChange?: (count: number) => void
 }
 
 type ResolvedDashboard = {
@@ -274,17 +277,18 @@ function getFavoriteDashboardIds(
 
 export function MyWorkspacePage({
   organizationId,
-  organizationName,
   organizationCode,
   project,
   availableContext,
   capabilities,
-  isReadOnly,
   applyPrimaryLanding = false,
   canStartProject,
   startingProject,
   onStartProject,
   onNavigate,
+  personalWorkspaceOverlay = null,
+  onClosePersonalWorkspaceOverlay,
+  onUnreadNotificationCountChange,
 }: MyWorkspacePageProps) {
   const primaryLandingAppliedRef = useRef(false)
 
@@ -307,9 +311,22 @@ export function MyWorkspacePage({
   const [favoritesFeedback, setFavoritesFeedback] =
     useState<PreferenceFeedback>(null)
 
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [activeResponsibilityPanel, setActiveResponsibilityPanel] =
     useState<PersonalResponsibilityPanel>('pending')
+
+  useEffect(() => {
+    if (!personalWorkspaceOverlay || !onClosePersonalWorkspaceOverlay) return
+
+    const handlePersonalOverlayEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      onClosePersonalWorkspaceOverlay()
+    }
+
+    document.addEventListener('keydown', handlePersonalOverlayEscape)
+    return () =>
+      document.removeEventListener('keydown', handlePersonalOverlayEscape)
+  }, [personalWorkspaceOverlay, onClosePersonalWorkspaceOverlay])
 
   const dashboards = useMemo(
     () =>
@@ -348,11 +365,6 @@ export function MyWorkspacePage({
     ? persistedPrimaryId
     : fallbackDashboardId
 
-  const effectivePrimaryDashboard = effectivePrimaryId
-    ? WORKSPACE_DASHBOARDS.find(
-        (dashboard) => dashboard.id === effectivePrimaryId,
-      ) ?? null
-    : null
 
   const orderedDashboards = useMemo(() => {
     if (!effectivePrimaryId) return dashboards
@@ -732,122 +744,25 @@ export function MyWorkspacePage({
   const favoritesLoading = favoritesStatus === 'loading'
   const favoritesBusy = savingFavoriteId !== null
 
-  const showPrimaryPreferencePanel =
-    preferenceLoading ||
-    persistedPrimaryId === null ||
-    persistedDashboardIsEligible
 
   return (
     <>
-      <section className="skpe-page-heading">
+      <section className="skpe-page-heading skpe-overview-heading">
         <div>
           <p className="skpe-eyebrow">Meu Espaço de Trabalho</p>
-          <h1>Visão integrada do Planejamento Estratégico</h1>
-          <p>
-            Acompanhe o contexto atual da <strong>{organizationName}</strong>{' '}
-            e acesse as áreas disponíveis conforme suas responsabilidades e
-            permissões.
-          </p>
+          <h1 className="skpe-overview-title">
+            Planejamento Estratégico
+            {project?.strategicHorizon
+              ? ` ${project.strategicHorizon.replace(/[–-]/g, ' - ')}`
+              : ''}
+          </h1>
+
         </div>
 
-        <div className="skpe-heading-status-group">
-          <button
-            type="button"
-            className="skpe-notifications-bell"
-            aria-label={`Abrir notificações. ${unreadNotificationCount} ${
-              unreadNotificationCount === 1 ? 'não lida' : 'não lidas'
-            }`}
-            onClick={() => {
-              document
-                .getElementById('my-notifications-panel')
-                ?.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'start',
-                })
-            }}
-          >
-            <span
-              className="skpe-notifications-bell-icon"
-              aria-hidden="true"
-            >
-              🔔
-            </span>
 
-            {unreadNotificationCount > 0 && (
-              <span className="skpe-notifications-bell-count">
-                {unreadNotificationCount > 99
-                  ? '99+'
-                  : unreadNotificationCount}
-              </span>
-            )}
-          </button>
-
-          <div
-            className={`skpe-status-chip ${
-              isReadOnly ? 'skpe-status-chip-neutral' : ''
-            }`}
-          >
-            {isReadOnly ? 'Somente leitura' : 'Acesso operacional'}
-          </div>
-        </div>
       </section>
 
-      {showPrimaryPreferencePanel && (
-        <section
-          className="skpe-primary-dashboard-panel"
-          aria-labelledby="primary-dashboard-title"
-        >
-        <div>
-          <p className="skpe-card-code">Preferência pessoal</p>
-          <h2 id="primary-dashboard-title">Painel Principal</h2>
 
-          {preferenceLoading ? (
-            <p role="status">Carregando sua preferência...</p>
-          ) : effectivePrimaryDashboard ? (
-            <>
-              <p>
-                <strong>{effectivePrimaryDashboard.label}</strong>
-                {persistedDashboardIsEligible
-                  ? ' é o Painel Principal salvo para esta organização.'
-                  : ' está sendo utilizado como painel padrão neste contexto.'}
-              </p>
-
-
-            </>
-          ) : (
-            <p>
-              Nenhum painel está elegível como principal no contexto atual.
-              O Meu Espaço de Trabalho continuará aberto sem navegação
-              automática.
-            </p>
-          )}
-        </div>
-
-        <div className="skpe-primary-dashboard-actions">
-          {persistedPrimaryId && persistedDashboardIsEligible && (
-            <button
-              type="button"
-              className="skpe-secondary-button"
-              disabled={preferenceBusy}
-              onClick={() => void removePrimaryPreference()}
-            >
-              {removingPreference
-                ? 'Redefinindo...'
-                : 'Usar painel padrão'}
-            </button>
-          )}
-        </div>
-        </section>
-      )}
-
-      {feedback && (
-        <div
-          className={`skpe-action-message skpe-action-message-${feedback.type}`}
-          role={feedback.type === 'error' ? 'alert' : 'status'}
-        >
-          {feedback.text}
-        </div>
-      )}
 
       {project ? (
         <section
@@ -868,12 +783,6 @@ export function MyWorkspacePage({
                 Abrir Jornada Estratégica
               </button>
             }
-          />
-
-          <MetricCard
-            label="Projeto estratégico"
-            value={project.code}
-            helper={project.name}
           />
 
           <MetricCard
@@ -1032,19 +941,72 @@ export function MyWorkspacePage({
         projectId={project?.id ?? null}
       />
 
-      <MyNotificationsPanel
-        organizationId={organizationId}
-        projectId={project?.id ?? null}
-        onUnreadCountChange={setUnreadNotificationCount}
-      />
 
-      <section
-        id="my-favorites-panel"
-        className="skpe-favorites-panel"
-        aria-labelledby="my-favorites-title"
-      >
+      {personalWorkspaceOverlay && (
+        <div
+          className="skpe-personal-panels-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              onClosePersonalWorkspaceOverlay?.()
+            }
+          }}
+        >
+          <aside
+            className="skpe-personal-panels-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={
+              personalWorkspaceOverlay === 'favorites'
+                ? 'Meus Favoritos'
+                : personalWorkspaceOverlay === 'notifications'
+                  ? 'Notificações'
+                  : 'Painéis e acessos'
+            }
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="skpe-personal-panels-drawer-header">
+              <div>
+
+                <h2>
+                  {personalWorkspaceOverlay === 'favorites'
+                    ? 'Meus Favoritos'
+                    : personalWorkspaceOverlay === 'notifications'
+                      ? 'Notificações'
+                      : 'Painéis e acessos'}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="skpe-panel-close"
+                onClick={onClosePersonalWorkspaceOverlay}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </header>
+
+            {personalWorkspaceOverlay === 'notifications' && (
+              <div className="skpe-notifications-drawer-content">
+                <MyNotificationsPanel
+                  organizationId={organizationId}
+                  projectId={project?.id ?? null}
+                  onUnreadCountChange={(count) =>
+                    onUnreadNotificationCountChange?.(count)
+                  }
+                />
+              </div>
+            )}
+
+            <section
+              id="my-favorites-panel"
+              className="skpe-favorites-panel"
+              aria-labelledby="my-favorites-title"
+              hidden={personalWorkspaceOverlay !== 'favorites'}
+            >
         <div>
-          <p className="skpe-card-code">Preferência pessoal</p>
+
           <h2 id="my-favorites-title">Favoritos</h2>
           <p className="skpe-favorites-panel-description">
             Acesse rapidamente os painéis que você marcou como favoritos
@@ -1129,16 +1091,37 @@ export function MyWorkspacePage({
         )}
       </section>
 
-      <section
-        className="skpe-workspace-panels"
-        aria-labelledby="workspace-panels-title"
-      >
+            <section
+              className="skpe-workspace-panels"
+              aria-labelledby="workspace-panels-title"
+              hidden={personalWorkspaceOverlay !== 'dashboards'}
+            >
         <div className="skpe-card-heading">
           <div>
             <p className="skpe-card-code">Acessos contextuais</p>
             <h2 id="workspace-panels-title">Painéis do contexto atual</h2>
           </div>
+
+          {persistedPrimaryId && persistedDashboardIsEligible && (
+            <button
+              type="button"
+              className="skpe-secondary-button"
+              disabled={preferenceBusy}
+              onClick={() => void removePrimaryPreference()}
+            >
+              {removingPreference ? 'Redefinindo...' : 'Usar painel padrão'}
+            </button>
+          )}
         </div>
+
+        {feedback && (
+          <div
+            className={`skpe-action-message skpe-action-message-${feedback.type}`}
+            role={feedback.type === 'error' ? 'alert' : 'status'}
+          >
+            {feedback.text}
+          </div>
+        )}
 
         <div className="skpe-dashboard-grid">
           {orderedDashboards.map((dashboard) => {
@@ -1256,7 +1239,10 @@ export function MyWorkspacePage({
             )
           })}
         </div>
-      </section>
+            </section>
+          </aside>
+        </div>
+      )}
     </>
   )
 }

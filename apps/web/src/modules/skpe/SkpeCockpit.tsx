@@ -966,6 +966,9 @@ function OverviewSection({
   startingProject,
   onStartProject,
   onNavigate,
+  personalWorkspaceOverlay,
+  onClosePersonalWorkspaceOverlay,
+  onUnreadNotificationCountChange,
 }: {
   organizationId: string
   organizationName: string
@@ -981,6 +984,9 @@ function OverviewSection({
   startingProject: boolean
   onStartProject: () => void
   onNavigate: (section: CockpitSection) => void
+  personalWorkspaceOverlay: 'favorites' | 'dashboards' | 'notifications' | null
+  onClosePersonalWorkspaceOverlay: () => void
+  onUnreadNotificationCountChange: (count: number) => void
 }) {
   return (
     <MyWorkspacePage
@@ -1027,6 +1033,9 @@ function OverviewSection({
       startingProject={startingProject}
       onStartProject={onStartProject}
       onNavigate={onNavigate}
+      personalWorkspaceOverlay={personalWorkspaceOverlay}
+      onClosePersonalWorkspaceOverlay={onClosePersonalWorkspaceOverlay}
+      onUnreadNotificationCountChange={onUnreadNotificationCountChange}
     />
   )
 }
@@ -1705,27 +1714,6 @@ function getOrganizationInitials(name: string) {
     .join('') || 'OR'
 }
 
-function getCooperativeBranchLabel(value: string | null | undefined) {
-  if (!value) return 'Ramo não informado'
-
-  const normalized = value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-
-  const labels: Record<string, string> = {
-    agropecuario: 'Ramo Agropecuário',
-    consumo: 'Ramo Consumo',
-    credito: 'Ramo Crédito',
-    infraestrutura: 'Ramo Infraestrutura',
-    saude: 'Ramo Saúde',
-    trabalho_producao_bens_servicos: 'Ramo Trabalho, Produção de Bens e Serviços',
-    transporte: 'Ramo Transporte',
-  }
-
-  return labels[normalized] ?? `Ramo ${value}`
-}
 
 function formatStrategicHorizon(context: StrategicProjectContext | null) {
   const start = context?.planning_horizon_start_year
@@ -1765,6 +1753,13 @@ type InitiativesSectionProps = {
     initiativeId: string
     actionId: string | null
   } | null
+  refreshRequestKey?: number
+  JourneyIcon: () => ReactNode
+  MonitoringIcon: () => ReactNode
+  canViewJourney: boolean
+  canViewMonitoring: boolean
+  onOpenJourney: () => void
+  onOpenMonitoring: () => void
 }
 
 function getInitiativeClassLabel(value: string) {
@@ -1798,6 +1793,13 @@ function InitiativesSection({
   canManageCanvas,
   canManageInitiatives,
   drilldownTarget,
+  refreshRequestKey = 0,
+  JourneyIcon,
+  MonitoringIcon,
+  canViewJourney,
+  canViewMonitoring,
+  onOpenJourney,
+  onOpenMonitoring,
 }: InitiativesSectionProps) {
   const [dashboard, setDashboard] = useState<InitiativePortfolioDashboardRow | null>(null)
   const [initiatives, setInitiatives] = useState<InitiativePortfolioRow[]>([])
@@ -2077,6 +2079,7 @@ function InitiativesSection({
     organizationId,
     typeFilter,
     statusFilter,
+    refreshRequestKey,
   ])
   const openLifecycleAction = (
     initiativeId: string,
@@ -2172,14 +2175,42 @@ function InitiativesSection({
           <p>Acompanhe o portfólio transversal governado de programas, projetos, iniciativas e ações estruturantes.</p>
         </div>
         <div className="skpe-heading-actions">
+          <div
+            className="skpe-context-icon-actions"
+            aria-label="Atalhos de Iniciativas"
+          >
+            {canViewJourney ? (
+              <button
+                type="button"
+                className="skpe-context-icon-action"
+                onClick={onOpenJourney}
+                aria-label="Abrir Jornada Estratégica"
+                title="Abrir Jornada Estratégica"
+                data-tooltip="Abrir Jornada Estratégica"
+              >
+                <JourneyIcon />
+              </button>
+            ) : null}
+
+            {canViewMonitoring ? (
+              <button
+                type="button"
+                className="skpe-context-icon-action"
+                onClick={onOpenMonitoring}
+                aria-label="Abrir Monitoramento"
+                title="Abrir Monitoramento"
+                data-tooltip="Abrir Monitoramento"
+              >
+                <MonitoringIcon />
+              </button>
+            ) : null}
+          </div>
           {canManageInitiatives && (
             <button type="button" className="skpe-primary-action-button skpe-new-initiative-button" onClick={() => { resetInitiativeForm(); setShowCreateForm(true) }}>
               Nova iniciativa
             </button>
           )}
-          <button type="button" className="skpe-refresh-button" onClick={() => void loadInitiatives()} disabled={loading}>
-            <RefreshIcon /> Atualizar painel
-          </button>
+
         </div>
       </section>
 
@@ -2765,26 +2796,41 @@ function InitiativesSection({
                   </p>
                 )}
 
-                <div className="skpe-initiative-meta">
+                <div
+                  className="skpe-initiative-meta"
+                  aria-label="Classificação da iniciativa"
+                >
                   <span>
-                    {getInitiativeClassLabel(
-                      initiative.initiative_class,
-                    )}
+                    <small>Classe</small>
+                    <strong>
+                      {getInitiativeClassLabel(
+                        initiative.initiative_class,
+                      )}
+                    </strong>
                   </span>
 
                   <span>
-                    Categoria: {initiative.category_name}
+                    <small>Categoria</small>
+                    <strong>
+                      {initiative.category_name ?? 'Não definida'}
+                    </strong>
                   </span>
 
                   <span>
-                    Área:{' '}
-                    {initiative.responsible_area_name ??
-                      'Não definida'}
+                    <small>Área</small>
+                    <strong>
+                      {initiative.responsible_area_name ??
+                        'Não definida'}
+                    </strong>
                   </span>
 
                   <span>
-                    Origem técnica:{' '}
-                    {initiative.source_module_code}
+                    <small>Origem</small>
+                    <strong>
+                      {initiative.source_module_code === 'SK-PE'
+                        ? 'Planejamento Estratégico'
+                        : initiative.source_module_code}
+                    </strong>
                   </span>
                 </div>
 
@@ -6651,6 +6697,20 @@ export function SkpeCockpit({
   useEffect(() => {
     if (initialSection) setActiveSection(initialSection)
   }, [initialSection])
+  // SKPE_SECTION_SCROLL_RESET_V21B
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('.skpe-main')?.scrollTo({
+        top: 0,
+        behavior: 'auto',
+      })
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeSection])
 
   const navigateToSection = (section: CockpitSection) => {
     setActiveSection(section)
@@ -6666,6 +6726,14 @@ export function SkpeCockpit({
   } | null>(null)
   const [startingProject, setStartingProject] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [personalWorkspaceOverlay, setPersonalWorkspaceOverlay] =
+    useState<'favorites' | 'dashboards' | 'notifications' | null>(null)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [journeyRefreshRequestKey, setJourneyRefreshRequestKey] = useState(0)
+  const [initiativesRefreshRequestKey, setInitiativesRefreshRequestKey] = useState(0)
+  const [monitoringRefreshRequestKey, setMonitoringRefreshRequestKey] = useState(0)
+  const [agendaRefreshRequestKey, setAgendaRefreshRequestKey] = useState(0)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sparks-theme') === 'dark' ? 'dark' : 'light'))
   const [capabilities, setCapabilities] = useState<SkpeCapabilities | null>(null)
   const [capabilitiesLoading, setCapabilitiesLoading] = useState(mode === 'module')
@@ -6812,6 +6880,45 @@ export function SkpeCockpit({
   }, [organizationId, mode])
 
   useEffect(() => {
+    if (mode !== 'module') {
+      setUnreadNotificationCount(0)
+      return
+    }
+
+    let active = true
+
+    async function loadUnreadNotificationCount() {
+      const { data, error } = await supabase.rpc(
+        'get_my_skpe_notifications',
+        {
+          target_organization_id: organizationId,
+          target_project_id: projectContext?.project_id ?? null,
+          target_formulation_id: null,
+        },
+      )
+
+      if (!active) return
+
+      if (error) {
+        setUnreadNotificationCount(0)
+        return
+      }
+
+      const unreadCount = (data ?? []).filter(
+        (item: { is_read?: boolean }) => item.is_read !== true,
+      ).length
+
+      setUnreadNotificationCount(unreadCount)
+    }
+
+    void loadUnreadNotificationCount()
+
+    return () => {
+      active = false
+    }
+  }, [organizationId, mode, projectContext?.project_id])
+
+  useEffect(() => {
     localStorage.setItem('sparks-theme', theme)
   }, [theme])
 
@@ -6872,22 +6979,6 @@ export function SkpeCockpit({
     if (allowedBySection[activeSection] === false) setActiveSection('overview')
   }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewAgenda, canViewArtifacts, canViewEvolution, canViewGovernance, canViewInitiatives, canViewJourney, canViewMonitoring, canViewOverview, mode])
 
-  const activeSectionLabel: Record<CockpitSection, string> = {
-    overview: 'Visão Geral',
-    journey: 'Jornada Estratégica',
-    'evolution-cycles': 'Ciclos de Evolução',
-    initiatives: 'Iniciativas',
-    monitoring: 'Monitoramento',
-    agenda: 'Agenda',
-    artifacts: 'Artefatos e evidências',
-    governance: 'Governança',
-    organization: 'Cadastro institucional',
-    administration: 'Administração',
-    'governance-roles': 'Papéis e responsabilidades',
-    'organizational-areas': 'Áreas e estrutura',
-    'organization-hierarchy': 'Hierarquia e acessos',
-    domains: 'Tabelas de domínio',
-  }
   return (
     <div className={`skpe-shell skpe-theme-${theme} ${sidebarCollapsed ? 'skpe-sidebar-collapsed' : ''}`}>
       <OrganizationVisualIdentityTheme organizationId={organizationId} />
@@ -6896,8 +6987,10 @@ export function SkpeCockpit({
         <div className="skpe-sidebar-brand">
           <img className="skpe-platform-mascot" src="/sparkoop-mascot.png" alt="Mascote da SPARKOOP" />
           <div className="skpe-sidebar-brand-text">
-            <strong>Plataforma SPARKs</strong>
-</div>
+            <strong>
+              {mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
+            </strong>
+          </div>
           <button
             type="button"
             className="skpe-sidebar-icon-button"
@@ -7154,54 +7247,102 @@ export function SkpeCockpit({
               : ''
           }`}
         >
-          <div className="skpe-cockpit-branding">
-            <div className="skpe-cockpit-logo">
-              {organizationLogoUrl ? (
-                <img
-                  src={organizationLogoUrl}
-                  alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`}
-                />
-              ) : (
-                <span>
-                  {getOrganizationInitials(
-                    organizationProfile?.trade_name ?? organizationName,
-                  )}
-                </span>
-              )}
-            </div>
-            <div>
-              <span>Organização</span>
-              <strong>
-                {organizationProfile?.trade_name ?? organizationName}
-              </strong>
-              <small>
-                {getCooperativeBranchLabel(
-                  organizationProfile?.cooperative_branch,
+
+          <div className="skpe-cockpit-logo skpe-cockpit-logo-centered">
+            {organizationLogoUrl ? (
+              <img
+                src={organizationLogoUrl}
+                alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`}
+              />
+            ) : (
+              <span>
+                {getOrganizationInitials(
+                  organizationProfile?.trade_name ?? organizationName,
                 )}
-              </small>
-            </div>
+              </span>
+            )}
           </div>
 
-          {mode === 'module' && (
-            <div className="skpe-cockpit-context" aria-label="Contexto estratégico">
-              <div>
-                <span>Projeto</span>
-                <strong>
-                  {projectContext?.project_code ?? organizationCode}
-                </strong>
-              </div>
-              <div>
-                <span>Horizonte</span>
-                <strong>{formatStrategicHorizon(projectContext)}</strong>
-              </div>
-              <div>
-                <span>Seção</span>
-                <strong>{activeSectionLabel[activeSection]}</strong>
-              </div>
-            </div>
-          )}
-
           <div className="skpe-cockpit-actions">
+
+            {mode === 'module' && activeSection === 'journey' && (
+              <button
+                type="button"
+                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
+                onClick={() =>
+                  setJourneyRefreshRequestKey((current) => current + 1)
+                }
+                aria-label="Atualizar Jornada Estratégica"
+                title="Atualizar Jornada Estratégica"
+              >
+                <RefreshIcon />
+              </button>
+            )}
+
+            {mode === 'module' && activeSection === 'initiatives' && (
+              <button
+                type="button"
+                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
+                onClick={() =>
+                  setInitiativesRefreshRequestKey((current) => current + 1)
+                }
+                aria-label="Atualizar Painel de Iniciativas"
+                title="Atualizar Painel de Iniciativas"
+              >
+                <RefreshIcon />
+              </button>
+            )}
+            {mode === 'module' && activeSection === 'monitoring' && (
+              <button
+                type="button"
+                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
+                onClick={() =>
+                  setMonitoringRefreshRequestKey((current) => current + 1)
+                }
+                aria-label="Atualizar Monitoramento"
+                title="Atualizar Monitoramento"
+              >
+                <RefreshIcon />
+              </button>
+            )}
+            {mode === 'module' && activeSection === 'agenda' && (
+              <button
+                type="button"
+                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
+                onClick={() =>
+                  setAgendaRefreshRequestKey((current) => current + 1)
+                }
+                aria-label="Atualizar Agenda"
+                title="Atualizar Agenda"
+              >
+                <RefreshIcon />
+              </button>
+            )}
+            {mode === 'module' && (
+              <button
+                type="button"
+                className="skpe-cockpit-icon-button skpe-cockpit-notifications-button"
+                aria-label={`Abrir notificações. ${unreadNotificationCount} ${
+                  unreadNotificationCount === 1 ? 'não lida' : 'não lidas'
+                }`}
+                title="Notificações"
+                onClick={() => {
+                  setUserMenuOpen(false)
+                  navigateToSection('overview')
+                  setPersonalWorkspaceOverlay('notifications')
+                }}
+              >
+                <span aria-hidden="true">🔔</span>
+                {unreadNotificationCount > 0 && (
+                  <span className="skpe-cockpit-notifications-count">
+                    {unreadNotificationCount > 99
+                      ? '99+'
+                      : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             <button
               type="button"
               className="skpe-cockpit-icon-button"
@@ -7235,28 +7376,116 @@ export function SkpeCockpit({
               </button>
             )}
 
-            <button
-              type="button"
-              className="skpe-cockpit-user skpe-cockpit-user-button"
-              onClick={onOpenUserProfile}
-              disabled={!onOpenUserProfile}
-              aria-label="Abrir meu perfil"
-              title="Abrir meu perfil"
-            >
-              <div className="skpe-cockpit-avatar" aria-hidden="true">
-                {userAvatarUrl ? (
-                  <img src={userAvatarUrl} alt="" />
-                ) : (
-                  (userDisplayName || userEmail || 'U')
-                    .slice(0, 2)
-                    .toUpperCase()
-                )}
-              </div>
-              <div>
-                <strong>{userDisplayName || userEmail}</strong>
-                <small>{userRoleName}</small>
-              </div>
-            </button>
+            <div className="skpe-cockpit-user-menu">
+              <button
+                type="button"
+                className="skpe-cockpit-user skpe-cockpit-user-button"
+                onClick={() => setUserMenuOpen((current) => !current)}
+                aria-label="Abrir menu do usuário"
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                title="Menu do usuário"
+              >
+                <div className="skpe-cockpit-avatar" aria-hidden="true">
+                  {userAvatarUrl ? (
+                    <img src={userAvatarUrl} alt="" />
+                  ) : (
+                    (userDisplayName || userEmail || 'U')
+                      .slice(0, 2)
+                      .toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <strong>{userDisplayName || userEmail}</strong>
+                  <small className="skpe-cockpit-role-badge">
+                    {userRoleName}
+                  </small>
+                </div>
+                <span className="skpe-user-menu-chevron" aria-hidden="true">
+                  ▾
+                </span>
+              </button>
+
+              {userMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="skpe-user-menu-backdrop"
+                    aria-label="Fechar menu do usuário"
+                    onClick={() => setUserMenuOpen(false)}
+                  />
+
+                  <div
+                    className="skpe-user-menu-popover"
+                    role="menu"
+                    aria-label="Menu do usuário"
+                  >
+                    <div className="skpe-user-menu-identity">
+                      <strong>{userDisplayName || userEmail}</strong>
+                      <span>{userEmail}</span>
+                    </div>
+
+                    <div className="skpe-user-menu-section-label">CONTA</div>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={!onOpenUserProfile}
+                      onClick={() => {
+                        setUserMenuOpen(false)
+                        onOpenUserProfile?.()
+                      }}
+                    >
+                      Meu perfil
+                    </button>
+
+                    {mode === 'module' && (
+                      <>
+                        <div className="skpe-user-menu-section-label">
+                          PLANEJAMENTO ESTRATÉGICO · SK-PE
+                        </div>
+
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            setPersonalWorkspaceOverlay(null)
+                            navigateToSection('overview')
+                          }}
+                        >
+                          Meu Espaço de Trabalho
+                        </button>
+
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigateToSection('overview')
+                            setPersonalWorkspaceOverlay('dashboards')
+                          }}
+                        >
+                          Painéis e acessos
+                        </button>
+
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigateToSection('overview')
+                            setPersonalWorkspaceOverlay('favorites')
+                          }}
+                        >
+                          Favoritos
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
 
 
           </div>
@@ -7333,6 +7562,11 @@ export function SkpeCockpit({
             startingProject={startingProject}
             onStartProject={() => void startStrategicProject()}
             onNavigate={navigateToSection}
+            personalWorkspaceOverlay={personalWorkspaceOverlay}
+            onClosePersonalWorkspaceOverlay={() =>
+              setPersonalWorkspaceOverlay(null)
+            }
+            onUnreadNotificationCountChange={setUnreadNotificationCount}
           />
         )}
 
@@ -7340,9 +7574,18 @@ export function SkpeCockpit({
           'journey' && canViewJourney && (
           <JourneyFeatureSection
             formatDate={formatDate}
-            RefreshIcon={RefreshIcon}
-            JourneyIcon={JourneyIcon}
+            refreshRequestKey={journeyRefreshRequestKey}
+            strategicHorizon={formatStrategicHorizon(projectContext)}
             LockIcon={LockIcon}
+            InitiativesIcon={InitiativesIcon}
+            MonitoringIcon={MonitoringIcon}
+            canViewInitiatives={canViewInitiatives}
+            canViewMonitoring={canViewMonitoring}
+            onOpenInitiatives={() => {
+              setInitiativeDrilldown(null)
+              navigateToSection('initiatives')
+            }}
+            onOpenMonitoring={() => navigateToSection('monitoring')}
             organizationId={
               organizationId
             }
@@ -7401,6 +7644,13 @@ export function SkpeCockpit({
               canManageInitiatives
             }
             drilldownTarget={initiativeDrilldown}
+            refreshRequestKey={initiativesRefreshRequestKey}
+            JourneyIcon={JourneyIcon}
+            MonitoringIcon={MonitoringIcon}
+            canViewJourney={canViewJourney}
+            canViewMonitoring={canViewMonitoring}
+            onOpenJourney={() => navigateToSection('journey')}
+            onOpenMonitoring={() => navigateToSection('monitoring')}
           />
         )}
 
@@ -7410,6 +7660,9 @@ export function SkpeCockpit({
             canManageEconomic={canManageInitiatives}
             canViewJourney={canViewJourney}
             canViewInitiatives={canViewInitiatives}
+            JourneyIcon={JourneyIcon}
+            InitiativesIcon={InitiativesIcon}
+            refreshRequestKey={monitoringRefreshRequestKey}
             onOpenJourney={() => navigateToSection('journey')}
             onOpenInitiatives={(target) => {
               setInitiativeDrilldown(target ?? null)
@@ -7419,7 +7672,10 @@ export function SkpeCockpit({
         )}
 
         {activeSection === 'agenda' && canViewAgenda && (
-          <AgendaSection organizationId={organizationId} />
+          <AgendaSection
+            organizationId={organizationId}
+            refreshRequestKey={agendaRefreshRequestKey}
+          />
         )}
 
         {activeSection === 'artifacts' && canViewArtifacts && (

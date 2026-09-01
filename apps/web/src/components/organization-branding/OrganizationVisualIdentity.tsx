@@ -51,6 +51,88 @@ function normalizeHex(value: string) {
   return /^#[0-9A-F]{6}$/.test(trimmed) ? trimmed : null
 }
 
+function hexToRgb(hex: string) {
+  const normalized = normalizeHex(hex)
+  if (!normalized) return null
+
+  return {
+    r: Number.parseInt(normalized.slice(1, 3), 16),
+    g: Number.parseInt(normalized.slice(3, 5), 16),
+    b: Number.parseInt(normalized.slice(5, 7), 16),
+  }
+}
+
+function relativeLuminance(hex: string) {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return 0
+
+  const channels = [rgb.r, rgb.g, rgb.b].map((value) => {
+    const normalized = value / 255
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4
+  })
+
+  return (
+    0.2126 * channels[0] +
+    0.7152 * channels[1] +
+    0.0722 * channels[2]
+  )
+}
+
+function colorDistance(first: string, second: string) {
+  const a = hexToRgb(first)
+  const b = hexToRgb(second)
+  if (!a || !b) return 0
+
+  return Math.sqrt(
+    (a.r - b.r) ** 2 +
+    (a.g - b.g) ** 2 +
+    (a.b - b.b) ** 2,
+  )
+}
+
+function deriveLogoIdentity(colors: string[]): EffectiveVisualIdentity {
+  const usable = colors
+    .map((color) => normalizeHex(color))
+    .filter((color): color is string => Boolean(color))
+
+  const primary = usable[0] ?? SPARKS_DEFAULT.colors.primary
+
+  const secondary =
+    [...usable]
+      .sort(
+        (first, second) =>
+          relativeLuminance(first) - relativeLuminance(second),
+      )[0] ?? primary
+
+  const accent =
+    [...usable]
+      .filter((color) => color !== primary && color !== secondary)
+      .sort(
+        (first, second) =>
+          colorDistance(second, primary) -
+          colorDistance(first, primary),
+      )[0] ??
+    usable[1] ??
+    SPARKS_DEFAULT.colors.accent
+
+  return {
+    schema_version: 1,
+    mode: 'organization',
+    palette_source: 'logo_suggested',
+    colors: {
+      primary,
+      secondary,
+      accent,
+      on_primary:
+        relativeLuminance(primary) > 0.52 ? '#18231F' : '#FFFFFF',
+    },
+    suggested_from_logo: {
+      colors: usable,
+    },
+  }
+}
 function applyVisualIdentity(identity: EffectiveVisualIdentity) {
   const root = document.documentElement
   const colors = identity.colors ?? SPARKS_DEFAULT.colors
@@ -128,10 +210,35 @@ export function OrganizationVisualIdentityTheme({ organizationId }: { organizati
   useEffect(() => {
     let cancelled = false
 
+    applyVisualIdentity(SPARKS_DEFAULT)
+
     void loadVisualIdentity(organizationId)
-      .then((row) => {
+      .then(async (row) => {
         if (cancelled) return
-        applyVisualIdentity(row?.effective_visual_identity ?? SPARKS_DEFAULT)
+
+        const persistedIdentity =
+          row?.effective_visual_identity ?? SPARKS_DEFAULT
+        const hasGovernedConfiguration =
+          Object.keys(row?.visual_identity_metadata ?? {}).length > 0
+
+        if (
+          !hasGovernedConfiguration &&
+          persistedIdentity.mode === 'sparks_default' &&
+          row?.logo_url
+        ) {
+          try {
+            const logoColors = await extractLogoPalette(row.logo_url)
+
+            if (!cancelled && logoColors.length > 0) {
+              applyVisualIdentity(deriveLogoIdentity(logoColors))
+              return
+            }
+          } catch {
+            // Se a logo nao puder ser analisada, preserva o fallback SPARKs.
+          }
+        }
+
+        if (!cancelled) applyVisualIdentity(persistedIdentity)
       })
       .catch(() => {
         if (!cancelled) applyVisualIdentity(SPARKS_DEFAULT)
@@ -144,7 +251,6 @@ export function OrganizationVisualIdentityTheme({ organizationId }: { organizati
 
   return null
 }
-
 type OrganizationVisualIdentityCardProps = {
   organizationId: string
   canManage: boolean

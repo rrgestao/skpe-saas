@@ -30,6 +30,7 @@ type AgendaItem = {
 
 type AgendaSectionProps = {
   organizationId: string
+  refreshRequestKey?: number
 }
 
 function monthStart(value: Date) {
@@ -90,7 +91,7 @@ function statusLabel(value: string | null) {
   return value ? labels[value] ?? value : 'Sem situação'
 }
 
-export function AgendaSection({ organizationId }: AgendaSectionProps) {
+export function AgendaSection({ organizationId, refreshRequestKey = 0 }: AgendaSectionProps) {
   const [cursor, setCursor] = useState(() => monthStart(new Date()))
   const [items, setItems] = useState<AgendaItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -125,7 +126,7 @@ export function AgendaSection({ organizationId }: AgendaSectionProps) {
 
   useEffect(() => {
     void loadAgenda()
-  }, [organizationId, cursor.getFullYear(), cursor.getMonth()])
+  }, [organizationId, cursor.getFullYear(), cursor.getMonth(), refreshRequestKey])
 
   const itemsByDate = useMemo(() => {
     const grouped = new Map<string, AgendaItem[]>()
@@ -173,9 +174,7 @@ export function AgendaSection({ organizationId }: AgendaSectionProps) {
           <button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button>
           <button type="button" onClick={() => setCursor(monthStart(new Date()))}>Hoje</button>
           <button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button>
-          <button type="button" onClick={() => void loadAgenda()} disabled={loading}>
-            {loading ? 'Atualizando...' : 'Atualizar'}
-          </button>
+
         </div>
       </header>
 
