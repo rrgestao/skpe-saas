@@ -485,3 +485,34 @@
   color: #65766f;
   font-size: 0.75rem;
 }
+/* UX-KANBAN-VIEWPORT-01 - keep horizontal navigation inside visible board */
+.initiative-kanban-board {
+  height: clamp(360px, 58vh, 720px);
+  max-height: calc(100vh - 15rem);
+  overflow: auto;
+  align-items: start;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  padding: 0.25rem 0.25rem 0.8rem;
+}
+
+.initiative-kanban-column {
+  align-self: start;
+}
+
+.initiative-kanban-column__header {
+  position: sticky;
+  top: -0.25rem;
+  z-index: 4;
+  margin: -0.25rem -0.25rem 0.75rem;
+  padding: 0.5rem 0.25rem 0.55rem;
+  background: var(--surface-subtle, #f7f8fa);
+  border-bottom: 1px solid var(--border-color, #dfe3e8);
+}
+
+@media (max-height: 760px) {
+  .initiative-kanban-board {
+    height: 50vh;
+    min-height: 320px;
+  }
+}

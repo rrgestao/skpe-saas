@@ -7088,18 +7088,73 @@ export function SkpeCockpit({
     if (allowedBySection[activeSection] === false) setActiveSection('overview')
   }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewAgenda, canViewArtifacts, canViewEvolution, canViewGovernance, canViewInitiatives, canViewJourney, canViewMonitoring, canViewOverview, mode])
 
+  const activeSectionTitle = (() => {
+    switch (activeSection) {
+      case 'overview':
+        return 'Visão Geral'
+      case 'journey':
+        return 'Jornada Estratégica'
+      case 'evolution-cycles':
+        return 'Ciclos de Evolução'
+      case 'initiatives':
+        return 'Iniciativas'
+      case 'monitoring':
+        return 'Monitoramento'
+      case 'agenda':
+        return 'Agenda'
+      case 'artifacts':
+        return 'Artefatos e evidências'
+      case 'governance':
+        return 'Governança'
+      case 'administration':
+        return mode === 'organization-admin'
+          ? 'Usuários'
+          : 'Administração do SK-PE'
+      case 'organization':
+        return 'Cadastro institucional'
+      case 'organizational-areas':
+      case 'organization-hierarchy':
+      case 'domains':
+        return 'Estrutura organizacional'
+      case 'governance-roles':
+        return 'Papéis na organização'
+      default:
+        return mode === 'module'
+          ? 'Gestão Estratégica'
+          : 'Administração da Organização'
+    }
+  })()
+
   return (
     <div className={`skpe-shell skpe-theme-${theme} ${sidebarCollapsed ? 'skpe-sidebar-collapsed' : ''}`}>
       <OrganizationVisualIdentityTheme organizationId={organizationId} />
 
       <aside className="skpe-sidebar">
-        <div className="skpe-sidebar-brand">
-          <img className="skpe-platform-mascot" src="/sparkoop-mascot.png" alt="Mascote da SPARKOOP" />
+        <div className="skpe-sidebar-brand skpe-organization-brand">
+          <div
+            className="skpe-organization-brand-mark"
+            title={organizationProfile?.trade_name ?? organizationName}
+          >
+            {organizationLogoUrl ? (
+              <img
+                src={organizationLogoUrl}
+                alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`}
+              />
+            ) : (
+              <span>
+                {getOrganizationInitials(
+                  organizationProfile?.trade_name ?? organizationName,
+                )}
+              </span>
+            )}
+          </div>
+
           <div className="skpe-sidebar-brand-text">
             <strong>
-              {mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
+              {organizationProfile?.trade_name ?? organizationName}
             </strong>
           </div>
+
           <button
             type="button"
             className="skpe-sidebar-icon-button"
@@ -7324,6 +7379,23 @@ export function SkpeCockpit({
         </nav>
 
         <div className="skpe-sidebar-footer">
+          <div
+            className="skpe-product-signature"
+            title={mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
+          >
+            <img
+              className="skpe-platform-mascot"
+              src="/sparkoop-mascot.png"
+              alt="Mascote SPARKs"
+            />
+            <div>
+              <strong>
+                {mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
+              </strong>
+              <span>by SPARKOOP</span>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={onReturnToModules}
@@ -7357,19 +7429,13 @@ export function SkpeCockpit({
           }`}
         >
 
-          <div className="skpe-cockpit-logo skpe-cockpit-logo-centered">
-            {organizationLogoUrl ? (
-              <img
-                src={organizationLogoUrl}
-                alt={`Logo de ${organizationProfile?.trade_name ?? organizationName}`}
-              />
-            ) : (
-              <span>
-                {getOrganizationInitials(
-                  organizationProfile?.trade_name ?? organizationName,
-                )}
-              </span>
-            )}
+          <div className="skpe-cockpit-context">
+            <span>
+              {mode === 'module'
+                ? 'Gestão Estratégica'
+                : 'Administração da Organização'}
+            </span>
+            <strong>{activeSectionTitle}</strong>
           </div>
 
           <div className="skpe-cockpit-actions">
