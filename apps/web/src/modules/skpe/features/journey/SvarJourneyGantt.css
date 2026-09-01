@@ -1,0 +1,93 @@
+.skpe-svar-gantt-beta {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.skpe-svar-gantt-beta-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid var(--sparks-border, #dce4e1);
+  border-radius: 18px;
+  background: var(--sparks-surface, #ffffff);
+}
+
+.skpe-svar-gantt-beta-header h2 {
+  margin: 0.2rem 0 0.35rem;
+}
+
+.skpe-svar-gantt-beta-header p {
+  max-width: 780px;
+  margin: 0;
+  color: var(--sparks-text-muted, #66756f);
+}
+
+.skpe-svar-gantt-beta-kicker {
+  color: var(--sparks-primary, #2f6f55);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.skpe-svar-gantt-readonly-badge {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--sparks-border, #dce4e1);
+  border-radius: 999px;
+  background: var(--sparks-surface-subtle, #f5f8f6);
+  color: var(--sparks-text-muted, #526168);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.skpe-svar-gantt-notice {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--sparks-border, #dce4e1);
+  border-radius: 12px;
+  background: var(--sparks-surface-subtle, #f7f9f8);
+  color: var(--sparks-text-muted, #526168);
+  font-size: 0.82rem;
+}
+
+.skpe-svar-gantt-frame {
+  min-width: 0;
+  height: 650px;
+  overflow: hidden;
+  border: 1px solid var(--sparks-border, #dce4e1);
+  border-radius: 18px;
+  background: var(--sparks-surface, #ffffff);
+}
+
+.skpe-svar-gantt-frame .wx-willow-theme {
+  height: 100%;
+  --wx-font-family: Inter, Manrope, system-ui, sans-serif;
+  --wx-gantt-task-color: var(--sparks-primary, #2f6f55);
+  --wx-gantt-task-font-color: #ffffff;
+  --wx-gantt-border: 1px solid var(--sparks-border, #dce4e1);
+}
+
+.skpe-svar-gantt-empty {
+  padding: 1.25rem;
+  border: 1px dashed var(--sparks-border, #cbd8d2);
+  border-radius: 16px;
+  background: var(--sparks-surface-subtle, #f7f9f8);
+}
+
+.skpe-svar-gantt-empty p {
+  margin-bottom: 0;
+  color: var(--sparks-text-muted, #66756f);
+}
+
+@media (max-width: 900px) {
+  .skpe-svar-gantt-beta-header {
+    flex-direction: column;
+  }
+
+  .skpe-svar-gantt-frame {
+    height: 560px;
+  }
+}

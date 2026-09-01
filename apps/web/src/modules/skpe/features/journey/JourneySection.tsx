@@ -6,6 +6,7 @@ import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
 import { JourneyEventCreateDialog } from './JourneyEventCreateDialog'
 import { JourneyItemStatusDialog } from './JourneyItemStatusDialog'
 import { JourneyGantt } from './JourneyGantt'
+import { SvarJourneyGantt } from './SvarJourneyGantt'
 import type {
   JourneyRow,
   JourneyStatus,
@@ -302,7 +303,8 @@ export function JourneySection({
   const [errorMessage, setErrorMessage] = useState('')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
-  const [journeyView, setJourneyView] = useState<'structure' | 'gantt'>('structure')
+  const [journeyView, setJourneyView] =
+    useState<'structure' | 'gantt' | 'svar'>('structure')
   const [eventDialogItemId, setEventDialogItemId] = useState<string | null>(null)
   const [eventProjectionRevision, setEventProjectionRevision] = useState(0)
 
@@ -751,6 +753,12 @@ export function JourneySection({
             onClick={() => setJourneyView('gantt')}
           >
             Gantt temporal
+          </button>          <button
+            type="button"
+            className={journeyView === 'svar' ? 'is-active' : ''}
+            onClick={() => setJourneyView('svar')}
+          >
+            Gantt interativo Beta
           </button>
         </div>
       )}
@@ -781,6 +789,8 @@ export function JourneySection({
           onCreateEvent={(itemId) => setEventDialogItemId(itemId)}
           eventProjectionRevision={eventProjectionRevision}
         />
+      ) : journeyView === 'svar' ? (
+        <SvarJourneyGantt rows={rows} />
       ) : (
         <div className="skpe-journey-workspace">
           <section className="skpe-journey-tree">
