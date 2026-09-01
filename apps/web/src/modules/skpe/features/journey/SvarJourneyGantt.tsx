@@ -43,7 +43,8 @@ type SvarTask = {
   temporal_source: string
   parent?: string | number
   open?: boolean
-  type?: 'milestone' | 'summary'
+  data?: SvarTask[]
+  type?: 'task' | 'milestone' | 'summary'
 }
 
 const sourceLabels: Record<TemporalSource, string> = {
@@ -146,8 +147,36 @@ function formatMonth(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
 }
 
-function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
-  const projection = useMemo(() => {
+function buildNestedTasks(flatTasks: SvarTask[]) {
+  const byId = new Map(flatTasks.map((task) => [task.id, { ...task, data: [] as SvarTask[] }]))
+  const roots: SvarTask[] = []
+  for (const task of flatTasks) {
+    const clone = byId.get(task.id)
+    if (!clone) continue
+    if (task.parent !== undefined && task.parent !== 0) {
+      const parentId = String(task.parent)
+
+      if (byId.has(parentId)) {
+        byId.get(parentId)?.data?.push(clone)
+        delete clone.parent
+        continue
+      }
+    }
+
+    {
+      clone.parent = 0
+      roots.push(clone)
+    }
+  }
+  const clean = (task: SvarTask) => {
+    if (task.data?.length) task.data.forEach(clean)
+    else delete task.data
+  }
+  roots.forEach(clean)
+  return roots
+}
+
+function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projection = useMemo(() => {
     const tasks: SvarTask[] = []
     const projectableIds = new Set(
       rows
@@ -234,12 +263,10 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
       })
     }
 
+    const projectedItemCount = tasks.filter((task) => task.id !== 'skpe-project-program-window').length
     return {
-      tasks,
-      omittedCount:
-        rows.length -
-        tasks.filter((task) => task.id !== 'skpe-project-program-window')
-          .length,
+      tasks: buildNestedTasks(tasks),
+      omittedCount: rows.length - projectedItemCount,
       projectStart,
       projectEnd,
     }

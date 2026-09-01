@@ -47,8 +47,11 @@ type PendingTransition = {
   targetStatus: InitiativeKanbanStatus
 }
 
-export function InitiativeKanbanBoard({
-  initiativeId,
+function AddActionIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+}
+
+export function InitiativeKanbanBoard({  initiativeId,
   canManageInitiatives,
   initialActionId = null,
 }: InitiativeKanbanBoardProps) {
@@ -312,12 +315,12 @@ export function InitiativeKanbanBoard({
           {canManageInitiatives ? (
             <button
               type="button"
-              className="initiative-kanban-primary-action"
-              onClick={() =>
-                setShowCreateDialog(true)
-              }
+              className="initiative-kanban-icon-action"
+              onClick={() => setShowCreateDialog(true)}
+              aria-label="Criar ação"
+              title="Criar ação"
             >
-              Criar ação
+              <AddActionIcon />
             </button>
           ) : null}
         </div>

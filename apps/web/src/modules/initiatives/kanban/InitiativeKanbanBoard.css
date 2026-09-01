@@ -578,3 +578,6 @@
     max-height: none !important;
   }
 }
+.initiative-kanban-icon-action{width:44px;height:44px;display:inline-grid;place-items:center;border:1px solid #c5d6cf;border-radius:12px;background:#fff;color:#126448;cursor:pointer}
+.initiative-kanban-icon-action:hover{background:#eaf5f0;border-color:#6aa58d}
+.initiative-kanban-icon-action svg{width:23px;height:23px}

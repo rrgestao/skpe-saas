@@ -30,6 +30,8 @@ import { MonitoringSection } from './features/monitoring/MonitoringSection'
 import { AgendaSection } from './features/agenda/AgendaSection'
 import { EvolutionCyclesSection } from './features/evolution/EvolutionCyclesSection'
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
+import { StrategicIdentitySection } from './features/strategy/StrategicIdentitySection'
+import { StrategicPositioningSection } from './features/strategy/StrategicPositioningSection'
 import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateDialog'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
@@ -55,6 +57,8 @@ import { loadInitiativePortfolio } from '../initiatives/data/initiativePortfolio
 export type CockpitSection =
   | 'overview'
   | 'journey'
+  | 'strategic-identity'
+  | 'strategic-positioning'
   | 'evolution-cycles'
   | 'initiatives'
   | 'monitoring'
@@ -193,6 +197,7 @@ type UserAccessRow = {
   user_id: string
   user_email: string
   user_display_name: string | null
+  user_avatar_url: string | null
   user_active: boolean
 
   membership_status: string
@@ -236,6 +241,7 @@ type OrganizationUser = {
   userId: string
   email: string
   displayName: string | null
+  avatarUrl: string | null
   userActive: boolean
 
   membershipStatus: string
@@ -770,6 +776,7 @@ function groupUserAccessRows(
         userId: row.user_id,
         email: row.user_email,
         displayName: row.user_display_name,
+        avatarUrl: row.user_avatar_url,
         userActive: row.user_active,
         membershipStatus:
           row.membership_status,
@@ -5172,9 +5179,28 @@ function AdministrationSection({
       return
     }
 
-    setRows((data ?? []) as UserAccessRow[])
-    setLoading(false)
-  }
+    const accessRows = (data ?? []) as UserAccessRow[]
+    const userIds = Array.from(new Set(accessRows.map((row) => row.user_id)))
+    const { data: profileRows } = userIds.length
+      ? await supabase.from('profiles').select('id, avatar_url').in('id', userIds)
+      : { data: [] as Array<{ id: string; avatar_url: string | null }> }
+
+    const pathByUser = new Map((profileRows ?? []).map((p) => [p.id as string, (p.avatar_url as string | null) ?? null]))
+    const paths = Array.from(new Set(Array.from(pathByUser.values()).filter((v): v is string => Boolean(v))))
+    const signedByPath = new Map<string,string>()
+
+    if (paths.length) {
+      const { data: signedRows } = await supabase.storage.from('user-avatars').createSignedUrls(paths, 3600)
+      for (const signed of signedRows ?? []) {
+        if (signed.path && signed.signedUrl) signedByPath.set(signed.path, signed.signedUrl)
+      }
+    }
+
+    setRows(accessRows.map((row) => {
+      const path = pathByUser.get(row.user_id) ?? null
+      return { ...row, user_avatar_url: path ? signedByPath.get(path) ?? null : null }
+    }))
+    setLoading(false)  }
 
   const loadAvailableRoles = async () => {
     if (!canManageUsers) {
@@ -6212,7 +6238,7 @@ function AdministrationSection({
                         <td>
                           <div className="skpe-user-identity">
                             <span className="skpe-user-avatar">
-                              <UserIcon />
+                              {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : <UserIcon />}
                             </span>
 
                             <div>
@@ -7088,6 +7114,10 @@ export function SkpeCockpit({
         return 'Visão Geral'
       case 'journey':
         return 'Jornada Estratégica'
+      case 'strategic-identity':
+        return 'Identidade Estratégica'
+      case 'strategic-positioning':
+        return 'Posicionamento Estratégico'
       case 'evolution-cycles':
         return 'Ciclos de Evolução'
       case 'initiatives':
@@ -7187,60 +7217,21 @@ export function SkpeCockpit({
                 <DashboardIcon />
                 Visão Geral
               </button>
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'journey'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('journey')
-                }
-                title="Jornada Estratégica"
-               hidden={!canViewJourney}>
-                <JourneyIcon />
-                Jornada Estratégica
-              </button>
-
               {canViewJourney ? (
                 <details className="skpe-nav-journey-disclosure">
-                  <summary title="Abrir conteúdo da Jornada">
-                    Conteúdo da Jornada
+                  <summary
+                    className={['journey','strategic-identity','strategic-positioning','monitoring','artifacts'].includes(activeSection) ? 'skpe-nav-active' : ''}
+                    title="Expandir ou recolher Jornada Estratégica"
+                  >
+                    <JourneyIcon />
+                    <span>Jornada Estratégica</span>
                   </summary>
-
                   <div className="skpe-nav-submenu" aria-label="Submenu da Jornada Estratégica">
-                    <button
-                      type="button"
-                      className={activeSection === 'journey' ? 'skpe-nav-submenu-active' : ''}
-                      onClick={() => navigateToSection('journey')}
-                      title="Estrutura e evolução da Jornada"
-                    >
-                      <span>Jornada</span>
-                    </button>
-
-                    {canViewMonitoring ? (
-                      <button
-                        type="button"
-                        className={activeSection === 'monitoring' ? 'skpe-nav-submenu-active' : ''}
-                        onClick={() => navigateToSection('monitoring')}
-                        title="Monitoramento estratégico"
-                      >
-                        <span>Monitoramento</span>
-                      </button>
-                    ) : null}
-
-                    {canViewArtifacts ? (
-                      <button
-                        type="button"
-                        className={activeSection === 'artifacts' ? 'skpe-nav-submenu-active' : ''}
-                        onClick={() => navigateToSection('artifacts')}
-                        title="Artefatos e evidências da Jornada"
-                      >
-                        <span>Artefatos e evidências</span>
-                      </button>
-                    ) : null}
+                    <button type="button" className={activeSection==='journey'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('journey')}>Jornada</button>
+                    <button type="button" className={activeSection==='strategic-identity'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('strategic-identity')}>Identidade Estratégica</button>
+                    <button type="button" className={activeSection==='strategic-positioning'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('strategic-positioning')}>Posicionamento Estratégico</button>
+                    {canViewMonitoring?<button type="button" className={activeSection==='monitoring'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('monitoring')}>Monitoramento</button>:null}
+                    {canViewArtifacts?<button type="button" className={activeSection==='artifacts'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('artifacts')}>Artefatos e evidências</button>:null}
                   </div>
                 </details>
               ) : null}
@@ -7717,6 +7708,14 @@ export function SkpeCockpit({
             }
             onUnreadNotificationCountChange={setUnreadNotificationCount}
           />
+        )}
+
+        {activeSection === 'strategic-identity' && canViewJourney && (
+          <StrategicIdentitySection organizationId={organizationId} />
+        )}
+
+        {activeSection === 'strategic-positioning' && canViewJourney && (
+          <StrategicPositioningSection organizationId={organizationId} />
         )}
 
         {activeSection ===

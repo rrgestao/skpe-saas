@@ -7314,3 +7314,14 @@ button.skpe-admin-kpi-card:hover,
 .skpe-sidebar-collapsed .skpe-nav-journey-disclosure {
   display: none;
 }
+/* UX-JOURNEY-04 */
+.skpe-nav-journey-disclosure{margin:0}
+.skpe-nav-journey-disclosure>summary{min-height:46px;display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:.7rem;padding:.65rem .8rem;border-radius:10px;cursor:pointer;color:rgba(255,255,255,.88);font-weight:750}
+.skpe-nav-journey-disclosure>summary::before{content:none!important}
+.skpe-nav-journey-disclosure>summary::after{content:'›';font-size:1.1rem;transition:transform 160ms ease}
+.skpe-nav-journey-disclosure[open]>summary::after{transform:rotate(90deg)}
+.skpe-nav-journey-disclosure>summary svg{width:20px;height:20px}
+.skpe-nav-journey-disclosure>summary.skpe-nav-active,.skpe-nav-journey-disclosure>summary:hover{background:rgba(255,255,255,.11);color:#fff}
+.skpe-nav-journey-disclosure .skpe-nav-submenu{margin:.2rem 0 .45rem 2rem}
+.skpe-user-avatar{overflow:hidden}
+.skpe-user-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}
