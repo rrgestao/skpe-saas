@@ -10,7 +10,7 @@ import {
   ExternalLink,
   Eye,
   Pencil,
-  Plus,
+  CirclePlus,
   Printer,
   RefreshCw,
   Save,
@@ -37,7 +37,7 @@ export type SparksActionIconName =
   | 'export'
 
 const sparksActionIcons: Record<SparksActionIconName, LucideIcon> = {
-  add: Plus,
+  add: CirclePlus,
   edit: Pencil,
   delete: Trash2,
   view: Eye,
@@ -101,6 +101,7 @@ type MetricCardProps = {
   disabled?: boolean
   onClick?: () => void
   ariaLabel?: string
+  tooltip?: string
   className?: string
 }
 
@@ -113,6 +114,7 @@ export function MetricCard({
   disabled = false,
   onClick,
   ariaLabel,
+  tooltip,
   className = '',
 }: MetricCardProps) {
   const classes = [
@@ -146,13 +148,19 @@ export function MetricCard({
         disabled={disabled}
         aria-pressed={active}
         aria-label={ariaLabel}
+        title={tooltip}
+        data-tooltip={tooltip}
       >
         {content}
       </button>
     )
   }
 
-  return <article className={classes}>{content}</article>
+  return (
+    <article className={classes} title={tooltip} data-tooltip={tooltip}>
+      {content}
+    </article>
+  )
 }
 
 type WorkspaceTab<T extends string> = {

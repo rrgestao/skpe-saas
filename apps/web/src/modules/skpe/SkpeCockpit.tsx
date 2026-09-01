@@ -2514,7 +2514,8 @@ function InitiativesSection({
           <MetricCard
             label="Total"
             value={dashboard.total_initiatives}
-            helper="Ver todas"
+            tooltip="Exibir todas as iniciativas"
+            ariaLabel="Total de iniciativas. Exibir todas."
             active={quickFilter === 'all'}
             onClick={() => applyQuickFilter('all')}
           />
@@ -2522,7 +2523,8 @@ function InitiativesSection({
           <MetricCard
             label="Em execução"
             value={dashboard.in_progress_count}
-            helper="Filtrar iniciativas"
+            tooltip="Filtrar iniciativas em execução"
+            ariaLabel="Iniciativas em execução. Aplicar filtro."
             active={quickFilter === 'in_progress'}
             onClick={() => applyQuickFilter('in_progress')}
           />
@@ -2530,7 +2532,8 @@ function InitiativesSection({
           <MetricCard
             label="Bloqueadas"
             value={dashboard.blocked_count}
-            helper="Filtrar iniciativas"
+            tooltip="Filtrar iniciativas bloqueadas"
+            ariaLabel="Iniciativas bloqueadas. Aplicar filtro."
             active={quickFilter === 'blocked'}
             onClick={() => applyQuickFilter('blocked')}
           />
@@ -2538,7 +2541,8 @@ function InitiativesSection({
           <MetricCard
             label="Concluídas"
             value={dashboard.completed_count}
-            helper="Filtrar iniciativas"
+            tooltip="Filtrar iniciativas concluídas"
+            ariaLabel="Iniciativas concluídas. Aplicar filtro."
             active={quickFilter === 'completed'}
             onClick={() => applyQuickFilter('completed')}
           />
@@ -2546,13 +2550,15 @@ function InitiativesSection({
           <MetricCard
             label="Críticas"
             value={dashboard.critical_count}
-            helper="Visão consolidada"
+            tooltip="Quantidade de iniciativas críticas"
+            ariaLabel="Quantidade de iniciativas críticas."
           />
 
           <MetricCard
             label="Progresso médio"
             value={`${dashboard.average_progress}%`}
-            helper="Visão consolidada"
+            tooltip="Progresso médio consolidado das iniciativas"
+            ariaLabel="Progresso médio consolidado das iniciativas."
           />
         </section>
       )}
@@ -2564,7 +2570,7 @@ function InitiativesSection({
             onChange={(e) =>
               setSearchTerm(e.target.value)
             }
-            placeholder="Buscar iniciativas"
+            placeholder="Buscar no Plano de Iniciativas"
           />
         </div>
 
@@ -2575,7 +2581,7 @@ function InitiativesSection({
           }
         >
           <option value="all">
-            Todas as classes
+            Todos os tipos
           </option>
           <option value="program">Programas</option>
           <option value="project">Projetos</option>
