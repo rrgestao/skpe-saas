@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Save,
   Trash2,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -35,6 +36,7 @@ export type SparksActionIconName =
   | 'open'
   | 'save'
   | 'export'
+  | 'close'
 
 const sparksActionIcons: Record<SparksActionIconName, LucideIcon> = {
   add: CirclePlus,
@@ -49,6 +51,7 @@ const sparksActionIcons: Record<SparksActionIconName, LucideIcon> = {
   open: ExternalLink,
   save: Save,
   export: Download,
+  close: X,
 }
 
 type IconActionButtonProps = Omit<

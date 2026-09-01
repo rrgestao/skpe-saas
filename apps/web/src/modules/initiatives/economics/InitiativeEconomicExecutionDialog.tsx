@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
 import { translateBackendMessage } from '../../../shared/i18n/ptBR'
+import { IconActionButton } from '../../../components/design-system'
 
 type Numeric = number | string | null
 
@@ -186,14 +187,16 @@ export function InitiativeEconomicExecutionDialog({
   }, [initiativeId, organizationId])
 
   useEffect(() => {
-    if (presentation !== 'dialog') return
-
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !saving) onClose()
+      if (event.key === 'Escape' && !saving) {
+        event.preventDefault()
+        onClose()
+      }
     }
+
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, presentation, saving])
+  }, [onClose, saving])
 
   const lifecycleStatus = projection?.initiative.lifecycleStatus ?? null
   const editable =
@@ -282,7 +285,6 @@ export function InitiativeEconomicExecutionDialog({
       role={presentation === 'dialog' ? 'presentation' : undefined}
       onMouseDown={(event) => {
         if (
-          presentation === 'dialog' &&
           event.target === event.currentTarget &&
           !saving
         ) {
@@ -306,16 +308,12 @@ export function InitiativeEconomicExecutionDialog({
             <h2 id="skpe-initiative-economic-title">Custos e esforço</h2>
             <p>{initiativeName}</p>
           </div>
-          {presentation === 'dialog' && (
-            <button
-              type="button"
-              className="skpe-user-details-button"
-              onClick={onClose}
-              disabled={saving}
-            >
-              Fechar
-            </button>
-          )}
+          <IconActionButton
+            action="close"
+            label="Fechar"
+            onClick={onClose}
+            disabled={saving}
+          />
         </div>
 
         <div className="skpe-admin-state-card">
