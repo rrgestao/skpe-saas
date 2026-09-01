@@ -7074,3 +7074,50 @@ button.skpe-admin-kpi-card:hover,
 .skpe-sidebar-collapsed .skpe-organization-brand-identity .skpe-sidebar-brand-text {
   display: none;
 }
+/* UX-SHELL-03 - compact product signature in sidebar footer */
+.skpe-sidebar-product-footer {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.55rem 0 0.25rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.skpe-sidebar-product-footer .skpe-product-signature {
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0;
+}
+
+.skpe-sidebar-product-footer .skpe-product-signature .skpe-platform-mascot {
+  width: 30px;
+  height: 30px;
+}
+
+.skpe-sidebar-product-footer .skpe-product-signature strong {
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.skpe-sidebar-copyright {
+  color: #b9d2c9;
+  font-size: 0.56rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-product-footer {
+  gap: 0.2rem;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-copyright {
+  font-size: 0;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-copyright::after {
+  content: '©';
+  font-size: 0.6rem;
+}

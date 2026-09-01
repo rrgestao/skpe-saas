@@ -280,17 +280,14 @@ export function InitiativeKanbanBoard({
       <section
         className="initiative-kanban-guide"
         aria-label="Como usar o quadro de ações"
+        title="Cada cartão é uma ação real desta iniciativa. Abra para consultar ou editar detalhes e, quando permitido, mova o cartão para avançar seu ciclo de vida governado. O Kanban não cria uma cópia da ação."
       >
         <div className="initiative-kanban-guide__copy">
           <p className="initiative-kanban-guide__eyebrow">
             Gestão das ações
           </p>
           <h3>Do planejamento à execução, no mesmo registro</h3>
-          <p>
-            Cada cartão é uma ação real desta iniciativa. Abra para consultar
-            ou editar detalhes e, quando permitido, mova o cartão para avançar
-            seu ciclo de vida governado. O Kanban não cria uma cópia da ação.
-          </p>
+
         </div>
 
         <div className="initiative-kanban-guide__actions">

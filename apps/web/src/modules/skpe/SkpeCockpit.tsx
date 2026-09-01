@@ -7381,20 +7381,26 @@ export function SkpeCockpit({
         </nav>
 
         <div className="skpe-sidebar-footer">
-          <div
-            className="skpe-product-signature"
-            title={mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
-          >
-            <img
-              className="skpe-platform-mascot"
-              src="/sparkoop-mascot.png"
-              alt="Mascote SPARKs"
-            />
-            <div>
-              <strong>
-                {mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
-              </strong>
+          <div className="skpe-sidebar-product-footer">
+            <div
+              className="skpe-product-signature"
+              title={mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
+            >
+              <img
+                className="skpe-platform-mascot"
+                src="/sparkoop-mascot.png"
+                alt="Mascote SPARKs"
+              />
+              <div>
+                <strong>
+                  {mode === 'module' ? 'SPARKs PE' : 'Plataforma SPARKs'}
+                </strong>
+              </div>
             </div>
+
+            <small className="skpe-sidebar-copyright">
+              © SPARKOOP
+            </small>
           </div>
 
           <button
@@ -7924,10 +7930,7 @@ export function SkpeCockpit({
             }
           />
         )}
-        <footer className="skpe-cockpit-footer">
-          <strong>Plataforma SPARKs</strong>
-          <span>© SPARKOOP — Todos os direitos reservados</span>
-        </footer>      </main>
+      </main>
 
       <button
         type="button"
