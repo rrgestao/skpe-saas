@@ -7195,3 +7195,12 @@ button.skpe-admin-kpi-card:hover,
   line-height: 1.05 !important;
   letter-spacing: -0.018em;
 }
+/* UX-RUNTIME-03 - keep contextual title visually detached from sidebar */
+.skpe-cockpit-context {
+  padding-left: clamp(1.25rem, 2vw, 2rem);
+  min-width: 0;
+}
+
+.skpe-cockpit-context strong {
+  display: block;
+}

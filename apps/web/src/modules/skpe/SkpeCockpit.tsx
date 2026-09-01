@@ -2881,7 +2881,7 @@ function InitiativesSection({
                   initiativeCode={selectedInitiative.initiative_code}
                   initiativeName={selectedInitiative.initiative_name}
                   canManage={canManageInitiatives}
-                  presentation="panel"
+                  presentation="dialog"
                   onClose={() =>
                     setInitiativeWorkspaceTab('kanban')
                   }

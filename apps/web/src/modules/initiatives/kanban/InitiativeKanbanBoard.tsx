@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
@@ -81,6 +82,23 @@ export function InitiativeKanbanBoard({
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const boardScrollRef = useRef<HTMLDivElement>(null)
+  const horizontalSyncRef = useRef(false)
+
+  const syncHorizontalScroll = (
+    source: HTMLDivElement,
+    target: HTMLDivElement | null,
+  ) => {
+    if (!target || horizontalSyncRef.current) return
+
+    horizontalSyncRef.current = true
+    target.scrollLeft = source.scrollLeft
+
+    window.requestAnimationFrame(() => {
+      horizontalSyncRef.current = false
+    })
+  }
 
   const allCards = useMemo(
     () => columns.flatMap((column) => column.cards),
@@ -402,15 +420,37 @@ export function InitiativeKanbanBoard({
           </p>
         </section>
       ) : (
-        <div
-          className="initiative-kanban-workspace-viewport"
-          aria-label="Área rolável do Kanban"
-          tabIndex={0}
-        >
+        <>
           <div
-            className="initiative-kanban-board"
-            aria-label="Kanban de ações da iniciativa"
+            className="initiative-kanban-horizontal-scroll-top"
+            ref={topScrollRef}
+            onScroll={(event) =>
+              syncHorizontalScroll(
+                event.currentTarget,
+                boardScrollRef.current,
+              )
+            }
+            aria-label="Rolagem horizontal superior do Kanban"
           >
+            <div aria-hidden="true" />
+          </div>
+
+          <div
+            className="initiative-kanban-workspace-viewport"
+            aria-label="Área rolável do Kanban"
+            tabIndex={0}
+            ref={boardScrollRef}
+            onScroll={(event) =>
+              syncHorizontalScroll(
+                event.currentTarget,
+                topScrollRef.current,
+              )
+            }
+          >
+            <div
+              className="initiative-kanban-board"
+              aria-label="Kanban de ações da iniciativa"
+            >
             {filteredColumns.map((column) => (
               <InitiativeKanbanColumn
                 key={column.status}
@@ -424,9 +464,10 @@ export function InitiativeKanbanBoard({
                 }
                 onRequestTransition={requestTransition}
               />
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {activeActionCount > 0 ? (

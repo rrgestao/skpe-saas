@@ -541,3 +541,40 @@
     height: 58vh;
   }
 }
+/* UX-RUNTIME-03 - natural vertical flow + always-accessible horizontal navigation */
+.initiative-kanban-horizontal-scroll-top {
+  box-sizing: border-box;
+  width: 100%;
+  height: 16px;
+  margin: 0 0 0.35rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--border-color, #dfe3e8);
+  border-radius: 8px;
+  background: var(--surface-subtle, #f7f8fa);
+  scrollbar-gutter: stable;
+}
+
+.initiative-kanban-horizontal-scroll-top > div {
+  width: 82rem;
+  min-width: 100%;
+  height: 1px;
+}
+
+.initiative-kanban-workspace-viewport {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+}
+
+@media (max-height: 760px) {
+  .initiative-kanban-workspace-viewport {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+}
