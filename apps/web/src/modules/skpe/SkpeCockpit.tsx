@@ -7444,11 +7444,6 @@ export function SkpeCockpit({
                 : activeSectionTitle
             }
           >
-            <span>
-              {mode === 'module'
-                ? 'Gestão Estratégica'
-                : 'Administração da Organização'}
-            </span>
             <strong>{activeSectionTitle}</strong>
           </div>
 

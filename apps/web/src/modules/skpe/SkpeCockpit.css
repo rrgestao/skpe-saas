@@ -7121,3 +7121,55 @@ button.skpe-admin-kpi-card:hover,
   content: '©';
   font-size: 0.6rem;
 }
+/* UX-SHELL-04 - compact sidebar identity */
+.skpe-sidebar-product-footer {
+  border-top: 0;
+  padding-top: 0.35rem;
+}
+
+.skpe-sidebar-product-footer .skpe-product-signature strong {
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.skpe-sidebar-copyright {
+  font-size: 0.5rem;
+  opacity: 0.82;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-product-footer .skpe-product-signature > div,
+.skpe-sidebar-collapsed .skpe-sidebar-copyright {
+  display: none;
+}
+
+.skpe-sidebar-collapsed .skpe-sidebar-product-footer {
+  padding: 0.3rem 0;
+}
+
+.skpe-sidebar-icon-button {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.skpe-sidebar-icon-button:hover,
+.skpe-sidebar-icon-button:focus-visible {
+  background: rgb(255 255 255 / 8%) !important;
+}
+
+.skpe-cockpit-context {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.skpe-cockpit-context strong {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #1d3029;
+}
+
+.skpe-cockpit-context span {
+  display: none;
+}
