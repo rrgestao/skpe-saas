@@ -6681,3 +6681,157 @@ button.skpe-admin-kpi-card:hover,
   border-color: #125842;
   transform: translateY(-1px);
 }
+/* UX-PORTFOLIO-01 V3 - compact executive initiative view */
+.skpe-initiative-portfolio {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.skpe-initiative-portfolio-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 13px;
+  background: var(--skpe-surface, #fff);
+  overflow: hidden;
+}
+
+.skpe-initiative-portfolio-openable {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.8fr)
+    minmax(260px, 1.2fr)
+    minmax(180px, 0.8fr)
+    minmax(140px, 0.55fr);
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.skpe-initiative-portfolio-openable:hover,
+.skpe-initiative-portfolio-openable:focus-visible {
+  outline: none;
+  background: #f5faf8;
+  box-shadow: inset 3px 0 #176b53;
+}
+
+.skpe-initiative-portfolio-identity,
+.skpe-initiative-portfolio-progress,
+.skpe-initiative-portfolio-status {
+  min-width: 0;
+}
+
+.skpe-initiative-portfolio-identity {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.skpe-initiative-portfolio-identity small {
+  color: #6d7d76;
+  font-family: var(--font-family-data, Inter, sans-serif);
+  font-size: 0.68rem;
+}
+
+.skpe-initiative-portfolio-identity strong {
+  overflow: hidden;
+  color: #20342d;
+  font-size: 0.92rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skpe-initiative-portfolio-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.skpe-initiative-portfolio-context span {
+  padding: 0.22rem 0.42rem;
+  border-radius: 999px;
+  background: #eef5f2;
+  color: #52675e;
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.skpe-initiative-portfolio-progress {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.skpe-initiative-portfolio-progress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #66756f;
+  font-size: 0.68rem;
+}
+
+.skpe-initiative-portfolio-progress > div:first-child strong {
+  color: #183f34;
+  font-family: var(--font-family-data, Inter, sans-serif);
+}
+
+.skpe-initiative-portfolio-status {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.skpe-initiative-portfolio-status strong {
+  color: #176b53;
+  font-size: 0.72rem;
+}
+
+.skpe-initiative-portfolio-status small {
+  color: #76847e;
+  font-size: 0.66rem;
+}
+
+.skpe-initiative-portfolio-row > .skpe-initiative-actions {
+  align-content: center;
+  min-width: 0;
+  padding: 0.45rem;
+}
+
+@media (max-width: 1100px) {
+  .skpe-initiative-portfolio-openable {
+    grid-template-columns: minmax(240px, 1.5fr) minmax(220px, 1fr) minmax(160px, 0.8fr);
+  }
+
+  .skpe-initiative-portfolio-status {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    justify-content: start;
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .skpe-initiative-portfolio-row {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-initiative-portfolio-openable {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-initiative-portfolio-status {
+    grid-column: auto;
+    grid-auto-flow: row;
+  }
+}

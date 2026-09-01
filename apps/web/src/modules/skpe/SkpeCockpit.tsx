@@ -2219,7 +2219,7 @@ function InitiativesSection({
         <div>
           <p className="skpe-eyebrow">Execução da estratégia</p>
           <h1>Painel de Iniciativas</h1>
-          <p>Acompanhe o portfólio transversal governado de programas, projetos, iniciativas e ações estruturantes.</p>
+          <p>Acompanhe as iniciativas estratégicas e sua execução governada.</p>
         </div>
         <div className="skpe-heading-actions">
           <div
@@ -2509,7 +2509,7 @@ function InitiativesSection({
       {dashboard && (
         <section
           className={`skpe-initiative-kpi-grid ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}
-          aria-label="Visão consolidada do portfólio transversal"
+          aria-label="Visão consolidada das iniciativas"
         >
           <MetricCard
             label="Total"
@@ -2522,7 +2522,7 @@ function InitiativesSection({
           <MetricCard
             label="Em execução"
             value={dashboard.in_progress_count}
-            helper="Filtrar portfólio"
+            helper="Filtrar iniciativas"
             active={quickFilter === 'in_progress'}
             onClick={() => applyQuickFilter('in_progress')}
           />
@@ -2530,7 +2530,7 @@ function InitiativesSection({
           <MetricCard
             label="Bloqueadas"
             value={dashboard.blocked_count}
-            helper="Filtrar portfólio"
+            helper="Filtrar iniciativas"
             active={quickFilter === 'blocked'}
             onClick={() => applyQuickFilter('blocked')}
           />
@@ -2538,7 +2538,7 @@ function InitiativesSection({
           <MetricCard
             label="Concluídas"
             value={dashboard.completed_count}
-            helper="Filtrar portfólio"
+            helper="Filtrar iniciativas"
             active={quickFilter === 'completed'}
             onClick={() => applyQuickFilter('completed')}
           />
@@ -2564,7 +2564,7 @@ function InitiativesSection({
             onChange={(e) =>
               setSearchTerm(e.target.value)
             }
-            placeholder="Buscar no portfólio"
+            placeholder="Buscar iniciativas"
           />
         </div>
 
@@ -2628,18 +2628,10 @@ function InitiativesSection({
           <p className="skpe-card-code">Painel analítico</p>
           <h2>
             {initiativeViewMode === 'portfolio'
-              ? 'Iniciativas sinalizadas'
+              ? 'Visão executiva das iniciativas'
               : 'Data Explorer hierárquico'}
           </h2>
-          <span>
-            <>
-              {filteredInitiatives.length}{' '}
-              iniciativa
-              {filteredInitiatives.length === 1 ? '' : 's'}{' '}
-              encontrada
-              {filteredInitiatives.length === 1 ? '' : 's'}
-            </>
-          </span>
+
         </div>
 
         <div className="skpe-initiative-view-actions">
@@ -2659,7 +2651,7 @@ function InitiativesSection({
                 setInitiativeViewMode('portfolio')
               }
             >
-              Portfólio
+              Visão executiva
             </button>
 
             <button
@@ -2885,7 +2877,7 @@ function InitiativesSection({
         ) : (
           <EmptyState
             title="Selecione uma iniciativa"
-            description="Abra o Portfólio e escolha a iniciativa que deseja acompanhar."
+            description="Retorne à Visão Executiva e escolha a iniciativa que deseja acompanhar."
             action={
               <button
                 type="button"
@@ -2913,16 +2905,20 @@ function InitiativesSection({
           onOpenInitiative={openInitiativeKanban}
         />
       ) : (
-        <section className="skpe-initiative-list">
+        <section
+          className="skpe-initiative-portfolio"
+          aria-label="Visão executiva das iniciativas"
+        >
           {filteredInitiatives.map((initiative) => (
             <article
               key={initiative.initiative_id}
-              className="skpe-initiative-card"
+              className="skpe-initiative-portfolio-row"
             >
               <div
-                className="skpe-initiative-card-main skpe-initiative-card-openable"
+                className="skpe-initiative-portfolio-openable"
                 role="button"
                 tabIndex={0}
+                title="Abrir iniciativa"
                 aria-label={`Abrir iniciativa ${initiative.initiative_name}`}
                 onClick={() => openInitiativeKanban(initiative)}
                 onKeyDown={(event) => {
@@ -2932,66 +2928,36 @@ function InitiativesSection({
                   }
                 }}
               >
-                <div className="skpe-initiative-card-heading">
+                <div className="skpe-initiative-portfolio-identity">
+                  <small>{initiative.initiative_code}</small>
+                  <strong>{initiative.initiative_name}</strong>
+                </div>
+
+                <div className="skpe-initiative-portfolio-context">
+                  <span>
+                    {getInitiativeClassLabel(
+                      initiative.initiative_class,
+                    )}
+                  </span>
+                  <span>
+                    {initiative.responsible_area_name ?? 'Área não definida'}
+                  </span>
+                  <span>
+                    {initiative.priority === 'critical'
+                      ? 'Prioridade crítica'
+                      : initiative.priority === 'high'
+                        ? 'Prioridade alta'
+                        : initiative.priority === 'medium'
+                          ? 'Prioridade média'
+                          : 'Prioridade baixa'}
+                  </span>
+                </div>
+
+                <div className="skpe-initiative-portfolio-progress">
                   <div>
-                    <p>{initiative.initiative_code}</p>
-                    <h2>{initiative.initiative_name}</h2>
+                    <span>Progresso</span>
+                    <strong>{initiative.progress}%</strong>
                   </div>
-
-                  <div className="skpe-initiative-badges">
-                    <span>
-                      {getInitiativeStatusLabel(
-                        initiative.initiative_status,
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                {initiative.initiative_description && (
-                  <p className="skpe-initiative-description">
-                    {initiative.initiative_description}
-                  </p>
-                )}
-
-                <div
-                  className="skpe-initiative-meta"
-                  aria-label="Classificação da iniciativa"
-                >
-                  <span>
-                    <small>Classe</small>
-                    <strong>
-                      {getInitiativeClassLabel(
-                        initiative.initiative_class,
-                      )}
-                    </strong>
-                  </span>
-
-                  <span>
-                    <small>Categoria</small>
-                    <strong>
-                      {initiative.category_name ?? 'Não definida'}
-                    </strong>
-                  </span>
-
-                  <span>
-                    <small>Área</small>
-                    <strong>
-                      {initiative.responsible_area_name ??
-                        'Não definida'}
-                    </strong>
-                  </span>
-
-                  <span>
-                    <small>Origem</small>
-                    <strong>
-                      {initiative.source_module_code === 'SK-PE'
-                        ? 'Planejamento Estratégico'
-                        : initiative.source_module_code}
-                    </strong>
-                  </span>
-                </div>
-
-                <div className="skpe-initiative-progress">
                   <div className="skpe-progress-track">
                     <span
                       style={{
@@ -2999,43 +2965,23 @@ function InitiativesSection({
                       }}
                     />
                   </div>
-                  <strong>{initiative.progress}%</strong>
                 </div>
 
-                <div className="skpe-initiative-links">
-                  {initiative.strategic_theme && (
-                    <span>
-                      Tema estratégico —{' '}
-                      {initiative.strategic_theme}
-                    </span>
-                  )}
-
-                  {initiative.start_date && (
-                    <span>
-                      Início — {initiative.start_date}
-                    </span>
-                  )}
-
-                  {initiative.target_end_date && (
-                    <span>
-                      Término-alvo —{' '}
-                      {initiative.target_end_date}
-                    </span>
-                  )}
-
-                  <span>
-                    Saúde —{' '}
-                    {statusLabelPtBr(
-                      initiative.health_status,
+                <div className="skpe-initiative-portfolio-status">
+                  <strong>
+                    {getInitiativeStatusLabel(
+                      initiative.initiative_status,
                     )}
-                  </span>
-
-                  <span>
-                    Risco —{' '}
-                    {statusLabelPtBr(
-                      initiative.risk_level,
-                    )}
-                  </span>
+                  </strong>
+                  <small>
+                    {initiative.target_end_date
+                      ? `Até ${initiative.target_end_date
+                          .slice(0, 10)
+                          .split('-')
+                          .reverse()
+                          .join('/')}`
+                      : 'Sem término-alvo'}
+                  </small>
                 </div>
               </div>
 
