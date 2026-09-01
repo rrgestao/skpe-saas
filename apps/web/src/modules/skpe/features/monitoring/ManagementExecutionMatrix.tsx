@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import {
   buildExecutionMatrixRows,
   type ActionBoardExecutionRow,
@@ -37,12 +38,61 @@ function formatEconomic(
   actual: number | null,
   unit: string | null,
 ) {
-  const normalizedUnit = unit ?? '—'
+  const normalizedUnit =
+    unit?.trim().toUpperCase() === 'BRL'
+      ? 'R$'
+      : unit ?? '—'
 
   return {
     planned: `${normalizedUnit} ${formatNumber(planned)}`,
     actual: `${normalizedUnit} ${formatNumber(actual)}`,
   }
+}
+
+function SyncedMatrixViewport({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const topRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const syncingRef = useRef(false)
+
+  const syncScroll = (
+    source: HTMLDivElement,
+    target: HTMLDivElement | null,
+  ) => {
+    if (!target || syncingRef.current) return
+    syncingRef.current = true
+    target.scrollLeft = source.scrollLeft
+    window.requestAnimationFrame(() => {
+      syncingRef.current = false
+    })
+  }
+
+  return (
+    <>
+      <div
+        className="skpe-horizontal-scroll-top"
+        ref={topRef}
+        onScroll={(event) =>
+          syncScroll(event.currentTarget, bodyRef.current)
+        }
+        aria-label="Rolagem horizontal da matriz executiva"
+      >
+        <div style={{ width: 1180, height: 1 }} />
+      </div>
+      <div
+        className="skpe-execution-matrix-scroll"
+        ref={bodyRef}
+        onScroll={(event) =>
+          syncScroll(event.currentTarget, topRef.current)
+        }
+      >
+        {children}
+      </div>
+    </>
+  )
 }
 
 export function ManagementExecutionMatrix({
@@ -75,7 +125,7 @@ export function ManagementExecutionMatrix({
         <strong>{rows.length} ação(ões)</strong>
       </header>
 
-      <div className="skpe-execution-matrix-scroll">
+      <SyncedMatrixViewport>
         <table>
           <thead>
             <tr>
@@ -248,7 +298,7 @@ export function ManagementExecutionMatrix({
             ) : null}
           </tbody>
         </table>
-      </div>
+      </SyncedMatrixViewport>
 
       <footer>
         <span>

@@ -120,6 +120,11 @@ type OperationalProjection = {
   }
 }
 
+function currencyDisplayLabel(currency: string | null | undefined) {
+  const code = currency?.trim().toUpperCase() || 'BRL'
+  return code === 'BRL' ? 'R$' : code
+}
+
 function countBy<T>(rows: T[], read: (row: T) => string) {
   const counts = new Map<string, number>()
   for (const row of rows) {
@@ -651,14 +656,14 @@ export function MonitoringSection({
                 <div>
                   <span>Custo direto planejado</span>
                   <strong>
-                    {economicDirect.currencyCode ?? '—'}{' '}
+                    {currencyDisplayLabel(economicDirect.currencyCode)}{' '}
                     {economicDirect.plannedCost ?? '—'}
                   </strong>
                 </div>
                 <div>
                   <span>Custo direto realizado</span>
                   <strong>
-                    {economicDirect.currencyCode ?? '—'}{' '}
+                    {currencyDisplayLabel(economicDirect.currencyCode)}{' '}
                     {economicDirect.actualCost ?? '—'}
                   </strong>
                 </div>
@@ -681,7 +686,7 @@ export function MonitoringSection({
               <div className="skpe-monitoring-economic-breakdown">
                 {costCurrencies.map((row) => (
                   <span key={`cost-${row.currencyCode}`}>
-                    Ações · {row.currencyCode}: planejado {row.currentPlannedCost}
+                    Ações · {currencyDisplayLabel(row.currencyCode)}: planejado {row.currentPlannedCost}
                     {' · '}realizado {row.actualRealizedCost}
                   </span>
                 ))}

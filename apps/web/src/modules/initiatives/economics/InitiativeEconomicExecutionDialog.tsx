@@ -92,6 +92,11 @@ function formatNumber(value: Numeric | undefined) {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(parsed)
 }
 
+function currencyDisplayLabel(currency: string | null | undefined) {
+  const code = currency?.trim().toUpperCase() || 'BRL'
+  return code === 'BRL' ? 'R$' : code
+}
+
 function formatMoney(value: Numeric | undefined, currency: string | null | undefined) {
   const parsed = toNumber(value)
   if (parsed === null) return '—'
@@ -103,7 +108,7 @@ function formatMoney(value: Numeric | undefined, currency: string | null | undef
       maximumFractionDigits: 2,
     }).format(parsed)
   } catch {
-    return `${code} ${formatNumber(parsed)}`
+    return `${currencyDisplayLabel(code)} ${formatNumber(parsed)}`
   }
 }
 
@@ -396,7 +401,7 @@ export function InitiativeEconomicExecutionDialog({
                     <tbody>
                       {projection.actions.costByCurrency.map((row) => (
                         <tr key={row.currencyCode}>
-                          <td>{row.currencyCode}</td>
+                          <td>{currencyDisplayLabel(row.currencyCode)}</td>
                           <td>{formatMoney(row.currentPlannedCost, row.currencyCode)}</td>
                           <td>{formatMoney(row.actualRealizedCost, row.currencyCode)}</td>
                           <td>{formatVariance(row.currentPlanVariance)}</td>

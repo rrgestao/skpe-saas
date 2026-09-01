@@ -7183,3 +7183,15 @@ button.skpe-admin-kpi-card:hover,
   font-weight: 820;
   line-height: 1.08;
 }
+/* UX-RUNTIME-02 - module header is a real title */
+.skpe-cockpit-header {
+  min-height: 76px;
+}
+
+.skpe-cockpit-context strong {
+  color: #176b53 !important;
+  font-size: clamp(1.75rem, 2.7vw, 2.2rem) !important;
+  font-weight: 820 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.018em;
+}

@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react'
+import { useRef, type ComponentType, type ReactNode } from 'react'
 
 import {
   deriveMonitoringTimelineWindow,
@@ -27,6 +27,54 @@ type ManagementTimelineProps = {
   JourneyIcon: ComponentType
   InitiativesIcon: ComponentType
   onOpenEconomicExecution: () => void}
+
+function SyncedHorizontalViewport({
+  children,
+  contentWidth,
+}: {
+  children: ReactNode
+  contentWidth: number
+}) {
+  const topRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const syncingRef = useRef(false)
+
+  const syncScroll = (
+    source: HTMLDivElement,
+    target: HTMLDivElement | null,
+  ) => {
+    if (!target || syncingRef.current) return
+    syncingRef.current = true
+    target.scrollLeft = source.scrollLeft
+    window.requestAnimationFrame(() => {
+      syncingRef.current = false
+    })
+  }
+
+  return (
+    <>
+      <div
+        className="skpe-horizontal-scroll-top"
+        ref={topRef}
+        onScroll={(event) =>
+          syncScroll(event.currentTarget, bodyRef.current)
+        }
+        aria-label="Rolagem horizontal da visualização"
+      >
+        <div style={{ width: contentWidth, height: 1 }} />
+      </div>
+      <div
+        className="skpe-management-timeline-scroll"
+        ref={bodyRef}
+        onScroll={(event) =>
+          syncScroll(event.currentTarget, topRef.current)
+        }
+      >
+        {children}
+      </div>
+    </>
+  )
+}
 
 type TimelineBarsProps = {
   window: MonitoringTimelineWindow
@@ -328,7 +376,7 @@ export function ManagementTimeline({
         </div>
         </header>
 
-        <div className="skpe-management-timeline-scroll">
+        <SyncedHorizontalViewport contentWidth={920}>
           <div className="skpe-management-timeline-table">
             {orderedJourney.map((row) => {
               const rowEvents =
@@ -391,7 +439,7 @@ export function ManagementTimeline({
               </p>
             ) : null}
           </div>
-        </div>
+        </SyncedHorizontalViewport>
       </section>
       ) : null}
 
@@ -410,7 +458,7 @@ export function ManagementTimeline({
           </button>
         </header>
 
-        <div className="skpe-management-timeline-scroll">
+        <SyncedHorizontalViewport contentWidth={920}>
           <div className="skpe-management-timeline-table">
             {orderedInitiatives.map((row) => (
               <button
@@ -467,7 +515,7 @@ export function ManagementTimeline({
               </p>
             ) : null}
           </div>
-        </div>
+        </SyncedHorizontalViewport>
       </section>
       ) : null}
 
