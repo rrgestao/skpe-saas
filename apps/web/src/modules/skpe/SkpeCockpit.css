@@ -6997,9 +6997,11 @@ button.skpe-admin-kpi-card:hover,
 /* UX-SHELL-00 V2 - cleaner organization identity and contextual header */
 .skpe-organization-brand {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
   align-items: start;
   gap: 0.55rem;
+  position: relative;
+  justify-items: center;
 }
 
 .skpe-organization-brand-identity {
@@ -7007,6 +7009,7 @@ button.skpe-admin-kpi-card:hover,
   justify-items: center;
   gap: 0.28rem;
   min-width: 0;
+  width: 100%;
 }
 
 .skpe-organization-brand-identity .skpe-sidebar-brand-text {
@@ -7063,6 +7066,13 @@ button.skpe-admin-kpi-card:hover,
   margin-left: auto;
 }
 
+
+.skpe-organization-brand > .skpe-sidebar-icon-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+}
 .skpe-sidebar-collapsed .skpe-organization-brand {
   grid-template-columns: 1fr;
   justify-items: center;
@@ -7135,14 +7145,13 @@ button.skpe-admin-kpi-card:hover,
 }
 
 .skpe-sidebar-copyright {
-  font-size: 0.5rem;
+  font-size: 0.44rem;
   opacity: 0.82;
 }
 
 .skpe-sidebar-collapsed .skpe-sidebar-product-footer .skpe-product-signature > div,
 .skpe-sidebar-collapsed .skpe-sidebar-copyright {
   display: none;
-  font-size: 0.44rem;
 }
 
 .skpe-sidebar-collapsed .skpe-sidebar-product-footer {
