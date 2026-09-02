@@ -43,7 +43,6 @@ type SvarTask = {
   temporal_source: string
   parent?: string | number
   open?: boolean
-  data?: SvarTask[]
   type?: 'task' | 'milestone' | 'summary'
 }
 
@@ -83,8 +82,8 @@ class SvarRuntimeBoundary extends Component<
         <section className="skpe-svar-gantt-runtime-error" role="alert">
           <strong>O Gantt interativo Beta não pôde ser renderizado.</strong>
           <p>
-            A Jornada continua disponível. Use as abas Estrutura ou Cronograma
-            (Gantt) acima enquanto este Beta é estabilizado.
+            A Jornada continua disponível. O erro foi isolado sem comprometer
+            os registros canônicos do cronograma.
           </p>
           {this.state.message ? (
             <small>Detalhe técnico: {this.state.message}</small>
@@ -147,36 +146,8 @@ function formatMonth(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
 }
 
-function buildNestedTasks(flatTasks: SvarTask[]) {
-  const byId = new Map(flatTasks.map((task) => [task.id, { ...task, data: [] as SvarTask[] }]))
-  const roots: SvarTask[] = []
-  for (const task of flatTasks) {
-    const clone = byId.get(task.id)
-    if (!clone) continue
-    if (task.parent !== undefined && task.parent !== 0) {
-      const parentId = String(task.parent)
-
-      if (byId.has(parentId)) {
-        byId.get(parentId)?.data?.push(clone)
-        delete clone.parent
-        continue
-      }
-    }
-
-    {
-      clone.parent = 0
-      roots.push(clone)
-    }
-  }
-  const clean = (task: SvarTask) => {
-    if (task.data?.length) task.data.forEach(clean)
-    else delete task.data
-  }
-  roots.forEach(clean)
-  return roots
-}
-
-function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projection = useMemo(() => {
+function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
+  const projection = useMemo(() => {
     const tasks: SvarTask[] = []
     const projectableIds = new Set(
       rows
@@ -199,38 +170,6 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projecti
       }
     }
 
-    for (const row of rows) {
-      const range = getProjectableRange(row)
-      if (!range) continue
-
-      const isActualMilestone =
-        range.source === 'actual' &&
-        range.start.getTime() === range.end.getTime()
-
-      tasks.push({
-        id: row.item_id,
-        text: `${row.item_code} · ${row.item_name}`,
-        start: range.start,
-        end: range.end,
-        progress: clampProgress(row.item_progress),
-        code: row.item_code,
-        responsible_name: row.responsible_name ?? 'Não definido',
-        temporal_source: sourceLabels[range.source],
-        parent:
-          row.parent_item_id && projectableIds.has(row.parent_item_id)
-            ? row.parent_item_id
-            : 'skpe-project-program-window',
-        open: currentPath.has(row.item_id),
-        type: isActualMilestone ? 'milestone' : undefined,
-      })
-    }
-
-    tasks.sort((first, second) => {
-      const byStart = first.start.getTime() - second.start.getTime()
-      if (byStart !== 0) return byStart
-      return first.code.localeCompare(second.code, 'pt-BR')
-    })
-
     const projectStartValue =
       rows.find((row) => row.project_start_date)?.project_start_date ?? null
     const projectEndValue =
@@ -242,13 +181,14 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projecti
       : null
     const projectEnd = projectEndValue ? parseDateOnly(projectEndValue) : null
 
-    if (
+    const hasProjectWindow =
       projectStart &&
       projectEnd &&
       !Number.isNaN(projectStart.getTime()) &&
       !Number.isNaN(projectEnd.getTime())
-    ) {
-      tasks.unshift({
+
+    if (hasProjectWindow) {
+      tasks.push({
         id: 'skpe-project-program-window',
         text: 'Projeto Estratégico · Programação global da Jornada',
         start: projectStart,
@@ -263,9 +203,72 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projecti
       })
     }
 
-    const projectedItemCount = tasks.filter((task) => task.id !== 'skpe-project-program-window').length
+    for (const row of rows) {
+      const range = getProjectableRange(row)
+      if (!range) continue
+
+      const isActualMilestone =
+        range.source === 'actual' &&
+        range.start.getTime() === range.end.getTime()
+
+      const parent =
+        row.parent_item_id && projectableIds.has(row.parent_item_id)
+          ? row.parent_item_id
+          : hasProjectWindow
+            ? 'skpe-project-program-window'
+            : 0
+
+      tasks.push({
+        id: row.item_id,
+        text: `${row.item_code} · ${row.item_name}`,
+        start: range.start,
+        end: range.end,
+        progress: clampProgress(row.item_progress),
+        code: row.item_code,
+        responsible_name: row.responsible_name ?? 'Não definido',
+        temporal_source: sourceLabels[range.source],
+        parent,
+        open: currentPath.has(row.item_id),
+        type: isActualMilestone ? 'milestone' : 'task',
+      })
+    }
+
+    tasks.sort((first, second) => {
+      if (first.id === 'skpe-project-program-window') return -1
+      if (second.id === 'skpe-project-program-window') return 1
+      const byStart = first.start.getTime() - second.start.getTime()
+      if (byStart !== 0) return byStart
+      return first.code.localeCompare(second.code, 'pt-BR')
+    })
+
+    const projectedItemCount = tasks.filter(
+      (task) => task.id !== 'skpe-project-program-window',
+    ).length
+
+    // SVAR 2.7.x can throw while expanding a leaf task.
+    // Only tasks that actually own projected children may be open.
+    const parentIds = new Set(
+      tasks
+        .map((task) => task.parent)
+        .filter(
+          (parent): parent is string | number =>
+            parent !== undefined && parent !== 0,
+        )
+        .map((parent) => String(parent)),
+    )
+
+    for (const task of tasks) {
+      const hasProjectedChildren = parentIds.has(String(task.id))
+      task.open =
+        hasProjectedChildren &&
+        (
+          task.id === 'skpe-project-program-window' ||
+          currentPath.has(task.id)
+        )
+    }
+
     return {
-      tasks: buildNestedTasks(tasks),
+      tasks,
       omittedCount: rows.length - projectedItemCount,
       projectStart,
       projectEnd,
@@ -290,12 +293,14 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projecti
         id: 'text',
         header: 'Item',
         flexgrow: 2,
+        sort: true,
       },
       {
         id: 'start',
         header: 'Início',
         width: 120,
         align: 'center' as const,
+        sort: true,
       },
       {
         id: 'duration',
@@ -312,8 +317,8 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projecti
       <section className="skpe-svar-gantt-empty">
         <strong>Gantt interativo ainda sem intervalos projetáveis</strong>
         <p>
-          Nenhuma data canônica de realizado, plano, previsão operacional ou linha de base está
-          disponível para os itens desta Jornada.
+          Nenhuma data canônica de realizado, plano, previsão operacional ou
+          linha de base está disponível para os itens desta Jornada.
         </p>
       </section>
     )
@@ -340,8 +345,8 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {  const projecti
       {projection.omittedCount > 0 && (
         <div className="skpe-svar-gantt-notice">
           {projection.omittedCount} item(ns) ainda não possuem intervalo
-          planejado, previsão operacional, linha de base ou realizado materializado. Nenhuma data
-          de Macrofase foi inferida.
+          planejado, previsão operacional, linha de base ou realizado
+          materializado. Nenhuma data de Macrofase foi inferida.
         </div>
       )}
 

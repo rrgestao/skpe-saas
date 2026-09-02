@@ -12,6 +12,9 @@ type InitiativeDataExplorerBetaProps = {
 }
 
 type GroupMode =
+  | 'strategic_theme_objective'
+  | 'strategic_theme'
+  | 'strategic_objective'
   | 'initiative_hierarchy'
   | 'area_strategic'
   | 'area'
@@ -27,6 +30,8 @@ type ExplorerRow = {
   area: string
   responsible: string
   strategic: string
+  strategicTheme: string
+  strategicObjective: string
   priority: string
   criticality: string
   progressLabel: string
@@ -116,6 +121,10 @@ function formatDate(value: string | null) {
   return `${day}/${month}/${year}`
 }
 
+function joined(values: string[], fallback: string) {
+  return values.length > 0 ? values.join(' | ') : fallback
+}
+
 function toInitiativeRow(initiative: InitiativePortfolioRow): ExplorerRow {
   return {
     id: initiative.initiative_id,
@@ -126,6 +135,14 @@ function toInitiativeRow(initiative: InitiativePortfolioRow): ExplorerRow {
     area: initiative.responsible_area_name ?? 'Área não definida',
     responsible: initiative.responsible_name ?? 'Responsável não definido',
     strategic: initiative.is_strategic ? 'Estratégica' : 'Não estratégica',
+    strategicTheme: joined(
+      initiative.strategic_theme_names,
+      'Tema não definido',
+    ),
+    strategicObjective: joined(
+      initiative.strategic_objective_names,
+      'Objetivo não definido',
+    ),
     priority: priorityLabel(initiative.priority),
     criticality: priorityLabel(initiative.criticality),
     progressLabel: `${initiative.progress}%`,
@@ -224,6 +241,8 @@ function groupRows(
         area: '',
         responsible: '',
         strategic: '',
+        strategicTheme: '',
+        strategicObjective: '',
         priority: '',
         criticality: '',
         progressLabel: '',
@@ -294,6 +313,32 @@ function buildRows(
     classLabel: 'Vínculo estratégico',
   }
 
+  const theme = {
+    key: 'strategic-theme',
+    label: (initiative: InitiativePortfolioRow) =>
+      joined(initiative.strategic_theme_names, 'Tema não definido'),
+    classLabel: 'Tema Estratégico',
+  }
+
+  const objective = {
+    key: 'strategic-objective',
+    label: (initiative: InitiativePortfolioRow) =>
+      joined(initiative.strategic_objective_names, 'Objetivo não definido'),
+    classLabel: 'Objetivo Estratégico',
+  }
+
+  if (mode === 'strategic_theme_objective') {
+    return groupRows(initiatives, [theme, objective])
+  }
+
+  if (mode === 'strategic_theme') {
+    return groupRows(initiatives, [theme])
+  }
+
+  if (mode === 'strategic_objective') {
+    return groupRows(initiatives, [objective])
+  }
+
   if (mode === 'area_strategic') {
     return groupRows(initiatives, [area, strategic])
   }
@@ -309,83 +354,108 @@ function buildRows(
   return groupRows(initiatives, [responsible, strategic])
 }
 
+function textHeader(text: string, placeholder: string) {
+  return {
+    text,
+    filter: {
+      type: 'text' as const,
+      config: {
+        placeholder,
+      },
+    },
+  }
+}
+
 const columns = [
   {
     id: 'classLabel',
-    header: 'Tipo',
-    width: 150,
+    header: textHeader('Tipo', 'Filtrar tipo'),
+    width: 145,
     sort: true,
   },
   {
     id: 'name',
-    header: 'Iniciativa / agrupamento',
-    width: 360,
+    header: textHeader('Iniciativa / agrupamento', 'Filtrar iniciativa'),
+    width: 330,
+    flexgrow: 2,
     treetoggle: true,
     sort: true,
   },
   {
+    id: 'strategicTheme',
+    header: textHeader('Tema Estratégico', 'Filtrar tema'),
+    width: 210,
+    sort: true,
+  },
+  {
+    id: 'strategicObjective',
+    header: textHeader('Objetivo Estratégico', 'Filtrar objetivo'),
+    width: 240,
+    sort: true,
+  },
+  {
     id: 'progressLabel',
-    header: 'Progresso',
+    header: textHeader('Progresso', 'Filtrar'),
     width: 105,
     sort: true,
   },
   {
     id: 'statusLabel',
-    header: 'Situação',
+    header: textHeader('Situação', 'Filtrar situação'),
     width: 140,
     sort: true,
   },
   {
     id: 'area',
-    header: 'Área',
+    header: textHeader('Área', 'Filtrar área'),
     width: 170,
     sort: true,
   },
   {
     id: 'responsible',
-    header: 'Responsável',
+    header: textHeader('Responsável', 'Filtrar responsável'),
     width: 180,
     sort: true,
   },
   {
     id: 'strategic',
-    header: 'Estratégia',
+    header: textHeader('Estratégia', 'Filtrar'),
     width: 135,
     sort: true,
   },
   {
     id: 'priority',
-    header: 'Prioridade',
+    header: textHeader('Prioridade', 'Filtrar'),
     width: 115,
     sort: true,
   },
   {
     id: 'criticality',
-    header: 'Criticidade',
+    header: textHeader('Criticidade', 'Filtrar'),
     width: 115,
     sort: true,
   },
   {
     id: 'startDate',
-    header: 'Início',
+    header: textHeader('Início', 'Filtrar'),
     width: 110,
     sort: true,
   },
   {
     id: 'targetEndDate',
-    header: 'Término',
+    header: textHeader('Término', 'Filtrar'),
     width: 110,
     sort: true,
   },
   {
     id: 'health',
-    header: 'Saúde',
+    header: textHeader('Saúde', 'Filtrar'),
     width: 120,
     sort: true,
   },
   {
     id: 'risk',
-    header: 'Risco',
+    header: textHeader('Risco', 'Filtrar'),
     width: 110,
     sort: true,
   },
@@ -397,7 +467,7 @@ export function InitiativeDataExplorerBeta({
 }: InitiativeDataExplorerBetaProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [groupMode, setGroupMode] =
-    useState<GroupMode>('area_strategic')
+    useState<GroupMode>('strategic_theme_objective')
 
   const data = useMemo(
     () => buildRows(initiatives, groupMode),
@@ -433,7 +503,7 @@ export function InitiativeDataExplorerBeta({
     <section className="sparks-data-explorer-beta">
       <div
         className="sparks-data-explorer-beta__toolbar"
-        title="Escolha uma hierarquia, expanda ou recolha os grupos, ordene as colunas e dê duplo clique numa iniciativa para abrir."
+        title="Escolha uma hierarquia, expanda ou recolha os grupos, ordene as colunas e use os filtros nativos de cabeçalho."
       >
         <div>
           <p>SPARKs Data Explorer · Beta</p>
@@ -448,6 +518,15 @@ export function InitiativeDataExplorerBeta({
               setGroupMode(event.target.value as GroupMode)
             }
           >
+            <option value="strategic_theme_objective">
+              Tema Estratégico → Objetivo Estratégico → Iniciativa
+            </option>
+            <option value="strategic_theme">
+              Tema Estratégico → Iniciativa
+            </option>
+            <option value="strategic_objective">
+              Objetivo Estratégico → Iniciativa
+            </option>
             <option value="area_strategic">
               Área → Estratégico/Não estratégico → Iniciativa
             </option>
@@ -472,7 +551,7 @@ export function InitiativeDataExplorerBeta({
         role="region"
         aria-label="Exploração hierárquica do Plano de Ação"
         tabIndex={0}
-        title="Expanda ou recolha os agrupamentos. Dê duplo clique numa iniciativa para abrir."
+        title="Clique nos cabeçalhos para ordenar. Use os filtros logo abaixo dos títulos. Ctrl/Cmd+clique permite ordenação por múltiplas colunas."
         onDoubleClick={() => {
           if (selectedInitiative) {
             onOpenInitiative(selectedInitiative)
@@ -501,7 +580,7 @@ export function InitiativeDataExplorerBeta({
         <div>
           <span>
             Somente leitura · agrupamentos analíticos derivados dos mesmos
-            registros canônicos.
+            registros canônicos · ordenação e filtros nativos do SVAR Grid.
           </span>
           {selectedInitiative ? (
             <strong>

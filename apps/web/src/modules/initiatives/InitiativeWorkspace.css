@@ -252,3 +252,68 @@
 .skpe-initiative-economic-dialog-header .sparks-icon-action {
   display: none !important;
 }
+/* UX-RUNTIME-05 V5 ECONOMICS PANEL */
+.skpe-initiative-kanban-host
+.skpe-initiative-economic-overlay[data-presentation='panel'] {
+  position: static !important;
+  inset: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  place-items: initial !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+.skpe-initiative-kanban-host
+.skpe-initiative-economic-overlay[data-presentation='panel']
+> .skpe-initiative-economic-dialog,
+.skpe-initiative-kanban-host
+.skpe-initiative-economic-overlay[data-presentation='panel']
+> .skpe-modal-panel {
+  position: static !important;
+  inset: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: auto !important;
+  display: grid !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.skpe-initiative-kanban-host
+.skpe-initiative-economic-overlay[data-presentation='panel']
+.skpe-initiative-economic-dialog-header {
+  position: static !important;
+  top: auto !important;
+  margin: 0 !important;
+  padding: 0.8rem 0.95rem !important;
+  background: #fff !important;
+}
+
+.skpe-initiative-kanban-host
+.skpe-initiative-economic-overlay[data-presentation='panel']
+.skpe-initiative-economic-dialog-header
+.sparks-icon-action {
+  display: none !important;
+}

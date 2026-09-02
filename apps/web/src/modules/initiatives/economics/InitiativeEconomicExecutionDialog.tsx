@@ -192,6 +192,8 @@ export function InitiativeEconomicExecutionDialog({
   }, [initiativeId, organizationId])
 
   useEffect(() => {
+    if (presentation !== 'dialog') return
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !saving) {
         event.preventDefault()

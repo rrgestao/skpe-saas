@@ -13,6 +13,7 @@
 }
 
 .sparks-data-explorer-beta__toolbar {
+  align-items: end;
   padding: 0.85rem 0.95rem;
   border: 1px solid #dbe6e1;
   border-radius: 14px;
@@ -43,62 +44,42 @@
   font-size: 0.72rem;
 }
 
-.sparks-data-explorer-beta__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
+.sparks-data-explorer-beta__grouping {
+  display: grid;
+  gap: 0.3rem;
+  width: min(620px, 100%);
+  min-width: min(520px, 100%);
 }
 
-.sparks-data-explorer-beta__actions button {
-  min-height: 38px;
-  padding: 0.5rem 0.8rem;
-  border: 1px solid #176b53;
-  border-radius: 9px;
-  background: #176b53;
-  color: #fff;
-  font-weight: 800;
-  cursor: pointer;
+.sparks-data-explorer-beta__grouping span {
+  color: #64766e;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
-.sparks-data-explorer-beta__actions button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+.sparks-data-explorer-beta__grouping select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #d6e0db;
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  background: #fff;
+  color: #1f3029;
 }
 
 .sparks-data-explorer-beta__grid {
   min-width: 0;
-  height: clamp(300px, 46vh, 540px);
+  height: clamp(340px, 50vh, 620px);
   overflow: hidden;
   border: 1px solid #dbe6e1;
   border-radius: 14px;
   background: #fff;
+  cursor: default;
+  scrollbar-gutter: stable both-edges;
 }
 
 .sparks-data-explorer-beta__grid > * {
   height: 100%;
-}
-
-.sparks-data-explorer-beta footer {
-  padding: 0.2rem 0.15rem;
-}
-
-.sparks-data-explorer-beta footer strong {
-  color: #3a574c;
-}
-
-@media (max-width: 900px) {
-  .sparks-data-explorer-beta__toolbar,
-  .sparks-data-explorer-beta footer {
-    display: grid;
-  }
-
-  .sparks-data-explorer-beta__actions {
-    justify-content: space-between;
-  }
-}
-/* UX-01.1 */
-.sparks-data-explorer-beta__grid {
-  cursor: default;
 }
 
 .sparks-data-explorer-row .wx-cell {
@@ -116,6 +97,14 @@
   box-shadow: inset 3px 0 #25735b;
 }
 
+.sparks-data-explorer-beta footer {
+  padding: 0.2rem 0.15rem;
+}
+
+.sparks-data-explorer-beta footer strong {
+  color: #3a574c;
+}
+
 .sparks-data-explorer-beta footer > div {
   display: grid;
   gap: 0.15rem;
@@ -127,37 +116,64 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* UX-INITIATIVES-03 V2 */
-.sparks-data-explorer-beta__toolbar {
-  cursor: help;
+
+/* Plano de Ação: filtros devem consumir a largura útil do frame. */
+.skpe-initiative-filters {
+  display: grid !important;
+  grid-template-columns:
+    minmax(260px, 1.7fr)
+    repeat(3, minmax(170px, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 0.75rem !important;
 }
 
-.sparks-data-explorer-beta__grid {
-  scrollbar-gutter: stable both-edges;
-}
-/* UX-ROADMAP-03 V2 - configurable analytic hierarchy */
-.sparks-data-explorer-beta__toolbar {
-  align-items: end;
-}
-
-.sparks-data-explorer-beta__grouping {
-  display: grid;
-  gap: 0.3rem;
-  min-width: min(520px, 100%);
+.skpe-initiative-filters > *,
+.skpe-initiative-filters .skpe-admin-search,
+.skpe-initiative-filters .skpe-admin-search input,
+.skpe-initiative-filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
 }
 
-.sparks-data-explorer-beta__grouping span {
-  color: #64766e;
-  font-size: 0.72rem;
-  font-weight: 700;
+/* Evita que ações de header sejam empurradas para fora do frame. */
+.skpe-page-heading,
+.skpe-card-heading,
+.sparks-object-workspace-header {
+  min-width: 0;
 }
 
-.sparks-data-explorer-beta__grouping select {
-  width: 100%;
-  min-height: 38px;
-  border: 1px solid #d6e0db;
-  border-radius: 10px;
-  padding: 0.45rem 0.65rem;
-  background: #fff;
-  color: #1f3029;
+.skpe-page-heading > :first-child,
+.skpe-card-heading > :first-child,
+.sparks-object-workspace-header > :first-child {
+  min-width: 0;
+}
+
+.skpe-heading-actions,
+.skpe-object-workspace-actions {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1100px) {
+  .skpe-initiative-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .sparks-data-explorer-beta__toolbar,
+  .sparks-data-explorer-beta footer {
+    display: grid;
+  }
+
+  .sparks-data-explorer-beta__grouping {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .skpe-initiative-filters {
+    grid-template-columns: 1fr !important;
+  }
 }

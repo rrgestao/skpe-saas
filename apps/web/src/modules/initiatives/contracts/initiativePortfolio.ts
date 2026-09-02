@@ -39,6 +39,8 @@ export type InitiativePortfolioRow = {
   validation_status: string
 
   strategic_theme: string | null
+  strategic_theme_names: string[]
+  strategic_objective_names: string[]
 
   start_date: string | null
   target_end_date: string | null
