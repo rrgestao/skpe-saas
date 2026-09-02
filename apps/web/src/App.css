@@ -338,7 +338,7 @@ h2 {
 .platform-content {
   width: min(1220px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 2.5rem 0 4rem;
+  padding: 1.5rem 0 4rem;
 }
 
 .page-heading {
@@ -366,8 +366,8 @@ h2 {
 }
 
 .back-button {
-  margin-bottom: 1.5rem;
-  padding: 0.6rem 0;
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0;
   background: transparent;
   color: #176b53;
   font-weight: 750;

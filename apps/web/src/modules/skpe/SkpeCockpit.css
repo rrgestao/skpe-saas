@@ -7524,3 +7524,71 @@ button.skpe-admin-kpi-card:hover,
     margin-left: 0;
   }
 }
+
+/* UX-RHYTHM-01 - canonical vertical rhythm */
+/*
+ * Contrato transversal de espaco vertical.
+ * Mesma hierarquia visual deve usar o mesmo intervalo.
+ */
+.skpe-main {
+  padding-top: 1.5rem;
+}
+
+.skpe-main > .skpe-cockpit-header {
+  margin-top: -1.5rem;
+}
+
+.skpe-main > .skpe-cockpit-header + :where(section, nav, div) {
+  margin-top: 0.75rem !important;
+}
+
+.skpe-page-heading,
+.skpe-administration-heading {
+  margin-bottom: 0.75rem;
+}
+
+.skpe-kpi-grid,
+.skpe-governance-grid,
+.skpe-journey-list,
+.skpe-project-context-card,
+.skpe-journey-tree,
+.skpe-canvas-grid,
+.skpe-admin-kpi-grid,
+.skpe-admin-toolbar {
+  margin-top: 1rem;
+}
+
+.skpe-initiatives-context-actions {
+  margin-bottom: 0.75rem;
+}
+
+.skpe-initiative-kpi-grid {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.skpe-initiative-filters,
+.skpe-initiative-results-heading {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.skpe-strategic-formulation,
+.skpe-formulation-overview,
+.skpe-formulation-tab-panel {
+  gap: 1rem;
+}
+
+@media (max-width: 820px) {
+  .skpe-main {
+    padding-top: 1rem;
+  }
+
+  .skpe-main > .skpe-cockpit-header {
+    margin-top: 0;
+  }
+
+  .skpe-main > .skpe-cockpit-header + :where(section, nav, div) {
+    margin-top: 0.75rem !important;
+  }
+}
