@@ -7433,3 +7433,38 @@ button.skpe-admin-kpi-card:hover,
   background: var(--skpe-dark-surface);
   color: var(--skpe-dark-text);
 }
+
+/* SK-PE DARK TYPOGRAPHY V2 */
+.skpe-theme-dark .skpe-main,
+.skpe-theme-dark .skpe-main button,
+.skpe-theme-dark .skpe-main input,
+.skpe-theme-dark .skpe-main select,
+.skpe-theme-dark .skpe-main textarea {
+  color: #eef7f3;
+}
+
+.skpe-theme-dark .skpe-main p,
+.skpe-theme-dark .skpe-main span:not(.skpe-cockpit-notifications-count),
+.skpe-theme-dark .skpe-main small,
+.skpe-theme-dark .skpe-main em {
+  color: #c5d6d0;
+}
+
+.skpe-theme-dark .skpe-main h1,
+.skpe-theme-dark .skpe-main h2,
+.skpe-theme-dark .skpe-main h3,
+.skpe-theme-dark .skpe-main h4,
+.skpe-theme-dark .skpe-main strong {
+  color: #f7fbf9;
+}
+
+.skpe-theme-dark .skpe-main .skpe-eyebrow,
+.skpe-theme-dark .skpe-main .skpe-card-code {
+  color: #73d4b3;
+}
+
+.skpe-theme-dark .skpe-main .skpe-workspace-tabs button[aria-selected='true'],
+.skpe-theme-dark .skpe-main .skpe-tabs button[aria-selected='true'] {
+  background: #214a3d;
+  color: #ffffff;
+}

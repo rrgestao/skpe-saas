@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { useNavigate } from 'react-router-dom'
+import { WorkspaceTabs } from '../../../../components/design-system'
 
 import { supabase } from '../../../../lib/supabase'
 import { platformRoutes } from '../../app/skpeRoutes'
@@ -327,25 +328,17 @@ export function JourneyProjectPlan({
           <p className="skpe-eyebrow">Projeto Estratégico sugerido pelo SPARKs PE</p>
           <h2>{project.project_name}</h2>
           <p>
-            A Jornada fornece a estrutura metodológica do projeto. O planejamento
-            integrado confirma escopo, equipe, responsabilidades, cronograma e
-            recursos antes de fechar a Linha de Base.
+            A Jornada fornece a estrutura metodológica do Projeto Estratégico e
+            organiza, de forma integrada, o escopo, as responsabilidades, o
+            cronograma, os recursos, os critérios de revisão e a Linha de Base.
+            O planejamento deve ser construído a partir das condições reais da
+            organização, das dependências entre entregas, da capacidade
+            disponível, das prioridades estratégicas e dos riscos identificados,
+            evitando transformar referências de prazo em compromissos artificiais.
+            Prazos de implantação, aceleração ou acompanhamento devem aparecer
+            como dicas contextuais quando as iniciativas e ações forem planejadas,
+            sempre sujeitos à validação da governança do projeto.
           </p>
-        </div>
-
-        <div className="skpe-project-plan-window">
-          <span>
-            <strong>90 dias</strong>
-            implantação padrão
-          </span>
-          <span>
-            <strong>45 dias</strong>
-            meta acelerada
-          </span>
-          <span>
-            <strong>+90 dias</strong>
-            acompanhamento
-          </span>
         </div>
       </header>
 
@@ -408,25 +401,15 @@ export function JourneyProjectPlan({
         )}
       </section>
 
-      <nav
-        className="skpe-project-plan-stages"
-        aria-label="Etapas do Plano do Projeto"
-      >
-        {stages.map((stage, index) => (
-          <button
-            key={stage.id}
-            type="button"
-            className={activeStage === stage.id ? 'is-active' : ''}
-            onClick={() => setActiveStage(stage.id)}
-          >
-            <small>{index + 1}</small>
-            <span>
-              <strong>{stage.label}</strong>
-              <em>{stage.description}</em>
-            </span>
-          </button>
-        ))}
-      </nav>
+            <WorkspaceTabs
+        ariaLabel="Etapas do Plano do Projeto"
+        activeId={activeStage}
+        onChange={(id) => setActiveStage(id as ProjectPlanStage)}
+        tabs={stages.map((stage) => ({
+          id: stage.id,
+          label: stage.label,
+        }))}
+      />
 
       {activeStage === 'scope' && (
         <section className="skpe-project-plan-panel">

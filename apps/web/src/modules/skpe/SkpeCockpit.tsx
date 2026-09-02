@@ -31,6 +31,7 @@ import { AgendaSection } from './features/agenda/AgendaSection'
 import { EvolutionCyclesSection } from './features/evolution/EvolutionCyclesSection'
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
 import { StrategicIdentitySection } from './features/strategy/StrategicIdentitySection'
+import { StrategicFormulationSection } from './features/strategy/StrategicFormulationSection'
 import { StrategicDiagnosisSection } from './features/diagnosis/StrategicDiagnosisSection'
 import { StrategicPositioningSection } from './features/strategy/StrategicPositioningSection'
 import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateDialog'
@@ -7100,9 +7101,11 @@ export function SkpeCockpit({
   const canShowDiagnosis =
     canViewJourney && approvedMacrophases.includes('PEM-01')
   const canShowFormulation =
-    canViewJourney && approvedMacrophases.includes('PEM-02')
-  const canShowPlanAction =
-    canViewInitiatives && approvedMacrophases.includes('PEM-03')
+    canViewJourney &&
+    (
+      approvedMacrophases.includes('PEM-02') ||
+      projectContext?.current_phase_code?.startsWith('PEM-02') === true
+    )
   const canViewGovernance = capabilities?.can_view_governance ?? legacyCanView
   const canManageJourney = capabilities?.can_manage_journey ?? legacyCanManageJourney
   const canManageInitiatives =
@@ -7131,7 +7134,7 @@ export function SkpeCockpit({
       diagnosis: canShowDiagnosis,
       formulations: canShowFormulation,
       'evolution-cycles': canViewEvolution,
-      initiatives: canShowPlanAction,
+      initiatives: canViewInitiatives,
       monitoring: canViewMonitoring,
       agenda: canViewAgenda,
       artifacts: canViewArtifacts,
@@ -7258,7 +7261,7 @@ export function SkpeCockpit({
                 <details className="skpe-nav-journey-disclosure">
                   <summary
                     className={
-                      ['journey', 'diagnosis', 'formulations', 'initiatives'].includes(
+                      ['journey', 'diagnosis', 'formulations'].includes(
                         activeSection,
                       )
                         ? 'skpe-nav-active'
@@ -7312,23 +7315,23 @@ export function SkpeCockpit({
                         Formulação Estratégica
                       </button>
                     ) : null}
-
-                    {canShowPlanAction ? (
-                      <button
-                        type="button"
-                        className={
-                          activeSection === 'initiatives'
-                            ? 'skpe-nav-submenu-active'
-                            : ''
-                        }
-                        onClick={() => navigateToSection('initiatives')}
-                      >
-                        Plano de Ação
-                      </button>
-                    ) : null}
                   </div>
                 </details>
-              ) : null}
+              ) : null}              <button
+                type="button"
+                className={
+                  activeSection === 'initiatives'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() => navigateToSection('initiatives')}
+                title="Plano de Ação"
+                hidden={!canViewInitiatives}
+              >
+                <InitiativesIcon />
+                Plano de Ação
+              </button>
+
 
               <button
                 type="button"
@@ -7798,6 +7801,14 @@ export function SkpeCockpit({
             />
           )}
 
+        {activeSection === 'formulations' &&
+          canShowFormulation &&
+          projectContext?.project_id && (
+            <StrategicFormulationSection
+              organizationId={organizationId}
+              projectId={projectContext.project_id}
+            />
+          )}
         {activeSection === 'strategic-identity' && canViewJourney && (
           <StrategicIdentitySection organizationId={organizationId} />
         )}
