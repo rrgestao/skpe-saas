@@ -716,6 +716,15 @@ function formatDate(
     return 'Sem prazo'
   }
 
+  // Data civil (LocalDate) nao pode sofrer conversao de fuso horario.
+  // Preserva o dia calendario em YYYY-MM-DD e em ISO datetime.
+  const isoCalendarDate = /^(\d{4})-(\d{2})-(\d{2})(?:$|T|\s)/.exec(value)
+
+  if (isoCalendarDate) {
+    const [, year, month, day] = isoCalendarDate
+    return `${day}/${month}/${year}`
+  }
+
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
