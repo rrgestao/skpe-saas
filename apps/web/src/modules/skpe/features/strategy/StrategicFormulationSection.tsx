@@ -4,6 +4,7 @@ import { WorkspaceTabs } from '../../../../components/design-system'
 import { supabase } from '../../../../lib/supabase'
 import { StrategicIdentitySection } from './StrategicIdentitySection'
 import { StrategicPositioningSection } from './StrategicPositioningSection'
+import { StrategicMapReadOnly } from './StrategicMapReadOnly'
 
 import './StrategicFormulationSection.css'
 
@@ -80,6 +81,7 @@ export function StrategicFormulationSection({
   organizationId,
   projectId,
 }: Props) {
+  const [formulationId, setFormulationId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<FormulationTab>('overview')
   const [counts, setCounts] = useState<CountState>({
     values: 0,
@@ -180,7 +182,7 @@ export function StrategicFormulationSection({
 
       if (firstError) {
         setErrorMessage(
-          `Não foi possível consolidar a Formulação Estratégica: ${firstError.message}`,
+          `NÃ£o foi possÃ­vel consolidar a FormulaÃ§Ã£o EstratÃ©gica: ${firstError.message}`,
         )
         setLoading(false)
         return
@@ -188,6 +190,29 @@ export function StrategicFormulationSection({
 
       setIdentityStatus(identityResponse.data?.status ?? null)
       setCoherenceStatement(identityResponse.data?.coherence_statement ?? null)
+
+      const { data: formulationRows, error: formulationError } = await supabase
+        .from('skpe_strategic_formulations')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('project_id', projectId)
+        .in('status', ['draft', 'under_review', 'approved'])
+        .order('version_number', { ascending: false })
+        .limit(2)
+
+      if (!active) return
+
+      if (formulationError) {
+        setErrorMessage(
+          `Não foi possível resolver a versão da Formulação Estratégica: ${formulationError.message}`,
+        )
+        setLoading(false)
+        return
+      }
+
+      setFormulationId(
+        formulationRows?.length === 1 ? formulationRows[0]?.id ?? null : null,
+      )
 
       setOkrs((okrsResponse.data ?? []) as OkrRow[])
       setKeyResults((keyResultsResponse.data ?? []) as KeyResultRow[])
@@ -217,15 +242,15 @@ export function StrategicFormulationSection({
   const approvedIdentity = identityStatus === 'approved'
 
   const executiveSynthesis = useMemo(() => {
-    if (loading) return 'Consolidando dados canônicos da Formulação Estratégica.'
+    if (loading) return 'Consolidando dados canÃ´nicos da FormulaÃ§Ã£o EstratÃ©gica.'
 
     return [
       approvedIdentity
-        ? 'O PMVV encontra-se aprovado e deve ser tratado como baseline da Formulação.'
-        : 'O PMVV ainda não está integralmente aprovado.',
-      `${counts.themes} Tema(s) Estratégico(s) e ${counts.objectives} Objetivo(s) Estratégico(s) estão materializados.`,
-      `${counts.okrs} OKR(s), ${counts.keyResults} Resultado(s)-Chave e ${counts.indicators} Indicador(es) já possuem registros canônicos.`,
-      `${counts.initiatives} iniciativa(s) estão disponíveis no Plano de Ação da organização.`,
+        ? 'O PMVV encontra-se aprovado e deve ser tratado como baseline da FormulaÃ§Ã£o.'
+        : 'O PMVV ainda nÃ£o estÃ¡ integralmente aprovado.',
+      `${counts.themes} Tema(s) EstratÃ©gico(s) e ${counts.objectives} Objetivo(s) EstratÃ©gico(s) estÃ£o materializados.`,
+      `${counts.okrs} OKR(s), ${counts.keyResults} Resultado(s)-Chave e ${counts.indicators} Indicador(es) jÃ¡ possuem registros canÃ´nicos.`,
+      `${counts.initiatives} iniciativa(s) estÃ£o disponÃ­veis no Plano de AÃ§Ã£o da organizaÃ§Ã£o.`,
     ].join(' ')
   }, [approvedIdentity, counts, loading])
 
@@ -234,25 +259,25 @@ export function StrategicFormulationSection({
       <header className="skpe-strategic-formulation-header">
         <div>
           <p className="skpe-eyebrow">{'Pensamento Estrat\u00e9gico'}</p>
-          <h2>Da identidade às escolhas e ao desdobramento</h2>
+          <h2>Da identidade Ã s escolhas e ao desdobramento</h2>
           <p>
-            A Formulação reúne PMVV, arquitetura estratégica, objetivos,
-            desdobramentos de desempenho e o Plano Estratégico em uma única
-            superfície de trabalho.
+            A FormulaÃ§Ã£o reÃºne PMVV, arquitetura estratÃ©gica, objetivos,
+            desdobramentos de desempenho e o Plano EstratÃ©gico em uma Ãºnica
+            superfÃ­cie de trabalho.
           </p>
         </div>
       </header>
 
       <WorkspaceTabs
-        ariaLabel="Perspectivas da Formulação Estratégica"
+        ariaLabel="Perspectivas da FormulaÃ§Ã£o EstratÃ©gica"
         activeId={activeTab}
         onChange={(id) => setActiveTab(id as FormulationTab)}
         tabs={[
-          { id: 'overview', label: 'Visão Geral' },
+          { id: 'overview', label: 'VisÃ£o Geral' },
           { id: 'pmvv', label: 'PMVV' },
-          { id: 'architecture', label: 'Temas e Mapa Estratégico' },
+          { id: 'architecture', label: 'Temas e Mapa EstratÃ©gico' },
           { id: 'performance', label: 'OKRs, Indicadores e Metas' },
-          { id: 'plan', label: 'Plano Estratégico' },
+          { id: 'plan', label: 'Plano EstratÃ©gico' },
         ]}
       />
 
@@ -267,34 +292,34 @@ export function StrategicFormulationSection({
           <div className="skpe-formulation-summary-grid">
             <article>
               <small>PMVV</small>
-              <strong>{approvedIdentity ? 'Aprovado' : 'Em evolução'}</strong>
+              <strong>{approvedIdentity ? 'Aprovado' : 'Em evoluÃ§Ã£o'}</strong>
               <span>{counts.values} valores materializados</span>
             </article>
             <article>
-              <small>Arquitetura estratégica</small>
+              <small>Arquitetura estratÃ©gica</small>
               <strong>{counts.themes} temas</strong>
-              <span>{counts.objectives} objetivos estratégicos</span>
+              <span>{counts.objectives} objetivos estratÃ©gicos</span>
             </article>
             <article>
               <small>Desdobramento</small>
               <strong>{counts.okrs} OKRs</strong>
               <span>
-                {counts.keyResults} KRs · {counts.indicators} indicadores
+                {counts.keyResults} KRs Â· {counts.indicators} indicadores
               </span>
             </article>
             <article>
-              <small>Plano Estratégico</small>
+              <small>Plano EstratÃ©gico</small>
               <strong>{counts.initiatives} iniciativas</strong>
-              <span>execução materializada no Plano de Ação</span>
+              <span>execuÃ§Ã£o materializada no Plano de AÃ§Ã£o</span>
             </article>
           </div>
 
           <article className="skpe-formulation-synthesis">
-            <h3>Síntese executiva</h3>
+            <h3>SÃ­ntese executiva</h3>
             <p>{executiveSynthesis}</p>
             {coherenceStatement ? (
               <>
-                <h4>Consideração de coerência</h4>
+                <h4>ConsideraÃ§Ã£o de coerÃªncia</h4>
                 <p>{coherenceStatement}</p>
               </>
             ) : null}
@@ -302,15 +327,15 @@ export function StrategicFormulationSection({
 
           <article className="skpe-formulation-report">
             <div>
-              <small>Relatório Executivo da Etapa</small>
-              <strong>Ainda não emitido no repositório de artefatos.</strong>
+              <small>RelatÃ³rio Executivo da Etapa</small>
+              <strong>Ainda nÃ£o emitido no repositÃ³rio de artefatos.</strong>
               <p>
-                O download será habilitado quando existir uma versão emitida e
-                armazenada no registro canônico de artefatos da Formulação.
+                O download serÃ¡ habilitado quando existir uma versÃ£o emitida e
+                armazenada no registro canÃ´nico de artefatos da FormulaÃ§Ã£o.
               </p>
             </div>
             <button type="button" disabled>
-              Download indisponível
+              Download indisponÃ­vel
             </button>
           </article>
         </section>
@@ -320,11 +345,11 @@ export function StrategicFormulationSection({
         <section className="skpe-formulation-tab-panel">
           <StrategicIdentitySection organizationId={organizationId} />
           <article className="skpe-formulation-synthesis">
-            <h3>Síntese e considerações</h3>
+            <h3>SÃ­ntese e consideraÃ§Ãµes</h3>
             <p>
               O PMVV deve orientar escolhas, objetivos e iniciativas. A
-              aprovação da identidade não substitui a validação posterior dos
-              Objetivos Estratégicos e demais desdobramentos.
+              aprovaÃ§Ã£o da identidade nÃ£o substitui a validaÃ§Ã£o posterior dos
+              Objetivos EstratÃ©gicos e demais desdobramentos.
             </p>
           </article>
         </section>
@@ -333,12 +358,13 @@ export function StrategicFormulationSection({
       {activeTab === 'architecture' ? (
         <section className="skpe-formulation-tab-panel">
           <StrategicPositioningSection organizationId={organizationId} />
+          <StrategicMapReadOnly formulationId={formulationId} />
           <article className="skpe-formulation-synthesis">
-            <h3>Síntese e considerações</h3>
+            <h3>SÃ­ntese e consideraÃ§Ãµes</h3>
             <p>
-              Temas, perspectivas e Objetivos Estratégicos formam uma
-              arquitetura única. A leitura deve preservar relações de causa,
-              contribuição e prioridade antes do desdobramento em OKRs,
+              Temas, perspectivas e Objetivos EstratÃ©gicos formam uma
+              arquitetura Ãºnica. A leitura deve preservar relaÃ§Ãµes de causa,
+              contribuiÃ§Ã£o e prioridade antes do desdobramento em OKRs,
               indicadores, metas e iniciativas.
             </p>
           </article>
@@ -377,8 +403,8 @@ export function StrategicFormulationSection({
                       <small>{kr.code}</small>
                       <strong>{kr.name}</strong>
                       <p>
-                        Atual: {kr.current_value ?? '—'} {kr.unit ?? ''} · Meta:{' '}
-                        {kr.target_value ?? '—'} {kr.unit ?? ''}
+                        Atual: {kr.current_value ?? 'â€”'} {kr.unit ?? ''} Â· Meta:{' '}
+                        {kr.target_value ?? 'â€”'} {kr.unit ?? ''}
                       </p>
                     </div>
                     <span>{percent(kr.progress)}</span>
@@ -388,7 +414,7 @@ export function StrategicFormulationSection({
             </article>
 
             <article>
-              <h3>Indicadores e referências de meta</h3>
+              <h3>Indicadores e referÃªncias de meta</h3>
               {indicators.length === 0 ? (
                 <p>Nenhum indicador materializado.</p>
               ) : (
@@ -398,7 +424,7 @@ export function StrategicFormulationSection({
                       <small>{indicator.code}</small>
                       <strong>{indicator.name}</strong>
                       <p>
-                        Linha de base: {indicator.baseline_value ?? '—'}{' '}
+                        Linha de base: {indicator.baseline_value ?? 'â€”'}{' '}
                         {indicator.unit ?? ''}
                       </p>
                     </div>
@@ -410,11 +436,11 @@ export function StrategicFormulationSection({
           </div>
 
           <article className="skpe-formulation-synthesis">
-            <h3>Síntese e considerações</h3>
+            <h3>SÃ­ntese e consideraÃ§Ãµes</h3>
             <p>
-              OKRs, KRs e indicadores já existentes são exibidos sem inferir
-              metas ausentes. Lacunas de meta permanecem explícitas até que
-              sejam materializadas e validadas no modelo canônico.
+              OKRs, KRs e indicadores jÃ¡ existentes sÃ£o exibidos sem inferir
+              metas ausentes. Lacunas de meta permanecem explÃ­citas atÃ© que
+              sejam materializadas e validadas no modelo canÃ´nico.
             </p>
           </article>
         </section>
@@ -438,11 +464,11 @@ export function StrategicFormulationSection({
           </div>
 
           <article className="skpe-formulation-synthesis">
-            <h3>Síntese e considerações</h3>
+            <h3>SÃ­ntese e consideraÃ§Ãµes</h3>
             <p>
-              O Plano Estratégico consolida as iniciativas que materializam a
-              execução da estratégia. A edição operacional continua no Plano
-              de Ação, preservando uma única fonte de verdade.
+              O Plano EstratÃ©gico consolida as iniciativas que materializam a
+              execuÃ§Ã£o da estratÃ©gia. A ediÃ§Ã£o operacional continua no Plano
+              de AÃ§Ã£o, preservando uma Ãºnica fonte de verdade.
             </p>
           </article>
         </section>
