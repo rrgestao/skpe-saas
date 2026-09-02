@@ -233,7 +233,7 @@ export function StrategicFormulationSection({
     <section className="skpe-strategic-formulation">
       <header className="skpe-strategic-formulation-header">
         <div>
-          <p className="skpe-eyebrow">Formulação Estratégica</p>
+          <p className="skpe-eyebrow">{'Pensamento Estrat\u00e9gico'}</p>
           <h2>Da identidade às escolhas e ao desdobramento</h2>
           <p>
             A Formulação reúne PMVV, arquitetura estratégica, objetivos,

@@ -1515,6 +1515,7 @@ function App() {
         userAvatarUrl={userAvatarUrl}
         onOpenPlatformAdmin={handleOpenPlatformAdmin}
         onOpenUserProfile={() => setUserProfileOpen(true)}
+        onLogout={handleLogout}
       />
 <UserProfileDialog
   open={userProfileOpen}
@@ -1559,6 +1560,7 @@ function App() {
         userAvatarUrl={userAvatarUrl}
         onOpenPlatformAdmin={handleOpenPlatformAdmin}
         onOpenUserProfile={() => setUserProfileOpen(true)}
+        onLogout={handleLogout}
       />
 <UserProfileDialog
   open={userProfileOpen}

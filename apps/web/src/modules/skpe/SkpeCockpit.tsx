@@ -98,6 +98,7 @@ type SkpeCockpitProps = {
   userAvatarUrl: string | null
   onOpenPlatformAdmin?: () => void
   onOpenUserProfile?: () => void
+  onLogout?: () => void | Promise<void>
 }
 
 type SkpeCapabilities = {
@@ -6829,6 +6830,7 @@ export function SkpeCockpit({
   userAvatarUrl,
   onOpenPlatformAdmin,
   onOpenUserProfile,
+  onLogout,
 }: SkpeCockpitProps) {
   const [activeSection, setActiveSection] =
     useState<CockpitSection>(
@@ -7157,8 +7159,14 @@ export function SkpeCockpit({
     switch (activeSection) {
       case 'overview':
         return 'Visão Geral'
-      case 'journey':
-        return 'Jornada Estratégica'
+      case 'journey': {
+        const start = projectContext?.planning_horizon_start_year
+        const end = projectContext?.planning_horizon_end_year
+
+        return start && end
+          ? `Horizonte Estrat\u00e9gico - ${start} \u00b7 ${end}`
+          : 'Horizonte Estrat\u00e9gico'
+      }
       case 'diagnosis':
         return 'Diagnóstico Estratégico'
       case 'formulations':
@@ -7711,6 +7719,18 @@ export function SkpeCockpit({
                         >
                           Favoritos
                         </button>
+                    {onLogout ? (
+                      <button
+                        type="button"
+                        className="skpe-user-menu-logout"
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          void onLogout()
+                        }}
+                      >
+                        Sair
+                      </button>
+                    ) : null}
                       </>
                     )}
                   </div>
@@ -7831,7 +7851,6 @@ export function SkpeCockpit({
           <JourneyFeatureSection
             formatDate={formatDate}
             refreshRequestKey={journeyRefreshRequestKey}
-            strategicHorizon={formatStrategicHorizon(projectContext)}
             LockIcon={LockIcon}
             InitiativesIcon={InitiativesIcon}
             MonitoringIcon={MonitoringIcon}

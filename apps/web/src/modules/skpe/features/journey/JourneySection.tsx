@@ -328,7 +328,6 @@ type JourneySectionProps = {
   organizationId: string
   formatDate: (value: string | null) => string
   refreshRequestKey?: number
-  strategicHorizon?: string
   LockIcon: () => ReactNode
   InitiativesIcon: () => ReactNode
   MonitoringIcon: () => ReactNode
@@ -348,7 +347,6 @@ export function JourneySection({
   organizationId,
   formatDate,
   refreshRequestKey = 0,
-  strategicHorizon,
   LockIcon,
   InitiativesIcon,
   MonitoringIcon,
@@ -719,12 +717,7 @@ export function JourneySection({
       <section className="skpe-page-heading skpe-administration-heading">
         <div>
           <p className="skpe-eyebrow">Metodologia de Planejamento Estratégico</p>
-          <h1>
-            Jornada Estratégica
-            {strategicHorizon
-              ? ` - ${strategicHorizon.replace(/[–-]/g, ' · ')}`
-              : ''}
-          </h1>
+
 
         </div>
         <div

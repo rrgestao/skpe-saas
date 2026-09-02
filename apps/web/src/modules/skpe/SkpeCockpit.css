@@ -7197,7 +7197,7 @@ button.skpe-admin-kpi-card:hover,
 }
 /* UX-RUNTIME-02 - module header is a real title */
 .skpe-cockpit-header {
-  min-height: 76px;
+  min-height: 66px;
 }
 
 .skpe-cockpit-context strong {
@@ -7215,6 +7215,9 @@ button.skpe-admin-kpi-card:hover,
 
 .skpe-cockpit-context strong {
   display: block;
+  line-height: 1.4;
+  padding-bottom: 0.12em;
+  overflow: visible;
 }
 /* UX-ROADMAP-03 V2 - contextual submenu and lightweight scroll chevron */
 .skpe-nav-submenu {
