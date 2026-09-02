@@ -24,14 +24,17 @@ type Props = {
 }
 
 function StrategicObjectiveNode({ data }: NodeProps<StrategicMapNode>) {
-  const { objective, perspective } = data as StrategicMapNodeData
+  const { objective, perspective, theme } = data as StrategicMapNodeData
 
   return (
     <article className="skpe-strategic-map-node">
       <Handle type="target" position={Position.Top} isConnectable={false} />
       <small>{objective.code}</small>
       <strong>{objective.title}</strong>
-      {perspective ? <span>{perspective.name}</span> : null}
+      <div className="skpe-strategic-map-node-context">
+        {perspective ? <span>{perspective.name}</span> : null}
+        {theme ? <span>{theme.name}</span> : null}
+      </div>
       <Handle type="source" position={Position.Bottom} isConnectable={false} />
     </article>
   )
@@ -74,7 +77,7 @@ export function StrategicMapReadOnly({ formulationId }: Props) {
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : 'NÃ£o foi possÃ­vel carregar o Mapa EstratÃ©gico.',
+            : 'Não foi possível carregar o Mapa Estratégico.',
         )
       } finally {
         if (active) setLoading(false)
@@ -106,13 +109,33 @@ export function StrategicMapReadOnly({ formulationId }: Props) {
     }
   }, [payload])
 
+  const orderedPerspectives = useMemo(
+    () =>
+      [...(payload?.perspectives ?? [])].sort(
+        (first, second) =>
+          first.displayOrder - second.displayOrder ||
+          first.code.localeCompare(second.code, 'pt-BR'),
+      ),
+    [payload],
+  )
+
+  const orderedThemes = useMemo(
+    () =>
+      [...(payload?.themes ?? [])].sort(
+        (first, second) =>
+          first.displayOrder - second.displayOrder ||
+          first.code.localeCompare(second.code, 'pt-BR'),
+      ),
+    [payload],
+  )
+
   if (!formulationId) {
     return (
       <article className="skpe-strategic-map-state">
-        <h3>Mapa EstratÃ©gico</h3>
+        <h3>Mapa Estratégico</h3>
         <p>
-          A visualizaÃ§Ã£o depende de uma versÃ£o explÃ­cita da FormulaÃ§Ã£o
-          EstratÃ©gica. Nenhuma versÃ£o foi inferida automaticamente.
+          A visualização depende de uma versão explícita da Formulação
+          Estratégica. Nenhuma versão foi inferida automaticamente.
         </p>
       </article>
     )
@@ -121,8 +144,8 @@ export function StrategicMapReadOnly({ formulationId }: Props) {
   if (loading) {
     return (
       <article className="skpe-strategic-map-state">
-        <h3>Mapa EstratÃ©gico</h3>
-        <p>Carregando a arquitetura estratÃ©gica canÃ´nica.</p>
+        <h3>Mapa Estratégico</h3>
+        <p>Carregando a arquitetura estratégica canônica.</p>
       </article>
     )
   }
@@ -130,7 +153,7 @@ export function StrategicMapReadOnly({ formulationId }: Props) {
   if (errorMessage) {
     return (
       <article className="skpe-strategic-map-state skpe-strategic-map-state-error">
-        <h3>Mapa EstratÃ©gico</h3>
+        <h3>Mapa Estratégico</h3>
         <p>{errorMessage}</p>
       </article>
     )
@@ -139,10 +162,10 @@ export function StrategicMapReadOnly({ formulationId }: Props) {
   if (!payload || payload.objectives.length === 0) {
     return (
       <article className="skpe-strategic-map-state">
-        <h3>Mapa EstratÃ©gico</h3>
+        <h3>Mapa Estratégico</h3>
         <p>
-          Nenhum Objetivo EstratÃ©gico estÃ¡ materializado nesta versÃ£o da
-          FormulaÃ§Ã£o.
+          Nenhum Objetivo Estratégico está materializado nesta versão da
+          Formulação.
         </p>
       </article>
     )
@@ -152,28 +175,52 @@ export function StrategicMapReadOnly({ formulationId }: Props) {
     <section className="skpe-strategic-map-readonly">
       <header>
         <div>
-          <small>Mapa EstratÃ©gico</small>
-          <h3>RelaÃ§Ãµes de causa e contribuiÃ§Ã£o</h3>
+          <small>Mapa Estratégico</small>
+          <h3>Relações de causa e contribuição</h3>
         </div>
         <p>
-          VisualizaÃ§Ã£o somente leitura. As setas exibidas correspondem
-          exclusivamente Ã s relaÃ§Ãµes canÃ´nicas jÃ¡ registradas.
+          Visualização somente leitura. As setas exibidas correspondem
+          exclusivamente às relações canônicas já registradas.
         </p>
       </header>
 
       <div className="skpe-strategic-map-summary">
         <span>{payload.perspectives.length} perspectiva(s)</span>
+        <span>{payload.themes.length} tema(s)</span>
         <span>{payload.objectives.length} objetivo(s)</span>
-        <span>{payload.relations.length} relaÃ§Ã£o(Ãµes)</span>
+        <span>{payload.relations.length} relação(ões)</span>
       </div>
 
-      <div className="skpe-strategic-map-canvas" aria-label="Mapa EstratÃ©gico">
+      <div className="skpe-strategic-map-taxonomy">
+        <section>
+          <strong>Perspectivas</strong>
+          <div>
+            {orderedPerspectives.map((perspective) => (
+              <span key={perspective.id}>
+                {perspective.code} · {perspective.name}
+              </span>
+            ))}
+          </div>
+        </section>
+        <section>
+          <strong>Temas Estratégicos</strong>
+          <div>
+            {orderedThemes.map((theme) => (
+              <span key={theme.id}>
+                {theme.code} · {theme.name}
+              </span>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="skpe-strategic-map-canvas" aria-label="Mapa Estratégico">
         <ReactFlow
           nodes={graph.nodes}
           edges={graph.edges}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.16 }}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}
@@ -188,7 +235,7 @@ export function StrategicMapReadOnly({ formulationId }: Props) {
 
       {payload.relations.length === 0 ? (
         <p className="skpe-strategic-map-empty-relations">
-          Ainda nÃ£o existem relaÃ§Ãµes causais materializadas nesta versÃ£o.
+          Ainda não existem relações causais materializadas nesta versão.
           Nenhuma seta foi inferida pelo sistema.
         </p>
       ) : null}

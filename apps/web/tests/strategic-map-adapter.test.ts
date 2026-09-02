@@ -132,3 +132,20 @@ test('maps only canonical objectives and relations to React Flow', () => {
   assert.equal(graph.edges[0]?.source, 'objective-1')
   assert.equal(graph.edges[0]?.target, 'objective-2')
 })
+test('distributes fallback objectives horizontally inside each perspective row', () => {
+  const payload = structuredClone(basePayload)
+  payload.objectives[0]!.mapPosition = null
+  payload.objectives[1]!.mapPosition = null
+
+  const graph = strategicMapToReactFlow(payload)
+
+  const first = graph.nodes.find((node) => node.id === 'objective-1')
+  const second = graph.nodes.find((node) => node.id === 'objective-2')
+
+  assert.ok(first)
+  assert.ok(second)
+  assert.equal(first.position.y, second.position.y)
+  assert.ok(second.position.x > first.position.x)
+  assert.equal(first.data.persistedPosition, false)
+  assert.equal(second.data.persistedPosition, false)
+})

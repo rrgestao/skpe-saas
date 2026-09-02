@@ -5,11 +5,13 @@ import type {
   StrategicMapPayload,
   StrategicMapPerspective,
   StrategicMapRelation,
+  StrategicMapTheme,
 } from '../../contracts/strategic-map.ts'
 
 export type StrategicMapNodeData = {
   objective: StrategicMapObjective
   perspective: StrategicMapPerspective | null
+  theme: StrategicMapTheme | null
   persistedPosition: boolean
 }
 
@@ -20,8 +22,10 @@ export type StrategicMapEdgeData = {
 export type StrategicMapNode = Node<StrategicMapNodeData, 'strategicObjective'>
 export type StrategicMapEdge = Edge<StrategicMapEdgeData>
 
+const FALLBACK_X_START = 80
 const FALLBACK_X_STEP = 340
-const FALLBACK_Y_STEP = 220
+const FALLBACK_Y_START = 60
+const FALLBACK_Y_STEP = 230
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -38,43 +42,76 @@ export function readStrategicMapPosition(
   return { x: candidate.x, y: candidate.y }
 }
 
-function fallbackPosition(
-  objective: StrategicMapObjective,
-  perspective: StrategicMapPerspective | null,
-): { x: number; y: number } {
-  const perspectiveOrder = perspective?.displayOrder ?? 0
-  const objectiveOrder = Number.isFinite(objective.displayOrder)
-    ? objective.displayOrder
-    : 100
-
-  return {
-    x: Math.max(0, objectiveOrder) * FALLBACK_X_STEP,
-    y: Math.max(0, perspectiveOrder) * FALLBACK_Y_STEP,
-  }
-}
-
 export function strategicMapToReactFlow(payload: StrategicMapPayload): {
   nodes: StrategicMapNode[]
   edges: StrategicMapEdge[]
 } {
-  const perspectiveById = new Map(
-    payload.perspectives.map((perspective) => [perspective.id, perspective]),
+  const orderedPerspectives = [...payload.perspectives].sort(
+    (first, second) =>
+      first.displayOrder - second.displayOrder ||
+      first.code.localeCompare(second.code, 'pt-BR'),
   )
 
-  const nodes: StrategicMapNode[] = payload.objectives.map((objective) => {
+  const perspectiveById = new Map(
+    orderedPerspectives.map((perspective) => [perspective.id, perspective]),
+  )
+
+  const perspectiveIndexById = new Map(
+    orderedPerspectives.map((perspective, index) => [perspective.id, index]),
+  )
+
+  const themeById = new Map(payload.themes.map((theme) => [theme.id, theme]))
+
+  const orderedObjectives = [...payload.objectives].sort((first, second) => {
+    const firstPerspectiveIndex = first.perspectiveId
+      ? (perspectiveIndexById.get(first.perspectiveId) ?? Number.MAX_SAFE_INTEGER)
+      : Number.MAX_SAFE_INTEGER
+    const secondPerspectiveIndex = second.perspectiveId
+      ? (perspectiveIndexById.get(second.perspectiveId) ?? Number.MAX_SAFE_INTEGER)
+      : Number.MAX_SAFE_INTEGER
+
+    return (
+      firstPerspectiveIndex - secondPerspectiveIndex ||
+      first.code.localeCompare(second.code, 'pt-BR')
+    )
+  })
+
+  const slotByPerspective = new Map<string, number>()
+
+  const nodes: StrategicMapNode[] = orderedObjectives.map((objective) => {
     const perspective = objective.perspectiveId
       ? (perspectiveById.get(objective.perspectiveId) ?? null)
       : null
+    const theme = objective.strategicThemeId
+      ? (themeById.get(objective.strategicThemeId) ?? null)
+      : null
     const persistedPosition = readStrategicMapPosition(objective.mapPosition)
+
+    let position = persistedPosition
+
+    if (!position) {
+      const perspectiveKey = perspective?.id ?? '__without_perspective__'
+      const slot = slotByPerspective.get(perspectiveKey) ?? 0
+      slotByPerspective.set(perspectiveKey, slot + 1)
+
+      const perspectiveIndex = perspective
+        ? (perspectiveIndexById.get(perspective.id) ?? orderedPerspectives.length)
+        : orderedPerspectives.length
+
+      position = {
+        x: FALLBACK_X_START + slot * FALLBACK_X_STEP,
+        y: FALLBACK_Y_START + perspectiveIndex * FALLBACK_Y_STEP,
+      }
+    }
 
     return {
       id: objective.id,
       type: 'strategicObjective',
-      position:
-        persistedPosition ?? fallbackPosition(objective, perspective),
+      position,
       data: {
         objective,
         perspective,
+        theme,
         persistedPosition: persistedPosition !== null,
       },
       draggable: true,

@@ -141,3 +141,13 @@
     display: grid;
   }
 }
+
+/* Mantém as perspectivas internas da Formulação acessíveis durante a rolagem. */
+.skpe-strategic-formulation > .sparks-workspace-tabs {
+  position: sticky;
+  top: calc(var(--skpe-cockpit-header-height, 76px) + 0.5rem);
+  z-index: 55;
+  width: fit-content;
+  max-width: 100%;
+  box-shadow: 0 8px 22px rgba(18, 58, 45, 0.08);
+}
