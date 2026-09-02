@@ -28,6 +28,8 @@ const ROUTABLE_COCKPIT_SECTIONS =
   new Set<RoutableCockpitSection>([
     'overview',
     'journey',
+    'diagnosis',
+    'formulations',
     'evolution-cycles',
     'initiatives',
     'monitoring',

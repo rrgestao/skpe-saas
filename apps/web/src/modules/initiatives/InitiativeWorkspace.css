@@ -317,3 +317,58 @@
 .sparks-icon-action {
   display: none !important;
 }
+/* SK-PE UX NAV 06 - visible back navigation and true economics panel */
+.skpe-workspace-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #cbd9d3;
+  border-radius: 9px;
+  background: #fff;
+  color: #176b53;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-workspace-back-button:hover {
+  background: #eef6f3;
+}
+
+.skpe-initiative-economic-panel {
+  position: static;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.skpe-initiative-economic-panel-body {
+  position: static;
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.skpe-initiative-economic-panel-body
+.skpe-initiative-economic-dialog-header {
+  position: static;
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #fff;
+}

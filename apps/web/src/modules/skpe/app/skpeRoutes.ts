@@ -1,6 +1,7 @@
 export type SkpeRouteSection =
   | 'overview'
   | 'journey'
+  | 'diagnosis'
   | 'formulations'
   | 'identity'
   | 'business-foundation'
@@ -38,6 +39,7 @@ export type PlatformRoute =
 const SKPE_SECTIONS = new Set<SkpeRouteSection>([
   'overview',
   'journey',
+  'diagnosis',
   'formulations',
   'identity',
   'business-foundation',

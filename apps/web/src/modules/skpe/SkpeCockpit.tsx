@@ -31,6 +31,7 @@ import { AgendaSection } from './features/agenda/AgendaSection'
 import { EvolutionCyclesSection } from './features/evolution/EvolutionCyclesSection'
 import { JourneySection as JourneyFeatureSection } from './features/journey/JourneySection'
 import { StrategicIdentitySection } from './features/strategy/StrategicIdentitySection'
+import { StrategicDiagnosisSection } from './features/diagnosis/StrategicDiagnosisSection'
 import { StrategicPositioningSection } from './features/strategy/StrategicPositioningSection'
 import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateDialog'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
@@ -57,6 +58,8 @@ import { loadInitiativePortfolio } from '../initiatives/data/initiativePortfolio
 export type CockpitSection =
   | 'overview'
   | 'journey'
+  | 'diagnosis'
+  | 'formulations'
   | 'strategic-identity'
   | 'strategic-positioning'
   | 'evolution-cycles'
@@ -2688,13 +2691,15 @@ function InitiativesSection({
         kanbanInitiativeId ? (
           <section className="skpe-initiative-kanban-host skpe-object-workspace-screen">
             <div className="skpe-initiative-workspace-sticky">
-              <div className="skpe-object-workspace-backbar">
-                <IconActionButton
-                  action="back"
-                  label="Voltar às iniciativas"
-                  variant="ghost"
+                            <div className="skpe-object-workspace-backbar">
+                <button
+                  type="button"
+                  className="skpe-workspace-back-button"
                   onClick={closeInitiativeWorkspace}
-                />
+                >
+                  <span aria-hidden="true">←</span>
+                  <span>Plano de Ação</span>
+                </button>
               </div>
 
             <ObjectWorkspaceHeader
@@ -6849,6 +6854,7 @@ export function SkpeCockpit({
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfileRow | null>(null)
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState<string | null>(null)
   const [projectContext, setProjectContext] = useState<StrategicProjectContext | null>(null)
+  const [approvedMacrophases, setApprovedMacrophases] = useState<string[]>([])
   const [initiativeDrilldown, setInitiativeDrilldown] = useState<{
     initiativeId: string
     actionId: string | null
@@ -6915,6 +6921,7 @@ export function SkpeCockpit({
     if (error) {
       console.error('Não foi possível carregar o horizonte estratégico:', error)
       setProjectContext(null)
+      setApprovedMacrophases([])
       return
     }
 
@@ -6924,31 +6931,49 @@ export function SkpeCockpit({
 
     if (!loaded) {
       setProjectContext(null)
+      setApprovedMacrophases([])
       return
     }
 
     let currentPhaseName: string | null = null
 
-    if (loaded.current_phase_code) {
-      const { data: journeyData, error: journeyError } = await supabase.rpc(
-        'get_skpe_journey_temporal_read_model',
-        {
-          target_organization_id: organizationId,
-          target_project_id: loaded.project_id,
-          target_as_of_date: null,
-        },
-      )
+    const { data: journeyData, error: journeyError } = await supabase.rpc(
+      'get_skpe_journey_temporal_read_model',
+      {
+        target_organization_id: organizationId,
+        target_project_id: loaded.project_id,
+        target_as_of_date: null,
+      },
+    )
 
-      if (!journeyError) {
-        const currentPhase = (
-          (journeyData ?? []) as Array<{
-            item_code: string
-            item_name: string
-          }>
-        ).find((row) => row.item_code === loaded.current_phase_code)
+    if (!journeyError) {
+      const journeyRows = (journeyData ?? []) as Array<{
+        item_type: string
+        item_code: string
+        item_name: string
+        item_status: string
+        validation_status: string
+      }>
 
+      if (loaded.current_phase_code) {
+        const currentPhase = journeyRows.find(
+          (row) => row.item_code === loaded.current_phase_code,
+        )
         currentPhaseName = currentPhase?.item_name ?? null
       }
+
+      setApprovedMacrophases(
+        journeyRows
+          .filter(
+            (row) =>
+              row.item_type === 'macrophase' &&
+              row.item_status === 'completed' &&
+              row.validation_status === 'approved',
+          )
+          .map((row) => row.item_code),
+      )
+    } else {
+      setApprovedMacrophases([])
     }
 
     setProjectContext({
@@ -7072,6 +7097,12 @@ export function SkpeCockpit({
   const canViewMonitoring = canViewJourney || canViewInitiatives
   const canViewAgenda = canViewJourney
   const canViewArtifacts = capabilities?.can_view_artifacts ?? legacyCanView
+  const canShowDiagnosis =
+    canViewJourney && approvedMacrophases.includes('PEM-01')
+  const canShowFormulation =
+    canViewJourney && approvedMacrophases.includes('PEM-02')
+  const canShowPlanAction =
+    canViewInitiatives && approvedMacrophases.includes('PEM-03')
   const canViewGovernance = capabilities?.can_view_governance ?? legacyCanView
   const canManageJourney = capabilities?.can_manage_journey ?? legacyCanManageJourney
   const canManageInitiatives =
@@ -7097,8 +7128,10 @@ export function SkpeCockpit({
     const allowedBySection: Partial<Record<CockpitSection, boolean>> = {
       overview: canViewOverview,
       journey: canViewJourney,
+      diagnosis: canShowDiagnosis,
+      formulations: canShowFormulation,
       'evolution-cycles': canViewEvolution,
-      initiatives: canViewInitiatives,
+      initiatives: canShowPlanAction,
       monitoring: canViewMonitoring,
       agenda: canViewAgenda,
       artifacts: canViewArtifacts,
@@ -7114,6 +7147,10 @@ export function SkpeCockpit({
         return 'Visão Geral'
       case 'journey':
         return 'Jornada Estratégica'
+      case 'diagnosis':
+        return 'Diagnóstico Estratégico'
+      case 'formulations':
+        return 'Formulação Estratégica'
       case 'strategic-identity':
         return 'Identidade Estratégica'
       case 'strategic-positioning':
@@ -7217,40 +7254,81 @@ export function SkpeCockpit({
                 <DashboardIcon />
                 Visão Geral
               </button>
-              {canViewJourney ? (
+                            {canViewJourney ? (
                 <details className="skpe-nav-journey-disclosure">
                   <summary
-                    className={['journey','strategic-identity','strategic-positioning','monitoring','artifacts'].includes(activeSection) ? 'skpe-nav-active' : ''}
+                    className={
+                      ['journey', 'diagnosis', 'formulations', 'initiatives'].includes(
+                        activeSection,
+                      )
+                        ? 'skpe-nav-active'
+                        : ''
+                    }
                     title="Expandir ou recolher Jornada Estratégica"
                   >
                     <JourneyIcon />
                     <span>Jornada Estratégica</span>
                   </summary>
-                  <div className="skpe-nav-submenu" aria-label="Submenu da Jornada Estratégica">
-                    <button type="button" className={activeSection==='journey'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('journey')}>Jornada</button>
-                    <button type="button" className={activeSection==='strategic-identity'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('strategic-identity')}>Identidade Estratégica</button>
-                    <button type="button" className={activeSection==='strategic-positioning'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('strategic-positioning')}>Posicionamento Estratégico</button>
-                    {canViewMonitoring?<button type="button" className={activeSection==='monitoring'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('monitoring')}>Monitoramento</button>:null}
-                    {canViewArtifacts?<button type="button" className={activeSection==='artifacts'?'skpe-nav-submenu-active':''} onClick={()=>navigateToSection('artifacts')}>Artefatos e evidências</button>:null}
+                  <div
+                    className="skpe-nav-submenu"
+                    aria-label="Submenu da Jornada Estratégica"
+                  >
+                    <button
+                      type="button"
+                      className={
+                        activeSection === 'journey'
+                          ? 'skpe-nav-submenu-active'
+                          : ''
+                      }
+                      onClick={() => navigateToSection('journey')}
+                    >
+                      Jornada
+                    </button>
+
+                    {canShowDiagnosis ? (
+                      <button
+                        type="button"
+                        className={
+                          activeSection === 'diagnosis'
+                            ? 'skpe-nav-submenu-active'
+                            : ''
+                        }
+                        onClick={() => navigateToSection('diagnosis')}
+                      >
+                        Diagnóstico Estratégico
+                      </button>
+                    ) : null}
+
+                    {canShowFormulation ? (
+                      <button
+                        type="button"
+                        className={
+                          activeSection === 'formulations'
+                            ? 'skpe-nav-submenu-active'
+                            : ''
+                        }
+                        onClick={() => navigateToSection('formulations')}
+                      >
+                        Formulação Estratégica
+                      </button>
+                    ) : null}
+
+                    {canShowPlanAction ? (
+                      <button
+                        type="button"
+                        className={
+                          activeSection === 'initiatives'
+                            ? 'skpe-nav-submenu-active'
+                            : ''
+                        }
+                        onClick={() => navigateToSection('initiatives')}
+                      >
+                        Plano de Ação
+                      </button>
+                    ) : null}
                   </div>
                 </details>
               ) : null}
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'initiatives'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('initiatives')
-                }
-                title="Plano de Ação"
-               hidden={!canViewInitiatives}>
-                <InitiativesIcon />
-                Plano de Ação
-              </button>
 
               <button
                 type="button"
@@ -7453,6 +7531,7 @@ export function SkpeCockpit({
                 onClick={() => navigateToSection('agenda')}
                 aria-label="Abrir Agenda transversal"
                 title="Agenda"
+                data-tooltip="Agenda"
               >
                 <CalendarIcon />
               </button>
@@ -7709,6 +7788,15 @@ export function SkpeCockpit({
             onUnreadNotificationCountChange={setUnreadNotificationCount}
           />
         )}
+
+        {activeSection === 'diagnosis' &&
+          canShowDiagnosis &&
+          projectContext?.project_id && (
+            <StrategicDiagnosisSection
+              organizationId={organizationId}
+              projectId={projectContext.project_id}
+            />
+          )}
 
         {activeSection === 'strategic-identity' && canViewJourney && (
           <StrategicIdentitySection organizationId={organizationId} />

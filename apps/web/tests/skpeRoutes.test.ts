@@ -99,3 +99,23 @@ test(
     })
   },
 )
+
+test(
+  'gera e reconhece a rota de Diagnóstico Estratégico',
+  () => {
+    const pathname = platformRoutes.skpe({
+      organizationId: 'org-001',
+      projectId: 'project-001',
+      formulationId: 'formulation-001',
+      section: 'diagnosis',
+    })
+
+    assert.deepEqual(parsePlatformRoute(pathname), {
+      kind: 'skpe',
+      organizationId: 'org-001',
+      projectId: 'project-001',
+      formulationId: 'formulation-001',
+      section: 'diagnosis',
+    })
+  },
+)

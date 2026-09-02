@@ -7325,3 +7325,111 @@ button.skpe-admin-kpi-card:hover,
 .skpe-nav-journey-disclosure .skpe-nav-submenu{margin:.2rem 0 .45rem 2rem}
 .skpe-user-avatar{overflow:hidden}
 .skpe-user-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}
+/* SK-PE DARK CONTRAST V1
+ * Paleta escura de alto contraste para evitar texto verde/cinza ilegivel.
+ */
+.skpe-theme-dark {
+  --skpe-dark-bg: #0f1b17;
+  --skpe-dark-surface: #172821;
+  --skpe-dark-surface-2: #1d322a;
+  --skpe-dark-border: #365248;
+  --skpe-dark-text: #f0f7f4;
+  --skpe-dark-muted: #b9cbc4;
+  --skpe-dark-accent: #68c9aa;
+}
+
+.skpe-theme-dark .skpe-main,
+.skpe-theme-dark .skpe-cockpit-header {
+  background: var(--skpe-dark-bg);
+  color: var(--skpe-dark-text);
+}
+
+.skpe-theme-dark .skpe-cockpit-context strong,
+.skpe-theme-dark .skpe-main h1,
+.skpe-theme-dark .skpe-main h2,
+.skpe-theme-dark .skpe-main h3,
+.skpe-theme-dark .skpe-main h4,
+.skpe-theme-dark .skpe-main strong {
+  color: var(--skpe-dark-text);
+}
+
+.skpe-theme-dark .skpe-main p,
+.skpe-theme-dark .skpe-main small,
+.skpe-theme-dark .skpe-main label,
+.skpe-theme-dark .skpe-main .skpe-card-description {
+  color: var(--skpe-dark-muted);
+}
+
+.skpe-theme-dark .skpe-main .skpe-eyebrow,
+.skpe-theme-dark .skpe-main .skpe-card-code {
+  color: var(--skpe-dark-accent);
+}
+
+.skpe-theme-dark .skpe-main [class*='-card'],
+.skpe-theme-dark .skpe-main [class*='-panel'],
+.skpe-theme-dark .skpe-main .skpe-agenda-calendar,
+.skpe-theme-dark .skpe-main .skpe-agenda-list,
+.skpe-theme-dark .skpe-main .skpe-strategic-diagnosis-header,
+.skpe-theme-dark .skpe-main .skpe-strategic-diagnosis-artifact,
+.skpe-theme-dark .skpe-main .skpe-strategic-diagnosis-overview > article,
+.skpe-theme-dark .skpe-main .skpe-strategic-diagnosis-meta > article {
+  border-color: var(--skpe-dark-border);
+  background: var(--skpe-dark-surface);
+  color: var(--skpe-dark-text);
+  box-shadow: none;
+}
+
+.skpe-theme-dark .skpe-main input,
+.skpe-theme-dark .skpe-main select,
+.skpe-theme-dark .skpe-main textarea {
+  border-color: var(--skpe-dark-border);
+  background: #102019;
+  color: var(--skpe-dark-text);
+}
+
+.skpe-theme-dark .skpe-main button:not(.is-primary):not(.skpe-primary-action-button) {
+  border-color: var(--skpe-dark-border);
+  background: var(--skpe-dark-surface-2);
+  color: var(--skpe-dark-text);
+}
+
+.skpe-theme-dark .skpe-main .skpe-agenda-weekdays span,
+.skpe-theme-dark .skpe-main .skpe-agenda-day,
+.skpe-theme-dark .skpe-main .skpe-agenda-month-title {
+  border-color: var(--skpe-dark-border);
+  background: var(--skpe-dark-surface);
+  color: var(--skpe-dark-text);
+}
+
+.skpe-theme-dark .skpe-main .skpe-agenda-day.is-outside {
+  background: #12211b;
+  color: #82978f;
+}
+
+.skpe-theme-dark .skpe-main .skpe-agenda-chip,
+.skpe-theme-dark .skpe-main .skpe-initiative-economic-panel-body,
+.skpe-theme-dark .skpe-main .skpe-strategic-diagnosis-interpretation {
+  border-color: var(--skpe-dark-border);
+  background: var(--skpe-dark-surface-2);
+  color: var(--skpe-dark-text);
+}
+
+.skpe-theme-dark .skpe-main .skpe-agenda-item-content > div span,
+.skpe-theme-dark .skpe-main .skpe-pill {
+  background: #29463b;
+  color: #e8f5f0;
+}
+
+.skpe-theme-dark .skpe-main .skpe-progress-track {
+  background: #31483f;
+}
+
+.skpe-theme-dark .skpe-main .skpe-progress-track span {
+  background: #5fc5a4;
+}
+
+.skpe-theme-dark .skpe-main .skpe-agenda-context-dialog {
+  border-color: var(--skpe-dark-border);
+  background: var(--skpe-dark-surface);
+  color: var(--skpe-dark-text);
+}

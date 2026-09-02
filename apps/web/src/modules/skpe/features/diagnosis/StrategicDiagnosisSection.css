@@ -1,0 +1,89 @@
+.skpe-strategic-diagnosis {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.skpe-strategic-diagnosis-header,
+.skpe-strategic-diagnosis-artifact > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-strategic-diagnosis-header,
+.skpe-strategic-diagnosis-artifact {
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #dce5e1;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.skpe-strategic-diagnosis-header h2,
+.skpe-strategic-diagnosis-artifact h3,
+.skpe-strategic-diagnosis-interpretation h3 {
+  margin: 0;
+}
+
+.skpe-strategic-diagnosis-header p:last-child,
+.skpe-strategic-diagnosis-artifact header p:last-child,
+.skpe-strategic-diagnosis-interpretation p {
+  color: #607069;
+  line-height: 1.55;
+}
+
+.skpe-strategic-diagnosis-overview,
+.skpe-strategic-diagnosis-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.skpe-strategic-diagnosis-overview > article,
+.skpe-strategic-diagnosis-meta > article {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #dce5e1;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.skpe-strategic-diagnosis-overview small,
+.skpe-strategic-diagnosis-meta small {
+  color: #71807a;
+}
+
+.skpe-strategic-diagnosis-artifact {
+  display: grid;
+  gap: 1rem;
+}
+
+.skpe-strategic-diagnosis-interpretation {
+  grid-column: 1 / -1;
+  padding: 1rem 1.1rem;
+  border: 1px dashed #cddbd5;
+  border-radius: 12px;
+  background: #f8fbfa;
+}
+
+@media (max-width: 900px) {
+  .skpe-strategic-diagnosis-overview,
+  .skpe-strategic-diagnosis-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .skpe-strategic-diagnosis-header,
+  .skpe-strategic-diagnosis-artifact > header {
+    display: grid;
+  }
+
+  .skpe-strategic-diagnosis-overview,
+  .skpe-strategic-diagnosis-meta {
+    grid-template-columns: 1fr;
+  }
+}

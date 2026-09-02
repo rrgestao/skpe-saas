@@ -286,11 +286,16 @@ export function InitiativeEconomicExecutionDialog({
 
   return (
     <div
-      className="skpe-modal-backdrop skpe-initiative-economic-overlay"
+      className={
+        presentation === 'panel'
+          ? 'skpe-initiative-economic-panel'
+          : 'skpe-modal-backdrop skpe-initiative-economic-overlay'
+      }
       role="presentation"
       data-presentation={presentation}
       onClick={(event) => {
         if (
+          presentation === 'dialog' &&
           event.target === event.currentTarget &&
           !saving
         ) {
@@ -299,9 +304,13 @@ export function InitiativeEconomicExecutionDialog({
       }}
     >
       <aside
-        className="skpe-modal-panel skpe-initiative-economic-dialog"
-        role="dialog"
-        aria-modal="true"
+        className={
+          presentation === 'panel'
+            ? 'skpe-initiative-economic-panel-body'
+            : 'skpe-modal-panel skpe-initiative-economic-dialog'
+        }
+        role={presentation === 'panel' ? 'region' : 'dialog'}
+        aria-modal={presentation === 'dialog' ? true : undefined}
         aria-labelledby="skpe-initiative-economic-title"
         onClick={(event) => event.stopPropagation()}
       >
@@ -311,12 +320,14 @@ export function InitiativeEconomicExecutionDialog({
             <h2 id="skpe-initiative-economic-title">Custos e esforço</h2>
             <p>{initiativeName}</p>
           </div>
-          <IconActionButton
-            action="close"
-            label="Fechar"
-            onClick={onClose}
-            disabled={saving}
-          />
+                    {presentation === 'dialog' ? (
+            <IconActionButton
+              action="close"
+              label="Fechar"
+              onClick={onClose}
+              disabled={saving}
+            />
+          ) : null}
         </div>
 
         <div className="skpe-admin-state-card">
