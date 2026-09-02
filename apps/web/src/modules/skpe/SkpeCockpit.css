@@ -3836,6 +3836,7 @@ tr.skpe-interactive-record:focus-visible {
   font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.25;
 }
 
 .skpe-cockpit-context {
@@ -7128,8 +7129,9 @@ button.skpe-admin-kpi-card:hover,
 }
 
 .skpe-sidebar-product-footer .skpe-product-signature strong {
-  font-size: 0.64rem;
+  font-size: 0.76rem;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .skpe-sidebar-copyright {
@@ -7140,6 +7142,7 @@ button.skpe-admin-kpi-card:hover,
 .skpe-sidebar-collapsed .skpe-sidebar-product-footer .skpe-product-signature > div,
 .skpe-sidebar-collapsed .skpe-sidebar-copyright {
   display: none;
+  font-size: 0.44rem;
 }
 
 .skpe-sidebar-collapsed .skpe-sidebar-product-footer {
