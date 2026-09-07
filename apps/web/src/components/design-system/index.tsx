@@ -166,10 +166,18 @@ export function MetricCard({
   )
 }
 
+export type WorkspaceTabStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'completed'
+  | 'blocked'
+
 type WorkspaceTab<T extends string> = {
   id: T
   label: ReactNode
   disabled?: boolean
+  status?: WorkspaceTabStatus
+  statusLabel?: string
 }
 
 type WorkspaceTabsProps<T extends string> = {
@@ -191,16 +199,34 @@ export function WorkspaceTabs<T extends string>({
         <button
           key={tab.id}
           type="button"
-          className={
+          className={[
+            'sparks-workspace-tabs__tab',
             tab.id === activeId
-              ? 'sparks-workspace-tabs__tab sparks-workspace-tabs__tab--active'
-              : 'sparks-workspace-tabs__tab'
-          }
+              ? 'sparks-workspace-tabs__tab--active'
+              : '',
+            tab.status
+              ? `sparks-workspace-tabs__tab--status-${tab.status}`
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           aria-current={tab.id === activeId ? 'page' : undefined}
+          aria-label={
+            tab.statusLabel
+              ? `${String(tab.label)} — ${tab.statusLabel}`
+              : undefined
+          }
+          title={tab.statusLabel}
           disabled={tab.disabled}
           onClick={() => onChange(tab.id)}
         >
-          {tab.label}
+          <span className="sparks-workspace-tabs__label">{tab.label}</span>
+          {tab.status ? (
+            <span
+              className="sparks-workspace-tabs__status-dot"
+              aria-hidden="true"
+            />
+          ) : null}
         </button>
       ))}
     </nav>

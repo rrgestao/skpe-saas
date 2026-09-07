@@ -147,7 +147,7 @@
   position: sticky;
   top: calc(var(--skpe-cockpit-header-height, 76px) + 0.5rem);
   z-index: 55;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
-  box-shadow: 0 8px 22px rgba(18, 58, 45, 0.08);
+  box-shadow: none;
 }

@@ -10,6 +10,9 @@ type VisualIdentityColors = {
   primary: string
   secondary: string
   accent: string
+  support_1: string
+  support_2: string
+  support_3: string
   on_primary: string
 }
 
@@ -34,13 +37,16 @@ type VisualIdentityRpcRow = {
 }
 
 const SPARKS_DEFAULT: EffectiveVisualIdentity = {
-  schema_version: 1,
+  schema_version: 2,
   mode: 'sparks_default',
   palette_source: 'default',
   colors: {
-    primary: '#176B53',
-    secondary: '#123F34',
-    accent: '#1F8C69',
+    primary: '#002C2F',
+    secondary: '#01877A',
+    accent: '#FF4F0C',
+    support_1: '#F27F64',
+    support_2: '#4EA797',
+    support_3: '#000000',
     on_primary: '#FFFFFF',
   },
   suggested_from_logo: null,
@@ -118,13 +124,16 @@ function deriveLogoIdentity(colors: string[]): EffectiveVisualIdentity {
     SPARKS_DEFAULT.colors.accent
 
   return {
-    schema_version: 1,
+    schema_version: 2,
     mode: 'organization',
     palette_source: 'logo_suggested',
     colors: {
       primary,
       secondary,
       accent,
+      support_1: usable[3] ?? SPARKS_DEFAULT.colors.support_1,
+      support_2: usable[4] ?? SPARKS_DEFAULT.colors.support_2,
+      support_3: usable[5] ?? SPARKS_DEFAULT.colors.support_3,
       on_primary:
         relativeLuminance(primary) > 0.52 ? '#18231F' : '#FFFFFF',
     },
@@ -141,6 +150,9 @@ function applyVisualIdentity(identity: EffectiveVisualIdentity) {
   root.style.setProperty('--organization-primary', colors.primary)
   root.style.setProperty('--organization-secondary', colors.secondary)
   root.style.setProperty('--organization-accent', colors.accent)
+  root.style.setProperty('--organization-support-1', colors.support_1)
+  root.style.setProperty('--organization-support-2', colors.support_2)
+  root.style.setProperty('--organization-support-3', colors.support_3)
   root.style.setProperty('--organization-on-primary', colors.on_primary)
 }
 
@@ -270,6 +282,9 @@ export function OrganizationVisualIdentityCard({
   const [primary, setPrimary] = useState(SPARKS_DEFAULT.colors.primary)
   const [secondary, setSecondary] = useState(SPARKS_DEFAULT.colors.secondary)
   const [accent, setAccent] = useState(SPARKS_DEFAULT.colors.accent)
+  const [support1, setSupport1] = useState(SPARKS_DEFAULT.colors.support_1)
+  const [support2, setSupport2] = useState(SPARKS_DEFAULT.colors.support_2)
+  const [support3, setSupport3] = useState(SPARKS_DEFAULT.colors.support_3)
   const [suggestedColors, setSuggestedColors] = useState<string[]>([])
   const [changeReason, setChangeReason] = useState('')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -279,8 +294,11 @@ export function OrganizationVisualIdentityCard({
       primary: normalizeHex(primary) ?? SPARKS_DEFAULT.colors.primary,
       secondary: normalizeHex(secondary) ?? SPARKS_DEFAULT.colors.secondary,
       accent: normalizeHex(accent) ?? SPARKS_DEFAULT.colors.accent,
+      support_1: normalizeHex(support1) ?? SPARKS_DEFAULT.colors.support_1,
+      support_2: normalizeHex(support2) ?? SPARKS_DEFAULT.colors.support_2,
+      support_3: normalizeHex(support3) ?? SPARKS_DEFAULT.colors.support_3,
     }),
-    [accent, primary, secondary],
+    [accent, primary, secondary, support1, support2, support3],
   )
 
   const hydrate = async () => {
@@ -295,6 +313,9 @@ export function OrganizationVisualIdentityCard({
       setPrimary(identity.colors.primary)
       setSecondary(identity.colors.secondary)
       setAccent(identity.colors.accent)
+      setSupport1(identity.colors.support_1)
+      setSupport2(identity.colors.support_2)
+      setSupport3(identity.colors.support_3)
       setSuggestedColors(identity.suggested_from_logo?.colors ?? [])
       applyVisualIdentity(identity)
     } catch (error) {
@@ -326,6 +347,9 @@ export function OrganizationVisualIdentityCard({
       setPrimary(palette[0] ?? SPARKS_DEFAULT.colors.primary)
       setSecondary(palette[1] ?? palette[0] ?? SPARKS_DEFAULT.colors.secondary)
       setAccent(palette[2] ?? palette[0] ?? SPARKS_DEFAULT.colors.accent)
+      setSupport1(palette[3] ?? SPARKS_DEFAULT.colors.support_1)
+      setSupport2(palette[4] ?? SPARKS_DEFAULT.colors.support_2)
+      setSupport3(palette[5] ?? SPARKS_DEFAULT.colors.support_3)
       setMessage({
         type: 'success',
         text: 'Paleta sugerida a partir da logo. Revise as cores antes de salvar.',
@@ -347,7 +371,17 @@ export function OrganizationVisualIdentityCard({
       return
     }
 
-    if (mode === 'organization' && (!normalizeHex(primary) || !normalizeHex(secondary) || !normalizeHex(accent))) {
+    if (
+      mode === 'organization' &&
+      (
+        !normalizeHex(primary) ||
+        !normalizeHex(secondary) ||
+        !normalizeHex(accent) ||
+        !normalizeHex(support1) ||
+        !normalizeHex(support2) ||
+        !normalizeHex(support3)
+      )
+    ) {
       setMessage({ type: 'error', text: 'Revise as cores. Use o formato hexadecimal #RRGGBB.' })
       return
     }
@@ -363,6 +397,9 @@ export function OrganizationVisualIdentityCard({
         target_primary_color: mode === 'organization' ? primary : null,
         target_secondary_color: mode === 'organization' ? secondary : null,
         target_accent_color: mode === 'organization' ? accent : null,
+        target_support_1_color: mode === 'organization' ? support1 : null,
+        target_support_2_color: mode === 'organization' ? support2 : null,
+        target_support_3_color: mode === 'organization' ? support3 : null,
         target_palette_source: mode === 'organization' ? paletteSource : 'default',
         target_logo_palette: mode === 'organization' ? suggestedColors : [],
         change_reason: changeReason.trim(),
@@ -382,7 +419,7 @@ export function OrganizationVisualIdentityCard({
     } | null
 
     applyVisualIdentity({
-      schema_version: 1,
+      schema_version: 2,
       mode: metadata?.mode ?? mode,
       palette_source: metadata?.palette_source ?? paletteSource,
       colors: metadata?.colors ?? {
@@ -411,13 +448,19 @@ export function OrganizationVisualIdentityCard({
             '--preview-primary': previewColors.primary,
             '--preview-secondary': previewColors.secondary,
             '--preview-accent': previewColors.accent,
+            '--preview-support-1': previewColors.support_1,
+            '--preview-support-2': previewColors.support_2,
+            '--preview-support-3': previewColors.support_3,
           } as React.CSSProperties}
           aria-label="Pré-visualização da paleta"
         >
           <span />
           <span />
           <span />
-        </div>
+
+          <span />
+          <span />
+          <span /></div>
       </div>
 
       {loading ? (
@@ -460,13 +503,16 @@ export function OrganizationVisualIdentityCard({
                   ['Cor principal', primary, setPrimary],
                   ['Cor secundária', secondary, setSecondary],
                   ['Cor de destaque', accent, setAccent],
+                  ['Cor de apoio 1', support1, setSupport1],
+                  ['Cor de apoio 2', support2, setSupport2],
+                  ['Cor de apoio 3', support3, setSupport3],
                 ].map(([label, value, setter]) => (
                   <label key={label as string}>
                     <span>{label as string}</span>
                     <div>
                       <input
                         type="color"
-                        value={(normalizeHex(value as string) ?? '#176B53').toLowerCase()}
+                        value={(normalizeHex(value as string) ?? SPARKS_DEFAULT.colors.primary).toLowerCase()}
                         onChange={(event) => {
                           ;(setter as (value: string) => void)(event.target.value.toUpperCase())
                           setPaletteSource('manual')

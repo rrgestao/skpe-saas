@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 
 import { supabase } from '../../lib/supabase'
@@ -8,6 +8,8 @@ import './AdminUserAvatarEditor.css'
 type AdminUserAvatarEditorProps = {
   userId: string
   userName: string
+  organizationId?: string | null
+  onChanged?: () => void
 }
 
 const ACCEPTED_TYPES = [
@@ -23,6 +25,8 @@ function getInitial(name: string) {
 export function AdminUserAvatarEditor({
   userId,
   userName,
+  organizationId = null,
+  onChanged,
 }: AdminUserAvatarEditorProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [open, setOpen] = useState(false)
@@ -38,8 +42,11 @@ export function AdminUserAvatarEditor({
 
   const loadAvatar = useCallback(async () => {
     const { data, error } = await supabase.rpc(
-      'get_platform_admin_user_avatar',
-      { target_user_id: userId },
+      'get_managed_user_avatar',
+      {
+        target_user_id: userId,
+        context_organization_id: organizationId,
+      },
     )
 
     if (error) {
@@ -79,7 +86,7 @@ export function AdminUserAvatarEditor({
     setAvatarUrl((current) =>
       current === signedUrl ? current : signedUrl,
     )
-  }, [userId])
+  }, [organizationId, userId])
 
   useEffect(() => {
     void loadAvatar()
@@ -144,11 +151,12 @@ export function AdminUserAvatarEditor({
     }
 
     const { error } = await supabase.rpc(
-      'set_platform_admin_user_avatar',
+      'set_managed_user_avatar',
       {
         target_user_id: userId,
         input_avatar_storage_path: nextPath,
         change_reason: reason.trim(),
+        context_organization_id: organizationId,
       },
     )
 
@@ -181,6 +189,7 @@ export function AdminUserAvatarEditor({
         detail: { userId },
       }),
     )
+    onChanged?.()
 }
 
   return (

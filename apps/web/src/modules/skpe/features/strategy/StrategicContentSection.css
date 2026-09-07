@@ -15,3 +15,30 @@
 .skpe-strategy-state.is-error{border-color:#ecc7c1;background:#fff7f5;color:#7a3127}
 @media(max-width:1100px){.skpe-strategy-theme-grid,.skpe-strategy-perspective-grid,.skpe-strategy-values-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.skpe-strategy-identity-grid,.skpe-strategy-theme-grid,.skpe-strategy-perspective-grid,.skpe-strategy-values-grid{grid-template-columns:1fr}}
+.skpe-strategy-objective-section{display:grid;gap:.75rem}
+.skpe-strategy-objective-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.skpe-strategy-objective-card{min-width:0}
+.skpe-strategy-objective-card strong{font-size:1rem;line-height:1.35}
+@media(max-width:900px){.skpe-strategy-objective-grid{grid-template-columns:1fr}}
+
+/* SK-PE CANONICAL FORMULATION METRIC CARDS V1
+ * Mesmo padrão dos demais cards de medida da aplicação.
+ */
+.skpe-formulation-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+.skpe-formulation-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > span:first-of-type {
+  order: 1;
+  width: 100%;
+  text-align: left !important;
+  font-weight: 400 !important;
+}
+
+.skpe-formulation-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > strong {
+  order: 2;
+  width: 100%;
+  text-align: center !important;
+}

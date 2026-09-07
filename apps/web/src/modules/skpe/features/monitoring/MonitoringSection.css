@@ -1076,7 +1076,7 @@ button.skpe-management-timeline-row {
 
 .skpe-monitoring-exception-link > small {
   margin-top: 0.3rem;
-  color: var(--skpe-primary, #176b53);
+  color: var(--sparks-role-text-muted);
   font-weight: 700;
 }
 /* MANAGEMENT-TIMELINE-ICON-ACTIONS-V25O */

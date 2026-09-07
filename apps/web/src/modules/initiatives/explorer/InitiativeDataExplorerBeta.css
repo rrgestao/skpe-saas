@@ -177,3 +177,371 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* SK-PE DATA EXPLORER SMART GRID V33 */
+.sparks-data-explorer-beta__grid {
+  --wx-table-header-background: #eef4f1;
+  --wx-table-header-border: 1px solid #b8c8c1;
+  --wx-table-header-cell-border: 1px solid #c7d4cf;
+}
+
+.sparks-data-explorer-beta__grid .sparks-data-explorer-header-main {
+  position: relative;
+  overflow: visible;
+  background: #eef4f1;
+  border-right: 1px solid #b8c8c1;
+}
+
+.sparks-data-explorer-beta__grid .sparks-data-explorer-header-main::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  right: -2px;
+  width: 4px;
+  height: 64%;
+  border-radius: 999px;
+  background: rgba(39, 84, 68, 0.28);
+  pointer-events: none;
+}
+
+.sparks-data-explorer-header-cell {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.sparks-data-explorer-header-label {
+  min-width: 0;
+  overflow: hidden;
+  color: #26352f;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sparks-data-explorer-header-filter-button,
+.sparks-data-explorer-header-filter-clear {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #65756f;
+  cursor: pointer;
+}
+
+.sparks-data-explorer-header-filter-button:hover,
+.sparks-data-explorer-header-filter-clear:hover,
+.sparks-data-explorer-header-filter-button--active {
+  background: rgba(24, 112, 84, 0.10);
+  color: var(--organization-primary, #176b55);
+}
+
+.sparks-data-explorer-header-inline-filter {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.sparks-data-explorer-header-inline-filter input {
+  min-width: 0;
+  width: 100%;
+  height: 1.7rem;
+  border: 1px solid var(--organization-primary, #176b55);
+  border-radius: 6px;
+  background: #fff;
+  padding: 0 0.4rem;
+  color: #26352f;
+  font: inherit;
+  font-size: 0.76rem;
+  outline: none;
+}
+
+
+/* SK-PE DATA EXPLORER FRAME CAPACITY V34
+ * More breathing room so the smart grid and its controls remain contained.
+ */
+.sparks-data-explorer-beta {
+  width: 100%;
+  min-width: 0;
+}
+
+.sparks-data-explorer-beta__toolbar {
+  min-height: 88px;
+  padding: 1rem 1.05rem;
+}
+
+.sparks-data-explorer-beta__grid {
+  width: 100%;
+  min-height: 440px;
+  height: clamp(440px, 58vh, 720px);
+}
+
+
+/* SK-PE EXPLORATION ACCESSIBILITY V36.1 */
+.sparks-data-explorer-beta__grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.sparks-data-explorer-beta__grid :where(.wx-grid) {
+  min-width: 100%;
+}
+
+.sparks-data-explorer-beta__toolbar {
+  align-items: end;
+}
+
+.sparks-data-explorer-beta__grouping {
+  min-width: min(620px, 100%);
+}
+
+/* SK-PE EXPLORER GRID POLISH V40 */
+.sparks-data-explorer-beta {
+  margin-top: 0.9rem !important;
+  gap: 0.9rem !important;
+}
+
+.sparks-data-explorer-beta__toolbar {
+  min-height: 78px !important;
+  padding: 0.9rem 1rem !important;
+}
+
+.sparks-data-explorer-beta__grid {
+  min-height: 430px !important;
+  height: clamp(430px, 56vh, 680px) !important;
+  border-radius: 12px;
+}
+
+.sparks-data-explorer-beta__grid .sparks-data-explorer-header-main {
+  min-height: 38px;
+}
+
+.sparks-data-explorer-header-cell {
+  min-height: 38px;
+}
+
+.sparks-data-explorer-header-label {
+  line-height: 1.2;
+}
+
+.sparks-data-explorer-beta__grid .sparks-data-explorer-row {
+  min-height: 38px;
+}
+
+/* SK-PE ACTIVE HIERARCHY V41 */
+.sparks-data-explorer-beta__grouping > span {
+  color: #c96b12 !important;
+  font-weight: 800 !important;
+}
+
+.sparks-data-explorer-beta__grouping select {
+  border: 2px solid #e98b21 !important;
+  background: rgba(233, 139, 33, 0.07) !important;
+  box-shadow: 0 0 0 2px rgba(233, 139, 33, 0.08) !important;
+}
+
+.sparks-data-explorer-beta__grouping select:focus {
+  outline: 2px solid rgba(233, 139, 33, 0.28) !important;
+  outline-offset: 1px;
+}
+
+
+/* SK-PE MONITORING VISUAL POLISH V42 */
+.skpe-monitoring-execution-hero {
+  margin-top: -1.7rem !important;
+  margin-bottom: 0.8rem !important;
+}
+
+.skpe-initiative-kpi-grid,
+.skpe-initiative-filters,
+.skpe-initiative-results-heading {
+  margin-bottom: 0.8rem !important;
+}
+
+.sparks-data-explorer-beta {
+  min-width: 0;
+}
+
+.sparks-data-explorer-beta__toolbar {
+  margin-bottom: 0.75rem !important;
+}
+
+.sparks-data-explorer-beta__grid {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable both-edges;
+  border-radius: 12px;
+}
+
+.sparks-data-explorer-beta__grid .wx-grid,
+.sparks-data-explorer-beta__grid .wx-grid-body,
+.sparks-data-explorer-beta__grid .wx-grid-content {
+  min-width: 100%;
+}
+
+.sparks-data-explorer-beta__grid::-webkit-scrollbar {
+  height: 12px;
+  width: 12px;
+}
+
+.sparks-data-explorer-beta__grid::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: rgba(70, 88, 80, 0.38);
+}
+
+.sparks-data-explorer-beta__grid::-webkit-scrollbar-track {
+  background: rgba(236, 241, 238, 0.7);
+}
+
+.sparks-data-explorer-header-main {
+  min-height: 38px;
+}
+
+.sparks-data-explorer-header-label {
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .skpe-monitoring-execution-hero {
+    margin-top: -1rem !important;
+  }
+}
+
+
+/* SK-PE MONITORING DENSITY V43 */
+.skpe-monitoring-execution-hero {
+  min-height: 94px !important;
+  margin-top: -2.2rem !important;
+  margin-bottom: 0.65rem !important;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+}
+
+.skpe-monitoring-execution-hero h2 {
+  font-size: clamp(1.28rem, 1.8vw, 1.65rem) !important;
+}
+
+.skpe-monitoring-execution-hero p:last-child {
+  margin-top: 0.35rem !important;
+  line-height: 1.35 !important;
+}
+
+.skpe-initiative-kpi-grid {
+  gap: 0.55rem !important;
+  margin-bottom: 0.65rem !important;
+}
+
+.skpe-initiative-kpi-grid > * {
+  min-height: 66px !important;
+}
+
+.skpe-initiative-filters {
+  min-height: 54px !important;
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+  gap: 0.55rem !important;
+  margin-bottom: 0.65rem !important;
+}
+
+.skpe-initiative-filters .skpe-admin-search,
+.skpe-initiative-filters .skpe-admin-search input,
+.skpe-initiative-filters select {
+  min-height: 38px !important;
+  height: 38px !important;
+}
+
+.skpe-initiative-results-heading {
+  min-height: 58px !important;
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+  margin-bottom: 0.65rem !important;
+}
+
+.skpe-initiative-results-heading h2 {
+  margin-top: 0.12rem !important;
+  margin-bottom: 0 !important;
+}
+
+.sparks-data-explorer-beta__toolbar {
+  min-height: 62px !important;
+  padding-top: 0.55rem !important;
+  padding-bottom: 0.55rem !important;
+  margin-bottom: 0.6rem !important;
+}
+
+.sparks-data-explorer-beta__toolbar p,
+.sparks-data-explorer-beta__toolbar strong {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.sparks-data-explorer-beta__grouping {
+  gap: 0.22rem !important;
+}
+
+.sparks-data-explorer-beta__grouping select {
+  min-height: 36px !important;
+  height: 36px !important;
+}
+
+.sparks-data-explorer-beta__grid {
+  min-height: 380px !important;
+  height: clamp(380px, 56vh, 680px) !important;
+}
+
+@media (max-width: 900px) {
+  .skpe-monitoring-execution-hero {
+    margin-top: -1.2rem !important;
+    min-height: auto !important;
+  }
+
+  .skpe-initiative-filters .skpe-admin-search,
+  .skpe-initiative-filters .skpe-admin-search input,
+  .skpe-initiative-filters select {
+    min-height: 40px !important;
+    height: 40px !important;
+  }
+}
+
+
+/* SK-PE MONITORING TIGHT RHYTHM V44 */
+.skpe-monitoring-execution-hero {
+  margin-bottom: 0.45rem !important;
+}
+
+.skpe-initiative-kpi-grid,
+.skpe-initiative-filters,
+.skpe-initiative-results-heading {
+  margin-bottom: 0.45rem !important;
+}
+
+.sparks-data-explorer-beta__toolbar {
+  margin-bottom: 0.45rem !important;
+}
+
+.skpe-initiative-kpi-grid {
+  gap: 0.45rem !important;
+}
+
+.skpe-initiative-filters {
+  gap: 0.45rem !important;
+}

@@ -167,23 +167,57 @@ export async function loadInitiativePortfolio(
     ]),
   )
 
-  const { data: objectiveLinks, error: objectiveLinksError } =
-    await supabase
+  const [
+    legacyObjectiveLinksResponse,
+    transversalObjectiveLinksResponse,
+  ] = await Promise.all([
+    supabase
       .from('skpe_initiative_objectives')
       .select('initiative_id, strategic_objective_id')
       .eq('organization_id', organizationId)
-      .in('initiative_id', initiativeIds)
+      .in('initiative_id', initiativeIds),
+    supabase
+      .from('skpe_sparks_initiative_strategic_links')
+      .select('sparks_initiative_id, strategic_objective_id')
+      .eq('organization_id', organizationId)
+      .in('sparks_initiative_id', initiativeIds),
+  ])
 
-  if (objectiveLinksError) {
+  if (
+    legacyObjectiveLinksResponse.error ||
+    transversalObjectiveLinksResponse.error
+  ) {
     throw new Error(
-      `Não foi possível carregar os vínculos estratégicos das iniciativas: ${objectiveLinksError.message}`,
+      legacyObjectiveLinksResponse.error?.message ??
+        transversalObjectiveLinksResponse.error?.message ??
+        'Não foi possível carregar os vínculos estratégicos das iniciativas.',
     )
   }
 
+  const objectiveLinks = Array.from(
+    new Map(
+      [
+        ...(legacyObjectiveLinksResponse.data ?? []).map((row) => ({
+          initiative_id: row.initiative_id as string,
+          strategic_objective_id:
+            row.strategic_objective_id as string,
+        })),
+        ...(transversalObjectiveLinksResponse.data ?? []).map((row) => ({
+          initiative_id: row.sparks_initiative_id as string,
+          strategic_objective_id:
+            row.strategic_objective_id as string,
+        })),
+      ].map((row) => [
+        `${row.initiative_id}:${row.strategic_objective_id}`,
+        row,
+      ]),
+    ).values(),
+  )
+
   const objectiveIds = Array.from(
     new Set(
-      (objectiveLinks ?? [])
-        .map((row) => row.strategic_objective_id as string | null)
+      objectiveLinks
+        .map((row) => row.strategic_objective_id)
         .filter((value): value is string => Boolean(value)),
     ),
   )

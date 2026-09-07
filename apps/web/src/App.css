@@ -112,7 +112,7 @@ h2 {
 
 .eyebrow {
   margin: 0 0 0.5rem;
-  color: #176b53;
+  color: var(--sparks-role-text-muted);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1993,4 +1993,37 @@ td,
   color: #526168;
   font-weight: 700;
   text-transform: none;
+}
+
+/* SK-PE FORMULATION FLOW CORRECTION V32
+ * Remove a reintroducao tardia de margem negativa no cockpit header
+ * e garante que a faixa interna da Formulacao tenha fundo opaco.
+ */
+.skpe-main {
+  padding-top: 0 !important;
+}
+
+.skpe-main > .skpe-cockpit-header {
+  margin-top: 0 !important;
+}
+
+.skpe-strategic-formulation > .sparks-workspace-tabs {
+  background: var(--skpe-surface, #ffffff) !important;
+  isolation: isolate;
+}
+
+.skpe-strategic-formulation > .sparks-workspace-tabs + .skpe-formulation-tab-panel,
+.skpe-strategic-formulation > .sparks-workspace-tabs + :where(section, div) {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 820px) {
+  .skpe-main {
+    padding-top: 0 !important;
+  }
+
+  .skpe-main > .skpe-cockpit-header {
+    margin-top: 0 !important;
+  }
 }

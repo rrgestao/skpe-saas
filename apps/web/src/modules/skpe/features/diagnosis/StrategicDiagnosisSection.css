@@ -43,17 +43,28 @@
 .skpe-strategic-diagnosis-overview > article,
 .skpe-strategic-diagnosis-meta > article {
   display: grid;
+  place-items: center;
   gap: 0.35rem;
   min-width: 0;
+  min-height: 98px;
   padding: 1rem;
   border: 1px solid #dce5e1;
   border-radius: 12px;
   background: #fff;
+  text-align: center;
 }
 
 .skpe-strategic-diagnosis-overview small,
 .skpe-strategic-diagnosis-meta small {
   color: #71807a;
+  text-align: center;
+}
+
+.skpe-strategic-diagnosis-overview strong,
+.skpe-strategic-diagnosis-meta strong {
+  width: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .skpe-strategic-diagnosis-artifact {
@@ -63,10 +74,22 @@
 
 .skpe-strategic-diagnosis-interpretation {
   grid-column: 1 / -1;
-  padding: 1rem 1.1rem;
-  border: 1px dashed #cddbd5;
-  border-radius: 12px;
-  background: #f8fbfa;
+  display: grid;
+  gap: 0.45rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.skpe-strategic-diagnosis-interpretation h3,
+.skpe-strategic-diagnosis-interpretation p {
+  margin: 0;
+}
+
+.skpe-strategic-diagnosis-interpretation-note {
+  color: #71807a;
+  font-size: 0.92rem;
 }
 
 @media (max-width: 900px) {
@@ -85,5 +108,1369 @@
   .skpe-strategic-diagnosis-overview,
   .skpe-strategic-diagnosis-meta {
     grid-template-columns: 1fr;
+  }
+}
+
+.skpe-strategic-diagnosis-records {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.skpe-strategic-diagnosis-records > article {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--skpe-border, #d8dee8);
+  border-radius: 0.9rem;
+  background: var(--skpe-surface, #fff);
+}
+
+.skpe-strategic-diagnosis-records > article > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-strategic-diagnosis-records > article > header > div {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.skpe-strategic-diagnosis-records > article > header small {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.skpe-strategic-diagnosis-records > article > header strong {
+  line-height: 1.35;
+}
+
+.skpe-strategic-diagnosis-records > article > header > span,
+.skpe-strategic-diagnosis-records > article > footer {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.skpe-strategic-diagnosis-records dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  margin: 0;
+}
+
+.skpe-strategic-diagnosis-records dl > div {
+  min-width: 0;
+}
+
+.skpe-strategic-diagnosis-records dt {
+  margin-bottom: 0.18rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+  opacity: 0.65;
+}
+
+.skpe-strategic-diagnosis-records dd {
+  margin: 0;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
+}
+
+.skpe-strategic-diagnosis-records footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.skpe-strategic-diagnosis-empty {
+  padding: 1rem;
+  border: 1px dashed var(--skpe-border, #cbd5e1);
+  border-radius: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-strategic-diagnosis-records dl {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-strategic-diagnosis-records > article > header {
+    display: grid;
+  }
+}
+
+/* SK-PE CANONICAL DIAGNOSIS METRIC CARDS V1
+ * Independente da ordem original no DOM:
+ * rótulo acima/esquerda; medida abaixo/centro.
+ */
+.skpe-strategic-diagnosis-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+.skpe-strategic-diagnosis-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > span:first-of-type {
+  order: 1;
+  width: 100%;
+  text-align: left !important;
+  font-weight: 400 !important;
+}
+
+.skpe-strategic-diagnosis-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > strong {
+  order: 2;
+  width: 100%;
+  text-align: center !important;
+}
+
+/* SK-PE CANONICAL DIAGNOSIS METRIC CARDS V2
+ * Regra transversal:
+ * rótulo acima/esquerda, peso normal;
+ * medida abaixo/centro.
+ */
+.skpe-strategic-diagnosis-overview > article,
+.skpe-strategic-diagnosis-meta > article {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+.skpe-strategic-diagnosis-overview > article > small:first-child,
+.skpe-strategic-diagnosis-meta > article > small:first-child {
+  order: 1;
+  width: 100%;
+  text-align: left !important;
+  font-weight: 400 !important;
+}
+
+.skpe-strategic-diagnosis-overview > article > strong,
+.skpe-strategic-diagnosis-meta > article > strong {
+  order: 2;
+  width: 100%;
+  text-align: center !important;
+}
+
+/* SK-PE DIAGNOSIS SEMANTIC COLOR V1 */
+.skpe-strategic-diagnosis-overview > article > small:first-child,
+.skpe-strategic-diagnosis-meta > article > small:first-child {
+  color: var(--sparks-role-text-muted) !important;
+  font-weight: 400 !important;
+}
+
+.skpe-strategic-diagnosis-overview > article > strong,
+.skpe-strategic-diagnosis-meta > article > strong {
+  color: var(--sparks-role-text-primary);
+}
+/* SK-PE PESTEL METHOD REFERENCE V1 */
+.skpe-strategic-diagnosis-method-reference {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 16px;
+  background: var(--skpe-surface, #ffffff);
+}
+
+.skpe-strategic-diagnosis-method-reference-heading {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.7fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.skpe-strategic-diagnosis-method-reference-heading h4 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.skpe-strategic-diagnosis-method-reference-heading > p {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--skpe-text-muted, #5c6673);
+}
+
+.skpe-strategic-diagnosis-method-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.skpe-strategic-diagnosis-method-table {
+  width: 100%;
+  min-width: 840px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.skpe-strategic-diagnosis-method-table th,
+.skpe-strategic-diagnosis-method-table td {
+  padding: 13px 14px;
+  border-top: 1px solid var(--skpe-border, #d7dde5);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.skpe-strategic-diagnosis-method-table thead th {
+  border-top: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--skpe-text-muted, #5c6673);
+}
+
+.skpe-strategic-diagnosis-method-table th:nth-child(1),
+.skpe-strategic-diagnosis-method-table td:nth-child(1) {
+  width: 76px;
+  text-align: center;
+}
+
+.skpe-strategic-diagnosis-method-table th:nth-child(2),
+.skpe-strategic-diagnosis-method-table td:nth-child(2) {
+  width: 150px;
+}
+
+.skpe-strategic-diagnosis-method-table td:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.skpe-strategic-diagnosis-method-table td:nth-child(2) small {
+  color: var(--skpe-text-muted, #5c6673);
+  font-size: 0.72rem;
+}
+
+.skpe-strategic-diagnosis-method-letter {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid currentColor;
+  border-radius: 9px;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .skpe-strategic-diagnosis-method-reference-heading {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .skpe-strategic-diagnosis-method-reference {
+    padding: 16px;
+  }
+}
+
+/* SK-PE PESTEL METHOD LETTER THEME OVERRIDE V1 */
+.skpe-strategic-diagnosis-method-letter {
+  color: #ffffff;
+  border: 0;
+  background:
+    linear-gradient(
+      135deg,
+      var(--skpe-org-palette-start, var(--skpe-brand-primary, #0f766e)),
+      var(--skpe-org-palette-end, var(--skpe-brand-secondary, #1d4ed8))
+    );
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+}
+
+/* SK-PE SWOT / TOWS / STRATEGIC RISK METHOD REFERENCE V1 */
+.skpe-strategic-diagnosis-method-letter-wide {
+  width: 44px;
+}
+
+.skpe-strategic-diagnosis-risk-reference-table th:nth-child(1),
+.skpe-strategic-diagnosis-risk-reference-table td:nth-child(1) {
+  width: 190px;
+  text-align: left;
+}
+
+.skpe-strategic-diagnosis-risk-reference-table th:nth-child(2),
+.skpe-strategic-diagnosis-risk-reference-table td:nth-child(2) {
+  width: 36%;
+}
+
+@media (max-width: 900px) {
+  .skpe-strategic-diagnosis-risk-reference-table th:nth-child(1),
+  .skpe-strategic-diagnosis-risk-reference-table td:nth-child(1),
+  .skpe-strategic-diagnosis-risk-reference-table th:nth-child(2),
+  .skpe-strategic-diagnosis-risk-reference-table td:nth-child(2) {
+    width: auto;
+  }
+}
+
+/* SK-PE SWOT / TOWS / STRATEGIC RISK MATRIX V1 */
+.skpe-strategic-diagnosis-matrix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.skpe-strategic-diagnosis-matrix-cell {
+  min-width: 0;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 16px;
+  background: var(--skpe-surface, #ffffff);
+  overflow: hidden;
+}
+
+.skpe-strategic-diagnosis-matrix-cell > header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--skpe-border, #d7dde5);
+}
+
+.skpe-strategic-diagnosis-matrix-cell > header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.skpe-strategic-diagnosis-matrix-items {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.skpe-strategic-diagnosis-matrix-items > article {
+  display: grid;
+  gap: 7px;
+  padding: 12px 14px;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--skpe-surface, #ffffff) 92%,
+    var(--skpe-brand-primary, #0f766e)
+  );
+}
+
+.skpe-strategic-diagnosis-matrix-items > article > p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--skpe-text-muted, #5c6673);
+}
+
+.skpe-strategic-diagnosis-matrix-items > article > footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.78rem;
+  color: var(--skpe-text-muted, #5c6673);
+}
+
+.skpe-strategic-diagnosis-risk-matrix-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 16px;
+  background: var(--skpe-surface, #ffffff);
+}
+
+.skpe-strategic-diagnosis-risk-matrix {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+.skpe-strategic-diagnosis-risk-matrix th,
+.skpe-strategic-diagnosis-risk-matrix td {
+  padding: 12px 13px;
+  border-bottom: 1px solid var(--skpe-border, #d7dde5);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.skpe-strategic-diagnosis-risk-matrix th {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  color: var(--skpe-text-muted, #5c6673);
+  white-space: nowrap;
+}
+
+.skpe-strategic-diagnosis-risk-matrix tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.skpe-strategic-diagnosis-risk-matrix th:nth-child(2),
+.skpe-strategic-diagnosis-risk-matrix td:nth-child(2) {
+  min-width: 260px;
+}
+
+.skpe-strategic-diagnosis-detail-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  padding-top: 4px;
+}
+
+.skpe-strategic-diagnosis-detail-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.skpe-strategic-diagnosis-detail-heading h4 {
+  margin: 0;
+}
+
+.skpe-strategic-diagnosis-detail-heading > span {
+  color: var(--skpe-text-muted, #5c6673);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-strategic-diagnosis-matrix {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .skpe-strategic-diagnosis-detail-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+/* SK-PE SWOT / TOWS CONSOLIDATED QUADRANT UX V6 */
+
+/* Base semantic variables per quadrant. */
+.skpe-strategic-diagnosis-matrix-cell {
+  --matrix-accent: var(--skpe-brand-primary, #0f766e);
+  --matrix-accent-strong: var(--skpe-brand-primary, #115e59);
+  --matrix-surface: color-mix(in srgb, #ffffff 84%, var(--matrix-accent));
+  --matrix-border: color-mix(
+    in srgb,
+    var(--matrix-accent) 52%,
+    var(--skpe-border, #d7dde5)
+  );
+
+  background: var(--skpe-surface, #ffffff);
+  border-color: var(--matrix-border);
+}
+
+/* Header and every item in the same quadrant use the same surface. */
+.skpe-strategic-diagnosis-matrix-cell > header,
+.skpe-strategic-diagnosis-matrix-cell .skpe-strategic-diagnosis-matrix-items > article,
+.skpe-strategic-diagnosis-matrix-cell .skpe-strategic-diagnosis-matrix-items > article:hover {
+  background: var(--matrix-surface);
+  border-color: var(--matrix-border);
+}
+
+/* Matrix sigla uses the same quadrant accent. */
+.skpe-strategic-diagnosis-matrix-cell .skpe-strategic-diagnosis-method-letter {
+  color: #ffffff;
+  border: 0;
+  background: linear-gradient(
+    135deg,
+    var(--matrix-accent-strong),
+    var(--matrix-accent)
+  );
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+/* Left column: S/O and FO/ST as one compact group at the far right. */
+.skpe-strategic-diagnosis-matrix-cell-align-end > header {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-align-end > header > div {
+  justify-items: end;
+  text-align: right;
+}
+
+/* Right column: W/T and WO/WT grouped at the far left. */
+.skpe-strategic-diagnosis-matrix-cell-align-start > header {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-align-start > header > div {
+  justify-items: start;
+  text-align: left;
+}
+
+/* SWOT */
+.skpe-strategic-diagnosis-matrix-cell-swot-s {
+  --matrix-accent: #22c55e;
+  --matrix-accent-strong: #15803d;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-w {
+  --matrix-accent: #f59e0b;
+  --matrix-accent-strong: #b45309;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-o {
+  --matrix-accent: #0ea5e9;
+  --matrix-accent-strong: #2563eb;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-t {
+  --matrix-accent: #ef4444;
+  --matrix-accent-strong: #b91c1c;
+}
+
+/* TOWS */
+.skpe-strategic-diagnosis-matrix-cell-tows-fo {
+  --matrix-accent: #10b981;
+  --matrix-accent-strong: #047857;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-wo {
+  --matrix-accent: #3b82f6;
+  --matrix-accent-strong: #1d4ed8;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-st {
+  --matrix-accent: #f97316;
+  --matrix-accent-strong: #c2410c;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-wt {
+  --matrix-accent: #f43f5e;
+  --matrix-accent-strong: #be123c;
+}
+
+/* Compact matrix cards. */
+.skpe-strategic-diagnosis-matrix-items {
+  gap: 8px;
+  padding: 11px;
+}
+
+.skpe-strategic-diagnosis-matrix-items > article {
+  gap: 5px;
+  padding: 9px 11px;
+}
+
+.skpe-strategic-diagnosis-matrix-items > article > p {
+  line-height: 1.4;
+}
+
+.skpe-strategic-diagnosis-matrix-items > article > footer {
+  gap: 6px 12px;
+}
+
+/* Summary cards: three across, lower height, label/value inline. */
+.skpe-strategic-diagnosis-meta {
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skpe-strategic-diagnosis-meta > article {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 11px 14px;
+}
+
+.skpe-strategic-diagnosis-meta > article > small:first-child {
+  width: auto !important;
+  margin: 0;
+  text-align: left !important;
+}
+
+.skpe-strategic-diagnosis-meta > article > strong {
+  width: auto !important;
+  margin: 0;
+  text-align: right !important;
+}
+
+@media (max-width: 900px) {
+  .skpe-strategic-diagnosis-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .skpe-strategic-diagnosis-meta > article {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .skpe-strategic-diagnosis-meta > article > strong {
+    text-align: left !important;
+  }
+}
+
+/* SK-PE SWOT / TOWS POSITION + MARKET PALETTE V7 */
+
+/* Explicit semantic surfaces: no color-mix ambiguity. */
+.skpe-strategic-diagnosis-matrix-cell-swot-s {
+  --matrix-accent: #16a34a;
+  --matrix-accent-strong: #166534;
+  --matrix-surface: #dcfce7;
+  --matrix-border: #86efac;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-w {
+  --matrix-accent: #d97706;
+  --matrix-accent-strong: #92400e;
+  --matrix-surface: #ffedd5;
+  --matrix-border: #fdba74;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-o {
+  --matrix-accent: #2563eb;
+  --matrix-accent-strong: #1e40af;
+  --matrix-surface: #dbeafe;
+  --matrix-border: #93c5fd;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-t {
+  --matrix-accent: #dc2626;
+  --matrix-accent-strong: #991b1b;
+  --matrix-surface: #fee2e2;
+  --matrix-border: #fca5a5;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-fo {
+  --matrix-accent: #059669;
+  --matrix-accent-strong: #065f46;
+  --matrix-surface: #d1fae5;
+  --matrix-border: #6ee7b7;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-wo {
+  --matrix-accent: #2563eb;
+  --matrix-accent-strong: #1e40af;
+  --matrix-surface: #dbeafe;
+  --matrix-border: #93c5fd;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-st {
+  --matrix-accent: #ea580c;
+  --matrix-accent-strong: #9a3412;
+  --matrix-surface: #ffedd5;
+  --matrix-border: #fdba74;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-wt {
+  --matrix-accent: #e11d48;
+  --matrix-accent-strong: #9f1239;
+  --matrix-surface: #ffe4e6;
+  --matrix-border: #fda4af;
+}
+
+/* Force header and every record card to use the exact quadrant surface. */
+.skpe-strategic-diagnosis-matrix-cell > header,
+.skpe-strategic-diagnosis-matrix-cell .skpe-strategic-diagnosis-matrix-items > article,
+.skpe-strategic-diagnosis-matrix-cell .skpe-strategic-diagnosis-matrix-items > article:hover {
+  background: var(--matrix-surface) !important;
+  border-color: var(--matrix-border) !important;
+}
+
+/* End-aligned groups are compact and stay at the far right. */
+.skpe-strategic-diagnosis-matrix-cell-align-end > header {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-align-end > header > div {
+  justify-items: end;
+  text-align: right;
+}
+
+/* Start-aligned groups remain compact at the far left. */
+.skpe-strategic-diagnosis-matrix-cell-align-start > header {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-align-start > header > div {
+  justify-items: start;
+  text-align: left;
+}
+
+/* SK-PE SWOT / TOWS PALETTE CORRECTION V8 */
+
+/*
+  Final semantic palette:
+  - stronger, cleaner surfaces;
+  - same hue across header and all cards in the quadrant;
+  - dark text preserved for readability;
+  - badge remains saturated.
+*/
+
+/* SWOT */
+.skpe-strategic-diagnosis-matrix-cell-swot-s {
+  --matrix-accent: #2e7d32;
+  --matrix-accent-strong: #1b5e20;
+  --matrix-surface: #cfe7bf;
+  --matrix-border: #79b85c;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-w {
+  --matrix-accent: #c76a00;
+  --matrix-accent-strong: #9a4d00;
+  --matrix-surface: #f8d59f;
+  --matrix-border: #e5a54c;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-o {
+  --matrix-accent: #1d5fbf;
+  --matrix-accent-strong: #174a96;
+  --matrix-surface: #b8d5f4;
+  --matrix-border: #6ea7e4;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-swot-t {
+  --matrix-accent: #c83232;
+  --matrix-accent-strong: #9f2525;
+  --matrix-surface: #f3b8b8;
+  --matrix-border: #df7373;
+}
+
+/* TOWS */
+.skpe-strategic-diagnosis-matrix-cell-tows-fo {
+  --matrix-accent: #2e7d32;
+  --matrix-accent-strong: #1b5e20;
+  --matrix-surface: #cfe7bf;
+  --matrix-border: #79b85c;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-wo {
+  --matrix-accent: #3564c8;
+  --matrix-accent-strong: #294e9d;
+  --matrix-surface: #c4d0ef;
+  --matrix-border: #809bdb;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-st {
+  --matrix-accent: #d36a1e;
+  --matrix-accent-strong: #a74f10;
+  --matrix-surface: #f6caa7;
+  --matrix-border: #e7965b;
+}
+
+.skpe-strategic-diagnosis-matrix-cell-tows-wt {
+  --matrix-accent: #c7375a;
+  --matrix-accent-strong: #982844;
+  --matrix-surface: #efbdca;
+  --matrix-border: #db7892;
+}
+
+/* Enforce exact surface identity between header and every item. */
+.skpe-strategic-diagnosis-matrix-cell > header,
+.skpe-strategic-diagnosis-matrix-cell .skpe-strategic-diagnosis-matrix-items > article,
+.skpe-strategic-diagnosis-matrix-cell .skpe-strategic-diagnosis-matrix-items > article:hover {
+  background: var(--matrix-surface) !important;
+  border-color: var(--matrix-border) !important;
+}
+
+/* SK-PE STRATEGIC RISK MATRIX V2 */
+.skpe-strategic-diagnosis-risk-dashboard {
+  display: grid;
+  gap: 14px;
+}
+
+.skpe-strategic-diagnosis-risk-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.skpe-strategic-diagnosis-risk-summary > article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 62px;
+  padding: 11px 13px;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 12px;
+  background: var(--skpe-surface, #ffffff);
+}
+
+.skpe-strategic-diagnosis-risk-summary small {
+  color: var(--skpe-text-muted, #5c6673);
+}
+
+.skpe-strategic-diagnosis-risk-summary strong {
+  font-size: 1.05rem;
+}
+
+.skpe-strategic-diagnosis-risk-matrix {
+  min-width: 1180px;
+}
+
+.skpe-strategic-diagnosis-risk-matrix th,
+.skpe-strategic-diagnosis-risk-matrix td {
+  padding: 11px 12px;
+}
+
+.skpe-strategic-diagnosis-risk-matrix tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.skpe-strategic-diagnosis-risk-matrix tbody tr:hover {
+  background: #f1f5f9;
+}
+
+.skpe-strategic-diagnosis-risk-code {
+  white-space: nowrap;
+}
+
+.skpe-strategic-diagnosis-risk-matrix td:nth-child(2) {
+  min-width: 310px;
+}
+
+.skpe-strategic-diagnosis-risk-matrix td:nth-child(2) > strong {
+  display: block;
+  line-height: 1.35;
+}
+
+.skpe-strategic-diagnosis-risk-secondary {
+  display: block;
+  margin-top: 4px;
+  color: var(--skpe-text-muted, #5c6673);
+  line-height: 1.35;
+}
+
+.skpe-strategic-diagnosis-risk-score {
+  display: inline-grid;
+  min-width: 42px;
+  min-height: 32px;
+  place-items: center;
+  padding: 4px 8px;
+  border-radius: 9px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 800;
+}
+
+.skpe-strategic-diagnosis-risk-score-residual {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.skpe-strategic-diagnosis-risk-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 999px;
+  background: #ffffff;
+  white-space: nowrap;
+}
+
+.skpe-strategic-diagnosis-risk-scale-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--skpe-brand-primary, #0f766e);
+  background: #f8fafc;
+  color: var(--skpe-text-muted, #5c6673);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+/* SK-PE STRATEGIC RISK SMART GRID + METRIC FILTERS V3 */
+.skpe-strategic-diagnosis-risk-dashboard {
+  display: grid;
+  gap: 14px;
+}
+
+.skpe-strategic-diagnosis-risk-focus {
+  display: grid;
+  gap: 10px;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading h4 {
+  margin: 0;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading > span {
+  color: var(--skpe-text-muted, #5c6673);
+  font-size: 0.82rem;
+}
+
+.skpe-strategic-diagnosis-risk-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card__label,
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card__value {
+  width: 100%;
+  text-align: center;
+}
+
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card__value {
+  margin-top: 7px;
+}
+
+.sparks-risk-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .skpe-strategic-diagnosis-risk-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-strategic-diagnosis-risk-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skpe-strategic-diagnosis-risk-focus-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+/* SK-PE STRATEGIC RISK HEATMAP + GRID COLOR V4 */
+.skpe-strategic-diagnosis-risk-heatmap-block {
+  display: grid;
+  gap: 10px;
+}
+
+.skpe-strategic-diagnosis-risk-heatmap {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.1fr) repeat(5, minmax(110px, 1fr));
+  gap: 6px;
+  align-items: stretch;
+}
+
+.skpe-risk-heatmap-corner,
+.skpe-risk-heatmap-axis,
+.skpe-risk-heatmap-cell {
+  min-height: 76px;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 10px;
+}
+
+.skpe-risk-heatmap-corner,
+.skpe-risk-heatmap-axis {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.skpe-risk-heatmap-axis strong {
+  font-size: 0.92rem;
+}
+
+.skpe-risk-heatmap-axis span {
+  color: var(--skpe-text-muted, #5c6673);
+  font-size: 0.76rem;
+}
+
+.skpe-risk-heatmap-cell {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 3px;
+  padding: 8px;
+  text-align: center;
+}
+
+.skpe-risk-heatmap-cell > strong {
+  font-size: 1.05rem;
+}
+
+.skpe-risk-heatmap-cell > span {
+  font-size: 0.72rem;
+  opacity: 0.82;
+}
+
+.skpe-risk-heatmap-band-1,
+.sparks-risk-cell-risk-scale-1 {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.skpe-risk-heatmap-band-2,
+.sparks-risk-cell-risk-scale-2 {
+  background: #ecfccb !important;
+  color: #3f6212 !important;
+}
+
+.skpe-risk-heatmap-band-3,
+.sparks-risk-cell-risk-scale-3 {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.skpe-risk-heatmap-band-4,
+.sparks-risk-cell-risk-scale-4 {
+  background: #fed7aa !important;
+  color: #9a3412 !important;
+}
+
+.skpe-risk-heatmap-band-5,
+.sparks-risk-cell-risk-scale-5 {
+  background: #fecaca !important;
+  color: #991b1b !important;
+}
+
+.sparks-risk-cell {
+  font-weight: 700;
+}
+
+.sparks-risk-cell-1 {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.sparks-risk-cell-2 {
+  background: #ecfccb !important;
+  color: #3f6212 !important;
+}
+
+.sparks-risk-cell-3 {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.sparks-risk-cell-4 {
+  background: #fed7aa !important;
+  color: #9a3412 !important;
+}
+
+.sparks-risk-cell-5 {
+  background: #fecaca !important;
+  color: #991b1b !important;
+}
+
+@media (max-width: 1100px) {
+  .skpe-strategic-diagnosis-risk-heatmap {
+    overflow-x: auto;
+    grid-template-columns: 130px repeat(5, 120px);
+  }
+}
+
+/* SK-PE STRATEGIC RISK MITIGATION CONCEPT V16 */
+.skpe-strategic-diagnosis-risk-dashboard {
+  --skpe-risk-frame-gap: 18px;
+  display: grid;
+  gap: var(--skpe-risk-frame-gap);
+}
+
+.skpe-strategic-diagnosis-risk-heatmaps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--skpe-risk-frame-gap);
+}
+
+.skpe-strategic-diagnosis-risk-heatmap-block,
+.skpe-strategic-diagnosis-risk-focus {
+  display: grid;
+  gap: 12px;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading h4 {
+  margin: 0;
+}
+
+.skpe-strategic-diagnosis-risk-focus-heading > span {
+  color: var(--skpe-text-muted, #5c6673);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.skpe-strategic-diagnosis-risk-heatmap {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.1fr) repeat(5, minmax(88px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.skpe-risk-heatmap-corner,
+.skpe-risk-heatmap-axis,
+.skpe-risk-heatmap-cell {
+  min-height: 82px;
+  border: 1px solid var(--skpe-border, #d7dde5);
+  border-radius: 10px;
+}
+
+.skpe-risk-heatmap-corner,
+.skpe-risk-heatmap-axis {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.skpe-risk-heatmap-axis strong {
+  font-size: 0.92rem;
+}
+
+.skpe-risk-heatmap-axis span {
+  color: var(--skpe-text-muted, #5c6673);
+  font-size: 0.76rem;
+}
+
+.skpe-risk-heatmap-cell {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.skpe-risk-heatmap-id-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 6px;
+}
+
+.skpe-risk-heatmap-id-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.58);
+  color: currentColor;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.skpe-risk-heatmap-empty {
+  opacity: 0.58;
+  font-weight: 700;
+}
+
+.skpe-risk-heatmap-band-1 {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.skpe-risk-heatmap-band-2 {
+  background: #ecfccb !important;
+  color: #3f6212 !important;
+}
+
+.skpe-risk-heatmap-band-3 {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.skpe-risk-heatmap-band-4 {
+  background: #fed7aa !important;
+  color: #9a3412 !important;
+}
+
+.skpe-risk-heatmap-band-5 {
+  background: #fecaca !important;
+  color: #991b1b !important;
+}
+
+.skpe-strategic-diagnosis-risk-heatmap-block--placeholder {
+  align-content: start;
+}
+
+.skpe-strategic-diagnosis-risk-placeholder {
+  display: grid;
+  gap: 12px;
+  min-height: 530px;
+  padding: 14px;
+  border: 1px dashed var(--skpe-border, #d7dde5);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 0.96));
+}
+
+.skpe-strategic-diagnosis-risk-placeholder p,
+.skpe-strategic-diagnosis-risk-placeholder ul {
+  margin: 0;
+}
+
+.skpe-strategic-diagnosis-risk-placeholder ul {
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.skpe-strategic-diagnosis-risk-residual-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.skpe-strategic-diagnosis-risk-residual-pill {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  min-height: 78px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.skpe-strategic-diagnosis-risk-residual-pill strong {
+  font-size: 0.85rem;
+}
+
+.skpe-strategic-diagnosis-risk-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card__label,
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card__value {
+  width: 100%;
+  text-align: center;
+}
+
+.skpe-strategic-diagnosis-risk-summary .sparks-metric-card__value {
+  margin-top: 7px;
+}
+
+.sparks-risk-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.sparks-data-explorer-header-cell--centered {
+  justify-content: center;
+  text-align: center;
+}
+
+.sparks-risk-cell {
+  font-weight: 700;
+}
+
+.sparks-risk-cell--center {
+  text-align: center !important;
+}
+
+.sparks-risk-cell--center,
+.sparks-risk-cell--center * {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.sparks-risk-cell-1 {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.sparks-risk-cell-2 {
+  background: #ecfccb !important;
+  color: #3f6212 !important;
+}
+
+.sparks-risk-cell-3 {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.sparks-risk-cell-4 {
+  background: #fed7aa !important;
+  color: #9a3412 !important;
+}
+
+.sparks-risk-cell-5 {
+  background: #fecaca !important;
+  color: #991b1b !important;
+}
+
+@media (max-width: 1280px) {
+  .skpe-strategic-diagnosis-risk-heatmaps {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .skpe-strategic-diagnosis-risk-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .skpe-strategic-diagnosis-risk-residual-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .skpe-strategic-diagnosis-risk-heatmap {
+    overflow-x: auto;
+    grid-template-columns: 130px repeat(5, 120px);
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-strategic-diagnosis-risk-summary,
+  .skpe-strategic-diagnosis-risk-residual-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skpe-strategic-diagnosis-risk-focus-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .skpe-strategic-diagnosis-risk-focus-heading > span {
+    text-align: left;
   }
 }

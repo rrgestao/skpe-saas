@@ -1,0 +1,294 @@
+.skpe-performance-cockpit {
+  display: grid;
+  gap: 1rem;
+  padding: 0.2rem 0 1rem;
+}
+
+.skpe-performance-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid var(--skpe-border-color, #d7e1dc);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(21, 107, 83, 0.08), rgba(21, 107, 83, 0.015)),
+    var(--skpe-surface, #fff);
+}
+
+.skpe-performance-hero h2,
+.skpe-performance-card h3 {
+  margin: 0;
+}
+
+.skpe-performance-hero p:not(.skpe-performance-eyebrow) {
+  max-width: 760px;
+  margin: 0.35rem 0 0;
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.82rem;
+}
+
+.skpe-performance-eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--sparks-accent, #176b53);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.skpe-performance-hero-badge {
+  display: grid;
+  min-width: 150px;
+  gap: 0.2rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(23, 107, 83, 0.08);
+  text-align: center;
+}
+
+.skpe-performance-hero-badge span {
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.68rem;
+}
+
+.skpe-performance-hero-badge strong {
+  font-size: 1.7rem;
+}
+
+.skpe-performance-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.skpe-performance-summary-card {
+  display: grid;
+  gap: 0.18rem;
+  min-height: 92px;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--skpe-border-color, #d7e1dc);
+  border-radius: 12px;
+  background: var(--skpe-surface, #fff);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.skpe-performance-summary-card {
+  cursor: pointer;
+}
+
+button.skpe-performance-summary-card:hover {
+  border-color: var(--sparks-accent, #176b53);
+}
+
+.skpe-performance-summary-card span {
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.skpe-performance-summary-card strong {
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.skpe-performance-summary-card small {
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.68rem;
+}
+
+.skpe-performance-summary-card.is-attention {
+  background: rgba(190, 129, 27, 0.055);
+}
+
+.skpe-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.skpe-performance-card {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--skpe-border-color, #d7e1dc);
+  border-radius: 13px;
+  background: var(--skpe-surface, #fff);
+}
+
+.skpe-performance-card header span {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.skpe-performance-bars {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.skpe-performance-bar-row {
+  display: grid;
+  gap: 0.38rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.skpe-performance-bar-row.is-interactive {
+  cursor: pointer;
+}
+
+.skpe-performance-bar-row:disabled {
+  opacity: 1;
+}
+
+.skpe-performance-bar-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.76rem;
+}
+
+.skpe-performance-bar-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(85, 108, 99, 0.12);
+}
+
+.skpe-performance-bar-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sparks-accent, #176b53);
+  transition: width 180ms ease;
+}
+
+.skpe-performance-bar-row.is-interactive:hover
+  .skpe-performance-bar-track
+  > span {
+  filter: brightness(0.88);
+}
+
+.skpe-performance-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
+  gap: 0.85rem;
+}
+
+.skpe-performance-attention-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.skpe-performance-attention-grid > * {
+  display: grid;
+  align-content: center;
+  gap: 0.2rem;
+  min-height: 86px;
+  padding: 0.65rem;
+  border: 1px solid rgba(91, 112, 103, 0.12);
+  border-radius: 10px;
+  background: rgba(91, 112, 103, 0.035);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+.skpe-performance-attention-grid button {
+  cursor: pointer;
+}
+
+.skpe-performance-attention-grid strong {
+  font-size: 1.25rem;
+}
+
+.skpe-performance-attention-grid span {
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.skpe-performance-readiness {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border-radius: 10px;
+  background: rgba(91, 112, 103, 0.04);
+}
+
+.skpe-performance-readiness-dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  margin-top: 0.2rem;
+  border-radius: 999px;
+  background: #8a9691;
+}
+
+.skpe-performance-readiness-dot.is-partial {
+  background: #c68a22;
+}
+
+.skpe-performance-readiness p {
+  margin: 0.3rem 0 0;
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.skpe-performance-data-note {
+  display: flex;
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px dashed var(--skpe-border-color, #d7e1dc);
+  border-radius: 10px;
+  color: var(--skpe-text-muted, #66736d);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 1180px) {
+  .skpe-performance-summary-grid,
+  .skpe-performance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skpe-performance-lower-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-performance-attention-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .skpe-performance-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .skpe-performance-summary-grid,
+  .skpe-performance-grid,
+  .skpe-performance-attention-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-performance-data-note {
+    flex-direction: column;
+  }
+}

@@ -1,4 +1,4 @@
-﻿.platform-admin {
+.platform-admin {
   color: #17202a;
 }
 
@@ -26,7 +26,7 @@
 
 .pa-eyebrow {
   margin: 0 0 0.45rem !important;
-  color: #176b53 !important;
+  color: var(--sparks-role-text-muted) !important;
   font-size: 0.78rem;
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -371,7 +371,7 @@
 }
 
 .pa-record-card small {
-  color: #176b53;
+  color: var(--sparks-role-text-muted);
   font-weight: 850;
   letter-spacing: 0.04em;
 }
@@ -865,7 +865,7 @@
 }
 
 .pa-related-card small {
-  color: #176b53;
+  color: var(--sparks-role-text-muted);
   font-weight: 800;
 }
 
@@ -1243,7 +1243,7 @@
 
 .pa-module-access-heading small,
 .pa-audit-heading small {
-  color: #176b53;
+  color: var(--sparks-role-text-muted);
   font-weight: 820;
 }
 
@@ -1306,7 +1306,7 @@
   padding: 0.28rem 0.5rem;
   border-radius: 999px;
   background: #edf5f2;
-  color: #176b53;
+  color: var(--sparks-role-text-primary);
   font-size: 0.7rem;
   font-weight: 760;
 }

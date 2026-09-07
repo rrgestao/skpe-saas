@@ -1,0 +1,381 @@
+.skpe-initiative-smart-grid-shell {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sparks-initiative-portfolio-grid {
+  min-height: 430px;
+}
+
+.skpe-initiative-smart-grid-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-height: 30px;
+  font-size: 0.78rem;
+}
+
+.skpe-initiative-smart-grid-filter-summary span {
+  color: var(--skpe-text-muted, #68766f);
+}
+
+.skpe-initiative-smart-grid-filter-summary button {
+  border: 0;
+  background: transparent;
+  color: var(--skpe-accent, #176b53);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.skpe-initiative-smart-grid-hint {
+  margin: 0;
+  color: var(--skpe-text-muted, #68766f);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.skpe-initiative-selected-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--skpe-border-color, #d8e1dd);
+  border-radius: 10px;
+  background: var(--skpe-surface, #fff);
+}
+
+.skpe-initiative-selected-actions__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.skpe-initiative-selected-actions__identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.skpe-initiative-selected-actions__identity small {
+  color: var(--skpe-text-muted, #68766f);
+}
+
+.skpe-initiative-selected-actions__identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skpe-initiative-selected-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.skpe-initiative-kpi-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+}
+
+.skpe-initiative-kpi-grid > * {
+  min-width: 0;
+  min-height: 74px;
+}
+
+.skpe-initiative-kpi-grid .sparks-metric-card--active {
+  border-color: var(--sparks-accent) !important;
+  background: var(--sparks-accent-soft) !important;
+  box-shadow: 0 0 0 3px rgba(23, 107, 83, 0.12) !important;
+}
+
+.skpe-initiative-kpi-grid .sparks-metric-card--active .sparks-metric-card__label,
+.skpe-initiative-kpi-grid .sparks-metric-card--active .sparks-metric-card__value {
+  color: var(--sparks-accent) !important;
+}
+
+@media (max-width: 1180px) {
+  .skpe-initiative-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .skpe-initiative-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .skpe-initiative-selected-actions__top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .skpe-initiative-selected-actions__buttons {
+    justify-content: flex-start;
+  }
+}
+
+.skpe-initiative-analytics-panel {
+  display: grid;
+  gap: 0;
+  margin-top: 0.75rem;
+  border: 1px solid var(--skpe-border-color, #d8e1dd);
+  border-radius: 14px;
+  background: var(--skpe-surface, #fff);
+  overflow: hidden;
+}
+
+.skpe-initiative-analytics-panel > .skpe-initiative-results-heading {
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  box-shadow: none;
+}
+
+.skpe-initiative-analytics-panel > .skpe-initiative-kpi-grid {
+  margin: 0;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border-top: 1px solid var(--skpe-border-color, #e2e8e5);
+  background: rgba(120, 140, 130, 0.025);
+}
+
+.skpe-initiative-analytics-panel .skpe-initiative-kpi-grid > * {
+  min-height: 70px;
+}
+
+@media (max-width: 1180px) {
+  .skpe-initiative-analytics-panel > .skpe-initiative-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .skpe-initiative-analytics-panel > .skpe-initiative-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+/* 19.7.3 - content fit and centered classifications */
+.sparks-initiative-portfolio-grid .skpe-initiative-grid-cell-center {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.sparks-initiative-portfolio-grid .skpe-initiative-grid-header-center,
+.sparks-initiative-portfolio-grid
+  .skpe-initiative-grid-header-center
+  .sparks-data-explorer-header-cell {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.sparks-initiative-portfolio-grid .wx-cell,
+.sparks-initiative-portfolio-grid [role="gridcell"] {
+  white-space: nowrap !important;
+}
+
+.sparks-initiative-portfolio-grid .wx-cell > *,
+.sparks-initiative-portfolio-grid [role="gridcell"] > * {
+  min-width: 0;
+}
+/* 19.7.4 - authoritative UX recovery */
+.skpe-initiative-kpi-grid-recovered {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+  margin: 0.75rem 0 0.85rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.skpe-initiative-kpi-grid-recovered > * {
+  min-width: 0 !important;
+  min-height: 72px !important;
+}
+
+.skpe-initiative-operational-layout {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.skpe-initiative-operational-layout__grid,
+.skpe-initiative-smart-grid-shell {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.sparks-initiative-portfolio-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  min-height: 390px !important;
+  max-height: 520px !important;
+}
+
+.sparks-initiative-portfolio-grid .wx-grid,
+.sparks-initiative-portfolio-grid [role="grid"] {
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+.skpe-initiative-smart-grid-hint {
+  margin-top: 0.35rem !important;
+}
+
+@media (max-width: 1180px) {
+  .skpe-initiative-kpi-grid-recovered {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .skpe-initiative-kpi-grid-recovered {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+/* 19.7.7 - final layout refinement */
+.skpe-initiative-executive-title {
+  margin: 0 0 0.75rem !important;
+  padding: 0 0.15rem;
+}
+
+.skpe-initiative-executive-title h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+#skpe-initiative-results {
+  margin-top: 0.75rem !important;
+}
+
+.skpe-initiative-kpi-grid-recovered {
+  margin-top: 0.75rem !important;
+  margin-bottom: 0 !important;
+}
+
+.skpe-initiative-operational-layout {
+  margin-top: 0.75rem !important;
+}
+/* 19.7.8 - visual order and spacing hardening */
+.skpe-initiative-kpi-grid-recovered > * {
+  order: initial !important;
+}
+
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot {
+  display: flex !important;
+  min-width: 0 !important;
+  min-height: 72px !important;
+}
+
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot > * {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot-progress { order: 1 !important; }
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot-total { order: 2 !important; }
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot-inprogress { order: 3 !important; }
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot-draft { order: 4 !important; }
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot-analysis { order: 5 !important; }
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot-critical { order: 6 !important; }
+.skpe-initiative-kpi-grid-recovered .skpe-kpi-slot-blocked { order: 7 !important; }
+
+.skpe-initiative-operational-layout {
+  margin-top: 1.25rem !important;
+}
+
+.skpe-initiative-executive-title {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  margin: 0 0 0.85rem !important;
+  padding: 0 0 0 0.75rem !important;
+  border-left: 4px solid var(--sparks-accent, #176b53);
+}
+
+.skpe-initiative-executive-title h2 {
+  margin: 0 !important;
+  font-size: 1.28rem !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em;
+}
+/* 19.7.10 - DOM-level semantic centering */
+
+/*
+ * Current initiative grid column map:
+ * 1 Código
+ * 2 Iniciativa
+ * 3 Situação
+ * 4 Classe
+ * 5 Área responsável
+ * 6 Prioridade
+ * 7 Responsável
+ * 8 Início
+ * 9 Término-alvo
+ * 10 Progresso
+ *
+ * These selectors intentionally operate at rendered DOM level because
+ * @svar-ui/react-grid does not propagate IColumnConfig.css to the inner
+ * content alignment in this runtime.
+ */
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(3),
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(4),
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(5),
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(6),
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(7),
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(8),
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(9),
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(10),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(3),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(4),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(5),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(6),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(7),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(8),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(9),
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(10) {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(3) > *,
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(4) > *,
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(5) > *,
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(6) > *,
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(7) > *,
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(8) > *,
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(9) > *,
+.sparks-initiative-portfolio-grid [role="row"] > [role="gridcell"]:nth-child(10) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(3) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(4) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(5) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(6) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(7) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(8) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(9) > *,
+.sparks-initiative-portfolio-grid .wx-row > .wx-cell:nth-child(10) > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+/* Header labels for the same semantic columns. */
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(3),
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(4),
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(5),
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(6),
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(7),
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(8),
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(9),
+.sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(10) {
+  text-align: center !important;
+}

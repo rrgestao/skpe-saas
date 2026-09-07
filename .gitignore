@@ -1,4 +1,4 @@
-﻿node_modules/
+node_modules/
 dist/
 build/
 .env
@@ -19,3 +19,5 @@ supabase/.temp/
 
 # Evidencias tecnicas locais - podem conter achados de seguranca
 /_audit/
+tmp/
+supabase/migrations/*.bak

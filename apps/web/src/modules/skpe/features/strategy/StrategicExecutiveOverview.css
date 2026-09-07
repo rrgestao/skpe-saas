@@ -1,0 +1,83 @@
+.skpe-executive-overview{display:grid;gap:1rem}
+.skpe-executive-overview-hero{padding:1.35rem;border:1px solid #d6e4de;border-radius:18px;background:linear-gradient(135deg,rgba(241,248,245,.98),rgba(255,255,255,.98))}
+.skpe-executive-overview-hero>small{display:block;color:#14694e;font-size:.76rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.skpe-executive-overview-hero h2{margin:.35rem 0 .55rem;color:#183c31;font-size:clamp(1.45rem,2.2vw,2rem)}
+.skpe-executive-overview-hero>p{max-width:1120px;margin:0;color:#38554b;font-size:1.02rem;line-height:1.7}
+.skpe-executive-overview-coherence{margin-top:1rem;padding-top:.9rem;border-top:1px solid #dce8e2}
+.skpe-executive-overview-coherence strong{color:#183c31}
+.skpe-executive-overview-coherence p{margin:.35rem 0 0;color:#5e716a;line-height:1.55}
+.skpe-executive-overview-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.75rem}
+.skpe-executive-overview-metrics article{display:flex;min-height:112px;flex-direction:column;align-items:center;justify-content:center;padding:.9rem;border:1px solid #dbe6e1;border-radius:16px;background:rgba(255,255,255,.95);text-align:center}
+.skpe-executive-overview-metrics strong{color:#14694e;font-size:1.7rem;line-height:1}
+.skpe-executive-overview-metrics span{margin-top:.35rem;color:#304b42;font-weight:800}
+.skpe-executive-overview-metrics small{margin-top:.35rem;color:#71817b;font-size:.74rem}
+.skpe-executive-overview-note{margin:-.2rem 0 0;color:#71817b;font-size:.82rem;text-align:center}
+.skpe-executive-overview-flow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);gap:.65rem;align-items:stretch}
+.skpe-executive-overview-flow article{min-width:0;padding:1rem;border:1px solid #dbe6e1;border-radius:16px;background:#fff}
+.skpe-executive-overview-flow article small{display:grid;width:28px;height:28px;place-items:center;border-radius:999px;background:#eaf4ef;color:#14694e;font-weight:900}
+.skpe-executive-overview-flow article strong{display:block;margin-top:.55rem;color:#183c31}
+.skpe-executive-overview-flow article span{display:block;margin-top:.4rem;color:#65746e;line-height:1.45}
+.skpe-executive-overview-flow>div{display:grid;place-items:center;color:#7b958b;font-size:1.3rem}
+.skpe-executive-overview-state{padding:1rem;border:1px solid #dce6e1;border-radius:12px;background:#fff}
+.skpe-executive-overview-state.is-error{border-color:#ecc7c1;background:#fff7f5;color:#7a3127}
+@media(max-width:1180px){.skpe-executive-overview-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.skpe-executive-overview-flow{grid-template-columns:1fr}.skpe-executive-overview-flow>div{transform:rotate(90deg);min-height:20px}}
+@media(max-width:720px){.skpe-executive-overview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* SK-PE CANONICAL EXECUTIVE METRIC CARDS V1 */
+.skpe-strategic-executive-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)),
+.skpe-formulation-executive-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+.skpe-strategic-executive-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > span:first-of-type,
+.skpe-formulation-executive-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > span:first-of-type {
+  order: 1;
+  width: 100%;
+  text-align: left !important;
+  font-weight: 400 !important;
+}
+
+.skpe-strategic-executive-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > strong,
+.skpe-formulation-executive-overview article:has(> span:first-of-type):has(> strong):not(:has(> h2)):not(:has(> h3)) > strong {
+  order: 2;
+  width: 100%;
+  text-align: center !important;
+}
+
+/* SK-PE CANONICAL EXECUTIVE METRIC CARDS V2 */
+.skpe-executive-overview-metrics > article {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+.skpe-executive-overview-metrics > article > span:first-child {
+  order: 1;
+  width: 100%;
+  text-align: left !important;
+  font-weight: 400 !important;
+}
+
+.skpe-executive-overview-metrics > article > strong {
+  order: 2;
+  width: 100%;
+  text-align: center !important;
+}
+
+.skpe-executive-overview-metrics > article > small {
+  order: 3;
+  width: 100%;
+  text-align: center;
+}
+
+/* SK-PE EXECUTIVE OVERVIEW SEMANTIC COLOR V1 */
+.skpe-executive-overview-metrics > article > span:first-child {
+  color: var(--sparks-role-text-muted) !important;
+  font-weight: 400 !important;
+}
+
+.skpe-executive-overview-metrics > article > strong {
+  color: var(--sparks-role-text-primary);
+}

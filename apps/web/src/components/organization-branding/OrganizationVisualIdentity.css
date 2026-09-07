@@ -62,8 +62,8 @@
 }
 
 .skpe-visual-identity-mode > label:has(input:checked) {
-  border-color: var(--organization-primary, #176b53);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--organization-primary, #176b53) 15%, transparent);
+  border-color: var(--organization-primary, #002c2f);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--organization-primary, #002c2f) 15%, transparent);
 }
 
 .skpe-visual-identity-mode span {
@@ -126,17 +126,17 @@
 .skpe-visual-identity-save button {
   min-height: 42px;
   padding: 0.65rem 0.9rem;
-  border: 1px solid var(--organization-primary, #176b53);
+  border: 1px solid var(--organization-primary, #002c2f);
   border-radius: 9px;
   background: #fff;
-  color: var(--organization-primary, #176b53);
+  color: var(--organization-primary, #002c2f);
   font-weight: 800;
   cursor: pointer;
 }
 
 .skpe-visual-identity-save button {
   align-self: end;
-  background: var(--organization-primary, #176b53);
+  background: var(--organization-primary, #002c2f);
   color: var(--organization-on-primary, #fff);
 }
 
@@ -181,7 +181,7 @@
 
 .skpe-visual-identity-message-success {
   background: #e9f6f1;
-  color: #176b53;
+  color: #002c2f;
 }
 
 .skpe-visual-identity-message-error {
@@ -197,5 +197,28 @@
 
   .skpe-visual-identity-save {
     grid-template-columns: 1fr;
+  }
+}
+
+/* SPARKOOP BRANDING - SIX COLOR ORGANIZATION PALETTE */
+.skpe-visual-identity-preview {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.skpe-visual-identity-preview > span:nth-child(4) {
+  background: var(--preview-support-1, #f27f64);
+}
+
+.skpe-visual-identity-preview > span:nth-child(5) {
+  background: var(--preview-support-2, #4ea797);
+}
+
+.skpe-visual-identity-preview > span:nth-child(6) {
+  background: var(--preview-support-3, #000000);
+}
+
+@media (max-width: 900px) {
+  .skpe-visual-identity-preview {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

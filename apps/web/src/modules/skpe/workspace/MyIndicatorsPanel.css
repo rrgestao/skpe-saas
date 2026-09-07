@@ -146,7 +146,7 @@
 }
 
 .skpe-indicators-item-labels span:first-child {
-  color: #176b53;
+  color: var(--sparks-role-text-muted);
   font-weight: 800;
 }
 

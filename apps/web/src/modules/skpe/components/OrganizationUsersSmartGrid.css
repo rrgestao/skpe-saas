@@ -1,0 +1,171 @@
+.sparks-user-grid {
+  width: 100%;
+  min-width: 0;
+  height: clamp(420px, 60vh, 760px);
+  overflow: auto;
+  border-top: 1px solid #dce5e1;
+  background: #fff;
+}
+
+.sparks-user-grid .wx-grid { min-width: 100%; }
+
+.sparks-user-grid .sparks-data-explorer-header-main {
+  background: #edf4f1 !important;
+  color: #243b33 !important;
+  font-weight: 800 !important;
+  border-right-color: #cbd9d3 !important;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-cell {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0 0.25rem;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-filter-button,
+.sparks-user-grid .sparks-data-explorer-header-filter-clear {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #61746b;
+  cursor: pointer;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-filter-button:hover,
+.sparks-user-grid .sparks-data-explorer-header-filter-button--active,
+.sparks-user-grid .sparks-data-explorer-header-filter-clear:hover {
+  background: #dcebe5;
+  color: #176b53;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-filter-input-wrap {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-filter-input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #a9c1b7;
+  border-radius: 7px;
+  background: #fff;
+  color: #20342c;
+  font: inherit;
+  font-size: 0.76rem;
+  outline: none;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-filter-input:focus {
+  border-color: #17745a;
+  box-shadow: 0 0 0 2px rgba(23, 116, 90, 0.12);
+}
+
+.sparks-user-grid__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.28rem 0;
+}
+
+.sparks-user-grid__avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #e6f2ec;
+  color: #176b55;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.sparks-user-grid__avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.sparks-user-grid__identity-text { min-width: 0; display: flex; flex-direction: column; gap: 0.12rem; }
+.sparks-user-grid__identity-text strong,
+.sparks-user-grid__identity-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sparks-user-grid__identity-text strong { color: #17231f; font-size: 0.9rem; }
+.sparks-user-grid__identity-text small { color: #68766f; font-size: 0.76rem; }
+
+/* Smart Grid SPARKs V46-A14.2 - sticky header and contextual selection */
+.sparks-user-grid[data-sparks-grid-shell],
+.sparks-user-grid {
+  position: relative;
+  max-height: min(58vh, 640px);
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+.sparks-user-grid :where(
+  .wx-grid-header,
+  .wx-grid-head,
+  .wx-grid-header-row,
+  .wx-grid-header-cell,
+  .wx-header,
+  .wx-header-row,
+  .wx-header-cell,
+  [class*='grid-header']
+) {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  background: var(--skpe-surface, #ffffff) !important;
+}
+
+.sparks-user-grid .sparks-data-explorer-header-main {
+  position: relative;
+  z-index: 31;
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-primary, var(--sparks-accent, #176b53)) 9%,
+      white
+    ) !important;
+}
+
+.sparks-user-grid :where(
+  [aria-selected='true'],
+  [data-selected='true'],
+  .wx-selected,
+  .wx-row-selected
+) {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-primary, var(--sparks-accent, #176b53)) 13%,
+      white
+    ) !important;
+  box-shadow:
+    inset 4px 0 0
+      var(
+        --organization-accent,
+        var(--organization-primary, var(--sparks-accent, #176b53))
+      ) !important;
+}

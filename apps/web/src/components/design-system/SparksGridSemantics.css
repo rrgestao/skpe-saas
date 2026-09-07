@@ -1,0 +1,26 @@
+.sparks-grid-cell--semantic-center {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.sparks-grid-header--semantic-center,
+.sparks-grid-header--semantic-center .sparks-data-explorer-header-cell {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+/* canonical semantic center contract */
+.sparks-grid-cell--semantic-center,
+.sparks-grid-cell--semantic-center > * {
+  text-align: center !important;
+  justify-content: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.sparks-grid-header--semantic-center,
+.sparks-grid-header--semantic-center > *,
+.sparks-grid-header--semantic-center .sparks-data-explorer-header-cell {
+  text-align: center !important;
+  justify-content: center !important;
+}

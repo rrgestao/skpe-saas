@@ -37,8 +37,12 @@ import { StrategicPositioningSection } from './features/strategy/StrategicPositi
 import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateDialog'
 import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
+import { AdminUserAvatarEditor } from '../platform-admin/AdminUserAvatarEditor'
+import { OrganizationUsersSmartGrid } from './components/OrganizationUsersSmartGrid'
 import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
 import { InitiativeDataExplorerBeta } from '../initiatives/explorer/InitiativeDataExplorerBeta'
+import { InitiativePortfolioSmartGrid } from '../initiatives/components/InitiativePortfolioSmartGrid'
+import { InitiativePerformanceCockpit } from '../initiatives/analytics/InitiativePerformanceCockpit'
 import '../initiatives/InitiativeWorkspace.css'
 import { InitiativeEconomicExecutionDialog } from '../initiatives/economics/InitiativeEconomicExecutionDialog'
 import { InitiativeScheduleWorkspace } from '../initiatives/schedule/InitiativeScheduleWorkspace'
@@ -1049,12 +1053,6 @@ function getSkpeRoleName(user: OrganizationUser) {
 
   return skpeAccess.roleName
 }
-
-function getOtherModuleAccesses(user: OrganizationUser) {
-  return user.modules.filter(
-    (module) => module.moduleCode.toUpperCase() !== 'SK-PE',
-  )
-}
 type CanvasSectionProps = {
   organizationId: string
   canManageCanvas: boolean
@@ -1770,7 +1768,11 @@ function getInitiativeClassLabel(value: string) {
   return labels[value] ?? value
 }
 
-function getInitiativeStatusLabel(value: string) {
+function getInitiativeStatusLabel(value: string, proposalOrigin?: string | null) {
+  if (value === 'proposed' && proposalOrigin === 'sparks_suggestion') {
+    return 'Rascunho'
+  }
+
   const labels: Record<string, string> = {
     proposed: 'Proposta',
     under_analysis: 'Em análise',
@@ -1822,9 +1824,13 @@ function InitiativesSection({
   const [formMessage, setFormMessage] = useState<ActionMessage | null>(null)
   const [quickFilter, setQuickFilter] = useState('all')
   const [initiativeViewMode, setInitiativeViewMode] =
-    useState<'portfolio' | 'explorer' | 'kanban'>('portfolio')
+    useState<'portfolio' | 'explorer' | 'kanban' | 'analytics'>('portfolio')
   const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
+  const [selectedPortfolioInitiativeId, setSelectedPortfolioInitiativeId] =
+    useState<string | null>(null)
+  const [initiativeDetailFrameOpen, setInitiativeDetailFrameOpen] =
+    useState(false)
   const [initiativeWorkspaceTab, setInitiativeWorkspaceTab] =
     useState<'summary' | 'schedule' | 'kanban' | 'economics'>('summary')
   const [eventInitiativeId, setEventInitiativeId] =
@@ -2025,6 +2031,19 @@ function InitiativesSection({
 
       const matchesQuickFilter =
         quickFilter === 'all' ||
+        (
+          quickFilter === 'draft' &&
+          initiative.initiative_status === 'proposed' &&
+          initiative.proposal_origin === 'sparks_suggestion'
+        ) ||
+        (
+          quickFilter === 'under_analysis' &&
+          initiative.initiative_status === 'under_analysis'
+        ) ||
+        (
+          quickFilter === 'critical' &&
+          initiative.criticality === 'critical'
+        ) ||
         (
           quickFilter === 'in_progress' &&
           initiative.initiative_status ===
@@ -2503,63 +2522,15 @@ function InitiativesSection({
           </div>
         </section>
       )}
-      {dashboard && (
-        <section
-          className={`skpe-initiative-kpi-grid ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}
-          aria-label="Visão consolidada das iniciativas"
-        >
-          <MetricCard
-            label="Total"
-            value={dashboard.total_initiatives}
-            tooltip="Exibir todas as iniciativas"
-            ariaLabel="Total de iniciativas. Exibir todas."
-            active={quickFilter === 'all'}
-            onClick={() => applyQuickFilter('all')}
-          />
 
-          <MetricCard
-            label="Em execução"
-            value={dashboard.in_progress_count}
-            tooltip="Filtrar iniciativas em execução"
-            ariaLabel="Iniciativas em execução. Aplicar filtro."
-            active={quickFilter === 'in_progress'}
-            onClick={() => applyQuickFilter('in_progress')}
-          />
-
-          <MetricCard
-            label="Bloqueadas"
-            value={dashboard.blocked_count}
-            tooltip="Filtrar iniciativas bloqueadas"
-            ariaLabel="Iniciativas bloqueadas. Aplicar filtro."
-            active={quickFilter === 'blocked'}
-            onClick={() => applyQuickFilter('blocked')}
-          />
-
-          <MetricCard
-            label="Concluídas"
-            value={dashboard.completed_count}
-            tooltip="Filtrar iniciativas concluídas"
-            ariaLabel="Iniciativas concluídas. Aplicar filtro."
-            active={quickFilter === 'completed'}
-            onClick={() => applyQuickFilter('completed')}
-          />
-
-          <MetricCard
-            label="Críticas"
-            value={dashboard.critical_count}
-            tooltip="Quantidade de iniciativas críticas"
-            ariaLabel="Quantidade de iniciativas críticas."
-          />
-
-          <MetricCard
-            label="Progresso médio"
-            value={`${dashboard.average_progress}%`}
-            tooltip="Progresso médio consolidado das iniciativas"
-            ariaLabel="Progresso médio consolidado das iniciativas."
-          />
-        </section>
-      )}
-      <section className={`skpe-initiative-filters ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
+            <div className="skpe-initiative-executive-title">
+        <h2>
+          {initiativeViewMode === 'analytics'
+            ? 'Cockpit de Resultados e Desempenho'
+            : 'Visão executiva das iniciativas'}
+        </h2>
+      </div>
+<section className={`skpe-initiative-filters ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div className="skpe-admin-search">
           <SearchIcon />
           <input
@@ -2614,7 +2585,7 @@ function InitiativesSection({
           <option value="all">
             Todas as situações
           </option>
-          <option value="proposed">Propostas</option>
+          <option value="proposed">Rascunhos / Propostas</option>
           <option value="under_analysis">
             Em análise
           </option>
@@ -2634,8 +2605,8 @@ function InitiativesSection({
           <p className="skpe-card-code">Painel analítico</p>
           <h2>
             {initiativeViewMode === 'portfolio'
-              ? 'Visão executiva das iniciativas'
-              : 'Data Explorer hierárquico'}
+              ? ''
+              : 'Exploração hierárquica'}
           </h2>
 
         </div>
@@ -2659,6 +2630,13 @@ function InitiativesSection({
             >
               Visão executiva
             </button>
+            <button
+              type="button"
+              className={`skpe-chip ${initiativeViewMode === 'analytics' ? 'is-active' : ''}`}
+              onClick={() => setInitiativeViewMode('analytics')}
+            >
+              Cockpit de desempenho
+            </button>
 
             <button
               type="button"
@@ -2671,7 +2649,7 @@ function InitiativesSection({
                 setInitiativeViewMode('explorer')
               }
             >
-              Data Explorer · Beta
+              Exploração hierárquica
             </button>
 
 
@@ -2691,8 +2669,99 @@ function InitiativesSection({
             )}
         </div>
       </section>
+      {dashboard && initiativeViewMode === 'portfolio' ? (
+        <section
+          className="skpe-initiative-kpi-grid skpe-initiative-kpi-grid-recovered"
+          aria-label="Indicadores analíticos das iniciativas"
+        >
+                              <div className="skpe-kpi-slot skpe-kpi-slot-progress" style={{ order: 1 }}>
+            <MetricCard
+            label="Progresso médio"
+            value={`${dashboard.average_progress}%`}
+            tooltip="Progresso médio consolidado das iniciativas"
+            ariaLabel="Progresso médio consolidado das iniciativas."
+            />
+          </div>
 
-      {errorMessage && (
+          <div className="skpe-kpi-slot skpe-kpi-slot-total" style={{ order: 2 }}>
+            <MetricCard
+            label="Total"
+            value={dashboard.total_initiatives}
+            tooltip="Exibir todas as iniciativas"
+            ariaLabel="Total de iniciativas. Exibir todas."
+            active={quickFilter === 'all'}
+            onClick={() => applyQuickFilter('all')}
+            />
+          </div>
+
+          <div className="skpe-kpi-slot skpe-kpi-slot-inprogress" style={{ order: 3 }}>
+            <MetricCard
+            label="Em execução"
+            value={dashboard.in_progress_count}
+            tooltip="Filtrar iniciativas em execução"
+            ariaLabel="Iniciativas em execução. Aplicar filtro."
+            active={quickFilter === 'in_progress'}
+            onClick={() => applyQuickFilter('in_progress')}
+            />
+          </div>
+
+          <div className="skpe-kpi-slot skpe-kpi-slot-draft" style={{ order: 4 }}>
+            <MetricCard
+            label="Rascunhos"
+            value={
+            initiatives.filter(
+            (initiative) =>
+            initiative.initiative_status === 'proposed' &&
+            initiative.proposal_origin === 'sparks_suggestion',
+            ).length
+            }
+            tooltip="Iniciativas em rascunho que aguardam curadoria"
+            ariaLabel="Iniciativas em rascunho que aguardam sua atenção."
+            active={quickFilter === 'draft'}
+            onClick={() => applyQuickFilter('draft')}
+            />
+          </div>
+
+          <div className="skpe-kpi-slot skpe-kpi-slot-analysis" style={{ order: 5 }}>
+            <MetricCard
+            label="Em análise"
+            value={
+            initiatives.filter(
+            (initiative) =>
+            initiative.initiative_status === 'under_analysis',
+            ).length
+            }
+            tooltip="Filtrar iniciativas em análise"
+            ariaLabel="Iniciativas em análise. Aplicar filtro."
+            active={quickFilter === 'under_analysis'}
+            onClick={() => applyQuickFilter('under_analysis')}
+            />
+          </div>
+
+          <div className="skpe-kpi-slot skpe-kpi-slot-critical" style={{ order: 6 }}>
+            <MetricCard
+            label="Críticas"
+            value={dashboard.critical_count}
+            tooltip="Filtrar iniciativas críticas"
+            ariaLabel="Iniciativas críticas. Aplicar filtro."
+            active={quickFilter === 'critical'}
+            onClick={() => applyQuickFilter('critical')}
+            />
+          </div>
+
+          <div className="skpe-kpi-slot skpe-kpi-slot-blocked" style={{ order: 7 }}>
+            <MetricCard
+            label="Bloqueadas"
+            value={dashboard.blocked_count}
+            tooltip="Filtrar iniciativas bloqueadas"
+            ariaLabel="Iniciativas bloqueadas. Aplicar filtro."
+            active={quickFilter === 'blocked'}
+            onClick={() => applyQuickFilter('blocked')}
+            />
+          </div>
+        </section>
+      ) : null}
+              {errorMessage && (
         <div className="skpe-admin-message skpe-admin-message-error">
           {errorMessage}
         </div>
@@ -2922,192 +2991,239 @@ function InitiativesSection({
           title="Nenhuma iniciativa encontrada"
           description="Cadastre uma iniciativa ou ajuste os filtros para continuar."
         />
+      ) : initiativeViewMode === 'analytics' ? (
+        <InitiativePerformanceCockpit
+          dashboard={dashboard}
+          initiatives={initiatives}
+          onStatusDrilldown={(filter) => {
+            setQuickFilter(filter)
+            setInitiativeViewMode('portfolio')
+          }}
+        />
       ) : initiativeViewMode === 'explorer' ? (
         <InitiativeDataExplorerBeta
           initiatives={filteredInitiatives}
           onOpenInitiative={openInitiativeKanban}
         />
       ) : (
-        <section
-          className="skpe-initiative-portfolio"
-          aria-label="Visão executiva das iniciativas"
-        >
-          {filteredInitiatives.map((initiative) => (
-            <article
-              key={initiative.initiative_id}
-              className="skpe-initiative-portfolio-row"
-            >
-              <div
-                className="skpe-initiative-portfolio-openable"
-                role="button"
-                tabIndex={0}
-                title="Abrir iniciativa"
-                aria-label={`Abrir iniciativa ${initiative.initiative_name}`}
-                onClick={() => openInitiativeKanban(initiative)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    openInitiativeKanban(initiative)
-                  }
-                }}
-              >
-                <div className="skpe-initiative-portfolio-identity">
-                  <small>{initiative.initiative_code}</small>
-                  <strong>{initiative.initiative_name}</strong>
-                </div>
+        <section className="skpe-initiative-operational-layout">
+          <div className="skpe-initiative-operational-layout__grid">
+            <InitiativePortfolioSmartGrid
+              initiatives={filteredInitiatives}
+              selectedInitiativeId={selectedPortfolioInitiativeId}
+              onSelectInitiative={(initiative) => {
+                setSelectedPortfolioInitiativeId(initiative.initiative_id)
+              }}
+              onOpenInitiative={(initiative) => {
+                setSelectedPortfolioInitiativeId(initiative.initiative_id)
+                setInitiativeDetailFrameOpen(true)
+              }}
+            />
+          </div>
 
-                <div className="skpe-initiative-portfolio-context">
-                  <span>
-                    {getInitiativeClassLabel(
-                      initiative.initiative_class,
-                    )}
-                  </span>
-                  <span>
-                    {initiative.responsible_area_name ?? 'Área não definida'}
-                  </span>
-                  <span>
-                    {initiative.priority === 'critical'
-                      ? 'Prioridade crítica'
-                      : initiative.priority === 'high'
-                        ? 'Prioridade alta'
-                        : initiative.priority === 'medium'
-                          ? 'Prioridade média'
-                          : 'Prioridade baixa'}
-                  </span>
-                </div>
+          {initiativeDetailFrameOpen &&
+            selectedPortfolioInitiativeId &&
+            (() => {
+              const initiative = initiatives.find(
+                (candidate) =>
+                  candidate.initiative_id === selectedPortfolioInitiativeId,
+              )
 
-                <div className="skpe-initiative-portfolio-progress">
-                  <div>
-                    <span>Progresso</span>
-                    <strong>{initiative.progress}%</strong>
-                  </div>
-                  <div className="skpe-progress-track">
-                    <span
-                      style={{
-                        width: `${initiative.progress}%`,
-                      }}
-                    />
-                  </div>
-                </div>
+              if (!initiative) return null
 
-                <div className="skpe-initiative-portfolio-status">
-                  <strong>
-                    {getInitiativeStatusLabel(
-                      initiative.initiative_status,
-                    )}
-                  </strong>
-                  <small>
-                    {initiative.target_end_date
-                      ? `Até ${initiative.target_end_date
-                          .slice(0, 10)
-                          .split('-')
-                          .reverse()
-                          .join('/')}`
-                      : 'Sem término-alvo'}
-                  </small>
-                </div>
-              </div>
+              const isSparksDraft =
+                initiative.initiative_status === 'proposed' &&
+                initiative.proposal_origin === 'sparks_suggestion'
 
-              <aside className="skpe-initiative-actions">
-
-
-
-                {canManageInitiatives &&
-                  initiative.initiative_status === 'proposed' && (
+              return (
+                <aside
+                  className="skpe-initiative-detail-frame"
+                  aria-label="Detalhes da iniciativa selecionada"
+                >
+                  <header className="skpe-initiative-detail-frame__header">
+                    <div>
+                      <small>{initiative.initiative_code}</small>
+                      <h3>{initiative.initiative_name}</h3>
+                    </div>
                     <button
                       type="button"
                       className="skpe-user-details-button"
-                      onClick={() =>
-                        openLifecycleAction(
-                          initiative.initiative_id,
-                          'cancelled',
-                        )
-                      }
+                      onClick={() => setInitiativeDetailFrameOpen(false)}
                     >
-                      Cancelar iniciativa
+                      Fechar
                     </button>
-                  )}
+                  </header>
 
-                {canManageInitiatives &&
-                  (
-                    initiative.initiative_status === 'cancelled' ||
-                    initiative.initiative_status === 'completed'
-                  ) && (
-                    <button
-                      type="button"
-                      className="skpe-user-details-button"
-                      onClick={() =>
-                        openLifecycleAction(
-                          initiative.initiative_id,
-                          'archived',
-                        )
-                      }
-                    >
-                      Arquivar iniciativa
-                    </button>
-                  )}
-
-                {lifecycleInitiativeId ===
-                  initiative.initiative_id &&
-                  lifecycleTargetStatus && (
-                    <div className="skpe-action-message">
+                  <div className="skpe-initiative-detail-frame__facts">
+                    <article>
+                      <small>Situação</small>
                       <strong>
-                        {lifecycleTargetStatus === 'cancelled'
-                          ? 'Cancelar iniciativa'
-                          : 'Arquivar iniciativa'}
+                        {getInitiativeStatusLabel(
+                          initiative.initiative_status,
+                          initiative.proposal_origin,
+                        )}
                       </strong>
+                    </article>
+                    <article>
+                      <small>Classe</small>
+                      <strong>
+                        {getInitiativeClassLabel(initiative.initiative_class)}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Área responsável</small>
+                      <strong>
+                        {initiative.responsible_area_name ?? 'Não definida'}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Prioridade</small>
+                      <strong>
+                        {initiative.priority === 'critical'
+                          ? 'Crítica'
+                          : initiative.priority === 'high'
+                            ? 'Alta'
+                            : initiative.priority === 'medium'
+                              ? 'Média'
+                              : 'Baixa'}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Progresso</small>
+                      <strong>
+                        {isSparksDraft
+                          ? 'Não iniciado'
+                          : `${initiative.progress}%`}
+                      </strong>
+                    </article>
+                    <article>
+                      <small>Término-alvo</small>
+                      <strong>
+                        {initiative.target_end_date
+                          ? initiative.target_end_date
+                              .slice(0, 10)
+                              .split('-')
+                              .reverse()
+                              .join('/')
+                          : 'Não definido'}
+                      </strong>
+                    </article>
+                  </div>
 
-                      <label>
-                        <span>Justificativa para auditoria *</span>
-                        <textarea
-                          value={lifecycleReason}
-                          onChange={(event) =>
-                            setLifecycleReason(event.target.value)
-                          }
-                          disabled={savingLifecycle}
-                        />
-                      </label>
+                  {initiative.initiative_description ? (
+                    <div className="skpe-initiative-detail-frame__description">
+                      <small>Descrição</small>
+                      <p>{initiative.initiative_description}</p>
+                    </div>
+                  ) : null}
 
-                      {lifecycleMessage && (
-                        <div
-                          className={`skpe-action-message skpe-action-message-${lifecycleMessage.type}`}
-                        >
-                          {lifecycleMessage.text}
-                        </div>
-                      )}
+                  <div className="skpe-initiative-detail-frame__actions">
+                    <button
+                      type="button"
+                      className="skpe-primary-action-button"
+                      onClick={() => openInitiativeKanban(initiative)}
+                    >
+                      {isSparksDraft
+                        ? 'Revisar rascunho'
+                        : 'Abrir ficha completa'}
+                    </button>
 
-                      <div className="skpe-initiative-form-actions">
-                        <button
-                          type="button"
-                          className="skpe-primary-action-button"
-                          onClick={() =>
-                            void handleLifecycleTransition()
-                          }
-                          disabled={savingLifecycle}
-                        >
-                          {savingLifecycle
-                            ? 'Salvando...'
-                            : lifecycleTargetStatus === 'cancelled'
-                              ? 'Confirmar cancelamento'
-                              : 'Confirmar arquivamento'}
-                        </button>
-
+                    {canManageInitiatives &&
+                      initiative.initiative_status === 'proposed' &&
+                      !isSparksDraft ? (
                         <button
                           type="button"
                           className="skpe-user-details-button"
-                          onClick={closeLifecycleAction}
-                          disabled={savingLifecycle}
+                          onClick={() =>
+                            openLifecycleAction(
+                              initiative.initiative_id,
+                              'cancelled',
+                            )
+                          }
                         >
-                          Voltar
+                          Cancelar iniciativa
                         </button>
+                      ) : null}
+
+                    {canManageInitiatives &&
+                      (
+                        initiative.initiative_status === 'cancelled' ||
+                        initiative.initiative_status === 'completed'
+                      ) ? (
+                        <button
+                          type="button"
+                          className="skpe-user-details-button"
+                          onClick={() =>
+                            openLifecycleAction(
+                              initiative.initiative_id,
+                              'archived',
+                            )
+                          }
+                        >
+                          Arquivar iniciativa
+                        </button>
+                      ) : null}
+                  </div>
+
+                  {lifecycleInitiativeId === initiative.initiative_id &&
+                    lifecycleTargetStatus ? (
+                      <div className="skpe-action-message">
+                        <strong>
+                          {lifecycleTargetStatus === 'cancelled'
+                            ? 'Cancelar iniciativa'
+                            : 'Arquivar iniciativa'}
+                        </strong>
+
+                        <label>
+                          <span>Justificativa para auditoria *</span>
+                          <textarea
+                            value={lifecycleReason}
+                            onChange={(event) =>
+                              setLifecycleReason(event.target.value)
+                            }
+                            disabled={savingLifecycle}
+                          />
+                        </label>
+
+                        {lifecycleMessage ? (
+                          <div
+                            className={`skpe-action-message skpe-action-message-${lifecycleMessage.type}`}
+                          >
+                            {lifecycleMessage.text}
+                          </div>
+                        ) : null}
+
+                        <div className="skpe-initiative-form-actions">
+                          <button
+                            type="button"
+                            className="skpe-primary-action-button"
+                            onClick={() => void handleLifecycleTransition()}
+                            disabled={savingLifecycle}
+                          >
+                            {savingLifecycle
+                              ? 'Salvando...'
+                              : lifecycleTargetStatus === 'cancelled'
+                                ? 'Confirmar cancelamento'
+                                : 'Confirmar arquivamento'}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="skpe-user-details-button"
+                            onClick={closeLifecycleAction}
+                            disabled={savingLifecycle}
+                          >
+                            Voltar
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-              </aside>
-            </article>
-          ))}
+                    ) : null}
+                </aside>
+              )
+            })()}
         </section>
       )}
+
 
       {eventInitiativeId && (() => {
         const target = initiatives.find(
@@ -4010,7 +4126,7 @@ function OrganizationSection({
 function GovernanceSection() {
   return (
     <>
-      <section className="skpe-page-heading">
+      <section className="skpe-page-heading skpe-governance-heading-compact">
         <div>
           <p className="skpe-eyebrow">
             Governança estratégica
@@ -4227,6 +4343,7 @@ function GovernanceOperationsSection({
   const [roles, setRoles] = useState<OrganizationalRoleRow[]>([])
   const [roleAssignments, setRoleAssignments] = useState<PersonRoleAssignmentRow[]>([])
   const [responsibilities, setResponsibilities] = useState<ResponsibilityAssignmentRow[]>([])
+  const [governanceInitiatives, setGovernanceInitiatives] = useState<InitiativePortfolioRow[]>([])
   const [domains, setDomains] = useState<Record<string, DomainValueRow[]>>({})
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<ActionMessage | null>(null)
@@ -4234,10 +4351,23 @@ function GovernanceOperationsSection({
   const [saving, setSaving] = useState(false)
   const [governanceViewMode, setGovernanceViewMode] = useState<'cards' | 'grid' | 'hierarchy'>('cards')
   const [governanceSearch, setGovernanceSearch] = useState('')
-  const [governanceSortDirection, setGovernanceSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [governanceGridSort, setGovernanceGridSort] = useState<{
+    panel: 'people' | 'roles' | 'responsibilities'
+    key: string
+    direction: 'asc' | 'desc'
+  }>({ panel: 'people', key: 'name', direction: 'asc' })
+  const [governanceGridFilters, setGovernanceGridFilters] =
+    useState<Record<string, string>>({})
+  const [governanceGridFilterOpen, setGovernanceGridFilterOpen] =
+    useState<string | null>(null)
+  const [governanceSortDirection] = useState<'asc' | 'desc'>('asc')
   const [roleForm, setRoleForm] = useState({ id: null as string | null, code: '', name: '', roleType: 'function', description: '', area: '', authorityLevel: 'operational', governance: false, mandate: false, active: true, reason: '' })
+  const [rolePanelOpen, setRolePanelOpen] = useState(false)
   const [assignmentForm, setAssignmentForm] = useState({ personId: '', roleId: '', startDate: '', endDate: '', indefiniteTerm: true, documentReference: '', notes: '', reason: '' })
+  const [assignmentPanelOpen, setAssignmentPanelOpen] = useState(false)
   const [responsibilityForm, setResponsibilityForm] = useState({ objectType: 'strategic_project', objectId: '', personId: '', responsibilityType: 'owner', allocation: '100', authorityLevel: 'operational', validFrom: '', validUntil: '', assignmentReason: '', reason: '' })
+  const [responsibilityPanelOpen, setResponsibilityPanelOpen] = useState(false)
+  const [selectedResponsibilityId, setSelectedResponsibilityId] = useState<string | null>(null)
 
   const normalizedGovernanceSearch = governanceSearch.trim().toLocaleLowerCase('pt-BR')
   const sortByName = <T,>(items: T[], getName: (item: T) => string) =>
@@ -4249,6 +4379,229 @@ function GovernanceOperationsSection({
   const visibleRoles = sortByName(roles.filter((role) => !normalizedGovernanceSearch || [role.role_name, role.role_code, role.description, role.organizational_area].filter(Boolean).some((value) => String(value).toLocaleLowerCase('pt-BR').includes(normalizedGovernanceSearch))), (role) => role.role_name)
   const visibleResponsibilities = sortByName(responsibilities.filter((assignment) => !normalizedGovernanceSearch || [assignment.person_name, assignment.object_type, assignment.responsibility_type, assignment.organizational_area].filter(Boolean).some((value) => String(value).toLocaleLowerCase('pt-BR').includes(normalizedGovernanceSearch))), (assignment) => assignment.person_name)
 
+  const governanceInitiativeById = useMemo(
+    () =>
+      new Map(
+        governanceInitiatives.map((initiative) => [
+          initiative.initiative_id,
+          initiative,
+        ]),
+      ),
+    [governanceInitiatives],
+  )
+
+  const governanceResponsibilityLabel = (value: string) =>
+    ({
+      owner: 'Responsável',
+      accountable: 'Responsável final',
+      approver: 'Aprovador',
+      validator: 'Validador',
+      executor: 'Executor',
+      reviewer: 'Revisor',
+      sponsor: 'Patrocinador',
+      facilitator: 'Facilitador',
+      consulted: 'Consultado',
+      informed: 'Informado',
+    } as Record<string, string>)[value] ?? publicLabel(value, value)
+
+  const governanceObjectLabel = (
+    assignment: ResponsibilityAssignmentRow,
+  ) => {
+    if (
+      assignment.object_type === 'initiative' ||
+      assignment.object_type === 'strategic_initiative'
+    ) {
+      const initiative = governanceInitiativeById.get(assignment.object_id)
+
+      if (initiative) {
+        return initiative.initiative_code
+          ? `${initiative.initiative_code} · ${initiative.initiative_name}`
+          : initiative.initiative_name
+      }
+
+      return 'Iniciativa não localizada'
+    }
+
+    const typeLabel = publicLabel(
+      assignment.object_type,
+      'Objeto estratégico',
+    )
+    return `${typeLabel} · ${assignment.object_id.slice(0, 8)}`
+  }
+  const governanceRoleValueLabel = (value: string | null | undefined) => {
+    if (!value) return 'Não definido'
+    return (
+      ({
+        governance: 'Governança',
+        tactical: 'Tático',
+        operational: 'Operacional',
+        strategic: 'Estratégico',
+        function: 'Função',
+        project: 'Projeto',
+        committee: 'Comitê ou comissão',
+        temporary: 'Temporário',
+        permanent: 'Permanente',
+      } as Record<string, string>)[value] ??
+      publicLabel(value, value)
+    )
+  }
+  const governanceGridFilterValue = (key: string) =>
+    (governanceGridFilters[key] ?? '')
+      .trim()
+      .toLocaleLowerCase('pt-BR')
+
+  const governanceGridMatches = (
+    key: string,
+    value: string | number | null | undefined,
+  ) => {
+    const filter = governanceGridFilterValue(key)
+    if (!filter) return true
+    return String(value ?? '')
+      .toLocaleLowerCase('pt-BR')
+      .includes(filter)
+  }
+
+  const governanceGridSortItems = <T,>(
+    panel: 'people' | 'roles' | 'responsibilities',
+    items: T[],
+    valueFor: (item: T, key: string) => string | number,
+  ) => {
+    if (governanceGridSort.panel !== panel) return items
+    const { key, direction } = governanceGridSort
+    return [...items].sort((first, second) => {
+      const firstValue = valueFor(first, key)
+      const secondValue = valueFor(second, key)
+      const comparison =
+        typeof firstValue === 'number' && typeof secondValue === 'number'
+          ? firstValue - secondValue
+          : String(firstValue).localeCompare(String(secondValue), 'pt-BR')
+      return direction === 'asc' ? comparison : -comparison
+    })
+  }
+
+  const governanceGridPeople = governanceGridSortItems(
+    'people',
+    visiblePeople.filter((person) =>
+      governanceGridMatches(
+        'people.name',
+        `${person.preferred_name ?? person.full_name} ${person.full_name}`,
+      ) &&
+      governanceGridMatches(
+        'people.function',
+        person.job_title,
+      ) &&
+      governanceGridMatches(
+        'people.relationship',
+        person.relationship_type,
+      ) &&
+      governanceGridMatches('people.area', person.organizational_area) &&
+      governanceGridMatches('people.roles', person.active_role_count) &&
+      governanceGridMatches(
+        'people.responsibilities',
+        person.active_responsibility_count,
+      ),
+    ),
+    (person, key) => {
+      if (key === 'function') return person.job_title ?? ''
+      if (key === 'relationship') return person.relationship_type
+      if (key === 'area') return person.organizational_area ?? ''
+      if (key === 'roles') return person.active_role_count
+      if (key === 'responsibilities') return person.active_responsibility_count
+      return person.preferred_name ?? person.full_name
+    },
+  )
+
+  const governanceGridRoles = governanceGridSortItems(
+    'roles',
+    visibleRoles.filter((role) =>
+      governanceGridMatches('roles.name', role.role_name) &&
+      governanceGridMatches(
+        'roles.code',
+        `${role.role_code} ${role.role_type}`,
+      ) &&
+      governanceGridMatches(
+        'roles.description',
+        `${role.description ?? ''} ${role.organizational_area ?? ''}`,
+      ) &&
+      governanceGridMatches(
+        'roles.assignments',
+        role.active_assignment_count,
+      ) &&
+      governanceGridMatches('roles.authority', role.authority_level),
+    ),
+    (role, key) => {
+      if (key === 'code') return `${role.role_code} ${role.role_type}`
+      if (key === 'description') {
+        return `${role.description ?? ''} ${role.organizational_area ?? ''}`
+      }
+      if (key === 'assignments') return role.active_assignment_count
+      if (key === 'authority') return role.authority_level ?? ''
+      return role.role_name
+    },
+  )
+
+  const governanceGridResponsibilities = governanceGridSortItems(
+    'responsibilities',
+    visibleResponsibilities.filter((assignment) =>
+      governanceGridMatches(
+        'responsibilities.person',
+        assignment.person_name,
+      ) &&
+      governanceGridMatches(
+        'responsibilities.type',
+        assignment.responsibility_type,
+      ) &&
+      governanceGridMatches(
+        'responsibilities.object',
+        `${assignment.object_type} ${assignment.object_id}`,
+      ) &&
+      governanceGridMatches(
+        'responsibilities.allocation',
+        assignment.allocation_percentage,
+      ) &&
+      governanceGridMatches(
+        'responsibilities.status',
+        assignment.status,
+      ) &&
+      governanceGridMatches(
+        'responsibilities.action',
+        'Encerrar',
+      ),
+    ),
+    (assignment, key) => {
+      if (key === 'type') return assignment.responsibility_type
+      if (key === 'object') {
+        return `${assignment.object_type} ${assignment.object_id}`
+      }
+      if (key === 'allocation') return assignment.allocation_percentage ?? 0
+      if (key === 'status') return assignment.status
+      if (key === 'action') return 'Encerrar'
+      return assignment.person_name
+    },
+  )
+
+  const toggleGovernanceGridSort = (
+    panel: 'people' | 'roles' | 'responsibilities',
+    key: string,
+  ) => {
+    setGovernanceGridSort((current) => ({
+      panel,
+      key,
+      direction:
+        current.panel === panel &&
+        current.key === key &&
+        current.direction === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+
+  const setGovernanceColumnFilter = (key: string, value: string) => {
+    setGovernanceGridFilters((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
   const loadGovernance = async () => {
     setLoading(true)
     setMessage(null)
@@ -4288,18 +4641,125 @@ function GovernanceOperationsSection({
   }
 
   useEffect(() => { void loadGovernance() }, [organizationId])
+  useEffect(() => {
+    if (!rolePanelOpen && !responsibilityPanelOpen) return
+
+    const closeRoleContextPanel = () => {
+      setRolePanelOpen(false)
+      resetRoleForm()
+    }
+
+    const closeResponsibilityContextPanel = () => {
+      setResponsibilityPanelOpen(false)
+      setSelectedResponsibilityId(null)
+    }
+
+    const handleGovernanceContextPanelsMouseDown = (
+      event: globalThis.MouseEvent,
+    ) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+
+      if (target.closest('#skpe-role-maintenance-form')) return
+      if (target.closest('#skpe-responsibility-assignment-form')) return
+      if (target.closest('.skpe-governance-functional-grid-row')) return
+      if (target.closest('.skpe-interactive-record')) return
+
+      if (rolePanelOpen) closeRoleContextPanel()
+      if (responsibilityPanelOpen) closeResponsibilityContextPanel()
+    }
+
+    const handleGovernanceContextPanelsKeyDown = (
+      event: globalThis.KeyboardEvent,
+    ) => {
+      if (event.key !== 'Escape') return
+      if (rolePanelOpen) closeRoleContextPanel()
+      if (responsibilityPanelOpen) closeResponsibilityContextPanel()
+    }
+
+    document.addEventListener(
+      'mousedown',
+      handleGovernanceContextPanelsMouseDown,
+    )
+    document.addEventListener(
+      'keydown',
+      handleGovernanceContextPanelsKeyDown,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleGovernanceContextPanelsMouseDown,
+      )
+      document.removeEventListener(
+        'keydown',
+        handleGovernanceContextPanelsKeyDown,
+      )
+    }
+  }, [rolePanelOpen, responsibilityPanelOpen])
+  useEffect(() => {
+    let cancelled = false
+
+    void loadInitiativePortfolio(organizationId)
+      .then((result) => {
+        if (!cancelled) {
+          setGovernanceInitiatives(result.initiatives)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setGovernanceInitiatives([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [organizationId])
+  useEffect(() => {
+    if (!assignmentPanelOpen) return
+
+    const handleAssignmentPanelDismiss = (event: globalThis.MouseEvent | globalThis.KeyboardEvent) => {
+      if (event instanceof globalThis.KeyboardEvent) {
+        if (event.key !== 'Escape') return
+        setAssignmentPanelOpen(false)
+        setAssignmentForm((current) => ({
+          ...current,
+          personId: '',
+        }))
+        return
+      }
+
+      const target = event.target as HTMLElement | null
+      if (!target) return
+
+      if (target.closest('#skpe-role-assignment-form')) return
+      if (target.closest('.skpe-governance-functional-grid-row')) return
+      if (target.closest('.skpe-interactive-record')) return
+
+      setAssignmentPanelOpen(false)
+      setAssignmentForm((current) => ({
+        ...current,
+        personId: '',
+      }))
+    }
+
+    document.addEventListener('mousedown', handleAssignmentPanelDismiss)
+    document.addEventListener('keydown', handleAssignmentPanelDismiss)
+
+    return () => {
+      document.removeEventListener('mousedown', handleAssignmentPanelDismiss)
+      document.removeEventListener('keydown', handleAssignmentPanelDismiss)
+    }
+  }, [assignmentPanelOpen])
 
   const selectPersonForAssignment = (person: GovernancePersonRow) => {
     setAssignmentForm((current) => ({
       ...current,
       personId: person.organization_person_id,
     }))
-    window.requestAnimationFrame(() => {
-      document
-        .getElementById('skpe-role-assignment-form')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    })
-  }
+    setAssignmentPanelOpen(true)
+}
 
   const openRoleMaintenance = (role: OrganizationalRoleRow) => {
     setRoleForm({
@@ -4320,6 +4780,7 @@ function GovernanceOperationsSection({
         .getElementById('skpe-role-maintenance-form')
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
+    setRolePanelOpen(true)
   }
 
   const resetRoleForm = () => {
@@ -4452,21 +4913,94 @@ function GovernanceOperationsSection({
     documentWindow.document.title = documentRecord.title
   }
 
+
+  const scrollGovernanceGrid = (
+    panel: 'people' | 'roles' | 'responsibilities',
+    axis: 'x' | 'y',
+    direction: -1 | 1,
+  ) => {
+    const body = document.querySelector<HTMLElement>(
+      `[data-governance-grid-body="${panel}"]`,
+    )
+    if (!body) return
+
+    const horizontalStep = Math.max(body.clientWidth * 0.72, 220)
+    const verticalStep = Math.max(body.clientHeight * 0.72, 180)
+
+    body.scrollBy({
+      left: axis === 'x' ? direction * horizontalStep : 0,
+      top: axis === 'y' ? direction * verticalStep : 0,
+      behavior: 'smooth',
+    })
+  }
   const domainOptions = (code: string) => domains[code] ?? []
 
   return (
     <>
       <section className="skpe-page-heading skpe-administration-heading">
-        <div><p className="skpe-eyebrow">Governança operacional</p><h1>Papéis e responsabilidades</h1><p>Defina quem exerce papéis organizacionais e quem responde, aprova, valida, executa ou acompanha cada objeto estratégico.</p></div>
+        <div><p className="skpe-eyebrow">Governança operacional</p><p className="skpe-governance-intro">Defina quem exerce papéis organizacionais e quem responde, aprova, valida, executa ou acompanha cada objeto estratégico.</p></div>
         <button type="button" className="skpe-refresh-button" onClick={() => void loadGovernance()} disabled={loading}><RefreshIcon />Atualizar governança</button>
       </section>
+      {dashboard && (
+        <section className="skpe-governance-kpi-grid">
+          <button
+            type="button"
+            className={`skpe-governance-kpi-card skpe-governance-kpi-card--interactive ${
+              activePanel === 'people' ? 'active' : ''
+            }`}
+            onClick={() => setActivePanel('people')}
+            aria-pressed={activePanel === 'people'}
+            title="Exibir pessoas e vínculos"
+          >
+            <span>Pessoas ativas</span>
+            <strong>{dashboard.active_people}</strong>
+            <small>{dashboard.people_with_roles} com papel atribuído</small>
+          </button>
 
-      {dashboard && <section className="skpe-governance-kpi-grid">
-        <article><span>Pessoas ativas</span><strong>{dashboard.active_people}</strong><small>{dashboard.people_with_roles} com papel atribuído</small></article>
-        <article><span>Papéis ativos</span><strong>{dashboard.active_roles}</strong><small>Funções e designações vigentes</small></article>
-        <article><span>Responsabilidades</span><strong>{dashboard.active_responsibilities}</strong><small>{dashboard.objects_with_responsibility} objetos cobertos</small></article>
-        <article className={dashboard.objects_without_owner > 0 ? 'skpe-governance-alert-card' : ''}><span>Sem responsável</span><strong>{dashboard.objects_without_owner}</strong><small>Objetos com lacuna de titularidade</small></article>
-      </section>}
+          <button
+            type="button"
+            className={`skpe-governance-kpi-card skpe-governance-kpi-card--interactive ${
+              activePanel === 'roles' ? 'active' : ''
+            }`}
+            onClick={() => setActivePanel('roles')}
+            aria-pressed={activePanel === 'roles'}
+            title="Exibir papéis organizacionais"
+          >
+            <span>Papéis ativos</span>
+            <strong>{dashboard.active_roles}</strong>
+            <small>Funções e designações vigentes</small>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-governance-kpi-card skpe-governance-kpi-card--interactive ${
+              activePanel === 'responsibilities' ? 'active' : ''
+            }`}
+            onClick={() => setActivePanel('responsibilities')}
+            aria-pressed={activePanel === 'responsibilities'}
+            title="Exibir matriz de responsabilidades"
+          >
+            <span>Responsabilidades</span>
+            <strong>{dashboard.active_responsibilities}</strong>
+            <small>{dashboard.objects_with_responsibility} objetos cobertos</small>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-governance-kpi-card skpe-governance-kpi-card--interactive ${
+              dashboard.objects_without_owner > 0
+                ? 'skpe-governance-alert-card'
+                : ''
+            }`}
+            onClick={() => setActivePanel('responsibilities')}
+            title="Abrir a matriz de responsabilidades para tratar lacunas de titularidade"
+          >
+            <span>Sem responsável</span>
+            <strong>{dashboard.objects_without_owner}</strong>
+            <small>Objetos com lacuna de titularidade</small>
+          </button>
+        </section>
+      )}
 
       <div className="skpe-governance-tabs">
         <button type="button" className={activePanel === 'people' ? 'skpe-governance-tab-active' : ''} onClick={() => setActivePanel('people')}>Pessoas e vínculos</button>
@@ -4476,22 +5010,415 @@ function GovernanceOperationsSection({
 
       <section className="skpe-primary-list-toolbar">
         <div className="skpe-admin-search"><SearchIcon /><input type="search" value={governanceSearch} onChange={(event) => setGovernanceSearch(event.target.value)} placeholder="Pesquisar pessoas, papéis ou responsabilidades" /></div>
-        <button type="button" className="skpe-list-sort-button" onClick={() => setGovernanceSortDirection((current) => current === 'asc' ? 'desc' : 'asc')} title="Alterar ordenação alfabética">{governanceSortDirection === 'asc' ? 'A → Z' : 'Z → A'}</button>
-        <div className="skpe-list-view-toggle" aria-label="Modo de visualização"><button type="button" className={governanceViewMode === 'cards' ? 'active' : ''} onClick={() => setGovernanceViewMode('cards')} title="Visualizar em cards"><CardsViewIcon /></button><button type="button" className={governanceViewMode === 'grid' ? 'active' : ''} onClick={() => setGovernanceViewMode('grid')} title="Visualizar em linhas"><RowsViewIcon /></button></div>
-      </section>
+</section>
 
       {message && <div className={`skpe-action-message skpe-action-message-${message.type}`}>{message.text}</div>}
       {loading ? <section className="skpe-admin-state-card"><p>Carregando a governança operacional...</p></section> : activePanel === 'people' ? (
-        <section className="skpe-governance-list-card">
-          <div className="skpe-user-table-header"><div><h2>Pessoas integradas</h2><p>Fonte única de pessoas vinculadas à organização.</p></div></div>
-          <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visiblePeople.map((person) => <article key={person.organization_person_id} className="skpe-interactive-record" role="button" tabIndex={0} aria-label={`Selecionar ${person.preferred_name ?? person.full_name} para manutenção`} onClick={() => selectPersonForAssignment(person)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => selectPersonForAssignment(person))}><div><strong>{person.preferred_name ?? person.full_name}</strong><span>{person.job_title ?? person.relationship_type}</span><small>{person.organizational_area ?? 'Área não definida'}</small></div><div className="skpe-governance-counts"><b>{person.active_role_count} papéis</b><b>{person.active_responsibility_count} responsabilidades</b></div></article>)}</div>
-          {canManageGovernance && <div id="skpe-role-assignment-form" className="skpe-governance-form"><h3>Atribuir papel a uma pessoa</h3><label><span>Pessoa</span><select value={assignmentForm.personId} onChange={(event) => setAssignmentForm((current) => ({ ...current, personId: event.target.value }))}><option value="">Selecione</option>{visiblePeople.map((person) => <option key={person.organization_person_id} value={person.organization_person_id}>{person.preferred_name ?? person.full_name}</option>)}</select></label><label><span>Papel</span><select value={assignmentForm.roleId} onChange={(event) => setAssignmentForm((current) => ({ ...current, roleId: event.target.value }))}><option value="">Selecione</option>{roles.filter((role) => role.active).map((role) => <option key={role.role_id} value={role.role_id}>{role.role_name}</option>)}</select></label><label><span>Início do mandato</span><input type="date" value={assignmentForm.startDate} onChange={(event) => setAssignmentForm((current) => ({ ...current, startDate: event.target.value }))} /></label><label><span>Término do mandato</span><input type="date" value={assignmentForm.endDate} disabled={assignmentForm.indefiniteTerm} onChange={(event) => setAssignmentForm((current) => ({ ...current, endDate: event.target.value }))} /><small>{assignmentForm.indefiniteTerm ? 'Vigência por prazo indeterminado.' : 'Informe a data formal de encerramento.'}</small></label><label className="skpe-governance-check"><input type="checkbox" checked={assignmentForm.indefiniteTerm} onChange={(event) => setAssignmentForm((current) => ({ ...current, indefiniteTerm: event.target.checked, endDate: event.target.checked ? '' : current.endDate }))} /><span>Mandato por prazo indeterminado</span></label><label className="skpe-form-field-wide"><span>Documento formal de designação (opcional)</span><input value={assignmentForm.documentReference} onChange={(event) => setAssignmentForm((current) => ({ ...current, documentReference: event.target.value }))} placeholder="Ata, resolução, portaria, termo de posse ou referência do arquivo" /><small>Deixe em branco para gerar automaticamente um Termo de Registro de Designação no acervo documental.</small></label><label className="skpe-form-field-wide"><span>Observações</span><textarea value={assignmentForm.notes} onChange={(event) => setAssignmentForm((current) => ({ ...current, notes: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={assignmentForm.reason} onChange={(event) => setAssignmentForm((current) => ({ ...current, reason: event.target.value }))} /></label><button type="button" className="skpe-primary-action-button" onClick={() => void assignRole()} disabled={saving}>Atribuir papel</button></div>}
+        <section className={`skpe-governance-list-card skpe-governance-list-card--people ${assignmentPanelOpen && assignmentForm.personId ? 'skpe-governance-list-card--split' : ''}`}>
+          <div className="skpe-user-table-header skpe-user-collection-header">
+            <div>
+              <h2>Pessoas integradas</h2>
+              <p>{visiblePeople.length} pessoa{visiblePeople.length === 1 ? '' : 's'} exibida{visiblePeople.length === 1 ? '' : 's'}.</p>
+            </div>
+            <div className="skpe-governance-collection-actions">
+<div className="skpe-list-view-toggle" aria-label="Modo de visualização de pessoas">
+                <button type="button" className={governanceViewMode === 'cards' ? 'active' : ''} onClick={() => setGovernanceViewMode('cards')} title="Visualizar em cards" aria-label="Visualizar pessoas em cards"><CardsViewIcon /></button>
+                <button type="button" className={governanceViewMode === 'grid' ? 'active' : ''} onClick={() => setGovernanceViewMode('grid')} title="Visualizar em grid" aria-label="Visualizar pessoas em grid"><RowsViewIcon /></button>
+              </div>
+            </div>
+          </div>
+          {governanceViewMode === 'grid' && (
+            <div className="skpe-governance-functional-grid" data-sparks-grid-shell>
+              <div className="skpe-governance-smart-grid-header skpe-governance-smart-grid-header--people" role="row">
+                {[
+                  ['name', 'Pessoa'],
+                  ['function', 'Função'],
+                  ['relationship', 'Vínculo'],
+                  ['area', 'Área'],
+                  ['roles', 'Papéis'],
+                  ['responsibilities', 'Responsabilidades'],
+                ].map(([key, label]) => {
+                  const filterKey = `people.${key}`
+                  return (
+                    <div key={key} className="skpe-governance-header-cell">
+                      <button type="button" className="skpe-governance-header-sort" onClick={() => toggleGovernanceGridSort('people', key)}>
+                        <span>{label}</span>
+                        {governanceGridSort.panel === 'people' && governanceGridSort.key === key && (
+                          <small>{governanceGridSort.direction === 'asc' ? 'ASC' : 'DESC'}</small>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className={`skpe-governance-header-filter ${governanceGridFilterValue(filterKey) ? 'active' : ''}`}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setGovernanceGridFilterOpen((current) => current === filterKey ? null : filterKey)
+                        }}
+                        title={`Filtrar ${label}`}
+                        aria-label={`Filtrar ${label}`}
+                      >
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14l-5.2 6.1v4.2L8.2 16v-5.9L3 4Z" fill="currentColor" /></svg>
+                      </button>
+                      {governanceGridFilterOpen === filterKey && (
+                        <div className="skpe-governance-header-filter-popover">
+                          <input
+                            autoFocus
+                            value={governanceGridFilters[filterKey] ?? ''}
+                            onChange={(event) => setGovernanceColumnFilter(filterKey, event.target.value)}
+                            placeholder="Filtrar coluna"
+                          />
+                          <button type="button" onClick={() => {
+                            setGovernanceColumnFilter(filterKey, '')
+                            setGovernanceGridFilterOpen(null)
+                          }}>Limpar</button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="skpe-governance-functional-grid-body skpe-governance-functional-grid-body--people" data-governance-grid-body="people">
+                {governanceGridPeople.map((person) => (
+                  <article
+                    key={person.organization_person_id}
+                    className={`skpe-governance-functional-grid-row ${assignmentForm.personId === person.organization_person_id ? 'selected' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => selectPersonForAssignment(person)}
+                    onKeyDown={(event) => activateRecordWithKeyboard(event, () => selectPersonForAssignment(person))}
+                  >
+                    <div><strong>{person.preferred_name ?? person.full_name}</strong></div>
+                    <div><span>{person.job_title ?? 'Não definida'}</span></div>
+                    <div><span>{publicLabel(person.relationship_type, person.relationship_type)}</span></div>
+                    <div><span>{person.organizational_area ?? 'Área não definida'}</span></div>
+                    <div><b>{person.active_role_count}</b></div>
+                    <div><b>{person.active_responsibility_count}</b></div>
+                  </article>
+                ))}
+              </div>
+              <div
+                className="skpe-grid-navigator skpe-governance-grid-navigator"
+                aria-label="Navegação direcional do grid"
+              >
+                <button
+                  type="button"
+                  onClick={() => scrollGovernanceGrid('people', 'y', -1)}
+                  aria-label="Rolar grid para cima"
+                  title="Rolar para cima"
+                >
+                  ↑
+                </button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => scrollGovernanceGrid('people', 'x', -1)}
+                    aria-label="Rolar grid para a esquerda"
+                    title="Rolar para a esquerda"
+                  >
+                    ←
+                  </button>
+                  <span aria-hidden="true">•</span>
+                  <button
+                    type="button"
+                    onClick={() => scrollGovernanceGrid('people', 'x', 1)}
+                    aria-label="Rolar grid para a direita"
+                    title="Rolar para a direita"
+                  >
+                    →
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => scrollGovernanceGrid('people', 'y', 1)}
+                  aria-label="Rolar grid para baixo"
+                  title="Rolar para baixo"
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+          )}
+          <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visiblePeople.map((person) => <article key={person.organization_person_id} className={`skpe-interactive-record ${assignmentForm.personId === person.organization_person_id ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Selecionar ${person.preferred_name ?? person.full_name} para manutenção`} onClick={() => selectPersonForAssignment(person)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => selectPersonForAssignment(person))}><div><strong>{person.preferred_name ?? person.full_name}</strong><span>{person.job_title ?? 'Não definida'}</span><small>{person.organizational_area ?? 'Área não definida'}</small></div><div className="skpe-governance-counts"><b>{person.active_role_count} papéis</b><b>{person.active_responsibility_count} responsabilidades</b></div></article>)}</div>
+          {canManageGovernance && assignmentPanelOpen && assignmentForm.personId && <div id="skpe-role-assignment-form" className="skpe-governance-form skpe-governance-side-panel"><div className="skpe-governance-side-panel-heading">
+              <div>
+                <p className="skpe-eyebrow">Pessoa selecionada</p>
+                <h3>Atribuir papel a uma pessoa</h3>
+              </div>
+              <button
+                type="button"
+                className="skpe-governance-side-panel-close"
+                onClick={() => {
+                  setAssignmentPanelOpen(false)
+                  setAssignmentForm((current) => ({
+                    ...current,
+                    personId: '',
+                  }))
+                }}
+                title="Fechar painel"
+                aria-label="Fechar painel de atribuição"
+              >
+                ×
+              </button>
+            </div><label><span>Pessoa</span><select value={assignmentForm.personId} onChange={(event) => setAssignmentForm((current) => ({ ...current, personId: event.target.value }))}><option value="">Selecione</option>{visiblePeople.map((person) => <option key={person.organization_person_id} value={person.organization_person_id}>{person.preferred_name ?? person.full_name}</option>)}</select></label><label><span>Papel</span><select value={assignmentForm.roleId} onChange={(event) => setAssignmentForm((current) => ({ ...current, roleId: event.target.value }))}><option value="">Selecione</option>{roles.filter((role) => role.active).map((role) => <option key={role.role_id} value={role.role_id}>{role.role_name}</option>)}</select></label><label><span>Início do mandato</span><input type="date" value={assignmentForm.startDate} onChange={(event) => setAssignmentForm((current) => ({ ...current, startDate: event.target.value }))} /></label><label><span>Término do mandato</span><input type="date" value={assignmentForm.endDate} disabled={assignmentForm.indefiniteTerm} onChange={(event) => setAssignmentForm((current) => ({ ...current, endDate: event.target.value }))} /><small>{assignmentForm.indefiniteTerm ? 'Vigência por prazo indeterminado.' : 'Informe a data formal de encerramento.'}</small></label><label className="skpe-governance-check"><input type="checkbox" checked={assignmentForm.indefiniteTerm} onChange={(event) => setAssignmentForm((current) => ({ ...current, indefiniteTerm: event.target.checked, endDate: event.target.checked ? '' : current.endDate }))} /><span>Mandato por prazo indeterminado</span></label><label className="skpe-form-field-wide"><span>Documento formal de designação (opcional)</span><input value={assignmentForm.documentReference} onChange={(event) => setAssignmentForm((current) => ({ ...current, documentReference: event.target.value }))} placeholder="Ata, resolução, portaria, termo de posse ou referência do arquivo" /><small>Deixe em branco para gerar automaticamente um Termo de Registro de Designação no acervo documental.</small></label><label className="skpe-form-field-wide"><span>Observações</span><textarea value={assignmentForm.notes} onChange={(event) => setAssignmentForm((current) => ({ ...current, notes: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={assignmentForm.reason} onChange={(event) => setAssignmentForm((current) => ({ ...current, reason: event.target.value }))} /></label><button type="button" className="skpe-primary-action-button" onClick={() => void assignRole()} disabled={saving}>Atribuir papel</button></div>}
           <div className="skpe-designation-archive"><div className="skpe-user-table-header"><div><h2>Registros de designação</h2><p>Documentos formais referenciados e termos gerados automaticamente.</p></div></div>{roleAssignments.length === 0 ? <p className="skpe-designation-empty">Nenhuma designação registrada.</p> : <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{roleAssignments.map((assignment) => { const openAssignment = () => assignment.appointment_document_id ? void openDesignationDocument(assignment.appointment_document_id) : setAssignmentForm((current) => ({ ...current, personId: assignment.organization_person_id, roleId: assignment.role_id })); return <article key={assignment.assignment_id} className="skpe-interactive-record" role="button" tabIndex={0} aria-label={`Abrir designação de ${assignment.person_name}`} onClick={openAssignment} onKeyDown={(event) => activateRecordWithKeyboard(event, openAssignment)}><div><strong>{assignment.person_name}</strong><span>{assignment.role_name}</span><small>{assignment.mandate_end_date ? `${formatDate(assignment.mandate_start_date)} a ${formatDate(assignment.mandate_end_date)}` : `${formatDate(assignment.mandate_start_date)} · prazo indeterminado`}</small><small>{assignment.document_source === 'system_generated' ? `Termo gerado: ${assignment.document_code ?? assignment.appointment_document_reference}` : `Documento formal: ${assignment.appointment_document_reference ?? 'Referência não informada'}`}</small></div><div className="skpe-governance-counts"><b>{publicLabel(assignment.assignment_status)}</b>{assignment.appointment_document_id && <button type="button" onClick={(event) => { event.stopPropagation(); void openDesignationDocument(assignment.appointment_document_id as string) }}>Abrir termo</button>}</div></article> })}</div>}</div>
         </section>
       ) : activePanel === 'roles' ? (
-        <section className="skpe-governance-list-card"><div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visibleRoles.map((role) => <article key={role.role_id} className="skpe-interactive-record" role="button" tabIndex={0} aria-label={`Abrir manutenção do papel ${role.role_name}`} onClick={() => openRoleMaintenance(role)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => openRoleMaintenance(role))}><div><strong>{role.role_name}</strong><span>{role.role_code} · {publicLabel(role.role_type)}</span><small>{role.description ?? role.organizational_area ?? 'Sem descrição'}</small></div><div className="skpe-governance-counts"><b>{role.active_assignment_count} atribuições</b><b>{publicLabel(role.authority_level, 'Sem nível')}</b></div></article>)}</div>{canManageGovernance && <div id="skpe-role-maintenance-form" className="skpe-governance-form"><h3>{roleForm.id ? 'Editar papel organizacional' : 'Novo papel organizacional'}</h3>{roleForm.id && <button type="button" className="skpe-secondary-action-button" onClick={resetRoleForm}>+ Novo papel</button>}<label><span>Código *</span><input value={roleForm.code} onChange={(event) => setRoleForm((current) => ({ ...current, code: event.target.value }))} /></label><label><span>Nome *</span><input value={roleForm.name} onChange={(event) => setRoleForm((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Tipo</span><select value={roleForm.roleType} onChange={(event) => setRoleForm((current) => ({ ...current, roleType: event.target.value }))}>{domainOptions('ORGANIZATIONAL_ROLE_TYPE').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Nível de autoridade</span><select value={roleForm.authorityLevel} onChange={(event) => setRoleForm((current) => ({ ...current, authorityLevel: event.target.value }))}>{domainOptions('AUTHORITY_LEVEL').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Área organizacional</span><input value={roleForm.area} onChange={(event) => setRoleForm((current) => ({ ...current, area: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Descrição</span><textarea value={roleForm.description} onChange={(event) => setRoleForm((current) => ({ ...current, description: event.target.value }))} /></label><label className="skpe-governance-check"><input type="checkbox" checked={roleForm.governance} onChange={(event) => setRoleForm((current) => ({ ...current, governance: event.target.checked }))} /><span>Papel de governança</span></label><label className="skpe-governance-check"><input type="checkbox" checked={roleForm.mandate} onChange={(event) => setRoleForm((current) => ({ ...current, mandate: event.target.checked }))} /><span>Exige mandato</span></label><label className="skpe-governance-check"><input type="checkbox" checked={roleForm.active} onChange={(event) => setRoleForm((current) => ({ ...current, active: event.target.checked }))} /><span>Papel ativo</span></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={roleForm.reason} onChange={(event) => setRoleForm((current) => ({ ...current, reason: event.target.value }))} /></label><button type="button" className="skpe-primary-action-button" onClick={() => void createRole()} disabled={saving}>{roleForm.id ? 'Atualizar papel' : 'Salvar papel'}</button></div>}</section>
+        <section className={`skpe-governance-list-card skpe-governance-list-card--roles ${rolePanelOpen ? 'skpe-governance-list-card--split' : ''}`}>
+          <div className="skpe-user-table-header skpe-user-collection-header">
+            <div>
+              <h2>Papéis organizacionais</h2>
+              <p>{visibleRoles.length} papel{visibleRoles.length === 1 ? '' : 'éis'} exibido{visibleRoles.length === 1 ? '' : 's'}.</p>
+            </div>
+            <div className="skpe-governance-collection-actions">
+<div className="skpe-list-view-toggle" aria-label="Modo de visualização de papéis">
+                <button type="button" className={governanceViewMode === 'cards' ? 'active' : ''} onClick={() => setGovernanceViewMode('cards')} title="Visualizar em cards" aria-label="Visualizar papéis em cards"><CardsViewIcon /></button>
+                <button type="button" className={governanceViewMode === 'grid' ? 'active' : ''} onClick={() => setGovernanceViewMode('grid')} title="Visualizar em grid" aria-label="Visualizar papéis em grid"><RowsViewIcon /></button>
+              </div>
+            </div>
+          </div>
+          {governanceViewMode === 'grid' && (
+            <div className="skpe-governance-functional-grid" data-sparks-grid-shell>
+              <div className="skpe-governance-smart-grid-header skpe-governance-smart-grid-header--roles" role="row">
+                {[
+                  ['name', 'Papel'],
+                  ['description', 'Descrição / área'],
+                  ['assignments', 'Atribuições'],
+                  ['authority', 'Autoridade'],
+                ].map(([key, label]) => {
+                  const filterKey = `roles.${key}`
+                  return (
+                    <div key={key} className="skpe-governance-header-cell">
+                      <button type="button" className="skpe-governance-header-sort" onClick={() => toggleGovernanceGridSort('roles', key)}>
+                        <span>{label}</span>
+                        {governanceGridSort.panel === 'roles' && governanceGridSort.key === key && (
+                          <small>{governanceGridSort.direction === 'asc' ? 'ASC' : 'DESC'}</small>
+                        )}
+                      </button>
+                      <button type="button" className={`skpe-governance-header-filter ${governanceGridFilterValue(filterKey) ? 'active' : ''}`} onClick={(event) => { event.stopPropagation(); setGovernanceGridFilterOpen((current) => current === filterKey ? null : filterKey) }} title={`Filtrar ${label}`} aria-label={`Filtrar ${label}`}>
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14l-5.2 6.1v4.2L8.2 16v-5.9L3 4Z" fill="currentColor" /></svg>
+                      </button>
+                      {governanceGridFilterOpen === filterKey && (
+                        <div className="skpe-governance-header-filter-popover">
+                          <input autoFocus value={governanceGridFilters[filterKey] ?? ''} onChange={(event) => setGovernanceColumnFilter(filterKey, event.target.value)} placeholder="Filtrar coluna" />
+                          <button type="button" onClick={() => { setGovernanceColumnFilter(filterKey, ''); setGovernanceGridFilterOpen(null) }}>Limpar</button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="skpe-governance-functional-grid-body skpe-governance-functional-grid-body--roles" data-governance-grid-body="roles">
+                {governanceGridRoles.map((role) => (
+                  <article key={role.role_id} className={`skpe-governance-functional-grid-row ${roleForm.id === role.role_id ? 'selected' : ''}`} role="button" tabIndex={0} onClick={() => openRoleMaintenance(role)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => openRoleMaintenance(role))}>
+                    <div><strong>{role.role_name}</strong></div>
+
+                    <div><span>{role.description ?? 'Sem descrição'}</span><small>{role.organizational_area ?? 'Área não definida'}</small></div>
+                    <div><b>{role.active_assignment_count}</b></div>
+                    <div><span>{governanceRoleValueLabel(role.authority_level)}</span></div>
+                  </article>
+                ))}
+              </div>
+              <div
+                className="skpe-grid-navigator skpe-governance-grid-navigator"
+                aria-label="Navegação direcional do grid"
+              >
+                <button
+                  type="button"
+                  onClick={() => scrollGovernanceGrid('roles', 'y', -1)}
+                  aria-label="Rolar grid para cima"
+                  title="Rolar para cima"
+                >
+                  ↑
+                </button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => scrollGovernanceGrid('roles', 'x', -1)}
+                    aria-label="Rolar grid para a esquerda"
+                    title="Rolar para a esquerda"
+                  >
+                    ←
+                  </button>
+                  <span aria-hidden="true">•</span>
+                  <button
+                    type="button"
+                    onClick={() => scrollGovernanceGrid('roles', 'x', 1)}
+                    aria-label="Rolar grid para a direita"
+                    title="Rolar para a direita"
+                  >
+                    →
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => scrollGovernanceGrid('roles', 'y', 1)}
+                  aria-label="Rolar grid para baixo"
+                  title="Rolar para baixo"
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+          )}
+          <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visibleRoles.map((role) => <article key={role.role_id} className={`skpe-interactive-record ${roleForm.id === role.role_id ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Abrir manutenção do papel ${role.role_name}`} onClick={() => openRoleMaintenance(role)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => openRoleMaintenance(role))}><div><strong>{role.role_name}</strong><span>{role.role_code} · {publicLabel(role.role_type)}</span><small>{role.description ?? role.organizational_area ?? 'Sem descrição'}</small></div><div className="skpe-governance-counts"><b>{role.active_assignment_count} atribuições</b><b>{publicLabel(role.authority_level, 'Sem nível')}</b></div></article>)}</div>{canManageGovernance && rolePanelOpen && <div id="skpe-role-maintenance-form" className="skpe-governance-form skpe-governance-side-panel"><div className="skpe-governance-side-panel-heading">
+              <div>
+                <p className="skpe-eyebrow">Papel organizacional</p>
+                <h3>{roleForm.id ? 'Editar papel organizacional' : 'Novo papel organizacional'}</h3>
+              </div>
+              <button
+                type="button"
+                className="skpe-governance-side-panel-close"
+                onClick={() => {
+                  setRolePanelOpen(false)
+                  resetRoleForm()
+                }}
+                aria-label="Fechar painel de papel organizacional"
+                title="Fechar painel"
+              >
+                ×
+              </button>
+            </div>{roleForm.id && <button type="button" className="skpe-secondary-action-button" onClick={resetRoleForm}>+ Novo papel</button>}<label><span>Código *</span><input value={roleForm.code} onChange={(event) => setRoleForm((current) => ({ ...current, code: event.target.value }))} /></label><label><span>Nome *</span><input value={roleForm.name} onChange={(event) => setRoleForm((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Tipo</span><select value={roleForm.roleType} onChange={(event) => setRoleForm((current) => ({ ...current, roleType: event.target.value }))}>{domainOptions('ORGANIZATIONAL_ROLE_TYPE').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Nível de autoridade</span><select value={roleForm.authorityLevel} onChange={(event) => setRoleForm((current) => ({ ...current, authorityLevel: event.target.value }))}>{domainOptions('AUTHORITY_LEVEL').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Área organizacional</span><input value={roleForm.area} onChange={(event) => setRoleForm((current) => ({ ...current, area: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Descrição</span><textarea value={roleForm.description} onChange={(event) => setRoleForm((current) => ({ ...current, description: event.target.value }))} /></label><label className="skpe-governance-check"><input type="checkbox" checked={roleForm.governance} onChange={(event) => setRoleForm((current) => ({ ...current, governance: event.target.checked }))} /><span>Papel de governança</span></label><label className="skpe-governance-check"><input type="checkbox" checked={roleForm.mandate} onChange={(event) => setRoleForm((current) => ({ ...current, mandate: event.target.checked }))} /><span>Exige mandato</span></label><label className="skpe-governance-check"><input type="checkbox" checked={roleForm.active} onChange={(event) => setRoleForm((current) => ({ ...current, active: event.target.checked }))} /><span>Papel ativo</span></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={roleForm.reason} onChange={(event) => setRoleForm((current) => ({ ...current, reason: event.target.value }))} /></label><button type="button" className="skpe-primary-action-button" onClick={() => void createRole()} disabled={saving}>{roleForm.id ? 'Atualizar papel' : 'Salvar papel'}</button></div>}</section>
       ) : (
-        <section className="skpe-governance-list-card"><div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visibleResponsibilities.map((assignment) => <article key={assignment.assignment_id}><div><strong>{assignment.person_name}</strong><span>{domainOptions('RESPONSIBILITY_TYPE').find((item) => item.value_code === assignment.responsibility_type)?.value_name ?? assignment.responsibility_type}</span><small>{domainOptions('STRATEGIC_OBJECT_TYPE').find((item) => item.value_code === assignment.object_type)?.value_name ?? assignment.object_type} · {assignment.object_id}</small></div><div className="skpe-governance-counts"><b>{assignment.allocation_percentage ?? 0}%</b><button type="button" onClick={() => void endResponsibility(assignment)}>Encerrar</button></div></article>)}</div>{canManageGovernance && <div className="skpe-governance-form"><h3>Atribuir responsabilidade estratégica</h3><label><span>Tipo de objeto</span><select value={responsibilityForm.objectType} onChange={(event) => setResponsibilityForm((current) => ({ ...current, objectType: event.target.value }))}>{domainOptions('STRATEGIC_OBJECT_TYPE').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label className="skpe-form-field-wide"><span>ID do objeto estratégico *</span><input value={responsibilityForm.objectId} onChange={(event) => setResponsibilityForm((current) => ({ ...current, objectId: event.target.value }))} placeholder="UUID do projeto, objetivo, iniciativa ou item" /></label><label><span>Pessoa</span><select value={responsibilityForm.personId} onChange={(event) => setResponsibilityForm((current) => ({ ...current, personId: event.target.value }))}><option value="">Selecione</option>{visiblePeople.map((person) => <option key={person.organization_person_id} value={person.organization_person_id}>{person.preferred_name ?? person.full_name}</option>)}</select></label><label><span>Responsabilidade</span><select value={responsibilityForm.responsibilityType} onChange={(event) => setResponsibilityForm((current) => ({ ...current, responsibilityType: event.target.value }))}>{domainOptions('RESPONSIBILITY_TYPE').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Alocação (%)</span><input type="number" min="0" max="100" value={responsibilityForm.allocation} onChange={(event) => setResponsibilityForm((current) => ({ ...current, allocation: event.target.value }))} /></label><label><span>Autoridade</span><select value={responsibilityForm.authorityLevel} onChange={(event) => setResponsibilityForm((current) => ({ ...current, authorityLevel: event.target.value }))}>{domainOptions('AUTHORITY_LEVEL').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Válida a partir de</span><input type="date" value={responsibilityForm.validFrom} onChange={(event) => setResponsibilityForm((current) => ({ ...current, validFrom: event.target.value }))} /></label><label><span>Válida até</span><input type="date" value={responsibilityForm.validUntil} onChange={(event) => setResponsibilityForm((current) => ({ ...current, validUntil: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Motivo da atribuição</span><textarea value={responsibilityForm.assignmentReason} onChange={(event) => setResponsibilityForm((current) => ({ ...current, assignmentReason: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={responsibilityForm.reason} onChange={(event) => setResponsibilityForm((current) => ({ ...current, reason: event.target.value }))} /></label><button type="button" className="skpe-primary-action-button" onClick={() => void assignResponsibility()} disabled={saving}>Atribuir responsabilidade</button></div>}</section>
+        <section className={`skpe-governance-list-card skpe-governance-list-card--responsibilities ${responsibilityPanelOpen ? 'skpe-governance-list-card--split' : ''}`}>
+          <div className="skpe-user-table-header skpe-user-collection-header">
+            <div>
+              <h2>Matriz de responsabilidades</h2>
+              <p>{visibleResponsibilities.length} responsabilidade{visibleResponsibilities.length === 1 ? '' : 's'} exibida{visibleResponsibilities.length === 1 ? '' : 's'}.</p>
+            </div>
+            <div className="skpe-governance-collection-actions">
+<div className="skpe-list-view-toggle" aria-label="Modo de visualização de responsabilidades">
+                <button type="button" className={governanceViewMode === 'cards' ? 'active' : ''} onClick={() => setGovernanceViewMode('cards')} title="Visualizar em cards" aria-label="Visualizar responsabilidades em cards"><CardsViewIcon /></button>
+                <button type="button" className={governanceViewMode === 'grid' ? 'active' : ''} onClick={() => setGovernanceViewMode('grid')} title="Visualizar em grid" aria-label="Visualizar responsabilidades em grid"><RowsViewIcon /></button>
+              </div>
+            </div>
+          </div>
+          {governanceViewMode === 'grid' && (
+            <div className="skpe-governance-functional-grid" data-sparks-grid-shell>
+              <div className="skpe-governance-smart-grid-header skpe-governance-smart-grid-header--responsibilities" role="row">
+                {[
+                  ['person', 'Pessoa'],
+                  ['type', 'Responsabilidade'],
+                  ['object', 'Objeto estratégico'],
+                  ['allocation', 'Alocação'],
+                  ['status', 'Situação'],
+                  ['action', 'Ação'],
+                ].map(([key, label]) => {
+                  const filterKey = `responsibilities.${key}`
+                  return (
+                    <div key={key} className="skpe-governance-header-cell">
+                      <button type="button" className="skpe-governance-header-sort" onClick={() => toggleGovernanceGridSort('responsibilities', key)}>
+                        <span>{label}</span>
+                        {governanceGridSort.panel === 'responsibilities' && governanceGridSort.key === key && (
+                          <small>{governanceGridSort.direction === 'asc' ? 'ASC' : 'DESC'}</small>
+                        )}
+                      </button>
+                      <button type="button" className={`skpe-governance-header-filter ${governanceGridFilterValue(filterKey) ? 'active' : ''}`} onClick={(event) => { event.stopPropagation(); setGovernanceGridFilterOpen((current) => current === filterKey ? null : filterKey) }} title={`Filtrar ${label}`} aria-label={`Filtrar ${label}`}>
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14l-5.2 6.1v4.2L8.2 16v-5.9L3 4Z" fill="currentColor" /></svg>
+                      </button>
+                      {governanceGridFilterOpen === filterKey && (
+                        <div className="skpe-governance-header-filter-popover">
+                          <input autoFocus value={governanceGridFilters[filterKey] ?? ''} onChange={(event) => setGovernanceColumnFilter(filterKey, event.target.value)} placeholder="Filtrar coluna" />
+                          <button type="button" onClick={() => { setGovernanceColumnFilter(filterKey, ''); setGovernanceGridFilterOpen(null) }}>Limpar</button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="skpe-governance-functional-grid-body skpe-governance-functional-grid-body--responsibilities" data-governance-grid-body="responsibilities">
+                {governanceGridResponsibilities.map((assignment) => (
+                  <article
+                    key={assignment.assignment_id}
+                    className={`skpe-governance-functional-grid-row ${selectedResponsibilityId === assignment.assignment_id ? 'selected' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setResponsibilityForm((current) => ({
+                        ...current,
+                        personId: assignment.organization_person_id,
+                        objectType: assignment.object_type,
+                        objectId: assignment.object_id,
+                        responsibilityType: assignment.responsibility_type,
+                        allocation:
+                          assignment.allocation_percentage === null
+                            ? ''
+                            : String(assignment.allocation_percentage),
+                        authorityLevel:
+                          assignment.authority_level ?? 'operational',
+                        validFrom: assignment.valid_from ?? '',
+                        validUntil: assignment.valid_until ?? '',
+                        assignmentReason:
+                          assignment.assignment_reason ?? '',
+                      }))
+                      setSelectedResponsibilityId(assignment.assignment_id)
+                      setResponsibilityPanelOpen(true)
+                    }}
+                  >
+                    <div><strong>{assignment.person_name}</strong></div>
+                    <div><span>{governanceResponsibilityLabel(assignment.responsibility_type)}</span></div>
+                    <div><span>{governanceObjectLabel(assignment)}</span></div>
+                    <div><b>{assignment.allocation_percentage ?? '—'}{assignment.allocation_percentage === null ? '' : '%'}</b></div>
+                    <div><span>{assignment.status === 'active' ? 'Ativo' : publicLabel(assignment.status, assignment.status)}</span></div><div>{canManageGovernance ? <button type="button" className="skpe-secondary-action-button" onClick={(event) => { event.stopPropagation(); void endResponsibility(assignment) }}>Encerrar</button> : <span>—</span>}</div>
+                  </article>
+                ))}
+              </div>
+              <div
+                className="skpe-grid-navigator skpe-governance-grid-navigator"
+                aria-label="Navegação direcional do grid"
+              >
+                <button
+                  type="button"
+                  onClick={() => scrollGovernanceGrid('responsibilities', 'y', -1)}
+                  aria-label="Rolar grid para cima"
+                  title="Rolar para cima"
+                >
+                  ↑
+                </button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => scrollGovernanceGrid('responsibilities', 'x', -1)}
+                    aria-label="Rolar grid para a esquerda"
+                    title="Rolar para a esquerda"
+                  >
+                    ←
+                  </button>
+                  <span aria-hidden="true">•</span>
+                  <button
+                    type="button"
+                    onClick={() => scrollGovernanceGrid('responsibilities', 'x', 1)}
+                    aria-label="Rolar grid para a direita"
+                    title="Rolar para a direita"
+                  >
+                    →
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => scrollGovernanceGrid('responsibilities', 'y', 1)}
+                  aria-label="Rolar grid para baixo"
+                  title="Rolar para baixo"
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+          )}
+          <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visibleResponsibilities.map((assignment) => <article key={assignment.assignment_id}><div><strong>{assignment.person_name}</strong><span>{domainOptions('RESPONSIBILITY_TYPE').find((item) => item.value_code === assignment.responsibility_type)?.value_name ?? assignment.responsibility_type}</span><small>{domainOptions('STRATEGIC_OBJECT_TYPE').find((item) => item.value_code === assignment.object_type)?.value_name ?? assignment.object_type} · {assignment.object_id}</small></div><div className="skpe-governance-counts"><b>{assignment.allocation_percentage ?? 0}%</b><button type="button" onClick={() => void endResponsibility(assignment)}>Encerrar</button></div></article>)}</div>{canManageGovernance && responsibilityPanelOpen && <div id="skpe-responsibility-assignment-form" className="skpe-governance-form skpe-governance-side-panel"><div className="skpe-governance-side-panel-heading">
+              <div>
+                <p className="skpe-eyebrow">Responsabilidade estratégica</p>
+                <h3>Atribuir responsabilidade estratégica</h3>
+              </div>
+              <button
+                type="button"
+                className="skpe-governance-side-panel-close"
+                onClick={() => setResponsibilityPanelOpen(false)}
+                title="Fechar painel"
+                aria-label="Fechar painel de responsabilidade estratégica"
+              >
+                ×
+              </button>
+            </div><label><span>Tipo de objeto</span><select value={responsibilityForm.objectType} onChange={(event) => setResponsibilityForm((current) => ({ ...current, objectType: event.target.value }))}>{domainOptions('STRATEGIC_OBJECT_TYPE').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label className="skpe-form-field-wide"><span>ID do objeto estratégico *</span><input value={responsibilityForm.objectId} onChange={(event) => setResponsibilityForm((current) => ({ ...current, objectId: event.target.value }))} placeholder="UUID do projeto, objetivo, iniciativa ou item" /></label><label><span>Pessoa</span><select value={responsibilityForm.personId} onChange={(event) => setResponsibilityForm((current) => ({ ...current, personId: event.target.value }))}><option value="">Selecione</option>{visiblePeople.map((person) => <option key={person.organization_person_id} value={person.organization_person_id}>{person.preferred_name ?? person.full_name}</option>)}</select></label><label><span>Responsabilidade</span><select value={responsibilityForm.responsibilityType} onChange={(event) => setResponsibilityForm((current) => ({ ...current, responsibilityType: event.target.value }))}>{domainOptions('RESPONSIBILITY_TYPE').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Alocação (%)</span><input type="number" min="0" max="100" value={responsibilityForm.allocation} onChange={(event) => setResponsibilityForm((current) => ({ ...current, allocation: event.target.value }))} /></label><label><span>Autoridade</span><select value={responsibilityForm.authorityLevel} onChange={(event) => setResponsibilityForm((current) => ({ ...current, authorityLevel: event.target.value }))}>{domainOptions('AUTHORITY_LEVEL').map((item) => <option key={item.value_id} value={item.value_code}>{item.value_name}</option>)}</select></label><label><span>Válida a partir de</span><input type="date" value={responsibilityForm.validFrom} onChange={(event) => setResponsibilityForm((current) => ({ ...current, validFrom: event.target.value }))} /></label><label><span>Válida até</span><input type="date" value={responsibilityForm.validUntil} onChange={(event) => setResponsibilityForm((current) => ({ ...current, validUntil: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Motivo da atribuição</span><textarea value={responsibilityForm.assignmentReason} onChange={(event) => setResponsibilityForm((current) => ({ ...current, assignmentReason: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={responsibilityForm.reason} onChange={(event) => setResponsibilityForm((current) => ({ ...current, reason: event.target.value }))} /></label><button type="button" className="skpe-primary-action-button" onClick={() => void assignResponsibility()} disabled={saving}>Atribuir responsabilidade</button></div>}</section>
       )}
     </>
   )
@@ -4858,6 +5785,7 @@ type AdministrationSectionProps = {
   userRoleName: string
   canManageUsers: boolean
   canManageMemberships: boolean
+  canManageUserAvatar: boolean
   canManagePortability: boolean
 }
 
@@ -4874,53 +5802,6 @@ type ActionMessage = {
 
 type AdministrationArea = 'users' | 'portability'
 
-type AdministrationAreaTabsProps = {
-  activeArea: AdministrationArea
-  canManageUsers: boolean
-  canManagePortability: boolean
-  onChange: (area: AdministrationArea) => void
-}
-
-function AdministrationAreaTabs({
-  activeArea,
-  canManageUsers,
-  canManagePortability,
-  onChange,
-}: AdministrationAreaTabsProps) {
-  if (!(canManageUsers && canManagePortability)) {
-    return null
-  }
-
-  return (
-    <nav
-      className="skpe-administration-tabs"
-      aria-label="Áreas da Administração do SK-PE"
-    >
-      {canManageUsers && (
-        <button
-          type="button"
-          className={activeArea === 'users' ? 'active' : ''}
-          aria-current={activeArea === 'users' ? 'page' : undefined}
-          onClick={() => onChange('users')}
-        >
-          Usuários e acessos
-        </button>
-      )}
-
-      {canManagePortability && (
-        <button
-          type="button"
-          className={activeArea === 'portability' ? 'active' : ''}
-          aria-current={activeArea === 'portability' ? 'page' : undefined}
-          onClick={() => onChange('portability')}
-        >
-          Portabilidade e importação
-        </button>
-      )}
-    </nav>
-  )
-}
-
 function AdministrationSection({
   organizationId,
   organizationCode,
@@ -4928,9 +5809,10 @@ function AdministrationSection({
   userRoleName,
   canManageUsers,
   canManageMemberships,
+  canManageUserAvatar,
   canManagePortability,
 }: AdministrationSectionProps) {
-  const [activeArea, setActiveArea] = useState<AdministrationArea>(
+  const [activeArea] = useState<AdministrationArea>(
     canManageUsers ? 'users' : 'portability',
   )
 
@@ -4951,6 +5833,8 @@ function AdministrationSection({
 
   const [searchTerm, setSearchTerm] =
     useState('')
+  const [userQuickFilter, setUserQuickFilter] =
+    useState<'all' | 'active' | 'admins' | 'modules'>('all')
 
   const [userViewMode, setUserViewMode] = useState<'cards' | 'grid' | 'hierarchy'>('grid')
   const [userHierarchyMode, setUserHierarchyMode] = useState<'organization' | 'functional'>('organization')
@@ -4958,7 +5842,6 @@ function AdministrationSection({
   const [organizationScopeLoading, setOrganizationScopeLoading] = useState(false)
   const [organizationScopeError, setOrganizationScopeError] = useState('')
   const [expandedScopeOrganizationIds, setExpandedScopeOrganizationIds] = useState<Set<string>>(new Set())
-  const [userSortDirection, setUserSortDirection] = useState<'asc' | 'desc'>('asc')
 
   const [
     membershipStatusFilter,
@@ -5074,51 +5957,65 @@ function AdministrationSection({
     const normalizedSearch =
       searchTerm.trim().toLowerCase()
 
-    return users.filter((user) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        user.email
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        (user.displayName ?? '')
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        (user.jobTitle ?? '')
-          .toLowerCase()
-          .includes(normalizedSearch)
+    return users
+      .filter((user) => {
+        const matchesSearch =
+          normalizedSearch.length === 0 ||
+          user.email
+            .toLowerCase()
+            .includes(normalizedSearch) ||
+          (user.displayName ?? '')
+            .toLowerCase()
+            .includes(normalizedSearch) ||
+          (user.jobTitle ?? '')
+            .toLowerCase()
+            .includes(normalizedSearch)
 
-      const matchesStatus =
-        membershipStatusFilter === 'all' ||
-        user.membershipStatus ===
-          membershipStatusFilter
+        const matchesStatus =
+          membershipStatusFilter === 'all' ||
+          user.membershipStatus === membershipStatusFilter
 
-      const matchesModule =
-        moduleFilter === 'all' ||
-        user.modules.some(
-          (module) =>
-            module.moduleCode ===
-            moduleFilter,
+        const matchesModule =
+          moduleFilter === 'all' ||
+          user.modules.some(
+            (module) =>
+              module.moduleCode === moduleFilter,
+          )
+
+        const matchesQuickFilter =
+          userQuickFilter === 'all' ||
+          (userQuickFilter === 'active' &&
+            user.membershipStatus === 'active') ||
+          (userQuickFilter === 'admins' &&
+            user.isOrganizationAdmin) ||
+          (userQuickFilter === 'modules' &&
+            user.modules.length > 0)
+
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesModule &&
+          matchesQuickFilter
         )
+      })
+      .sort((first, second) => {
+        const firstName =
+          first.displayName ?? first.email
+        const secondName =
+          second.displayName ?? second.email
 
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesModule
-      )
-    }).sort((first, second) => {
-      const firstName = first.displayName ?? first.email
-      const secondName = second.displayName ?? second.email
-      const comparison = firstName.localeCompare(secondName, 'pt-BR')
-      return userSortDirection === 'asc' ? comparison : -comparison
-    })
+        return firstName.localeCompare(
+          secondName,
+          'pt-BR',
+        )
+      })
   }, [
     users,
     searchTerm,
     membershipStatusFilter,
     moduleFilter,
-    userSortDirection,
+    userQuickFilter,
   ])
-
   const selectedUser = useMemo(
     () =>
       users.find(
@@ -5127,19 +6024,7 @@ function AdministrationSection({
       ) ?? null,
     [users, selectedUserId],
   )
-
-  useEffect(() => {
-    if (!selectedUserId) return
-
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedUserId(null)
-    }
-
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [selectedUserId])
-
-  const selectedSkpeAccess =
+const selectedSkpeAccess =
     selectedUser?.modules.find(
       (module) =>
         module.moduleCode === 'SK-PE',
@@ -5164,7 +6049,7 @@ function AdministrationSection({
     ).length
 
   const loadUsers = async () => {
-    if (!canManageUsers) {
+  if (!canManageUsers) {
       setRows([])
       setErrorMessage('')
       return
@@ -5196,12 +6081,27 @@ function AdministrationSection({
     }
 
     const accessRows = (data ?? []) as UserAccessRow[]
-    const userIds = Array.from(new Set(accessRows.map((row) => row.user_id)))
-    const { data: profileRows } = userIds.length
-      ? await supabase.from('profiles').select('id, avatar_url').in('id', userIds)
-      : { data: [] as Array<{ id: string; avatar_url: string | null }> }
+    const { data: avatarRows, error: avatarError } =
+      await supabase.rpc(
+        'list_managed_organization_user_avatars',
+        { context_organization_id: organizationId },
+      )
 
-    const pathByUser = new Map((profileRows ?? []).map((p) => [p.id as string, (p.avatar_url as string | null) ?? null]))
+    if (avatarError) {
+      setErrorMessage(avatarError.message)
+      setLoading(false)
+      return
+    }
+
+    const pathByUser = new Map(
+      ((avatarRows ?? []) as Array<{
+        user_id: string
+        avatar_storage_path: string | null
+      }>).map((row) => [
+        row.user_id,
+        row.avatar_storage_path,
+      ]),
+    )
     const paths = Array.from(new Set(Array.from(pathByUser.values()).filter((v): v is string => Boolean(v))))
     const signedByPath = new Map<string,string>()
 
@@ -5726,15 +6626,7 @@ function AdministrationSection({
             </p>
           </div>
         </section>
-
-        <AdministrationAreaTabs
-          activeArea={activeArea}
-          canManageUsers={canManageUsers}
-          canManagePortability={canManagePortability}
-          onChange={setActiveArea}
-        />
-
-        {canManagePortability ? (
+{canManagePortability ? (
           <PortabilityAdmin
             fixedOrganizationId={organizationId}
             organizations={[
@@ -5779,15 +6671,7 @@ function AdministrationSection({
             </p>
           </div>
         </section>
-
-        <AdministrationAreaTabs
-          activeArea={activeArea}
-          canManageUsers={canManageUsers}
-          canManagePortability={canManagePortability}
-          onChange={setActiveArea}
-        />
-
-        <section className="skpe-access-denied-card">
+<section className="skpe-access-denied-card">
           <LockIcon />
 
           <div>
@@ -5835,58 +6719,77 @@ function AdministrationSection({
             }}
             disabled={loading || saving}
           >
-            + Cadastrar usuário
-          </button>
-
-          <button
-            type="button"
-            className="skpe-refresh-button"
-            onClick={() => void loadUsers()}
-            disabled={loading || saving}
-          >
-            <RefreshIcon />
-
-            {loading
-              ? 'Atualizando...'
-              : 'Atualizar dados'}
+            + Novo usuário
           </button>
         </div>
       </section>
-
-      <AdministrationAreaTabs
-        activeArea={activeArea}
-        canManageUsers={canManageUsers}
-        canManagePortability={canManagePortability}
-        onChange={setActiveArea}
-      />
-
-      <section className="skpe-admin-kpi-grid">
-        <article className="skpe-admin-kpi-card">
+<section className="skpe-admin-kpi-grid">
+        <button
+          type="button"
+          className={`skpe-admin-kpi-card skpe-admin-kpi-card--interactive ${
+            userQuickFilter === 'all' ? 'active' : ''
+          }`}
+          onClick={() => setUserQuickFilter('all')}
+          aria-pressed={userQuickFilter === 'all'}
+        >
           <span>Usuários vinculados</span>
           <strong>{users.length}</strong>
           <small>Total de vínculos encontrados</small>
-        </article>
+        </button>
 
-        <article className="skpe-admin-kpi-card">
+        <button
+          type="button"
+          className={`skpe-admin-kpi-card skpe-admin-kpi-card--interactive ${
+            userQuickFilter === 'active' ? 'active' : ''
+          }`}
+          onClick={() =>
+            setUserQuickFilter((current) =>
+              current === 'active' ? 'all' : 'active',
+            )
+          }
+          aria-pressed={userQuickFilter === 'active'}
+        >
           <span>Usuários ativos</span>
           <strong>{activeUsersCount}</strong>
           <small>Vínculo e cadastro ativos</small>
-        </article>
+        </button>
 
-        <article className="skpe-admin-kpi-card">
+        <button
+          type="button"
+          className={`skpe-admin-kpi-card skpe-admin-kpi-card--interactive ${
+            userQuickFilter === 'admins' ? 'active' : ''
+          }`}
+          onClick={() =>
+            setUserQuickFilter((current) =>
+              current === 'admins' ? 'all' : 'admins',
+            )
+          }
+          aria-pressed={userQuickFilter === 'admins'}
+        >
           <span>Administradores</span>
           <strong>{organizationAdminsCount}</strong>
           <small>Administradores da organização</small>
-        </article>
+        </button>
 
-        <article className="skpe-admin-kpi-card">
+        <button
+          type="button"
+          className={`skpe-admin-kpi-card skpe-admin-kpi-card--interactive ${
+            userQuickFilter === 'modules' ? 'active' : ''
+          }`}
+          onClick={() =>
+            setUserQuickFilter((current) =>
+              current === 'modules' ? 'all' : 'modules',
+            )
+          }
+          aria-pressed={userQuickFilter === 'modules'}
+        >
           <span>Com acesso a módulos</span>
           <strong>{usersWithModulesCount}</strong>
           <small>Usuários com ao menos um perfil</small>
-        </article>
+        </button>
       </section>
 
-      <section className="skpe-admin-toolbar">
+      <section className="skpe-admin-toolbar skpe-user-filter-toolbar">
         <div className="skpe-admin-search">
           <SearchIcon />
 
@@ -5948,12 +6851,6 @@ function AdministrationSection({
           </select>
         </label>
 
-        <button type="button" className="skpe-list-sort-button" onClick={() => setUserSortDirection((current) => current === 'asc' ? 'desc' : 'asc')} title="Alterar ordenação alfabética">{userSortDirection === 'asc' ? 'A → Z' : 'Z → A'}</button>
-        <div className="skpe-list-view-toggle" aria-label="Modo de visualização">
-          <button type="button" className={userViewMode === 'cards' ? 'active' : ''} onClick={() => setUserViewMode('cards')} title="Visualizar em cards"><CardsViewIcon /></button>
-          <button type="button" className={userViewMode === 'grid' ? 'active' : ''} onClick={() => setUserViewMode('grid')} title="Visualizar em linhas"><RowsViewIcon /></button>
-          <button type="button" className={userViewMode === 'hierarchy' ? 'active' : ''} onClick={() => setUserViewMode('hierarchy')} title="Visualizar por hierarquia funcional" aria-label="Visualizar usuários por hierarquia funcional"><HierarchyIcon /></button>
-        </div>
       </section>
 
       {errorMessage && (
@@ -5982,7 +6879,7 @@ function AdministrationSection({
       ) : (
         <section className="skpe-user-management-layout">
           <div className="skpe-user-table-card">
-            <div className="skpe-user-table-header">
+            <div className="skpe-user-table-header skpe-user-collection-header">
               <div>
                 <h2>Matriz de usuários</h2>
 
@@ -5998,6 +6895,23 @@ function AdministrationSection({
                     : 's'}
                 </p>
               </div>
+            <div className="skpe-user-collection-actions">
+              <div className="skpe-list-view-toggle" aria-label="Modo de visualização">
+          <button type="button" className={userViewMode === 'cards' ? 'active' : ''} onClick={() => setUserViewMode('cards')} title="Visualizar em cards"><CardsViewIcon /></button>
+          <button type="button" className={userViewMode === 'grid' ? 'active' : ''} onClick={() => setUserViewMode('grid')} title="Visualizar em linhas"><RowsViewIcon /></button>
+          <button type="button" className={userViewMode === 'hierarchy' ? 'active' : ''} onClick={() => setUserViewMode('hierarchy')} title="Visualizar por hierarquia funcional" aria-label="Visualizar usuários por hierarquia funcional"><HierarchyIcon /></button>
+        </div>
+              <button
+                type="button"
+                className="skpe-user-grid-refresh"
+                onClick={() => void loadUsers()}
+                disabled={loading}
+                title="Atualizar matriz de usuários"
+                aria-label="Atualizar matriz de usuários"
+              >
+                <RefreshIcon />
+              </button>
+            </div>
             </div>
             {userViewMode === 'hierarchy' ? (
               <section className="skpe-user-hierarchy" aria-label="Hierarquia dos usuários por organização e função">
@@ -6220,126 +7134,11 @@ function AdministrationSection({
                 ))}
               </div>
             ) : (
-            <div className="skpe-user-table-wrapper">
-              <table className="skpe-user-table">
-                <thead>
-                  <tr>
-                    <th>Usuário</th>
-                    <th>Vínculo</th>
-                    <th>Papel no SK-PE</th>
-                    <th>Outros módulos e papéis</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredUsers.map(
-                    (user) => (
-                      <tr
-                        key={user.userId}
-                        className={`skpe-interactive-record ${
-                          selectedUserId === user.userId
-                            ? 'skpe-user-row-selected'
-                            : ''
-                        }`}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Abrir acessos de ${user.displayName ?? user.email}`}
-                        onClick={() => setSelectedUserId(user.userId)}
-                        onKeyDown={(event) =>
-                          activateRecordWithKeyboard(event, () =>
-                            setSelectedUserId(user.userId),
-                          )
-                        }
-                      >
-                        <td>
-                          <div className="skpe-user-identity">
-                            <span className="skpe-user-avatar">
-                              {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : <UserIcon />}
-                            </span>
-
-                            <div>
-                              <strong>
-                                {user.displayName ??
-                                  user.email}
-                              </strong>
-
-                              <span>{user.email}</span>
-
-                              {user.jobTitle && (
-                                <small>
-                                  {user.jobTitle}
-                                </small>
-                              )}
-
-                              {user.isOrganizationAdmin && (
-                                <small className="skpe-admin-badge">
-                                  ADMIN DA ORGANIZAÇÃO
-                                </small>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td>
-                          <span
-                            className={`skpe-access-status skpe-access-status-${user.membershipStatus}`}
-                          >
-                            {getMembershipStatusLabel(
-                              user.membershipStatus,
-                            )}
-                          </span>
-                        </td>
-
-                        <td>
-                          {getSkpeRoleName(user) === 'Não atribuído' ? (
-                            <span className="skpe-muted-label">
-                              Não atribuído
-                            </span>
-                          ) : (
-                            <span className="skpe-module-role-chip">
-                              <strong>SK-PE</strong>
-                              <span>{getSkpeRoleName(user)}</span>
-                            </span>
-                          )}
-
-                        </td>
-
-                        <td>
-                          <div className="skpe-module-role-list">
-                            {getOtherModuleAccesses(user).length === 0 ? (
-                              <span className="skpe-muted-label">
-                                Nenhum outro módulo
-                              </span>
-                            ) : (
-                              getOtherModuleAccesses(user).map(
-                                (module) => (
-                                  <span
-                                    key={
-                                      module.userModuleRoleId ??
-                                      `${user.userId}-${module.moduleCode}-${module.roleCode}`
-                                    }
-                                    className="skpe-module-role-chip"
-                                  >
-                                    <strong>
-                                      {module.moduleShortName}
-                                    </strong>
-
-                                    <span>
-                                      {module.roleName}
-                                    </span>
-                                  </span>
-                                ),
-                              )
-                            )}
-                          </div>
-                        </td>
-
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <OrganizationUsersSmartGrid
+              users={filteredUsers}
+              selectedUserId={selectedUserId}
+              onSelectUser={setSelectedUserId}
+            />
             )}
           </div>
 
@@ -6360,9 +7159,22 @@ function AdministrationSection({
                 </button>
 
                 <div className="skpe-user-detail-heading">
-                  <span className="skpe-user-detail-avatar">
-                    <UserIcon />
-                  </span>
+                  {canManageUserAvatar ? (
+                    <AdminUserAvatarEditor
+                      userId={selectedUser.userId}
+                      userName={selectedUser.displayName ?? selectedUser.email}
+                      organizationId={organizationId}
+                      onChanged={() => void loadUsers()}
+                    />
+                  ) : (
+                    <span className="skpe-user-detail-avatar">
+                      {selectedUser.avatarUrl ? (
+                        <img src={selectedUser.avatarUrl} alt="" />
+                      ) : (
+                        <UserIcon />
+                      )}
+                    </span>
+                  )}
 
                   <div>
                     <p>Gestão do usuário</p>
@@ -6841,8 +7653,9 @@ export function SkpeCockpit({
     )
 
   useEffect(() => {
+    if (mode === 'organization-admin') return
     if (initialSection) setActiveSection(initialSection)
-  }, [initialSection])
+  }, [initialSection, mode])
   // SKPE_SECTION_SCROLL_RESET_V21B
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -7178,7 +7991,7 @@ export function SkpeCockpit({
       case 'evolution-cycles':
         return 'Ciclos de Evolução'
       case 'initiatives':
-        return 'Plano de Ação'
+        return 'Acompanhamento e Evolução Contínua'
       case 'monitoring':
         return 'Monitoramento'
       case 'agenda':
@@ -7342,11 +8155,11 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() => navigateToSection('initiatives')}
-                title="Plano de Ação"
+                title="Monitoramento"
                 hidden={!canViewInitiatives}
               >
                 <InitiativesIcon />
-                Plano de Ação
+                Monitoramento
               </button>
 
 
@@ -7358,7 +8171,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('administration')
+                  navigateToSection('administration')
                 }
                 title="Administração do SK-PE"
                hidden={!canOpenAdministration}>
@@ -7376,7 +8189,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('organization')
+                  navigateToSection('organization')
                 }
                 title="Cadastro institucional"
               >
@@ -7393,7 +8206,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('organizational-areas')
+                  navigateToSection('organizational-areas')
                 }
                 title="Estrutura organizacional"
               >
@@ -7410,7 +8223,7 @@ export function SkpeCockpit({
                     : ''
                 }
                 onClick={() =>
-                  setActiveSection('administration')
+                  navigateToSection('administration')
                 }
                 title="Usuários"
                 hidden={!canOpenAdministration}
@@ -7635,7 +8448,7 @@ export function SkpeCockpit({
                   )}
                 </div>
                 <div>
-                  <strong>{userDisplayName || userEmail}</strong>
+                  {(userDisplayName || userEmail || '').trim().toUpperCase() !== (userDisplayName || userEmail || 'U').trim().slice(0, 2).toUpperCase() ? <strong>{userDisplayName || userEmail}</strong> : null}
                   <small className="skpe-cockpit-role-badge">
                     {userRoleName}
                   </small>
@@ -7742,23 +8555,22 @@ export function SkpeCockpit({
           </div>
         </header>
 
-        {mode === 'organization-admin' &&
-          ['administration', 'governance-roles'].includes(activeSection) && (
+        {['administration', 'governance-roles'].includes(activeSection) && (
             <nav
-              className="skpe-organization-admin-subnav"
+              className="skpe-organization-admin-subnav skpe-standard-tabs"
               aria-label="Gestão de usuários"
             >
               <button
                 type="button"
                 className={activeSection === 'administration' ? 'active' : ''}
-                onClick={() => setActiveSection('administration')}
+                onClick={() => navigateToSection('administration')}
               >
                 Usuários e acessos
               </button>
               <button
                 type="button"
                 className={activeSection === 'governance-roles' ? 'active' : ''}
-                onClick={() => setActiveSection('governance-roles')}
+                onClick={() => navigateToSection('governance-roles')}
               >
                 Papéis e responsabilidades
               </button>
@@ -7769,27 +8581,27 @@ export function SkpeCockpit({
           ['organizational-areas', 'organization-hierarchy', 'domains']
             .includes(activeSection) && (
             <nav
-              className="skpe-organization-admin-subnav"
+              className="skpe-organization-admin-subnav skpe-standard-tabs"
               aria-label="Estrutura organizacional"
             >
               <button
                 type="button"
                 className={activeSection === 'organizational-areas' ? 'active' : ''}
-                onClick={() => setActiveSection('organizational-areas')}
+                onClick={() => navigateToSection('organizational-areas')}
               >
                 Áreas e estrutura
               </button>
               <button
                 type="button"
                 className={activeSection === 'organization-hierarchy' ? 'active' : ''}
-                onClick={() => setActiveSection('organization-hierarchy')}
+                onClick={() => navigateToSection('organization-hierarchy')}
               >
                 Hierarquia organizacional
               </button>
               <button
                 type="button"
                 className={activeSection === 'domains' ? 'active' : ''}
-                onClick={() => setActiveSection('domains')}
+                onClick={() => navigateToSection('domains')}
               >
                 Tabelas de domínio
               </button>
@@ -8013,6 +8825,9 @@ export function SkpeCockpit({
             }
             canManageMemberships={
               canManageMemberships
+            }
+            canManageUserAvatar={
+              isPlatformSuperAdmin || isOrganizationAdmin
             }
             canManagePortability={
               mode === 'module' && canManageGovernance

@@ -337,3 +337,370 @@ button.sparks-metric-card {
   opacity: 1;
   transform: translateY(0);
 }
+/* SPARKS STATUS TABS V1.2 */
+.sparks-workspace-tabs__tab {
+  --sparks-tab-status-color: #7b8580;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sparks-workspace-tabs__label {
+  color: var(--sparks-tab-status-color);
+  transition: color 140ms ease;
+}
+
+.sparks-workspace-tabs__status-dot {
+  width: 0.48rem;
+  height: 0.48rem;
+  flex: 0 0 0.48rem;
+  border-radius: 999px;
+  background: var(--sparks-tab-status-color);
+}
+
+.sparks-workspace-tabs__tab--status-not_started {
+  --sparks-tab-status-color: #7b8580;
+}
+
+.sparks-workspace-tabs__tab--status-in_progress {
+  --sparks-tab-status-color: #b86b00;
+}
+
+.sparks-workspace-tabs__tab--status-completed {
+  --sparks-tab-status-color: #2f7a55;
+}
+
+.sparks-workspace-tabs__tab--status-blocked {
+  --sparks-tab-status-color: #a8453a;
+}
+
+/* Active selection is separate from methodological status. */
+.sparks-workspace-tabs__tab--active {
+  border-color: var(--organization-primary, var(--sparks-accent));
+  box-shadow:
+    inset 0 -3px 0 var(--organization-accent, var(--sparks-accent)),
+    0 2px 8px rgba(25, 44, 37, 0.08);
+}
+
+.sparks-workspace-tabs__tab:focus-visible {
+  outline-color: var(--organization-accent, var(--sparks-accent));
+}
+
+/* SPARKS CANONICAL ANALYTICAL UX V1
+ * Aplicável a cards de medidas/indicadores e barras de filtros.
+ * Rótulo acima à esquerda; medida abaixo centralizada.
+ * Filtros são apoio e não competem com o conteúdo analítico.
+ */
+.sparks-metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sparks-metric-card__label {
+  width: 100%;
+  text-align: left;
+}
+
+.sparks-metric-card__value {
+  width: 100%;
+  text-align: center;
+}
+
+.sparks-metric-card__progress {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+.sparks-filter-bar {
+  padding: 0.55rem 0.75rem;
+  gap: 0.6rem;
+  border-color: color-mix(in srgb, var(--border-color, #dfe3e8) 78%, transparent);
+  background: color-mix(in srgb, var(--surface, #ffffff) 92%, transparent);
+}
+
+.sparks-filter-bar input,
+.sparks-filter-bar select,
+.sparks-filter-bar button {
+  min-height: 2.35rem;
+}
+
+/* SPARKS CANONICAL METRIC TYPOGRAPHY V1
+ * Rótulos de medidas são informativos, não títulos.
+ */
+.sparks-metric-card__label {
+  font-weight: 400;
+}
+
+/* SPARKS CANONICAL METRIC TYPOGRAPHY V2 */
+.sparks-metric-card__label,
+.skpe-monitoring-kpi-card > span:first-child,
+.skpe-strategic-diagnosis-overview > article > small:first-child,
+.skpe-strategic-diagnosis-meta > article > small:first-child,
+.skpe-executive-overview-metrics > article > span:first-child {
+  font-weight: 400 !important;
+}
+
+/* SPARKS SEMANTIC COLOR FOUNDATION V1
+ * Cor tem função:
+ * - texto/rótulo: neutro
+ * - acento: hierarquia, seleção e identidade
+ * - status: somente significado operacional/metodológico
+ */
+:root {
+  --sparks-role-text-primary: var(--skpe-text, #1f312a);
+  --sparks-role-text-muted: var(--skpe-muted, #66756f);
+  --sparks-role-metric-label: color-mix(
+    in srgb,
+    var(--organization-primary, #002c2f) 42%,
+    var(--sparks-role-text-primary)
+  );
+  --sparks-role-accent: var(
+    --organization-accent,
+    var(--skpe-accent, #176b53)
+  );
+  --sparks-role-success: #2f7a55;
+  --sparks-role-warning: #b86b00;
+  --sparks-role-danger: #a8453a;
+  --sparks-role-info: #356e8d;
+  --sparks-role-neutral: #7b8580;
+}
+
+/* Labels de dados nunca usam acento por decoração. */
+.sparks-metric-card__label,
+.sparks-data-label {
+  color: var(--sparks-role-metric-label) !important;
+  font-weight: 400 !important;
+}
+
+/* Valores não herdam cor semântica automaticamente. */
+.sparks-metric-card__value,
+.sparks-data-value {
+  color: var(--sparks-role-text-primary);
+}
+
+/* Marcadores editoriais/hierárquicos podem usar o acento. */
+.sparks-section-eyebrow,
+.sparks-section-kicker {
+  color: var(--sparks-role-accent);
+}
+
+/* Títulos estruturais permanecem texto principal. */
+.sparks-frame-title,
+.sparks-section-title {
+  color: var(--sparks-role-text-primary);
+}
+
+/* Status explícitos são a única origem de cor de estado. */
+.sparks-status--completed,
+.sparks-status--approved,
+.sparks-status--on-track {
+  color: var(--sparks-role-success);
+}
+
+.sparks-status--in-progress,
+.sparks-status--attention {
+  color: var(--sparks-role-warning);
+}
+
+.sparks-status--blocked,
+.sparks-status--critical,
+.sparks-status--rejected {
+  color: var(--sparks-role-danger);
+}
+
+.sparks-status--ahead {
+  color: var(--sparks-role-info);
+}
+
+.sparks-status--not-started,
+.sparks-status--neutral {
+  color: var(--sparks-role-neutral);
+}
+
+/* SPARKS STATUS TABS LABEL COLOR NO DOT V2
+ * PadrÃ£o transversal:
+ * - o prÃ³prio rÃ³tulo comunica o status pela cor semÃ¢ntica;
+ * - nÃ£o hÃ¡ cÃ­rculo redundante;
+ * - seleÃ§Ã£o/aba ativa continua independente do status.
+ */
+.sparks-workspace-tabs__status-dot {
+  display: none !important;
+}
+
+.sparks-workspace-tabs__tab--status-not_started {
+  color: #7b8580;
+}
+
+.sparks-workspace-tabs__tab--status-in_progress {
+  color: #b86b00;
+}
+
+.sparks-workspace-tabs__tab--status-completed {
+  color: #2f7a55;
+}
+
+.sparks-workspace-tabs__tab--status-blocked {
+  color: #a8453a;
+}
+
+/* A seleÃ§Ã£o Ã© indicada por superfÃ­cie/borda/underline, nÃ£o por outra cor de status. */
+.sparks-workspace-tabs__tab--active {
+  border-color: var(--organization-primary, var(--sparks-accent));
+  box-shadow:
+    inset 0 -3px 0 var(--organization-accent, var(--sparks-accent)),
+    0 2px 8px rgba(25, 44, 37, 0.08);
+}
+/* EVD-05 CANONICAL UNDERLINE WORKSPACE TABS
+ * Shared visual contract: same horizontal baseline + active underline used by Journey views.
+ * Methodological status classes may still affect non-active text, but selection is expressed by underline.
+ */
+.sparks-workspace-tabs {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1.35rem;
+  margin: 1rem 0;
+  padding: 0;
+  overflow-x: auto;
+  border: 0;
+  border-bottom: 1px solid var(--sparks-border, #dce5e1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sparks-workspace-tabs .sparks-workspace-tabs__tab {
+  position: relative;
+  min-height: 2.75rem;
+  flex: 0 0 auto;
+  padding: 0.25rem 0 0.7rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.sparks-workspace-tabs .sparks-workspace-tabs__tab:hover:not(:disabled),
+.sparks-workspace-tabs .sparks-workspace-tabs__tab:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.sparks-workspace-tabs .sparks-workspace-tabs__tab--active {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.sparks-workspace-tabs .sparks-workspace-tabs__tab--active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: var(--organization-accent, var(--sparks-accent, #1f8c69));
+}
+
+@media (max-width: 720px) {
+  .sparks-workspace-tabs {
+    gap: 1rem;
+  }
+
+  .sparks-workspace-tabs .sparks-workspace-tabs__tab {
+    flex: 0 0 auto;
+  }
+}
+
+/* Smart Grid SPARKs - directional navigator V46-A13.3 */
+[data-sparks-grid-shell] {
+  position: relative;
+}
+
+.sparks-grid-navigator {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 12;
+  width: 82px;
+  height: 82px;
+  display: grid;
+  grid-template-columns: 26px 26px 26px;
+  grid-template-rows: 26px 26px 26px;
+  align-items: center;
+  justify-items: center;
+  padding: 2px;
+  border: 1px solid rgba(207, 222, 216, 0.94);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 7px 20px rgba(25, 44, 37, 0.12);
+  backdrop-filter: blur(6px);
+}
+
+.sparks-grid-navigator__button {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--sparks-accent, #176b53);
+  cursor: pointer;
+}
+
+.sparks-grid-navigator__button:hover:not(:disabled),
+.sparks-grid-navigator__button:focus-visible:not(:disabled) {
+  background: var(--sparks-accent-soft, #eef7f3);
+  outline: none;
+}
+
+.sparks-grid-navigator__button:disabled {
+  color: #aebbb6;
+  cursor: default;
+  opacity: 0.42;
+}
+
+.sparks-grid-navigator__button--up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.sparks-grid-navigator__button--left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.sparks-grid-navigator__center {
+  grid-column: 2;
+  grid-row: 2;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #c8d5d0;
+}
+
+.sparks-grid-navigator__button--right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.sparks-grid-navigator__button--down {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+@media (max-width: 720px) {
+  .sparks-grid-navigator {
+    right: 0.45rem;
+    bottom: 0.45rem;
+  }
+}

@@ -1,0 +1,280 @@
+.skpe-bsc-map {
+  display: grid;
+  gap: 1rem;
+}
+
+.skpe-bsc-map-header {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.4fr);
+  gap: 1rem 1.5rem;
+  align-items: end;
+}
+
+.skpe-bsc-map-header h3,
+.skpe-bsc-map-header p {
+  margin: 0;
+}
+
+.skpe-bsc-map-summary,
+.skpe-bsc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.skpe-bsc-map-summary span {
+  border: 1px solid #d7e0dc;
+  border-radius: 999px;
+  padding: 0.42rem 0.72rem;
+  background: #fff;
+}
+
+.skpe-bsc-toolbar button {
+  border: 1px solid #cbd8d2;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.82rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.skpe-bsc-toolbar button:hover,
+.skpe-bsc-toolbar button.is-active {
+  border-color: #24765e;
+  background: #edf7f3;
+}
+
+.skpe-bsc-adjust-note,
+.skpe-bsc-map-note,
+.skpe-bsc-map-empty-relations {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 0.8rem;
+  background: #f5f8f6;
+}
+
+.skpe-bsc-adjust-note {
+  border: 1px dashed #74a998;
+}
+
+.skpe-bsc-map-canvas {
+  height: min(760px, 74vh);
+  min-height: 600px;
+  overflow: hidden;
+  border: 1px solid #d8e2de;
+  border-radius: 1rem;
+  background: #fbfcfb;
+}
+
+.skpe-bsc-lane {
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #cbd8d2;
+  border-radius: 1rem;
+  background: rgba(246, 250, 248, 0.98);
+  box-shadow: 0 4px 14px rgba(34, 68, 55, 0.04);
+}
+
+.skpe-bsc-lane-label {
+  width: 256px;
+  height: 100%;
+  display: grid;
+  align-content: center;
+  gap: 0.45rem;
+  padding: 1.15rem 1.2rem;
+  border-right: 1px solid #d8e2de;
+}
+
+.skpe-bsc-lane-label small {
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.skpe-bsc-lane-label strong {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.skpe-bsc-lane-label p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  opacity: 0.74;
+}
+
+.skpe-bsc-theme-group {
+  height: 100%;
+  overflow: hidden;
+  border: 2px dashed currentColor;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.skpe-bsc-theme-group > header {
+  position: absolute;
+  top: 0.62rem;
+  left: 0.9rem;
+  right: 0.9rem;
+  display: flex;
+  gap: 0.48rem;
+  align-items: baseline;
+}
+
+.skpe-bsc-theme-group > header span,
+.skpe-bsc-theme-group > header strong {
+  font-size: 0.82rem;
+}
+
+.skpe-bsc-theme-group > header small {
+  margin-left: auto;
+  font-size: 0.72rem;
+  opacity: 0.72;
+}
+
+.skpe-bsc-theme-0 {
+  color: #0d6b58;
+  border-color: #4da694;
+  background: rgba(77, 166, 148, 0.07);
+}
+
+.skpe-bsc-theme-1 {
+  color: #4f659b;
+  border-color: #7e91bd;
+  background: rgba(126, 145, 189, 0.07);
+}
+
+.skpe-bsc-theme-2 {
+  color: #8b5f28;
+  border-color: #c39a64;
+  background: rgba(195, 154, 100, 0.08);
+}
+
+.skpe-bsc-theme-3 {
+  color: #77507f;
+  border-color: #a882ae;
+  background: rgba(168, 130, 174, 0.08);
+}
+
+.skpe-bsc-objective {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.95rem 1rem;
+  overflow: hidden;
+  border: 1px solid #bfcfc8;
+  border-radius: 0.85rem;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(30, 64, 50, 0.08);
+}
+
+.skpe-bsc-objective small {
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.skpe-bsc-objective strong {
+  align-self: center;
+  font-size: 0.94rem;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+}
+
+.skpe-bsc-objective footer {
+  font-size: 0.72rem;
+  font-weight: 760;
+  opacity: 0.62;
+}
+
+.skpe-bsc-map-note {
+  font-size: 0.82rem;
+  opacity: 0.78;
+}
+
+.skpe-bsc-state {
+  padding: 1rem;
+  border: 1px dashed #ccd8d3;
+  border-radius: 0.9rem;
+}
+
+.skpe-bsc-state h3,
+.skpe-bsc-state p {
+  margin: 0;
+}
+
+.skpe-bsc-state p {
+  margin-top: 0.45rem;
+}
+
+.skpe-bsc-state-error {
+  border-color: #cc8585;
+}
+
+.skpe-theme-dark .skpe-bsc-map-summary span,
+.skpe-theme-dark .skpe-bsc-toolbar button,
+.skpe-theme-dark .skpe-bsc-objective {
+  background: #17251f;
+  border-color: #3b5148;
+}
+
+.skpe-theme-dark .skpe-bsc-lane {
+  background: rgba(26, 39, 33, 0.97);
+  border-color: #395048;
+}
+
+.skpe-theme-dark .skpe-bsc-map-canvas {
+  background: #101b16;
+  border-color: #33483f;
+}
+
+@media (max-width: 900px) {
+  .skpe-bsc-map-header {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-bsc-map-canvas {
+    min-height: 540px;
+  }
+}
+.skpe-bsc-edge-suggested .react-flow__edge-path{stroke-dasharray:8 6;stroke-width:1.8;opacity:.78}
+.skpe-bsc-edge-suggested .react-flow__edge-interaction{stroke-width:14}
+/* SK-PE MAP 06 MACRO RELATIONS */
+/* SK-PE MAP 06 RELATION REFINEMENT */
+
+/* SK-PE MAP ACTION TOOLBAR V1
+ * Estes controles são ações do mapa, não navegação.
+ * Mantém semântica de botões e apresenta visualmente como grupo compacto.
+ */
+.skpe-bsc-toolbar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.25rem;
+  border: 1px solid var(--skpe-border, #dce7e3);
+  border-radius: 0.8rem;
+  background: var(--skpe-surface, #fff);
+}
+
+.skpe-bsc-toolbar > button {
+  min-height: 2.35rem;
+  padding: 0.48rem 0.72rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+.skpe-bsc-toolbar > button:hover {
+  background: var(--skpe-soft, #eef6f2);
+}
+
+.skpe-bsc-toolbar > button.is-active {
+  background: var(--skpe-soft, #eef6f2);
+  box-shadow: inset 0 -2px 0 var(--organization-accent, var(--skpe-accent, #176b53));
+}

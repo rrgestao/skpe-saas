@@ -1,0 +1,179 @@
+.skpe-okr-decomposition{display:flex;flex-direction:column;gap:18px}
+.skpe-okr-decomposition-state{padding:24px;border:1px solid var(--skpe-border,#dbe5df);border-radius:18px;background:#fff}
+.skpe-okr-decomposition-state.is-error{border-color:#e5b3b3}
+.skpe-okr-decomposition-header{display:flex;justify-content:space-between;gap:28px;align-items:flex-start;padding:22px 24px;border:1px solid rgba(24,90,70,.12);border-radius:20px;background:linear-gradient(135deg,rgba(28,116,88,.07),rgba(255,255,255,.96))}
+.skpe-okr-decomposition-header>div{min-width:0}
+.skpe-okr-decomposition-header small{display:block;margin-bottom:6px;font-weight:700;color:#246f58;text-transform:uppercase;letter-spacing:.04em}
+.skpe-okr-decomposition-header h3{margin:0;font-size:1.35rem;color:#163f34}
+.skpe-okr-decomposition-header p{max-width:620px;margin:0;line-height:1.55;color:#52645e}
+.skpe-okr-decomposition-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.skpe-okr-decomposition-summary article{display:flex;flex-direction:column;gap:3px;padding:14px 16px;border:1px solid rgba(24,90,70,.12);border-radius:15px;background:#fff}
+.skpe-okr-decomposition-summary strong{font-size:1.35rem;color:#1f684f}
+.skpe-okr-decomposition-summary span{font-size:.86rem;color:#60716b}
+.skpe-okr-decomposition-list{display:flex;flex-direction:column;gap:16px}
+.skpe-okr-objective-card{overflow:hidden;border:1px solid rgba(24,90,70,.15);border-radius:20px;background:#fff;box-shadow:0 7px 22px rgba(27,67,54,.05)}
+.skpe-okr-objective-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:18px 20px;background:rgba(32,105,80,.055);border-bottom:1px solid rgba(24,90,70,.11)}
+.skpe-okr-objective-header small,.skpe-okr-card-header small,.skpe-okr-kr-card small,.skpe-okr-indicator-card small{display:block;font-weight:800;color:#257257;letter-spacing:.02em}
+.skpe-okr-objective-header h4{margin:4px 0 0;font-size:1.08rem;color:#213f36}
+.skpe-okr-objective-header>span{white-space:nowrap;padding:7px 10px;border-radius:999px;background:#fff;border:1px solid rgba(24,90,70,.12);font-size:.82rem;font-weight:700;color:#49635b}
+.skpe-okr-stack{display:flex;flex-direction:column;gap:14px;padding:16px}
+.skpe-okr-card{border:1px solid rgba(39,103,83,.15);border-radius:16px;background:#fbfdfc}
+.skpe-okr-card-header{display:flex;justify-content:space-between;gap:16px;padding:16px 18px}
+.skpe-okr-card-header strong{display:block;margin-top:4px;color:#203f35}
+.skpe-okr-card-header p{margin:7px 0 0;color:#5b6b66;line-height:1.45}
+.skpe-okr-status-stack{display:flex;flex-direction:column;align-items:flex-end;gap:7px;font-weight:800;color:#1f684f}
+.skpe-okr-chip{padding:5px 9px;border-radius:999px;background:rgba(36,111,88,.09);font-size:.75rem;text-transform:capitalize}
+.skpe-okr-link-note{display:flex;gap:14px;flex-wrap:wrap;padding:9px 18px;border-top:1px solid rgba(24,90,70,.08);border-bottom:1px solid rgba(24,90,70,.08);font-size:.8rem;color:#60716b}
+.skpe-okr-kr-list{display:flex;flex-direction:column;gap:12px;padding:14px 16px}
+.skpe-okr-kr-card{padding:15px;border:1px solid rgba(24,90,70,.12);border-radius:14px;background:#fff}
+.skpe-okr-kr-card>header,.skpe-okr-indicator-card>header{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.skpe-okr-kr-card>p{margin:8px 0;color:#5e6f69;line-height:1.45}
+.skpe-okr-values{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.skpe-okr-values span,.skpe-okr-indicator-meta span{display:flex;flex-direction:column;gap:4px;padding:9px 10px;border-radius:10px;background:#f5f8f6;font-size:.82rem;color:#52635d}
+.skpe-okr-values b,.skpe-okr-indicator-meta b{font-size:.72rem;color:#274f42;text-transform:uppercase;letter-spacing:.03em}
+.skpe-okr-indicator-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.skpe-okr-indicator-card{padding:12px 13px;border-radius:12px;border:1px dashed rgba(34,99,78,.22);background:#fcfefd}
+.skpe-okr-indicator-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
+.skpe-okr-monitoring-strip{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:.78rem;color:#5f716a}
+.skpe-okr-initiative-strip{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-top:1px solid rgba(24,90,70,.09);font-size:.8rem;color:#52645e}
+.skpe-okr-initiative-strip strong{color:#274f42}
+.skpe-okr-initiative-strip span{padding:5px 8px;border-radius:8px;background:#f2f6f4}
+.skpe-okr-empty{margin:16px;padding:16px;border:1px dashed rgba(57,106,91,.22);border-radius:13px;background:#fbfcfb;color:#5b6e67}
+.skpe-okr-empty.compact{margin:0}
+.skpe-okr-empty p{margin:5px 0 0}
+.skpe-okr-muted{margin:0;color:#6b7a75;font-size:.84rem}
+.skpe-okr-objective-footer{display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid rgba(24,90,70,.09);background:#fbfcfb}
+.skpe-okr-objective-footer span{font-size:.78rem;color:#5f716a}
+.skpe-okr-unlinked,.skpe-okr-method-note{padding:16px 18px;border-radius:15px;border:1px solid rgba(24,90,70,.12);background:#fff}
+.skpe-okr-unlinked h4{margin:0 0 8px;color:#274f42}
+.skpe-okr-unlinked p,.skpe-okr-method-note p{margin:6px 0;color:#5d6e68;line-height:1.45}
+.skpe-okr-method-note{background:rgba(36,111,88,.045)}
+.skpe-okr-method-note strong{color:#244e41}
+@media(max-width:1200px){.skpe-okr-decomposition-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.skpe-okr-values,.skpe-okr-indicator-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.skpe-okr-decomposition-header{flex-direction:column}}
+@media(max-width:720px){.skpe-okr-decomposition-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.skpe-okr-values,.skpe-okr-indicator-meta{grid-template-columns:1fr}.skpe-okr-objective-header,.skpe-okr-card-header{flex-direction:column}.skpe-okr-status-stack{align-items:flex-start}}
+
+/* SK-PE RULE: METRIC LABEL LEFT / VALUE CENTER - START */
+.skpe-okr-values > span,
+.skpe-okr-indicator-meta > span {
+  text-align: center;
+}
+
+/* The label remains anchored at the left edge of the card. */
+.skpe-okr-values > span > b,
+.skpe-okr-indicator-meta > span > b {
+  display: block;
+  width: 100%;
+  text-align: left !important;
+}
+
+/* The value is the text node after <b>; parent centering keeps it centered. */
+.skpe-okr-values > span,
+.skpe-okr-indicator-meta > span {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* Preserve card width and avoid inherited left alignment. */
+.skpe-okr-values > span:not(:has(> b)),
+.skpe-okr-indicator-meta > span:not(:has(> b)) {
+  text-align: center;
+}
+/* SK-PE RULE: METRIC LABEL LEFT / VALUE CENTER - END */
+
+/* SK-PE CANONICAL METRIC CARD RULE V2
+ * Rótulo acima e alinhado à esquerda.
+ * Medida abaixo e centralizada.
+ */
+.skpe-okr-decomposition-summary article {
+  align-items: stretch;
+}
+
+.skpe-okr-decomposition-summary article > span:first-child {
+  order: 1;
+  width: 100%;
+  text-align: left !important;
+}
+
+.skpe-okr-decomposition-summary article > strong {
+  order: 2;
+  width: 100%;
+  text-align: center !important;
+}
+
+/* SK-PE OKR SUMMARY SEMANTIC COLOR V1 */
+.skpe-okr-decomposition-summary article > span:first-child {
+  color: var(--sparks-role-text-muted) !important;
+  font-weight: 400 !important;
+}
+
+.skpe-okr-decomposition-summary article > strong {
+  color: var(--sparks-role-text-primary);
+}
+
+/* UX-OKR-DISCIPLINE-02.2 */
+.skpe-okr-methodology-guide {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--sparks-role-border-subtle);
+  border-radius: 1rem;
+  background: var(--sparks-role-surface-soft);
+}
+
+.skpe-okr-methodology-guide > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.65rem;
+}
+
+.skpe-okr-methodology-guide span,
+.skpe-okr-perspective,
+.skpe-okr-kr-quality small {
+  color: var(--sparks-role-text-muted);
+}
+
+.skpe-okr-perspective {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+}
+
+.skpe-okr-chip.is-methodology {
+  white-space: nowrap;
+}
+
+.skpe-okr-kr-quality {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.75rem 0;
+}
+
+.skpe-okr-kr-quality > span {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.skpe-okr-kr-quality > span.is-ready {
+  color: var(--sparks-role-status-success-text);
+}
+
+.skpe-okr-kr-quality > span.is-pre-kr {
+  color: var(--sparks-role-status-warning-text);
+}
+
+.skpe-okr-values {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.skpe-okr-values span {
+  min-width: 0;
+}
+
+.skpe-okr-values b {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--sparks-role-text-muted);
+  font-weight: 400;
+}

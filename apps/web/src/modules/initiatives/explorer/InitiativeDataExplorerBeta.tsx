@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Grid, Willow } from '@svar-ui/react-grid'
+import { SparksGridNavigator } from '../../../components/design-system/SparksGridNavigator'
+import { Filter, X } from 'lucide-react'
+import { Grid, Willow, type IColumnConfig } from '@svar-ui/react-grid'
 
 import type { InitiativePortfolioRow } from '../contracts/initiativePortfolio'
 
@@ -12,12 +14,19 @@ type InitiativeDataExplorerBetaProps = {
 }
 
 type GroupMode =
+  | 'area'
+  | 'area_objective'
+  | 'area_theme'
+  | 'area_theme_objective'
   | 'strategic_theme_objective'
   | 'strategic_theme'
   | 'strategic_objective'
+  | 'objective_area'
+  | 'responsible_objective'
+  | 'status_area'
+  | 'priority_area'
   | 'initiative_hierarchy'
   | 'area_strategic'
-  | 'area'
   | 'area_responsible_strategic'
   | 'responsible_strategic'
 
@@ -327,6 +336,48 @@ function buildRows(
     classLabel: 'Objetivo Estratégico',
   }
 
+  const status = {
+    key: 'status',
+    label: (initiative: InitiativePortfolioRow) =>
+      statusLabel(initiative.initiative_status),
+    classLabel: 'Situação',
+  }
+
+  const priority = {
+    key: 'priority',
+    label: (initiative: InitiativePortfolioRow) =>
+      priorityLabel(initiative.priority),
+    classLabel: 'Prioridade',
+  }
+
+  if (mode === 'area_objective') {
+    return groupRows(initiatives, [area, objective])
+  }
+
+  if (mode === 'area_theme') {
+    return groupRows(initiatives, [area, theme])
+  }
+
+  if (mode === 'area_theme_objective') {
+    return groupRows(initiatives, [area, theme, objective])
+  }
+
+  if (mode === 'objective_area') {
+    return groupRows(initiatives, [objective, area])
+  }
+
+  if (mode === 'responsible_objective') {
+    return groupRows(initiatives, [responsible, objective])
+  }
+
+  if (mode === 'status_area') {
+    return groupRows(initiatives, [status, area])
+  }
+
+  if (mode === 'priority_area') {
+    return groupRows(initiatives, [priority, area])
+  }
+
   if (mode === 'strategic_theme_objective') {
     return groupRows(initiatives, [theme, objective])
   }
@@ -354,112 +405,78 @@ function buildRows(
   return groupRows(initiatives, [responsible, strategic])
 }
 
-function textHeader(text: string, placeholder: string) {
-  return {
-    text,
-    filter: {
-      type: 'text' as const,
-      config: {
-        placeholder,
-      },
-    },
-  }
-}
+type ColumnFilterId =
+  | 'classLabel'
+  | 'name'
+  | 'strategicTheme'
+  | 'strategicObjective'
+  | 'progressLabel'
+  | 'statusLabel'
+  | 'area'
+  | 'responsible'
+  | 'strategic'
+  | 'priority'
+  | 'criticality'
+  | 'startDate'
+  | 'targetEndDate'
+  | 'health'
+  | 'risk'
 
-const columns = [
-  {
-    id: 'classLabel',
-    header: textHeader('Tipo', 'Filtrar tipo'),
-    width: 145,
-    sort: true,
-  },
-  {
-    id: 'name',
-    header: textHeader('Iniciativa / agrupamento', 'Filtrar iniciativa'),
-    width: 330,
-    flexgrow: 2,
-    treetoggle: true,
-    sort: true,
-  },
-  {
-    id: 'strategicTheme',
-    header: textHeader('Tema Estratégico', 'Filtrar tema'),
-    width: 210,
-    sort: true,
-  },
-  {
-    id: 'strategicObjective',
-    header: textHeader('Objetivo Estratégico', 'Filtrar objetivo'),
-    width: 240,
-    sort: true,
-  },
-  {
-    id: 'progressLabel',
-    header: textHeader('Progresso', 'Filtrar'),
-    width: 105,
-    sort: true,
-  },
-  {
-    id: 'statusLabel',
-    header: textHeader('Situação', 'Filtrar situação'),
-    width: 140,
-    sort: true,
-  },
-  {
-    id: 'area',
-    header: textHeader('Área', 'Filtrar área'),
-    width: 170,
-    sort: true,
-  },
-  {
-    id: 'responsible',
-    header: textHeader('Responsável', 'Filtrar responsável'),
-    width: 180,
-    sort: true,
-  },
-  {
-    id: 'strategic',
-    header: textHeader('Estratégia', 'Filtrar'),
-    width: 135,
-    sort: true,
-  },
-  {
-    id: 'priority',
-    header: textHeader('Prioridade', 'Filtrar'),
-    width: 115,
-    sort: true,
-  },
-  {
-    id: 'criticality',
-    header: textHeader('Criticidade', 'Filtrar'),
-    width: 115,
-    sort: true,
-  },
-  {
-    id: 'startDate',
-    header: textHeader('Início', 'Filtrar'),
-    width: 110,
-    sort: true,
-  },
-  {
-    id: 'targetEndDate',
-    header: textHeader('Término', 'Filtrar'),
-    width: 110,
-    sort: true,
-  },
-  {
-    id: 'health',
-    header: textHeader('Saúde', 'Filtrar'),
-    width: 120,
-    sort: true,
-  },
-  {
-    id: 'risk',
-    header: textHeader('Risco', 'Filtrar'),
-    width: 110,
-    sort: true,
-  },
+const columnFilterIds: ColumnFilterId[] = [
+  'classLabel',
+  'name',
+  'strategicTheme',
+  'strategicObjective',
+  'progressLabel',
+  'statusLabel',
+  'area',
+  'responsible',
+  'strategic',
+  'priority',
+  'criticality',
+  'startDate',
+  'targetEndDate',
+  'health',
+  'risk',
 ]
+
+function filterExplorerTree(
+  rows: ExplorerRow[],
+  filters: Partial<Record<ColumnFilterId, string>>,
+): ExplorerRow[] {
+  return rows.flatMap((row) => {
+    const filteredChildren = row.data
+      ? filterExplorerTree(row.data, filters)
+      : undefined
+
+    const selfMatches = columnFilterIds.every((id) => {
+      const filterValue = (filters[id] ?? '').trim().toLocaleLowerCase('pt-BR')
+      if (!filterValue) return true
+      return String(row[id] ?? '')
+        .toLocaleLowerCase('pt-BR')
+        .includes(filterValue)
+    })
+
+    const hasMatchingChildren =
+      filteredChildren !== undefined && filteredChildren.length > 0
+
+    if (!selfMatches && !hasMatchingChildren) {
+      return []
+    }
+
+    return [
+      {
+        ...row,
+        ...(row.data
+          ? {
+              data: selfMatches ? row.data : filteredChildren,
+              open: hasMatchingChildren ? true : row.open,
+            }
+          : {}),
+      },
+    ]
+  })
+}
 
 export function InitiativeDataExplorerBeta({
   initiatives,
@@ -468,11 +485,115 @@ export function InitiativeDataExplorerBeta({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [groupMode, setGroupMode] =
     useState<GroupMode>('strategic_theme_objective')
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<ColumnFilterId, string>>>({})
+  const [openColumnFilter, setOpenColumnFilter] = useState<ColumnFilterId | null>(null)
 
   const data = useMemo(
-    () => buildRows(initiatives, groupMode),
-    [groupMode, initiatives],
+    () =>
+      filterExplorerTree(
+        buildRows(initiatives, groupMode),
+        columnFilters,
+      ),
+    [columnFilters, groupMode, initiatives],
   )
+
+  function ExplorerHeaderCell(props: any) {
+    const id = props.column.id as ColumnFilterId
+    const label = props.cell.text as string
+    const value = columnFilters[id] ?? ''
+    const open = openColumnFilter === id
+
+    return (
+      <div className="sparks-data-explorer-header-cell">
+        {open ? (
+          <div
+            className="sparks-data-explorer-header-inline-filter"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input
+              autoFocus
+              value={value}
+              placeholder={label}
+              aria-label={`Filtrar ${label}`}
+              onChange={(event) =>
+                setColumnFilters((current) => ({
+                  ...current,
+                  [id]: event.target.value,
+                }))
+              }
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  setOpenColumnFilter(null)
+                }
+              }}
+            />
+            {value ? (
+              <button
+                type="button"
+                className="sparks-data-explorer-header-filter-clear"
+                aria-label={`Limpar filtro de ${label}`}
+                title={`Limpar filtro de ${label}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setColumnFilters((current) => ({
+                    ...current,
+                    [id]: '',
+                  }))
+                }}
+              >
+                <X aria-hidden="true" size={14} />
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <span className="sparks-data-explorer-header-label">{label}</span>
+        )}
+
+        <button
+          type="button"
+          className={
+            value
+              ? 'sparks-data-explorer-header-filter-button sparks-data-explorer-header-filter-button--active'
+              : 'sparks-data-explorer-header-filter-button'
+          }
+          aria-label={`${open ? 'Fechar' : 'Abrir'} filtro de ${label}`}
+          title={`${open ? 'Fechar' : 'Filtrar'} ${label}`}
+          onClick={(event) => {
+            event.stopPropagation()
+            setOpenColumnFilter((current) => (current === id ? null : id))
+          }}
+        >
+          <Filter aria-hidden="true" size={14} />
+        </button>
+      </div>
+    )
+  }
+
+  function smartHeader(text: string) {
+    return {
+      text,
+      cell: ExplorerHeaderCell,
+      css: 'sparks-data-explorer-header-main',
+    }
+  }
+
+  const columns: IColumnConfig[] = [
+    { id: 'classLabel', header: smartHeader('Tipo'), width: 175, sort: true, resize: true },
+    { id: 'name', header: smartHeader('Iniciativa / agrupamento'), width: 390, flexgrow: 2, treetoggle: true, sort: true, resize: true },
+    { id: 'strategicTheme', header: smartHeader('Tema Estratégico'), width: 250, sort: true, resize: true },
+    { id: 'strategicObjective', header: smartHeader('Objetivo Estratégico'), width: 285, sort: true, resize: true },
+    { id: 'progressLabel', header: smartHeader('Progresso'), width: 120, sort: true, resize: true },
+    { id: 'statusLabel', header: smartHeader('Situação'), width: 150, sort: true, resize: true },
+    { id: 'area', header: smartHeader('Área'), width: 180, sort: true, resize: true },
+    { id: 'responsible', header: smartHeader('Responsável'), width: 190, sort: true, resize: true },
+    { id: 'strategic', header: smartHeader('Estratégia'), width: 135, sort: true, resize: true },
+    { id: 'priority', header: smartHeader('Prioridade'), width: 115, sort: true, resize: true },
+    { id: 'criticality', header: smartHeader('Criticidade'), width: 115, sort: true, resize: true },
+    { id: 'startDate', header: smartHeader('Início'), width: 110, sort: true, resize: true },
+    { id: 'targetEndDate', header: smartHeader('Término'), width: 110, sort: true, resize: true },
+    { id: 'health', header: smartHeader('Saúde'), width: 120, sort: true, resize: true },
+    { id: 'risk', header: smartHeader('Risco'), width: 110, sort: true, resize: true },
+  ]
 
   const selectedInitiative =
     initiatives.find(
@@ -506,8 +627,8 @@ export function InitiativeDataExplorerBeta({
         title="Escolha uma hierarquia, expanda ou recolha os grupos, ordene as colunas e use os filtros nativos de cabeçalho."
       >
         <div>
-          <p>SPARKs Data Explorer · Beta</p>
-          <strong>Exploração hierárquica do Plano de Ação</strong>
+          <p>SPARKs Exploração Hierárquica</p>
+          <strong>Exploração Estratégica do Plano de Ação</strong>
         </div>
 
         <label className="sparks-data-explorer-beta__grouping">
@@ -518,20 +639,41 @@ export function InitiativeDataExplorerBeta({
               setGroupMode(event.target.value as GroupMode)
             }
           >
+            <option value="area">
+              Área → Iniciativa
+            </option>
+            <option value="area_objective">
+              Área → Objetivo Estratégico → Iniciativa
+            </option>
+            <option value="area_theme">
+              Área → Tema Estratégico → Iniciativa
+            </option>
+            <option value="area_theme_objective">
+              Área → Tema Estratégico → Objetivo Estratégico → Iniciativa
+            </option>
             <option value="strategic_theme_objective">
               Tema Estratégico → Objetivo Estratégico → Iniciativa
-            </option>
-            <option value="strategic_theme">
-              Tema Estratégico → Iniciativa
             </option>
             <option value="strategic_objective">
               Objetivo Estratégico → Iniciativa
             </option>
+            <option value="objective_area">
+              Objetivo Estratégico → Área → Iniciativa
+            </option>
+            <option value="strategic_theme">
+              Tema Estratégico → Iniciativa
+            </option>
+            <option value="responsible_objective">
+              Responsável → Objetivo Estratégico → Iniciativa
+            </option>
+            <option value="status_area">
+              Situação → Área → Iniciativa
+            </option>
+            <option value="priority_area">
+              Prioridade → Área → Iniciativa
+            </option>
             <option value="area_strategic">
               Área → Estratégico/Não estratégico → Iniciativa
-            </option>
-            <option value="area">
-              Área → Iniciativa
             </option>
             <option value="area_responsible_strategic">
               Área → Responsável → Estratégico/Não estratégico → Iniciativa
@@ -547,9 +689,9 @@ export function InitiativeDataExplorerBeta({
       </div>
 
       <div
-        className="sparks-data-explorer-beta__grid"
+        className="sparks-data-explorer-beta__grid" data-sparks-grid-shell
         role="region"
-        aria-label="Exploração hierárquica do Plano de Ação"
+        aria-label="Exploração Estratégica do Plano de Ação"
         tabIndex={0}
         title="Clique nos cabeçalhos para ordenar. Use os filtros logo abaixo dos títulos. Ctrl/Cmd+clique permite ordenação por múltiplas colunas."
         onDoubleClick={() => {
@@ -574,7 +716,8 @@ export function InitiativeDataExplorerBeta({
             rowStyle={() => 'sparks-data-explorer-row'}
           />
         </Willow>
-      </div>
+        <SparksGridNavigator />
+</div>
 
       <footer>
         <div>
