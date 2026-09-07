@@ -6,11 +6,11 @@ import type {
   StrategicMapTheme,
 } from '../../contracts/strategic-map.ts'
 
-export const BSC_LANE_HEIGHT = 278
+export const BSC_LANE_HEIGHT = 250
 export const BSC_LANE_GAP = 28
 export const BSC_LABEL_WIDTH = 288
 export const BSC_OBJECTIVE_WIDTH = 372
-export const BSC_OBJECTIVE_HEIGHT = 132
+export const BSC_OBJECTIVE_HEIGHT = 112
 export const BSC_OBJECTIVE_GAP = 28
 export const BSC_THEME_GROUP_PADDING = 30
 export const BSC_THEME_GROUP_HEADER = 48

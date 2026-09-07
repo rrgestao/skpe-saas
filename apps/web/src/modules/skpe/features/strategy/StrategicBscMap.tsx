@@ -41,8 +41,16 @@ import { loadStrategicMap } from './strategicMapLoader.ts'
 
 import './StrategicBscMap.css'
 
+export type StrategicObjectiveSignalTone =
+  | 'green'
+  | 'yellow'
+  | 'red'
+  | 'blue'
+  | 'gray'
+
 type Props = {
   formulationId: string | null
+  objectiveSignals?: Record<string, StrategicObjectiveSignalTone>
 }
 
 type LaneData = {
@@ -59,6 +67,8 @@ type ThemeGroupData = {
 type ObjectiveData = {
   objective: StrategicMapObjective
   theme: StrategicMapTheme
+  signalTone: StrategicObjectiveSignalTone
+  signalLabel: string
 }
 
 type LaneNode = Node<LaneData, 'bscPerspectiveLane'>
@@ -109,7 +119,14 @@ function ObjectiveNode({ data }: NodeProps<ObjectiveNodeType>) {
       <Handle type="source" id="top" position={Position.Top} isConnectable={false} />
       <Handle type="source" id="right" position={Position.Right} isConnectable={false} />
       <Handle type="source" id="left" position={Position.Left} isConnectable={false} />
-      <small>{data.objective.code}</small>
+      <div className="skpe-bsc-objective-heading">
+        <small>{data.objective.code}</small>
+        <span
+          className={`skpe-bsc-objective-signal is-${data.signalTone}`}
+          title={data.signalLabel}
+          aria-label={data.signalLabel}
+        />
+      </div>
       <strong>{data.objective.title}</strong>
       <Handle type="target" id="bottom" position={Position.Bottom} isConnectable={false} />
       <Handle type="target" id="left" position={Position.Left} isConnectable={false} />
@@ -155,7 +172,7 @@ function clearSavedLayout(formulationId: string) {
   }
 }
 
-export function StrategicBscMap({ formulationId }: Props) {
+export function StrategicBscMap({ formulationId, objectiveSignals }: Props) {
   const [payload, setPayload] = useState<StrategicMapPayload | null>(null)
   const [nodes, setNodes] = useState<BscNode[]>([])
   const [loading, setLoading] = useState(false)
@@ -277,7 +294,21 @@ export function StrategicBscMap({ formulationId }: Props) {
         parentId: group.id,
         extent: 'parent',
         position: saved[model.id] ?? defaultPosition,
-        data: { objective: model.objective, theme: model.theme },
+        data: {
+          objective: model.objective,
+          theme: model.theme,
+          signalTone: objectiveSignals?.[model.id] ?? 'gray',
+          signalLabel:
+            objectiveSignals?.[model.id] === 'green'
+              ? 'Desempenho do Objetivo Estratégico: verde'
+              : objectiveSignals?.[model.id] === 'yellow'
+                ? 'Desempenho do Objetivo Estratégico: amarelo'
+                : objectiveSignals?.[model.id] === 'red'
+                  ? 'Desempenho do Objetivo Estratégico: vermelho'
+                  : objectiveSignals?.[model.id] === 'blue'
+                    ? 'Desempenho do Objetivo Estratégico: azul'
+                    : 'Objetivo Estratégico ainda não sensibilizado',
+        },
         draggable: adjustMode,
         selectable: adjustMode,
         connectable: false,
@@ -352,7 +383,7 @@ export function StrategicBscMap({ formulationId }: Props) {
       nodes: [...laneNodes, ...themeNodes, ...objectiveNodes] as BscNode[],
       edges: [...canonicalEdges, ...hypothesisEdges],
     }
-  }, [adjustMode, formulationId, payload, showSuggestedRelations, suggestedRelations])
+  }, [adjustMode, formulationId, objectiveSignals, payload, showSuggestedRelations, suggestedRelations])
 
   useEffect(() => {
     setNodes(baseGraph.nodes)
@@ -424,11 +455,6 @@ export function StrategicBscMap({ formulationId }: Props) {
         </p>
       </header>
 
-      <div className="skpe-bsc-map-summary">
-        <span>{payload.perspectives.length} perspectiva(s)</span>
-        <span>{payload.themes.length} tema(s)</span>
-        <span>{payload.relations.length} relação(ões) validada(s)</span>
-      </div>
 
       <div className="skpe-bsc-toolbar">
         <button
