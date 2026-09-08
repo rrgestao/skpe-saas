@@ -1,3 +1,31 @@
+---
+id: skpe-operational-roadmap
+title: Roadmap operacional do SKPE-SAAS
+domain: products
+type: roadmap
+status: active
+owner: dev
+canonicality: supporting
+canonical: false
+criticality: high
+parent:
+  - sk-pe-master-roadmap
+related:
+  - sk-pe-product-hub
+  - sk-pe-capability-execution-and-traceability
+tags:
+  - sk-pe
+  - skpe-saas
+  - roadmap
+  - dev
+  - execution
+language: pt-BR
+encoding: UTF-8
+semantic_layer: product-operational-execution
+created: 2026-09-07
+updated: 2026-09-07
+---
+
 # Roadmap operacional — SKPE-SAAS
 
 ## Autoridade
