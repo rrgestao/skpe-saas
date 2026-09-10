@@ -9,6 +9,13 @@ import './responsive.css'
 import './responsive-stabilization.css'
 import './components/design-system/platform-shell-hardening.css'
 import './components/design-system/platform-shell-hardening'
+import './components/design-system/adaptive-geometry.css'
+import './components/design-system/transversal-dark-theme.css'
+import './components/design-system/portal-home-grid.css'
+import './components/design-system/portal-hierarchy.css'
+import './components/design-system/visual-canon.css'
+import './components/design-system/portal-tree-grid.css'
+import './components/application-shell/TransversalWorkspace.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

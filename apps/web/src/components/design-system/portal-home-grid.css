@@ -1,0 +1,258 @@
+/*
+ * UI-PORTAL-01
+ * Portal principal + grid organizacional legível.
+ *
+ * Regras:
+ * - a tela principal privilegia seleção e leitura de organizações;
+ * - cabeçalhos não são abreviados para "caber";
+ * - quando não houver largura suficiente, a tabela rola horizontalmente;
+ * - classificadores ficam visualmente centrados;
+ * - toolbar, título, grid e footer compartilham uma mesma malha.
+ */
+
+.platform-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.topbar {
+  min-height: clamp(54px, 6vw, 64px) !important;
+  padding:
+    clamp(0.45rem, 0.8vw, 0.7rem)
+    clamp(0.75rem, 1.5vw, 1.25rem) !important;
+  gap: clamp(0.6rem, 1vw, 1rem) !important;
+}
+
+.brand-area {
+  gap: clamp(0.5rem, 0.8vw, 0.75rem) !important;
+}
+
+.brand-caption {
+  margin-top: 0.08rem !important;
+}
+
+.user-area {
+  gap: clamp(0.35rem, 0.7vw, 0.7rem) !important;
+}
+
+.platform-content {
+  align-self: start;
+  width: calc(100% - (2 * var(--sparks-content-inline, 0.9rem))) !important;
+  margin: 0 auto !important;
+  padding-block:
+    clamp(0.65rem, 1vw, 0.95rem)
+    clamp(1rem, 1.6vw, 1.5rem) !important;
+}
+
+.platform-content > .page-heading {
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: var(--sparks-space-2, 0.55rem) !important;
+}
+
+.platform-content > .page-heading h1 {
+  margin: 0.1rem 0 0 !important;
+  font-size: clamp(1.55rem, 1.2rem + 1.2vw, 2.35rem) !important;
+}
+
+.platform-content > .page-heading .supporting-text {
+  margin-top: 0.32rem !important;
+}
+
+.platform-content > .primary-list-toolbar {
+  min-height: 58px;
+  margin: var(--sparks-space-3, 0.75rem) 0 0 !important;
+  padding:
+    clamp(0.55rem, 0.9vw, 0.75rem)
+    clamp(0.65rem, 1vw, 0.9rem) !important;
+  gap: var(--sparks-space-2, 0.55rem) !important;
+  border-radius: 12px !important;
+}
+
+.primary-list-search {
+  min-width: min(280px, 100%);
+}
+
+.primary-list-search input {
+  min-height: 38px !important;
+  padding-block: 0.5rem !important;
+}
+
+.primary-list-sort,
+.primary-list-view-toggle button {
+  min-height: 38px !important;
+  height: 38px !important;
+}
+
+/* ---------- tabela principal de organizações ---------- */
+
+.platform-content :is(section, div):has(> table) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+
+.platform-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-family-data, Inter, sans-serif);
+}
+
+.platform-content .organization-list-table,
+.platform-content .primary-list-table,
+.platform-content table[aria-label*='organiza'],
+.platform-content table[aria-label*='Organiza'] {
+  min-width: 790px;
+  table-layout: auto;
+}
+
+.platform-content table th,
+.platform-content table td {
+  min-height: 44px;
+  padding:
+    clamp(0.52rem, 0.7vw, 0.7rem)
+    clamp(0.65rem, 0.9vw, 0.9rem);
+  vertical-align: middle;
+  border-bottom: 1px solid #e4e9e7;
+}
+
+.platform-content table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: clamp(0.72rem, 0.68rem + 0.15vw, 0.8rem);
+  font-weight: 800;
+  text-align: left;
+}
+
+.platform-content table td {
+  font-size: clamp(0.72rem, 0.69rem + 0.12vw, 0.8rem);
+  line-height: 1.35;
+}
+
+.platform-content table th:first-child,
+.platform-content table td:first-child {
+  min-width: 170px;
+}
+
+.platform-content table th:nth-child(2),
+.platform-content table td:nth-child(2) {
+  min-width: 150px;
+}
+
+.platform-content table th:nth-child(3),
+.platform-content table td:nth-child(3) {
+  min-width: 170px;
+  text-align: center;
+}
+
+.platform-content table th:nth-child(4),
+.platform-content table td:nth-child(4) {
+  min-width: 140px;
+  text-align: center;
+}
+
+.platform-content table th:nth-child(5),
+.platform-content table td:nth-child(5) {
+  min-width: 125px;
+  text-align: center;
+}
+
+.platform-content table tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.platform-content table tbody tr:hover td {
+  background: rgba(23, 107, 83, 0.035);
+}
+
+.platform-content table tbody tr[role='button'] {
+  cursor: pointer;
+}
+
+.platform-content table tbody tr:focus-visible {
+  outline: 3px solid rgba(23, 107, 83, 0.2);
+  outline-offset: -3px;
+}
+
+/* ---------- container da listagem ---------- */
+
+.platform-content .organization-list-grid,
+.platform-content .organization-grid-view,
+.platform-content .primary-list-grid,
+.platform-content .primary-list-table-wrap,
+.platform-content .organization-table-wrap,
+.platform-content :is(section, div):has(> table) {
+  margin-top: var(--sparks-space-3, 0.75rem) !important;
+  border: 1px solid #dce5e2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+/* ---------- footer ---------- */
+
+.platform-footer,
+footer.platform-footer {
+  min-height: 40px;
+  padding: 0.55rem var(--sparks-content-inline, 0.9rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid #dce5e2;
+  font-size: 0.68rem;
+}
+
+/* ---------- telas médias/estreitas ---------- */
+
+@media (max-width: 760px) {
+  .topbar {
+    min-height: 50px !important;
+  }
+
+  .platform-content {
+    width: calc(100% - 0.8rem) !important;
+  }
+
+  .platform-content > .primary-list-toolbar {
+    min-height: 54px;
+    padding: 0.5rem !important;
+  }
+
+  .primary-list-search {
+    flex: 1 1 100%;
+  }
+
+  .platform-content .organization-list-table,
+  .platform-content .primary-list-table,
+  .platform-content table[aria-label*='organiza'],
+  .platform-content table[aria-label*='Organiza'] {
+    min-width: 760px;
+  }
+}
+
+/* ---------- dark mode ---------- */
+
+:root[data-sparks-theme='dark'] .platform-content .organization-list-grid,
+:root[data-sparks-theme='dark'] .platform-content .organization-grid-view,
+:root[data-sparks-theme='dark'] .platform-content .primary-list-grid,
+:root[data-sparks-theme='dark'] .platform-content .primary-list-table-wrap,
+:root[data-sparks-theme='dark'] .platform-content .organization-table-wrap,
+:root[data-sparks-theme='dark'] .platform-content :is(section, div):has(> table) {
+  background: var(--sparks-dark-surface) !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+:root[data-sparks-theme='dark'] .platform-content table th,
+:root[data-sparks-theme='dark'] .platform-content table td {
+  border-color: var(--sparks-dark-border) !important;
+}
+
+:root[data-sparks-theme='dark'] .platform-content table tbody tr:hover td {
+  background: var(--sparks-dark-surface-2) !important;
+}

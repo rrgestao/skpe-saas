@@ -16,6 +16,11 @@ import {
 import { PlatformAdmin } from './modules/platform-admin/PlatformAdmin'
 import { OrganizationBrandingLogo } from './components/organization-branding/OrganizationBrandingLogo'
 import { UserProfileDialog } from './components/user-profile/UserProfileDialog'
+import {
+  SparksSmartGrid,
+  type SparksSmartGridColumn,
+  type SparksSmartGridRow,
+} from './components/design-system/SparksSmartGrid'
 import { sortOrganizationsHierarchically } from './lib/organizationHierarchy'
 
 import './App.css'
@@ -240,22 +245,6 @@ function EyeOffIcon() {
   )
 }
 
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M20 15.2A8.4 8.4 0 118.8 4a7 7 0 0011.2 11.2z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
 function SettingsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -302,16 +291,6 @@ function CardsViewIcon() {
   )
 }
 
-function RowsViewIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M9 6h11M9 12h11M9 18h11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="5" cy="6" r="1" fill="currentColor" />
-      <circle cx="5" cy="12" r="1" fill="currentColor" />
-      <circle cx="5" cy="18" r="1" fill="currentColor" />
-    </svg>
-  )
-}
 
 function activateWithKeyboard(
   event: KeyboardEvent<HTMLElement>,
@@ -323,24 +302,6 @@ function activateWithKeyboard(
   }
 }
 
-function ArrowRightIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M5 12h14M13 6l6 6-6 6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 function HierarchyIcon() {
   return (
@@ -349,15 +310,6 @@ function HierarchyIcon() {
       <rect x="3" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
       <rect x="15" y="17" width="6" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.7" />
       <path d="M12 7v5M6 17v-3h12v3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-function LogoutIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M4 3.5h9.5v17H4z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-      <path d="M13.5 12H21M18 9l3 3-3 3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.5 12h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -458,6 +410,10 @@ function App() {
       ? 'dark'
       : 'light'
   })
+  useEffect(() => {
+    document.documentElement.dataset.sparksTheme = platformTheme
+    document.documentElement.style.colorScheme = platformTheme
+  }, [platformTheme])
   const [email, setEmail] = useState(() => {
     return (
       localStorage.getItem(
@@ -486,25 +442,141 @@ function App() {
     useState(false)
 
   const [organizationViewMode, setOrganizationViewMode] =
-    useState<'cards' | 'grid' | 'hierarchy'>('cards')
+    useState<'cards' | 'hierarchy'>('cards')
 
   const [organizationSearch, setOrganizationSearch] =
     useState('')
 
-  const [organizationSortDirection, setOrganizationSortDirection] =
-    useState<'asc' | 'desc'>('asc')
+  const [organizationIdentityById, setOrganizationIdentityById] =
 
+    useState<Record<string, {
+
+      legal_name: string | null
+
+      trade_name: string | null
+
+      cnpj: string | null
+
+    }>>({})
+
+
+  const organizationSortDirection = 'asc' as const
   const [
     selectedOrganization,
     setSelectedOrganization,
   ] = useState<Organization | null>(null)
+
+  useEffect(() => {
+
+    let active = true
+
+
+    const loadOrganizationIdentities = async () => {
+
+      const ids = Array.from(
+
+        new Set(
+
+          organizations
+
+            .map((organization) => organization.organization_id)
+
+            .filter(Boolean),
+
+        ),
+
+      )
+
+
+      if (ids.length === 0) {
+
+        setOrganizationIdentityById({})
+
+        return
+
+      }
+
+
+      const { data, error } = await supabase
+
+        .from('organizations')
+
+        .select('id, legal_name, trade_name, cnpj')
+
+        .in('id', ids)
+
+
+      if (!active) return
+
+
+      if (error) {
+
+        console.error(
+
+          'Erro ao carregar identidade das organizações',
+
+          error,
+
+        )
+
+        return
+
+      }
+
+
+      setOrganizationIdentityById(
+
+        Object.fromEntries(
+
+          (data ?? []).map((row) => [
+
+            row.id,
+
+            {
+
+              legal_name: row.legal_name,
+
+              trade_name: row.trade_name,
+
+              cnpj: row.cnpj,
+
+            },
+
+          ]),
+
+        ),
+
+      )
+
+    }
+
+
+    void loadOrganizationIdentities()
+
+
+    return () => {
+
+      active = false
+
+    }
+
+  }, [organizations])
+
 
   const visibleOrganizations = useMemo(() => {
     const term = organizationSearch.trim().toLocaleLowerCase('pt-BR')
     return [...organizations]
       .filter((organization) => {
         if (!term) return true
-        return [organization.organization_code, organization.trade_name, organization.legal_name]
+        const identity =
+          organizationIdentityById[organization.organization_id]
+
+        return [
+          organization.organization_code,
+          identity?.trade_name ?? organization.trade_name,
+          identity?.legal_name ?? organization.legal_name,
+          identity?.cnpj,
+        ]
           .filter(Boolean)
           .some((value) => String(value).toLocaleLowerCase('pt-BR').includes(term))
       })
@@ -514,20 +586,165 @@ function App() {
         const comparison = firstName.localeCompare(secondName, 'pt-BR')
         return organizationSortDirection === 'asc' ? comparison : -comparison
       })
-  }, [organizations, organizationSearch, organizationSortDirection])
-
-  const hierarchicalVisibleOrganizations = useMemo(() => {
-    return sortOrganizationsHierarchically(
+  }, [
+    organizations,
+    organizationIdentityById,
+    organizationSearch,
+    organizationSortDirection,
+  ])
+  const organizationTreeRows = useMemo<SparksSmartGridRow[]>(() => {
+    const orderedOrganizations = sortOrganizationsHierarchically(
       visibleOrganizations,
       organizationHierarchy,
       organizationSortDirection,
     )
+
+    const roots: SparksSmartGridRow[] = []
+    const stack: Array<{
+      depth: number
+      row: SparksSmartGridRow
+    }> = []
+
+    orderedOrganizations.forEach((organization) => {
+      const canonicalNode = organizationHierarchy.find(
+        (node) =>
+          node.organization_id ===
+          organization.organization_id,
+      )
+
+      const depth = Math.max(
+        0,
+        Number(
+          canonicalNode?.hierarchy_depth ??
+            organization.hierarchy_depth ??
+            0,
+        ),
+      )
+
+      const row: SparksSmartGridRow = {
+        id: organization.organization_id,
+        organization:
+          organizationIdentityById[organization.organization_id]
+            ?.trade_name ??
+          organization.trade_name ??
+          organization.organization_code,
+        cnpj: (() => {
+          const raw =
+            organizationIdentityById[organization.organization_id]
+              ?.cnpj ??
+            ''
+          const digits = String(raw).replace(/\D/g, '')
+
+          return digits.length === 14
+            ? digits.replace(
+                /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+                '$1.$2.$3/$4-$5',
+              )
+            : String(raw).trim() || 'Não informado'
+        })(),
+        branch:
+          organization.cooperative_branch ??
+          'Ramo não informado',
+        level: getOrganizationLevelLabel(
+          organization.organization_level,
+        ),
+        access: isHierarchicalReadOnlyAccess(organization)
+          ? 'Hierárquico'
+          : 'Direto',
+        status:
+          getOrganizationMembershipStatusLabel(organization),
+        profile: getOrganizationProfileLabel(organization),
+        open: true,
+        data: [],
+      }
+
+      while (
+        stack.length > 0 &&
+        stack[stack.length - 1].depth >= depth
+      ) {
+        stack.pop()
+      }
+
+      const parent = stack[stack.length - 1]?.row
+
+      if (parent) {
+        const children = Array.isArray(parent.data)
+          ? parent.data
+          : []
+        children.push(row)
+        parent.data = children
+      } else {
+        roots.push(row)
+      }
+
+      stack.push({ depth, row })
+    })
+
+    return roots
   }, [
     organizationHierarchy,
+    organizationIdentityById,
     organizationSortDirection,
     visibleOrganizations,
   ])
 
+  const organizationTreeColumns: SparksSmartGridColumn[] = [
+    {
+      id: 'organization',
+      label: 'Organização',
+      minWidth: 230,
+      maxWidth: 520,
+      grow: 3.2,
+      treeToggle: true,
+    },
+    {
+      id: 'cnpj',
+      label: 'CNPJ',
+      minWidth: 175,
+      maxWidth: 210,
+      grow: 1.2,
+      align: 'center',
+    },
+    {
+      id: 'branch',
+      label: 'Ramo',
+      minWidth: 170,
+      maxWidth: 340,
+      grow: 1.7,
+    },
+    {
+      id: 'level',
+      label: 'Nível',
+      minWidth: 160,
+      maxWidth: 240,
+      grow: 1.1,
+      align: 'center',
+    },
+    {
+      id: 'access',
+      label: 'Tipo de acesso',
+      minWidth: 145,
+      maxWidth: 220,
+      grow: 1,
+      align: 'center',
+    },
+    {
+      id: 'status',
+      label: 'Status do vínculo',
+      minWidth: 145,
+      maxWidth: 230,
+      grow: 1.1,
+      align: 'center',
+    },
+    {
+      id: 'profile',
+      label: 'Perfil',
+      minWidth: 155,
+      maxWidth: 240,
+      grow: 1,
+      align: 'center',
+    },
+  ]
 
   const [modules, setModules] =
     useState<PlatformModule[]>([])
@@ -1918,97 +2135,163 @@ function App() {
           />
         </div>
         <div className="user-area">
-          <button
-            type="button"
-            className="platform-theme-button"
-            onClick={() => {
-              const nextTheme = platformTheme === 'dark' ? 'light' : 'dark'
-              setPlatformTheme(nextTheme)
-              localStorage.setItem(PLATFORM_THEME_KEY, nextTheme)
-            }}
-            aria-label={
-              platformTheme === 'dark'
-                ? 'Ativar modo claro'
-                : 'Ativar modo escuro'
-            }
-            title={
-              platformTheme === 'dark'
-                ? 'Modo claro'
-                : 'Modo escuro'
-            }
-          >
-            {platformTheme === 'dark' ? <SunIcon /> : <MoonIcon />}
-          </button>
-          {isPlatformSuperAdmin && (
+          {(
+            (selectedOrganization &&
+              (selectedOrganization.is_organization_admin ||
+                isPlatformSuperAdmin)) ||
+            (!selectedOrganization && isPlatformSuperAdmin)
+          ) && (
             <button
-            type="button"
-            className="platform-admin-topbar-icon-button"
-            onClick={handleOpenPlatformAdmin}
-            disabled={loading}
-            aria-label="Administração da Plataforma"
-            title="Administração da Plataforma"
-          >
-            <span className="platform-admin-action-glyph" aria-hidden="true">
-              <SettingsIcon />
-            </span>
-          </button>
+              type="button"
+              className="platform-admin-topbar-icon-button"
+              onClick={
+                selectedOrganization
+                  ? handleOpenOrganizationAdmin
+                  : handleOpenPlatformAdmin
+              }
+              disabled={loading}
+              aria-label={
+                selectedOrganization
+                  ? 'Administração da Organização'
+                  : 'Administração da Plataforma'
+              }
+              title={
+                selectedOrganization
+                  ? 'Administração da Organização'
+                  : 'Administração da Plataforma'
+              }
+            >
+              <span className="platform-admin-action-glyph" aria-hidden="true">
+                <SettingsIcon />
+              </span>
+            </button>
           )}
 
-          <button
-            type="button"
-            className="user-profile-summary user-profile-trigger"
-            onClick={() => setUserProfileOpen(true)}
-            aria-label="Abrir meu perfil"
-            title="Meu perfil"
-          >
-            <div className="user-avatar" aria-hidden="true">
-              {userAvatarUrl ? (
-                <img src={userAvatarUrl} alt="" />
-              ) : (
-                (userDisplayName || session.user.email || 'U')
-                  .slice(0, 2)
-                  .toUpperCase()
-              )}
-            </div>
-
-            <div className="user-identification">
-              <strong>
-                {userDisplayName || session.user.email}
-              </strong>
-
-
-              <div className="user-badges">
-                {selectedOrganization ? (
-                  <span className="badge badge-organization">
-                    {selectedOrganization.is_organization_admin
-                      ? 'Administrador'
-                      : selectedOrganizationJobTitle ?? 'Participante'}
-                  </span>
-                ) : isPlatformSuperAdmin ? (
-                  <span className="badge badge-platform">
-                    Super-admin
-                  </span>
-                ) : platformRoles[0] ? (
-                  <span className="badge badge-platform">
-                    {platformRoles[0].role_name}
-                  </span>
-                ) : null}
+          <details className="platform-account-menu">
+            <summary
+              className="user-profile-summary user-profile-trigger"
+              aria-label="Abrir menu da conta"
+              title="Conta, aparência e administração"
+            >
+              <div className="user-avatar" aria-hidden="true">
+                {userAvatarUrl ? (
+                  <img src={userAvatarUrl} alt="" />
+                ) : (
+                  (userDisplayName || session.user.email || 'U')
+                    .slice(0, 2)
+                    .toUpperCase()
+                )}
               </div>
+
+              <div className="user-identification">
+                <strong>
+                  {userDisplayName || session.user.email}
+                </strong>
+
+                <div className="user-badges">
+                  {selectedOrganization ? (
+                    <span className="badge badge-organization">
+                      {selectedOrganization.is_organization_admin
+                        ? 'Administrador'
+                        : selectedOrganizationJobTitle ?? 'Participante'}
+                    </span>
+                  ) : isPlatformSuperAdmin ? (
+                    <span className="badge badge-platform">
+                      Super-admin
+                    </span>
+                  ) : platformRoles[0] ? (
+                    <span className="badge badge-platform">
+                      {platformRoles[0].role_name}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              <span className="platform-account-menu-chevron" aria-hidden="true">
+                ▾
+              </span>
+            </summary>
+
+            <div
+              className="platform-account-menu-popover"
+              role="menu"
+              aria-label="Conta, aparência e administração"
+            >
+              <div className="platform-account-menu-identity">
+                <strong>{userDisplayName || session.user.email}</strong>
+                <span>{session.user.email}</span>
+              </div>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(event) => {
+                  event.currentTarget.closest('details')?.removeAttribute('open')
+                  setUserProfileOpen(true)
+                }}
+              >
+                Meu perfil
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(event) => {
+                  const nextTheme =
+                    platformTheme === 'dark' ? 'light' : 'dark'
+                  setPlatformTheme(nextTheme)
+                  localStorage.setItem(PLATFORM_THEME_KEY, nextTheme)
+                  event.currentTarget.closest('details')?.removeAttribute('open')
+                }}
+              >
+                {platformTheme === 'dark'
+                  ? 'Aparência: usar modo claro'
+                  : 'Aparência: usar modo escuro'}
+              </button>
+
+              {selectedOrganization &&
+                (selectedOrganization.is_organization_admin ||
+                  isPlatformSuperAdmin) && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={(event) => {
+                      event.currentTarget
+                        .closest('details')
+                        ?.removeAttribute('open')
+                      handleOpenOrganizationAdmin()
+                    }}
+                  >
+                    Administração da Organização
+                  </button>
+                )}
+
+              {isPlatformSuperAdmin && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={(event) => {
+                    event.currentTarget
+                      .closest('details')
+                      ?.removeAttribute('open')
+                    handleOpenPlatformAdmin()
+                  }}
+                >
+                  Administração da Plataforma
+                </button>
+              )}
+
+              <button
+                type="button"
+                role="menuitem"
+                className="platform-account-menu-logout"
+                disabled={loading}
+                onClick={() => void handleLogout()}
+              >
+                {loading ? 'Saindo...' : 'Sair'}
+              </button>
             </div>
-          </button>
-
-
-
-          <button
-            type="button"
-            className="logout-icon-button"
-            onClick={handleLogout}
-            disabled={loading}
-            aria-label={loading ? 'Saindo da Plataforma' : 'Sair da Plataforma'}
-            title={loading ? 'Saindo...' : 'Sair da Plataforma'}
-          >
-            <LogoutIcon />
-          </button>
+          </details>
         </div>
       </header>
 
@@ -2055,7 +2338,7 @@ function App() {
                 </h1>
 
                 <p className="supporting-text">
-                  Acesse a administração organizacional ou selecione um dos módulos disponíveis.
+                  Acompanhe o desempenho da organização e selecione o módulo em que deseja trabalhar.
                 </p>
               </div>
 
@@ -2079,37 +2362,6 @@ function App() {
                 </span>
               </div>
             </section>
-            {(selectedOrganization.is_organization_admin ||
-              isPlatformSuperAdmin) && (
-              <section className="platform-admin-entry organization-admin-entry">
-                <button
-                  type="button"
-                  className="platform-admin-entry-icon-button"
-                  onClick={handleOpenOrganizationAdmin}
-                  aria-label="Acessar Administração da Organização"
-                  title="Acessar Administração da Organização"
-                >
-                  <span className="platform-admin-action-glyph" aria-hidden="true">
-                    <SettingsIcon />
-                  </span>
-                </button>
-
-                <div className="platform-admin-entry-content">
-                  <p className="eyebrow">
-                    Escopo organizacional
-                  </p>
-
-                  <h2>Administração da Organização</h2>
-
-                  <p>
-                    Gerencie cadastro institucional, usuários,
-                    vínculos, acessos, papéis, áreas, hierarquia,
-                    domínios e configurações exclusivas desta
-                    organização, sem entrar em um módulo.
-                  </p>
-                </div>
-              </section>
-            )}
 
             {message && (
               <p
@@ -2293,41 +2545,6 @@ function App() {
               </div>
             </section>
 
-            {isPlatformSuperAdmin && (
-              <section
-                className="platform-admin-entry"
-                role="button"
-                tabIndex={0}
-                onClick={handleOpenPlatformAdmin}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    handleOpenPlatformAdmin()
-                  }
-                }}
-                aria-label="Acessar Administração da Plataforma"
-                title="Acessar Administração da Plataforma"
-              >
-                <span
-                  className="platform-admin-entry-icon-button"
-                  aria-hidden="true"
-                >
-                  <span className="platform-admin-action-glyph">
-                    <SettingsIcon />
-                  </span>
-                </span>
-                <div className="platform-admin-entry-content">
-                  <p className="eyebrow">Acesso global</p>
-                  <h2>Administração da Plataforma</h2>
-                  <p>
-                    Gerencie organizações, usuários, vínculos, módulos,
-                    perfis globais, hierarquias e parâmetros mestres sem
-                    precisar selecionar uma organização.
-                  </p>
-                </div>
-              </section>
-            )}
-
             {message && (
               <p
                 className={`message message-${messageType}`}
@@ -2361,12 +2578,8 @@ function App() {
                     <SearchIcon />
                     <input type="search" value={organizationSearch} onChange={(event) => setOrganizationSearch(event.target.value)} placeholder="Pesquisar organizações" aria-label="Pesquisar organizações" />
                   </div>
-                  <button type="button" className="primary-list-sort" onClick={() => setOrganizationSortDirection((current) => current === 'asc' ? 'desc' : 'asc')} title="Alterar ordenação alfabética">
-                    {organizationSortDirection === 'asc' ? 'A → Z' : 'Z → A'}
-                  </button>
                   <div className="primary-list-view-toggle" aria-label="Modo de visualização">
                     <button type="button" className={organizationViewMode === 'cards' ? 'active' : ''} onClick={() => setOrganizationViewMode('cards')} title="Visualizar em cards"><CardsViewIcon /></button>
-                    <button type="button" className={organizationViewMode === 'grid' ? 'active' : ''} onClick={() => setOrganizationViewMode('grid')} title="Visualizar em linhas"><RowsViewIcon /></button>
                   <button
                     type="button"
                     className={organizationViewMode === 'hierarchy' ? 'active' : ''}
@@ -2379,47 +2592,51 @@ function App() {
                   </div>
                 </section>
                 {organizationViewMode === 'hierarchy' ? (
-                  <section className="organization-hierarchy-view" aria-label="Hierarquia das organizações">
-                    {hierarchicalVisibleOrganizations.map((organization) => {
-                      const canonicalNode = organizationHierarchy.find(
-                        (node) =>
-                          node.organization_id ===
-                          organization.organization_id,
-                      )
-                      const depth = Math.max(
-                        0,
-                        Number(
-                          canonicalNode?.hierarchy_depth ??
-                            organization.hierarchy_depth ??
-                            0,
-                        ),
-                      )
-                      const accessType = isHierarchicalReadOnlyAccess(organization) ? 'Hierárquico' : 'Direto'
-                      return (
-                        <article
-                          key={organization.organization_id}
-                          className="organization-hierarchy-row"
-                          style={{ marginLeft: `${Math.min(depth, 6) * 28}px` }}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => void handleSelectOrganization(organization)}
-                          onKeyDown={(event) => activateWithKeyboard(event, () => void handleSelectOrganization(organization))}
-                        >
-                          <span className="organization-hierarchy-branch" aria-hidden="true">{depth > 0 ? '└─' : '●'}</span>
-                          <div className="organization-hierarchy-main">
-                            <strong>{organization.trade_name ?? organization.legal_name}</strong>
-                            <small>{organization.cooperative_branch ?? 'Ramo não informado'}</small>
-                          </div>
-                          <span>{getOrganizationLevelLabel(organization.organization_level)}</span>
-                          <span>Tipo de acesso: {accessType}</span>
-                          <span>Status do vínculo: {getOrganizationMembershipStatusLabel(organization)}</span>
-                          <span>Perfil: {getOrganizationProfileLabel(organization)}</span>
-                          <ArrowRightIcon />
-                        </article>
-                      )
-                    })}
+                  <section
+                    className="organization-hierarchy-view organization-hierarchy-view--smart-grid"
+                    aria-label="Hierarquia das organizações"
+                  >
+                    <SparksSmartGrid
+                      rows={organizationTreeRows}
+                      columns={organizationTreeColumns}
+                      ariaLabel="Hierarquia das organizações"
+                      tree
+                      treeContextActions
+                      fillViewport
+                      autoRowHeight={false}
+                      viewportMode="compact"
+                      className="organization-hierarchy-smart-grid"
+                      contextMenu={[
+                        {
+                          id: 'open-organization',
+                          text: 'Abrir organização',
+                        },
+                      ]}
+                      onActivate={(rowId) => {
+                        const organization = organizations.find(
+                          (candidate) =>
+                            candidate.organization_id === rowId,
+                        )
+
+                        if (organization) {
+                          void handleSelectOrganization(organization)
+                        }
+                      }}
+                      onContextAction={(actionId, rowId) => {
+                        if (actionId !== 'open-organization') return
+
+                        const organization = organizations.find(
+                          (candidate) =>
+                            candidate.organization_id === rowId,
+                        )
+
+                        if (organization) {
+                          void handleSelectOrganization(organization)
+                        }
+                      }}
+                    />
                   </section>
-                ) : organizationViewMode === 'cards' ? (
+                ) : (
               <section className="organization-grid">
                 {visibleOrganizations.map(
                   (organization) => (
@@ -2508,35 +2725,6 @@ function App() {
                   ),
                 )}
               </section>
-                ) : (
-                  <section className="organization-table-card">
-                    <table className="organization-table">
-                      <thead><tr><th onClick={() => setOrganizationSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Código</th><th>Nível</th><th>Tipo de acesso</th><th>Status do vínculo</th><th>Perfil</th><th>Ações</th></tr></thead>
-                      <tbody>{visibleOrganizations.map((organization) => (
-                        <tr
-                          key={organization.organization_id}
-                          className="interactive-record-row"
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Abrir ${organization.trade_name ?? organization.legal_name}`}
-                          onClick={() => void handleSelectOrganization(organization)}
-                          onKeyDown={(event) =>
-                            activateWithKeyboard(event, () =>
-                              void handleSelectOrganization(organization),
-                            )
-                          }
-                        >
-                          <td><strong>{organization.trade_name ?? organization.legal_name}</strong></td>
-                          <td>{organization.organization_code}</td>
-                          <td>{getOrganizationLevelLabel(organization.organization_level)}</td>
-                          <td>{isHierarchicalReadOnlyAccess(organization) ? 'Hierárquico' : 'Direto'}</td>
-                          <td>{getOrganizationMembershipStatusLabel(organization)}</td>
-                          <td>{getOrganizationProfileLabel(organization)}</td>
-                          <td><button type="button" title="Acessar organização" onClick={(event) => { event.stopPropagation(); void handleSelectOrganization(organization) }}>→</button></td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </section>
                 )}
               </>
             )}

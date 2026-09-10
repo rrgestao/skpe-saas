@@ -16,18 +16,33 @@ type DrilldownFilter =
 type InitiativePerformanceCockpitProps = {
   dashboard: unknown
   initiatives: unknown[]
+  canAdjustStrategicMap: boolean
   onStatusDrilldown: (filter: DrilldownFilter) => void
+  onObjectiveInitiativesDrilldown: (
+    objectiveId: string,
+    objectiveTitle: string,
+    initiativeIds: string[],
+  ) => void
+  onObjectivePerformanceDrilldown: (objectiveId: string, objectiveTitle: string) => void
 }
 
 type NormalizedInitiative = {
+  id: string
+  code: string
+  name: string
   status: string
   priority: string
   initiativeClass: string
   responsibleArea: string
+  responsibleName: string
   criticality: string
   proposalOrigin: string
+  startDate: string
   dueDate: string
   progress: number | null
+  healthStatus: string
+  lastUpdateAt: string
+  strategicObjectiveNames: string[]
   projectId: string
 }
 
@@ -60,6 +75,9 @@ function readNumber(record: Record<string, unknown>, ...keys: string[]): number 
 function normalizeInitiative(value: unknown): NormalizedInitiative {
   const record = asRecord(value)
   return {
+    id: readString(record, 'initiative_id', 'id'),
+    code: readString(record, 'initiative_code', 'code'),
+    name: readString(record, 'initiative_name', 'name'),
     status: readString(record, 'initiative_status', 'status'),
     priority: readString(record, 'priority'),
     initiativeClass: readString(record, 'initiative_class', 'initiativeClass', 'class'),
@@ -69,10 +87,19 @@ function normalizeInitiative(value: unknown): NormalizedInitiative {
       'responsibleAreaName',
       'responsible_area_code',
     ),
+    responsibleName: readString(record, 'responsible_name', 'responsibleName'),
     criticality: readString(record, 'criticality'),
     proposalOrigin: readString(record, 'proposal_origin', 'proposalOrigin'),
+    startDate: readString(record, 'start_date', 'startDate'),
     dueDate: readString(record, 'target_end_date', 'targetEndDate', 'due_date', 'dueDate'),
     progress: readNumber(record, 'progress'),
+    healthStatus: readString(record, 'health_status', 'healthStatus'),
+    lastUpdateAt: readString(record, 'last_update_at', 'lastUpdateAt'),
+    strategicObjectiveNames: Array.isArray(record.strategic_objective_names)
+      ? record.strategic_objective_names.filter(
+          (item): item is string => typeof item === 'string' && item.trim() !== '',
+        )
+      : [],
     projectId: readString(record, 'skpe_project_id', 'project_id', 'projectId'),
   }
 }
@@ -187,7 +214,10 @@ function DistributionBars({
 export function InitiativePerformanceCockpit({
   dashboard,
   initiatives,
+  canAdjustStrategicMap,
   onStatusDrilldown,
+  onObjectiveInitiativesDrilldown,
+  onObjectivePerformanceDrilldown,
 }: InitiativePerformanceCockpitProps) {
   const dashboardRecord = asRecord(dashboard)
   const normalized = useMemo(
@@ -272,27 +302,30 @@ export function InitiativePerformanceCockpit({
 
   const attentionTotal = drafts + critical + blocked + withoutDueDate
 
+  const executingInitiatives = normalized.filter(
+    (item) => item.status === 'in_progress',
+  )
+
+  const formatDate = (value: string) => {
+    if (!value) return 'Não informado'
+    const datePart = value.slice(0, 10)
+    const parts = datePart.split('-')
+    return parts.length === 3
+      ? `${parts[2]}/${parts[1]}/${parts[0]}`
+      : value
+  }
+
   return (
-    <section className="skpe-performance-cockpit" aria-label="Cockpit de Resultados e Desempenho">
-      <div className="skpe-performance-hero">
-        <div>
-          <p className="skpe-performance-eyebrow">SKPE-MON-ANL-01</p>
-          <h2>Cockpit de Resultados e Desempenho</h2>
-          <p>
-            Onde queremos chegar, como estamos performando, o que está sendo executado
-            e onde a gestão precisa agir.
-          </p>
-        </div>
-      </div>
+    <section className="skpe-performance-cockpit" aria-label="Painel de Resultados e Desempenho">
+
 
       <section className="skpe-performance-map-section">
         <header className="skpe-performance-section-heading">
           <div>
-            <p className="skpe-performance-eyebrow">Arquitetura estratégica</p>
             <h2>Mapa Estratégico</h2>
           </div>
           <p>
-            O sinaleiro de cada Objetivo Estratégico permanece cinza enquanto não houver
+            O farol de cada Objetivo Estratégico permanece cinza enquanto não houver
             sensibilização governada por execução, indicadores e resultados apurados.
           </p>
         </header>
@@ -300,7 +333,12 @@ export function InitiativePerformanceCockpit({
         {formulationResolution === 'loading' ? (
           <div className="skpe-performance-map-state">Carregando Mapa Estratégico...</div>
         ) : formulationId ? (
-          <StrategicBscMap formulationId={formulationId} />
+          <StrategicBscMap
+            formulationId={formulationId}
+            canAdjustLayout={canAdjustStrategicMap}
+            onObjectiveInitiativesDrilldown={onObjectiveInitiativesDrilldown}
+          onObjectivePerformanceDrilldown={onObjectivePerformanceDrilldown}
+          />
         ) : (
           <div className="skpe-performance-map-state">
             O Mapa Estratégico ainda não pôde ser associado de forma unívoca ao
@@ -312,8 +350,8 @@ export function InitiativePerformanceCockpit({
       <section className="skpe-performance-results-section">
         <header className="skpe-performance-section-heading">
           <div>
-            <p className="skpe-performance-eyebrow">Resultados e desempenho</p>
-            <h2>Desempenho da estratégia</h2>
+
+            <h2>Resultados e desempenho da estratégia</h2>
           </div>
           <p>
             Execução, indicadores e resultados aparecem aqui somente quando houver
@@ -359,7 +397,7 @@ export function InitiativePerformanceCockpit({
               <strong>—</strong>
             </div>
             <div className="skpe-performance-result-placeholder">
-              Sinaleiros ainda não sensibilizados
+              Faróis ainda não sensibilizados
             </div>
             <small>
               Cinza = ainda não sensibilizado. Verde, amarelo, vermelho e azul dependem
@@ -372,14 +410,96 @@ export function InitiativePerformanceCockpit({
       <section className="skpe-performance-execution-section">
         <header className="skpe-performance-section-heading">
           <div>
-            <p className="skpe-performance-eyebrow">Execução da estratégia</p>
-            <h2>Portfólio em execução</h2>
+            <h2>Monitoramento das iniciativas em curso</h2>
           </div>
           <p>
-            Navegue do resultado executivo até as iniciativas que materializam a
-            estratégia.
+            O avanço operacional das iniciativas é acompanhado separadamente do
+            desempenho dos Objetivos Estratégicos. Progresso de execução não é
+            convertido automaticamente em resultado estratégico.
           </p>
         </header>
+
+        {executingInitiatives.length > 0 ? (
+          <div className="skpe-performance-executing-list">
+            {executingInitiatives.map((initiative) => {
+              const progress = Math.max(0, Math.min(100, initiative.progress ?? 0))
+              return (
+                <article
+                  key={initiative.id || initiative.code || initiative.name}
+                  className="skpe-performance-executing-card"
+                >
+                  <div className="skpe-performance-executing-main">
+                    <div className="skpe-performance-executing-title">
+                      <span>{initiative.code || 'Iniciativa em execução'}</span>
+                      <strong>{initiative.name || 'Sem título informado'}</strong>
+                    </div>
+
+                    <div
+                      className="skpe-performance-executing-progress"
+                      aria-label={`Progresso da iniciativa: ${progress.toFixed(0)}%`}
+                    >
+                      <div className="skpe-performance-executing-progress-value">
+                        <strong>{initiative.progress == null ? '—' : `${progress.toFixed(0)}%`}</strong>
+                        <span>andamento</span>
+                      </div>
+                      <div className="skpe-performance-executing-progress-track">
+                        <span
+                          style={{
+                            width: initiative.progress == null ? '0%' : `${progress}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="skpe-performance-executing-facts">
+                    <div>
+                      <span>Área responsável</span>
+                      <strong>{initiative.responsibleArea || 'Não definida'}</strong>
+                    </div>
+                    <div>
+                      <span>Responsável atual</span>
+                      <strong>{initiative.responsibleName || 'Liderança organizacional pendente'}</strong>
+                    </div>
+                    <div>
+                      <span>Início</span>
+                      <strong>{formatDate(initiative.startDate)}</strong>
+                    </div>
+                    <div>
+                      <span>Término-alvo</span>
+                      <strong>{formatDate(initiative.dueDate)}</strong>
+                    </div>
+                    <div>
+                      <span>Última atualização</span>
+                      <strong>{formatDate(initiative.lastUpdateAt)}</strong>
+                    </div>
+                    <div>
+                      <span>Saúde</span>
+                      <strong>{initiative.healthStatus || 'Ainda não sensibilizada'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="skpe-performance-executing-objectives">
+                    <span>Objetivos Estratégicos vinculados</span>
+                    <strong>
+                      {initiative.strategicObjectiveNames.length > 0
+                        ? initiative.strategicObjectiveNames.join(' • ')
+                        : 'Nenhum vínculo materializado no portfólio atual'}
+                    </strong>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="skpe-performance-result-placeholder">
+            Nenhuma iniciativa está atualmente em execução.
+          </div>
+        )}
+
+        <div className="skpe-performance-execution-summary-heading">
+          <span>Visão consolidada do portfólio</span>
+        </div>
 
         <div className="skpe-performance-summary-grid">
           <button type="button" className="skpe-performance-summary-card" onClick={() => onStatusDrilldown('all')}>

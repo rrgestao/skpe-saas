@@ -1,0 +1,295 @@
+/*
+ * UI-PORTAL-02 V1.1 — visão hierárquica compacta, sem mutação de TSX.
+ *
+ * Usa a estrutura já existente:
+ * 1 branch | 2 identidade | 3 nível | 4 acesso | 5 vínculo | 6 perfil | 7 ação
+ */
+
+.organization-hierarchy-view {
+  width: 100%;
+  margin-top: var(--sparks-space-3, 0.75rem) !important;
+  padding: var(--sparks-space-2, 0.55rem) !important;
+  display: grid !important;
+  gap: var(--sparks-space-2, 0.55rem) !important;
+  border: 1px solid #dbe5e1 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.organization-hierarchy-row {
+  width: auto !important;
+  min-width: 820px !important;
+  min-height: 58px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 0.55rem 0.7rem !important;
+
+  display: grid !important;
+  grid-template-columns:
+    22px
+    minmax(190px, 1.35fr)
+    minmax(130px, 0.85fr)
+    minmax(135px, 0.85fr)
+    minmax(145px, 0.95fr)
+    minmax(145px, 0.95fr)
+    32px !important;
+
+  align-items: center !important;
+  gap: clamp(0.45rem, 0.7vw, 0.75rem) !important;
+
+  border: 1px solid #dce5e2 !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.organization-hierarchy-row:hover,
+.organization-hierarchy-row:focus-visible {
+  border-color: #69a996 !important;
+  background: #f8fbfa !important;
+  box-shadow: 0 3px 12px rgba(15, 118, 110, 0.06) !important;
+  transform: none !important;
+  outline: none !important;
+}
+
+.organization-hierarchy-branch {
+  width: 22px !important;
+  min-width: 22px !important;
+  color: #0f766e !important;
+  font-family: var(--font-family-data, Inter, monospace);
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+}
+
+.organization-hierarchy-main {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.1rem !important;
+}
+
+.organization-hierarchy-main strong {
+  overflow: hidden !important;
+  color: #15231e !important;
+  font-size: clamp(0.78rem, 0.74rem + 0.12vw, 0.86rem) !important;
+  font-weight: 800 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.organization-hierarchy-main small {
+  overflow: hidden !important;
+  color: #68766f !important;
+  font-size: 0.66rem !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Metadados já existentes: nível, acesso, vínculo e perfil. */
+.organization-hierarchy-row > span:nth-of-type(2),
+.organization-hierarchy-row > span:nth-of-type(3),
+.organization-hierarchy-row > span:nth-of-type(4),
+.organization-hierarchy-row > span:nth-of-type(5) {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: #34473f !important;
+  font-size: clamp(0.67rem, 0.64rem + 0.1vw, 0.75rem) !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.organization-hierarchy-row > span:nth-of-type(2) {
+  font-weight: 700 !important;
+}
+
+/* Último filho é o ArrowRightIcon existente. */
+.organization-hierarchy-row > svg {
+  width: 17px !important;
+  height: 17px !important;
+  min-width: 17px !important;
+  min-height: 17px !important;
+  max-width: 17px !important;
+  max-height: 17px !important;
+  justify-self: center !important;
+  color: #176b53 !important;
+}
+
+/* Profundidade continua visível, porém o recuo é limitado. */
+.organization-hierarchy-row[style*='margin-left'] {
+  max-width: calc(100% - 0.5rem) !important;
+}
+
+/* Tela intermediária: preserva a árvore, rolagem horizontal é preferível a
+   transformar cada nó em um card gigante. */
+@media (max-width: 1050px) {
+  .organization-hierarchy-row {
+    min-width: 760px !important;
+    grid-template-columns:
+      22px
+      minmax(180px, 1.25fr)
+      minmax(120px, 0.8fr)
+      minmax(125px, 0.8fr)
+      minmax(135px, 0.9fr)
+      minmax(135px, 0.9fr)
+      30px !important;
+  }
+}
+
+/* Tela estreita: estrutura compacta vertical, sem setas gigantes. */
+@media (max-width: 720px) {
+  .organization-hierarchy-view {
+    padding: 0.38rem !important;
+    gap: 0.38rem !important;
+    overflow-x: visible !important;
+  }
+
+  .organization-hierarchy-row {
+    min-width: 0 !important;
+    width: calc(100% - min(8vw, 42px)) !important;
+    min-height: 92px !important;
+    padding: 0.5rem 0.55rem !important;
+
+    grid-template-columns:
+      20px
+      minmax(0, 1fr)
+      28px !important;
+
+    grid-template-rows:
+      auto
+      auto
+      auto !important;
+
+    column-gap: 0.42rem !important;
+    row-gap: 0.22rem !important;
+  }
+
+  .organization-hierarchy-branch {
+    grid-column: 1 !important;
+    grid-row: 1 / span 3 !important;
+    align-self: start !important;
+    padding-top: 0.12rem !important;
+  }
+
+  .organization-hierarchy-main {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  .organization-hierarchy-row > span:nth-of-type(2),
+  .organization-hierarchy-row > span:nth-of-type(3),
+  .organization-hierarchy-row > span:nth-of-type(4),
+  .organization-hierarchy-row > span:nth-of-type(5) {
+    grid-column: 2 !important;
+    width: auto !important;
+    overflow: visible !important;
+    font-size: 0.65rem !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+
+  .organization-hierarchy-row > span:nth-of-type(2),
+  .organization-hierarchy-row > span:nth-of-type(3) {
+    grid-row: 2 !important;
+  }
+
+  .organization-hierarchy-row > span:nth-of-type(4),
+  .organization-hierarchy-row > span:nth-of-type(5) {
+    grid-row: 3 !important;
+  }
+
+  .organization-hierarchy-row > span:nth-of-type(3),
+  .organization-hierarchy-row > span:nth-of-type(5) {
+    justify-self: end !important;
+    text-align: right !important;
+  }
+
+  .organization-hierarchy-row > svg {
+    grid-column: 3 !important;
+    grid-row: 1 / span 3 !important;
+    align-self: center !important;
+    width: 15px !important;
+    height: 15px !important;
+    min-width: 15px !important;
+    min-height: 15px !important;
+  }
+}
+
+/* Dark theme */
+:root[data-sparks-theme='dark'] .organization-hierarchy-view,
+:root[data-sparks-theme='dark'] .organization-hierarchy-row {
+  background: var(--sparks-dark-surface) !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+:root[data-sparks-theme='dark'] .organization-hierarchy-row:hover,
+:root[data-sparks-theme='dark'] .organization-hierarchy-row:focus-visible {
+  background: var(--sparks-dark-surface-2) !important;
+  border-color: #568f7f !important;
+}
+
+:root[data-sparks-theme='dark'] .organization-hierarchy-main strong {
+  color: var(--sparks-dark-text) !important;
+}
+
+:root[data-sparks-theme='dark'] .organization-hierarchy-main small,
+:root[data-sparks-theme='dark'] .organization-hierarchy-row > span {
+  color: var(--sparks-dark-text-soft) !important;
+}
+
+:root[data-sparks-theme='dark'] .organization-hierarchy-row > svg {
+  color: var(--sparks-dark-primary-strong) !important;
+}
+
+/* UI-PORTAL-02 V1.2 — all hierarchy fields visible
+   Corrige regras legadas que escondiam acesso e vínculo em larguras médias. */
+
+.organization-hierarchy-row > span:nth-of-type(2),
+.organization-hierarchy-row > span:nth-of-type(3),
+.organization-hierarchy-row > span:nth-of-type(4),
+.organization-hierarchy-row > span:nth-of-type(5) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 1080px) {
+  .organization-hierarchy-row > span:nth-of-type(3),
+  .organization-hierarchy-row > span:nth-of-type(4) {
+    display: block !important;
+  }
+
+  .organization-hierarchy-row {
+    min-width: 760px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .organization-hierarchy-row > span:nth-of-type(2),
+  .organization-hierarchy-row > span:nth-of-type(3),
+  .organization-hierarchy-row > span:nth-of-type(4),
+  .organization-hierarchy-row > span:nth-of-type(5) {
+    display: block !important;
+  }
+}
+
+/* Tipografia e cor da árvore obedecem ao padrão transversal. */
+.organization-hierarchy-main strong {
+  font-family: var(--sparks-font-heading) !important;
+  color: var(--sparks-text-primary) !important;
+}
+
+.organization-hierarchy-main small,
+.organization-hierarchy-row > span {
+  font-family: var(--sparks-font-body) !important;
+  color: var(--sparks-text-secondary) !important;
+}
+
+.organization-hierarchy-branch,
+.organization-hierarchy-row > svg {
+  color: var(--sparks-brand-accent) !important;
+}

@@ -1,0 +1,206 @@
+/*
+ * UI-ADAPTIVE-01 — Responsive Geometry Contract
+ *
+ * Regra:
+ * - dimensões fixas somente quando justificadas por interação ou legibilidade;
+ * - superfícies e espaçamentos variam em faixas governadas;
+ * - componentes reorganizam sua composição antes de cortar informação;
+ * - grids preservam títulos e dados legíveis antes de reduzir largura;
+ * - container queries complementam breakpoints globais.
+ */
+
+:root {
+  --sparks-space-1: clamp(0.25rem, 0.35vw, 0.4rem);
+  --sparks-space-2: clamp(0.4rem, 0.55vw, 0.65rem);
+  --sparks-space-3: clamp(0.6rem, 0.8vw, 0.9rem);
+  --sparks-space-4: clamp(0.8rem, 1.15vw, 1.25rem);
+  --sparks-space-5: clamp(1rem, 1.5vw, 1.6rem);
+
+  --sparks-control-min: 40px;
+  --sparks-card-min: 260px;
+  --sparks-readable-text: 78ch;
+  --sparks-content-inline: clamp(0.45rem, 1vw, 1.15rem);
+  --sparks-content-block: clamp(0.55rem, 1vw, 1.1rem);
+  --sparks-radius-card: clamp(10px, 0.8vw, 16px);
+}
+
+/* ---------- superfícies que passam a responder ao espaço que recebem ---------- */
+.platform-content,
+.application-shell-content,
+.skpe-main,
+.sparks-transversal-workspace,
+.network-dashboard,
+.module-grid,
+.organization-grid,
+.sparks-measure-dual-selector {
+  container-type: inline-size;
+}
+
+.platform-content,
+.application-shell-content,
+.skpe-main {
+  min-width: 0;
+}
+
+/* ---------- geometria geral ---------- */
+.platform-content {
+  width: calc(100% - (2 * var(--sparks-content-inline))) !important;
+  max-width: none !important;
+  padding-block: var(--sparks-content-block) !important;
+}
+
+.page-heading,
+.skpe-page-heading,
+.skpe-administration-heading {
+  gap: var(--sparks-space-3) !important;
+}
+
+.page-heading h1,
+.skpe-page-heading h1,
+.skpe-administration-heading h1 {
+  font-size: clamp(1.45rem, 1.1rem + 1.1vw, 2.35rem) !important;
+}
+
+.supporting-text,
+.page-heading p,
+.skpe-page-heading p,
+.skpe-administration-heading p {
+  max-width: var(--sparks-readable-text);
+}
+
+/* ---------- cards e dashboards ---------- */
+.organization-grid,
+.module-grid,
+.network-summary-grid,
+.skpe-initiative-kpi-grid {
+  gap: var(--sparks-space-3) !important;
+}
+
+.organization-grid,
+.module-grid {
+  grid-template-columns:
+    repeat(auto-fit, minmax(min(100%, var(--sparks-card-min)), 1fr)) !important;
+}
+
+.organization-card,
+.module-card,
+.network-summary-card,
+.skpe-card {
+  min-width: 0;
+  border-radius: var(--sparks-radius-card);
+}
+
+.organization-card,
+.module-card {
+  padding: var(--sparks-space-4) !important;
+}
+
+/* ---------- dual panes ---------- */
+.sparks-transversal-workspace--split .sparks-transversal-workspace__body,
+.sparks-measure-dual-selector__layout {
+  grid-template-columns:
+    minmax(0, 1fr)
+    clamp(3.75rem, 5vw, 4.5rem)
+    minmax(0, 1fr) !important;
+  gap: var(--sparks-space-2) !important;
+}
+
+.sparks-transversal-workspace__actions,
+.sparks-measure-dual-selector__actions {
+  width: clamp(3.75rem, 5vw, 4.5rem) !important;
+  min-width: clamp(3.75rem, 5vw, 4.5rem) !important;
+  max-width: clamp(3.75rem, 5vw, 4.5rem) !important;
+}
+
+/* ---------- grids: mínimo semântico antes da compressão ---------- */
+.sparks-smart-grid .wx-header .wx-cell,
+.sparks-smart-grid .wx-cell {
+  min-height: 32px;
+}
+
+.sparks-smart-grid .wx-header .wx-cell {
+  white-space: nowrap !important;
+}
+
+.sparks-smart-grid .wx-table,
+.sparks-smart-grid .wx-grid {
+  min-width: max-content;
+}
+
+/* ---------- ações interativas preservam alvo mínimo ---------- */
+button,
+[role='button'],
+.application-shell-navigation-item {
+  min-block-size: min(var(--sparks-control-min), 100%);
+}
+
+/* ---------- adaptação por componente, não somente viewport ---------- */
+@container (max-width: 980px) {
+  .network-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .organization-grid,
+  .module-grid {
+    --sparks-card-min: 235px;
+  }
+}
+
+@container (max-width: 780px) {
+  .page-heading,
+  .skpe-page-heading,
+  .skpe-administration-heading {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .organization-summary {
+    justify-content: flex-start !important;
+  }
+
+  .sparks-transversal-workspace--split .sparks-transversal-workspace__body,
+  .sparks-measure-dual-selector__layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows:
+      minmax(0, 1fr)
+      auto
+      minmax(0, 1fr) !important;
+  }
+
+  .sparks-transversal-workspace__actions,
+  .sparks-measure-dual-selector__actions {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@container (max-width: 560px) {
+  .network-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .organization-grid,
+  .module-grid {
+    --sparks-card-min: 100%;
+  }
+}
+
+/* ---------- viewport fallback ---------- */
+@media (max-width: 760px) {
+  :root {
+    --sparks-content-inline: 0.45rem;
+    --sparks-content-block: 0.5rem;
+    --sparks-control-min: 38px;
+  }
+}
+
+/* ---------- acessibilidade ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}

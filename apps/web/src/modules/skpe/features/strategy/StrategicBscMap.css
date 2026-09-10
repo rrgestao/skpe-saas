@@ -322,3 +322,803 @@
 .skpe-bsc-objective-signal.is-gray {
   background: #8a9691;
 }
+/* SKPE-MON-ANL-01 G3.3.5 - Strategic communication layers
+ * Perspective identity: tonal variations of the organization accent token.
+ * OE circle: governed performance only.
+ * Initiative strip: execution context only, never a substitute for KPI performance.
+ */
+.skpe-bsc-lane {
+  --skpe-perspective-tone: var(--organization-accent, var(--skpe-accent, #176b53));
+  border-width: 2px;
+  border-color: color-mix(in srgb, var(--skpe-perspective-tone) 62%, #ffffff);
+  background: color-mix(in srgb, var(--skpe-perspective-tone) 9%, #ffffff);
+  box-shadow:
+    inset 7px 0 0 color-mix(in srgb, var(--skpe-perspective-tone) 78%, #ffffff),
+    0 4px 14px rgba(34, 68, 55, 0.06);
+}
+
+.skpe-bsc-lane-0 {
+  --skpe-perspective-tone: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 96%, #ffffff);
+}
+
+.skpe-bsc-lane-1 {
+  --skpe-perspective-tone: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 82%, #ffffff);
+}
+
+.skpe-bsc-lane-2 {
+  --skpe-perspective-tone: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 68%, #ffffff);
+}
+
+.skpe-bsc-lane-3 {
+  --skpe-perspective-tone: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 54%, #ffffff);
+}
+
+.skpe-bsc-lane-4 {
+  --skpe-perspective-tone: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 42%, #ffffff);
+}
+
+.skpe-bsc-lane-label {
+  border-right-color: color-mix(in srgb, var(--skpe-perspective-tone) 48%, #ffffff);
+  background: color-mix(in srgb, var(--skpe-perspective-tone) 13%, #ffffff);
+}
+
+.skpe-bsc-lane-label small,
+.skpe-bsc-lane-label strong {
+  color: color-mix(in srgb, var(--skpe-perspective-tone) 86%, #13231d);
+}
+
+.skpe-bsc-objective {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.skpe-bsc-objective-execution {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin: 0 -0.25rem -0.2rem;
+  padding: 0.32rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 28%, #ffffff);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 8%, #ffffff);
+  color: inherit;
+  font-size: 0.67rem;
+  line-height: 1.15;
+  cursor: help;
+}
+
+.skpe-bsc-objective-execution > span:first-child {
+  flex: 0 0 auto;
+  font-weight: 820;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+  opacity: 0.72;
+}
+
+.skpe-bsc-objective-execution > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 760;
+}
+
+.skpe-bsc-objective-signal {
+  cursor: help;
+}
+
+.skpe-theme-dark .skpe-bsc-lane {
+  border-color: color-mix(in srgb, var(--skpe-perspective-tone) 54%, #263a31);
+  background: color-mix(in srgb, var(--skpe-perspective-tone) 12%, #17251f);
+}
+
+.skpe-theme-dark .skpe-bsc-lane-label {
+  border-right-color: color-mix(in srgb, var(--skpe-perspective-tone) 42%, #263a31);
+  background: color-mix(in srgb, var(--skpe-perspective-tone) 11%, #17251f);
+}
+
+.skpe-theme-dark .skpe-bsc-objective-execution {
+  border-color: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 34%, #263a31);
+  background: color-mix(in srgb, var(--organization-accent, var(--skpe-accent, #176b53)) 12%, #17251f);
+}
+/* SKPE-MON-ANL-01 G3.3.4.1 V3
+ * Perspective colors remain in the organization brand family.
+ * visualColor wins when present; otherwise organization accent is the base.
+ */
+.skpe-bsc-lane {
+  --skpe-perspective-base: var(
+    --organization-accent,
+    var(--skpe-accent, #176b53)
+  );
+  --skpe-perspective-tone: var(--skpe-perspective-base);
+  border-width: 1.5px;
+  border-color: var(--skpe-perspective-tone);
+  background:
+    color-mix(in srgb, var(--skpe-perspective-tone) 10%, white);
+}
+
+.skpe-bsc-lane-label {
+  color: color-mix(in srgb, var(--skpe-perspective-tone) 82%, #13261f);
+  border-right-color:
+    color-mix(in srgb, var(--skpe-perspective-tone) 48%, white);
+  background:
+    color-mix(in srgb, var(--skpe-perspective-tone) 20%, white);
+}
+
+/* Five visibly different lightness levels, same brand family. */
+.skpe-bsc-lane-0 {
+  --skpe-perspective-tone:
+    color-mix(in srgb, var(--skpe-perspective-base) 88%, black);
+}
+
+.skpe-bsc-lane-1 {
+  --skpe-perspective-tone:
+    color-mix(in srgb, var(--skpe-perspective-base) 68%, black);
+}
+
+.skpe-bsc-lane-2 {
+  --skpe-perspective-tone: var(--skpe-perspective-base);
+}
+
+.skpe-bsc-lane-3 {
+  --skpe-perspective-tone:
+    color-mix(in srgb, var(--skpe-perspective-base) 74%, white);
+}
+
+.skpe-bsc-lane-4 {
+  --skpe-perspective-tone:
+    color-mix(in srgb, var(--skpe-perspective-base) 48%, white);
+}
+
+.skpe-bsc-edge-canonical.is-selected .react-flow__edge-path,
+.skpe-bsc-edge-suggested.is-selected .react-flow__edge-path {
+  stroke-width: 3.2;
+  filter: drop-shadow(0 0 2px rgba(23, 107, 83, 0.35));
+}
+
+.skpe-bsc-relation-route-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.35rem;
+  border: 1px solid var(--skpe-border, #dce7e3);
+  border-radius: 0.75rem;
+  background: var(--skpe-surface, #fff);
+}
+
+.skpe-bsc-relation-route-toolbar strong {
+  padding: 0 0.45rem;
+  font-size: 0.78rem;
+}
+
+.skpe-bsc-relation-route-toolbar button {
+  min-height: 2rem;
+  padding: 0.38rem 0.62rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.skpe-bsc-relation-route-toolbar button:hover,
+.skpe-bsc-relation-route-toolbar button.is-active {
+  background: var(--skpe-soft, #eef6f2);
+}
+
+.skpe-bsc-relation-route-toolbar button.is-active {
+  box-shadow:
+    inset 0 -2px 0
+      var(--organization-accent, var(--skpe-accent, #176b53));
+}
+
+.skpe-theme-dark .skpe-bsc-lane {
+  background:
+    color-mix(
+      in srgb,
+      var(--skpe-perspective-tone) 22%,
+      var(--skpe-surface, #17251f)
+    );
+}
+
+.skpe-theme-dark .skpe-bsc-lane-label {
+  color: #edf7f3;
+  background:
+    color-mix(
+      in srgb,
+      var(--skpe-perspective-tone) 34%,
+      var(--skpe-surface, #17251f)
+    );
+}
+
+.skpe-theme-dark .skpe-bsc-relation-route-toolbar {
+  background: #17251f;
+  border-color: #3b5148;
+}
+/* SKPE-MON-ANL-01 G3.3.4.2
+ * Hierarchical brand palette:
+ * - cada perspectiva recebe uma cor-base distinta;
+ * - temas e objetivos usam a mesma familia cromatica da perspectiva;
+ * - os niveis descem em degradÃª para leitura mais clara.
+ */
+.skpe-bsc-lane {
+  --skpe-perspective-base: var(
+    --skpe-perspective-base,
+    var(--organization-accent, var(--skpe-accent, #176b53))
+  );
+  --skpe-perspective-color: var(--skpe-perspective-base);
+  --skpe-theme-color:
+    color-mix(in srgb, var(--skpe-perspective-color) 82%, white);
+  --skpe-objective-color:
+    color-mix(in srgb, var(--skpe-perspective-color) 62%, white);
+  --skpe-perspective-border:
+    color-mix(in srgb, var(--skpe-perspective-color) 84%, #0f172a);
+  --skpe-theme-border:
+    color-mix(in srgb, var(--skpe-perspective-color) 66%, #0f172a);
+  --skpe-objective-border:
+    color-mix(in srgb, var(--skpe-perspective-color) 52%, #0f172a);
+}
+
+/* Cinco perspectivas distinguiveis por tonalidade, preservando a cor-base da
+ * perspectiva/organizacao. Nao introduzir matizes arbitrarios fora da marca. */
+.skpe-bsc-lane-0 {
+  --skpe-perspective-color:
+    color-mix(in srgb, var(--skpe-perspective-base) 88%, black);
+}
+
+.skpe-bsc-lane-1 {
+  --skpe-perspective-color:
+    color-mix(in srgb, var(--skpe-perspective-base) 72%, black);
+}
+
+.skpe-bsc-lane-2 {
+  --skpe-perspective-color: var(--skpe-perspective-base);
+}
+
+.skpe-bsc-lane-3 {
+  --skpe-perspective-color:
+    color-mix(in srgb, var(--skpe-perspective-base) 78%, white);
+}
+
+.skpe-bsc-lane-4 {
+  --skpe-perspective-color:
+    color-mix(in srgb, var(--skpe-perspective-base) 58%, white);
+}
+
+.skpe-bsc-lane {
+  border-width: 2px;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--skpe-perspective-color) 98%, #0f172a);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-perspective-color) 78%, white) 0%,
+      color-mix(in srgb, var(--skpe-perspective-color) 62%, white) 100%
+    );
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--skpe-perspective-color) 24%, transparent);
+}
+
+.skpe-bsc-lane-label {
+  color: color-mix(in srgb, var(--skpe-perspective-color) 98%, #0f172a);
+  border-right-width: 2px;
+  border-right-style: solid;
+  border-right-color:
+    color-mix(in srgb, var(--skpe-perspective-color) 92%, #0f172a);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-perspective-color) 90%, white) 0%,
+      color-mix(in srgb, var(--skpe-perspective-color) 72%, white) 100%
+    );
+}
+
+/* Temas: mesma familia cromatica da perspectiva, um nivel abaixo. */
+.skpe-bsc-lane :is(
+  .skpe-bsc-theme,
+  .skpe-bsc-theme-node,
+  .skpe-bsc-theme-card,
+  [data-skpe-bsc-role="theme"],
+  [data-node-role="theme"]
+) {
+  border-color: var(--skpe-theme-border);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-theme-color) 56%, white) 0%,
+      color-mix(in srgb, var(--skpe-theme-color) 38%, white) 100%
+    );
+  box-shadow:
+    0 10px 24px color-mix(in srgb, var(--skpe-perspective-color) 14%, transparent);
+}
+
+.skpe-bsc-lane :is(
+  .skpe-bsc-theme,
+  .skpe-bsc-theme-node,
+  .skpe-bsc-theme-card,
+  [data-skpe-bsc-role="theme"],
+  [data-node-role="theme"]
+) :is(h1,h2,h3,h4,strong,.skpe-card-code,.skpe-bsc-node-title,.skpe-bsc-title) {
+  color: color-mix(in srgb, var(--skpe-perspective-color) 74%, #0f172a);
+}
+
+/* Objetivos: mesma familia, degradÃª ainda mais claro para hierarquia visual. */
+.skpe-bsc-lane :is(
+  .skpe-bsc-objective,
+  .skpe-bsc-objective-node,
+  .skpe-bsc-objective-card,
+  [data-skpe-bsc-role="objective"],
+  [data-node-role="objective"]
+) {
+  border-color: var(--skpe-objective-border);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-objective-color) 72%, white) 0%,
+      color-mix(in srgb, var(--skpe-objective-color) 48%, white) 100%
+    );
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--skpe-perspective-color) 12%, transparent);
+}
+
+.skpe-bsc-lane :is(
+  .skpe-bsc-objective,
+  .skpe-bsc-objective-node,
+  .skpe-bsc-objective-card,
+  [data-skpe-bsc-role="objective"],
+  [data-node-role="objective"]
+) :is(h1,h2,h3,h4,strong,.skpe-card-code,.skpe-bsc-node-title,.skpe-bsc-title) {
+  color: color-mix(in srgb, var(--skpe-perspective-color) 78%, #0f172a);
+}
+
+.skpe-theme-dark .skpe-bsc-lane {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-perspective-color) 28%, var(--skpe-surface, #17251f)) 0%,
+      color-mix(in srgb, var(--skpe-perspective-color) 18%, var(--skpe-surface, #17251f)) 100%
+    );
+}
+
+.skpe-theme-dark .skpe-bsc-lane-label {
+  color: #edf7f3;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-perspective-color) 42%, var(--skpe-surface, #17251f)) 0%,
+      color-mix(in srgb, var(--skpe-perspective-color) 30%, var(--skpe-surface, #17251f)) 100%
+    );
+}
+
+.skpe-theme-dark .skpe-bsc-lane :is(
+  .skpe-bsc-theme,
+  .skpe-bsc-theme-node,
+  .skpe-bsc-theme-card,
+  [data-skpe-bsc-role="theme"],
+  [data-node-role="theme"]
+) {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-theme-color) 34%, var(--skpe-surface, #17251f)) 0%,
+      color-mix(in srgb, var(--skpe-theme-color) 22%, var(--skpe-surface, #17251f)) 100%
+    );
+}
+
+.skpe-theme-dark .skpe-bsc-lane :is(
+  .skpe-bsc-objective,
+  .skpe-bsc-objective-node,
+  .skpe-bsc-objective-card,
+  [data-skpe-bsc-role="objective"],
+  [data-node-role="objective"]
+) {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skpe-objective-color) 38%, var(--skpe-surface, #17251f)) 0%,
+      color-mix(in srgb, var(--skpe-objective-color) 24%, var(--skpe-surface, #17251f)) 100%
+    );
+}
+/* SKPE-MON-ANL-01 G3.3.6 - initiative expected performance
+ * Perspective palette remains the semantic base.
+ * Execution status appears as an attention contour, not as KPI performance.
+ */
+.skpe-bsc-objective {
+  --skpe-execution-attention: transparent;
+}
+
+.skpe-bsc-objective.has-execution-green {
+  --skpe-execution-attention: #2f7a55;
+}
+
+.skpe-bsc-objective.has-execution-yellow {
+  --skpe-execution-attention: #d6a324;
+}
+
+.skpe-bsc-objective.has-execution-red {
+  --skpe-execution-attention: #b84b45;
+}
+
+.skpe-bsc-objective.has-execution-blue {
+  --skpe-execution-attention: #3c73b9;
+}
+
+.skpe-bsc-objective.has-execution-gray {
+  --skpe-execution-attention: #8a9691;
+}
+
+.skpe-bsc-objective[class*="has-execution-"] {
+  border-color:
+    color-mix(in srgb, var(--skpe-execution-attention) 72%, #ffffff);
+  box-shadow:
+    inset 4px 0 0 var(--skpe-execution-attention),
+    0 4px 12px rgba(30, 64, 50, 0.08);
+}
+
+.skpe-bsc-objective-execution {
+  border-color:
+    color-mix(in srgb, var(--skpe-execution-attention) 42%, #ffffff);
+  background:
+    color-mix(in srgb, var(--skpe-execution-attention) 10%, #ffffff);
+}
+
+.skpe-bsc-objective-execution > span:first-child {
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.9;
+}
+
+.skpe-bsc-objective-execution > span:last-child {
+  color:
+    color-mix(in srgb, var(--skpe-execution-attention) 82%, #17231e);
+}
+
+.skpe-theme-dark .skpe-bsc-objective[class*="has-execution-"] {
+  border-color:
+    color-mix(in srgb, var(--skpe-execution-attention) 74%, #263a31);
+  box-shadow:
+    inset 4px 0 0 var(--skpe-execution-attention),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.skpe-theme-dark .skpe-bsc-objective-execution {
+  border-color:
+    color-mix(in srgb, var(--skpe-execution-attention) 52%, #263a31);
+  background:
+    color-mix(in srgb, var(--skpe-execution-attention) 16%, #17251f);
+}
+
+/* SKPE-MON-ANL-01 G3.3.5 - hide redundant execution strategy label
+ * Keep initiative count and average performance visible inside the OE.
+ * Only the redundant presentational label is suppressed.
+ */
+.skpe-bsc-objective-execution::before {
+  content: none !important;
+  display: none !important;
+}
+/* SKPE-MON-ANL-01 P5 V1 responsive reading surface
+ * Give React Flow more useful viewport on larger displays.
+ * Text readability benefits from a larger fitView scale.
+ */
+.skpe-bsc-map-canvas {
+  height: clamp(600px, 78vh, 980px);
+}
+
+.skpe-bsc-objective-execution[role="button"] {
+  cursor: pointer;
+}
+
+.skpe-bsc-objective-execution[role="button"]:focus-visible,
+.skpe-bsc-objective-signal[role="button"]:focus-visible {
+  outline: 2px solid var(--organization-accent, var(--skpe-accent, #176b53));
+  outline-offset: 2px;
+}
+/* SKPE P6 V1 - compact strategic map toolbar */
+.skpe-bsc-map { gap:.5rem; }
+.skpe-bsc-toolbar { align-items:center; gap:.4rem; margin:0; }
+.skpe-bsc-toolbar button { padding:.45rem .68rem; text-transform:none; line-height:1.2; }
+.skpe-bsc-map-canvas { margin-top:0; }
+/* SKPE P6 V2 - strategic map toolbar refinement */
+.skpe-bsc-toolbar {
+  gap: 0.3rem;
+}
+
+.skpe-bsc-toolbar button {
+  padding: 0.42rem 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.skpe-bsc-map {
+  gap: 0.45rem;
+}
+/* SKPE P6 V3 - proportional map toolbar
+ * Occupies the same useful width as the map and divides available space
+ * proportionally among whichever commands are currently rendered.
+ */
+.skpe-bsc-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  width: 100%;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.skpe-bsc-toolbar button {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.55rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .skpe-bsc-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* SKPE P6 V4.1 - floating toolbar inside map canvas
+ * Secondary map commands stay visually quiet and are revealed over the map.
+ */
+.skpe-bsc-map-canvas {
+  position: relative;
+}
+
+.skpe-bsc-map-canvas > .skpe-bsc-toolbar {
+  position: absolute;
+  z-index: 40;
+  top: 0.55rem;
+  left: 50%;
+  width: min(calc(100% - 1rem), 620px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 0.22rem;
+  margin: 0;
+  padding: 0.24rem;
+  border: 1px solid rgba(190, 205, 198, 0.78);
+  border-radius: 0.68rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 22px rgba(31, 55, 45, 0.10);
+  backdrop-filter: blur(7px);
+  opacity: 1;
+  transform: translateX(-50%);
+}
+
+.skpe-bsc-map-canvas > .skpe-bsc-toolbar button {
+  width: 100%;
+  min-width: 0;
+  min-height: 1.75rem;
+  padding: 0.22rem 0.34rem;
+  border-radius: 0.42rem;
+  font-size: 0.68rem;
+  line-height: 1.05;
+  font-weight: 520;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+}
+
+.skpe-bsc-map-canvas > .skpe-bsc-toolbar button:hover {
+  background: color-mix(
+    in srgb,
+    var(--organization-accent, var(--skpe-accent, #176b53)) 5%,
+    #fff
+  );
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .skpe-bsc-map-canvas > .skpe-bsc-toolbar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -0.3rem);
+    transition:
+      opacity 140ms ease,
+      transform 140ms ease;
+  }
+
+  .skpe-bsc-map-canvas:hover > .skpe-bsc-toolbar,
+  .skpe-bsc-map-canvas > .skpe-bsc-toolbar:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .skpe-bsc-map-canvas > .skpe-bsc-toolbar {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 720px) {
+  .skpe-bsc-map-canvas > .skpe-bsc-toolbar {
+    width: calc(100% - 0.7rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* SKPE-MON-ANL-01 P7.1C V1.2 - actionable OE affordance */
+.skpe-bsc-objective {
+  cursor: default;
+}
+
+.skpe-bsc-objective-signal[role="button"],
+.skpe-bsc-objective-execution[role="button"] {
+  cursor: pointer !important;
+}
+
+.skpe-bsc-objective-signal[role="button"] {
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.skpe-bsc-objective-signal[role="button"]:hover,
+.skpe-bsc-objective-signal[role="button"]:focus-visible {
+  transform: scale(1.18);
+  box-shadow:
+    0 0 0 3px color-mix(
+      in srgb,
+      var(--organization-accent, var(--skpe-accent, #176b53)) 22%,
+      transparent
+    );
+}
+
+.skpe-bsc-objective-execution[role="button"] {
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.skpe-bsc-objective-execution[role="button"]:hover,
+.skpe-bsc-objective-execution[role="button"]:focus-visible {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, var(--skpe-accent, #176b53)) 58%,
+      #ffffff
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, var(--skpe-accent, #176b53)) 14%,
+      #ffffff
+    );
+  box-shadow:
+    0 0 0 2px color-mix(
+      in srgb,
+      var(--organization-accent, var(--skpe-accent, #176b53)) 13%,
+      transparent
+    );
+}
+
+/* SKPE-MON-ANL-01 P7.1E V1 - floating responsive map controls */
+.skpe-bsc-map {
+  position: relative;
+  width: 100%;
+  max-width: none;
+}
+
+.skpe-bsc-map-canvas {
+  width: 100%;
+  max-width: none;
+  height: clamp(680px, 80vh, 1040px);
+}
+
+.skpe-bsc-toolbar {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 48;
+  display: flex;
+  max-width: min(calc(100% - 1.5rem), 980px);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.28rem;
+  transform: translateX(-50%);
+  padding: 0.28rem;
+  border: 1px solid rgba(117, 141, 131, 0.22);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: 0 8px 26px rgba(29, 62, 50, 0.08);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  opacity: 0.34;
+  pointer-events: auto;
+  transition:
+    opacity 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.skpe-bsc-toolbar:hover,
+.skpe-bsc-toolbar:focus-within {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(29, 62, 50, 0.14);
+  opacity: 0.98;
+}
+
+.skpe-bsc-toolbar button {
+  min-height: 2rem;
+  padding: 0.38rem 0.68rem;
+  border-radius: 0.58rem;
+  font-size: clamp(0.72rem, 0.34vw + 0.64rem, 0.9rem);
+  line-height: 1.1;
+}
+
+.skpe-bsc-lane-label small {
+  font-size: clamp(0.74rem, 0.26vw + 0.68rem, 0.92rem);
+}
+
+.skpe-bsc-lane-label strong {
+  font-size: clamp(0.88rem, 0.34vw + 0.78rem, 1.12rem);
+  line-height: 1.24;
+}
+
+.skpe-bsc-theme-group > header span,
+.skpe-bsc-theme-group > header strong {
+  font-size: clamp(0.78rem, 0.28vw + 0.7rem, 0.98rem);
+}
+
+.skpe-bsc-objective small {
+  font-size: clamp(0.72rem, 0.22vw + 0.66rem, 0.9rem);
+}
+
+.skpe-bsc-objective strong {
+  font-size: clamp(0.86rem, 0.34vw + 0.76rem, 1.08rem);
+  line-height: 1.3;
+}
+
+.skpe-bsc-objective-execution {
+  font-size: clamp(0.66rem, 0.22vw + 0.61rem, 0.82rem);
+}
+
+@media (min-width: 1500px) {
+  .skpe-bsc-map-canvas {
+    height: clamp(760px, 82vh, 1120px);
+  }
+
+  .skpe-bsc-toolbar {
+    top: 0.9rem;
+    max-width: min(calc(100% - 2rem), 1180px);
+  }
+}
+
+@media (max-width: 900px) {
+  .skpe-bsc-toolbar {
+    top: 0.5rem;
+    max-width: calc(100% - 1rem);
+    opacity: 0.82;
+  }
+
+  .skpe-bsc-map-canvas {
+    min-height: 600px;
+    height: clamp(600px, 78vh, 900px);
+  }
+}
+
+.skpe-theme-dark .skpe-bsc-toolbar {
+  border-color: rgba(130, 158, 146, 0.28);
+  background: rgba(23, 37, 31, 0.58);
+}
+
+.skpe-theme-dark .skpe-bsc-toolbar:hover,
+.skpe-theme-dark .skpe-bsc-toolbar:focus-within {
+  background: rgba(23, 37, 31, 0.92);
+}

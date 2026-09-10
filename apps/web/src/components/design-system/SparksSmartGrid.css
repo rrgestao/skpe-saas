@@ -1,0 +1,337 @@
+/* COMPONENT-CANON-01 / COMPONENT-CANON-02
+   GRID-CANON-01
+   Este arquivo preserva o comportamento transversal aprovado do Grid:
+   filtro, ordenação, resize, seleção, auto-width, cabeçalho forte,
+   sticky header, navegação, duplo clique e menu contextual opcional. */
+
+.sparks-smart-grid-block {
+  width: 100%;
+  min-width: 0;
+}
+
+.sparks-smart-grid {
+  width: 100%;
+  min-width: 0;
+  height: min(58vh, 640px);
+  max-height: min(58vh, 640px);
+  min-height: 320px;
+  position: relative;
+  overflow: hidden !important;
+  border: 1px solid var(--skpe-border, #d7e2dd);
+  border-radius: 0.8rem;
+  background: var(--skpe-surface, #fff);
+}
+
+.sparks-smart-grid > .wx-willow-theme,
+.sparks-smart-grid .wx-willow-theme {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+.sparks-smart-grid .wx-grid {
+  width: 100%;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  min-width: 100%;
+  overflow: hidden !important;
+}
+
+.sparks-smart-grid .wx-grid,
+.sparks-smart-grid .wx-table,
+.sparks-smart-grid [class*='wx-table'] {
+  position: relative;
+  min-height: 0 !important;
+}
+
+/* O corpo da tabela e o scroll owner; o cabecalho permanece fora do fluxo rolavel. */
+.sparks-smart-grid :where(
+  .wx-table-body,
+  .wx-grid-body,
+  [class*='table-body'],
+  [class*='grid-body']
+) {
+  min-height: 0 !important;
+  overscroll-behavior: contain;
+}
+
+.sparks-smart-grid :where(
+  .wx-table-header,
+  .wx-header,
+  .wx-grid-header,
+  .wx-grid-head,
+  [class*='table-header'],
+  [class*='grid-header']
+) {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 80 !important;
+  background: var(--wx-table-header-background, #e4efea) !important;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-main {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-primary, var(--sparks-accent, #176b53)) 14%,
+      white
+    ) !important;
+  color: #18352c !important;
+  font-weight: 850 !important;
+  border-right-color: #bfd0c8 !important;
+  border-bottom-color: #b5c9c0 !important;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-cell {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0 0.28rem;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 850;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-filter-button,
+.sparks-smart-grid .sparks-data-explorer-header-filter-clear {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #49685d;
+  cursor: pointer;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-filter-button:hover,
+.sparks-smart-grid .sparks-data-explorer-header-filter-button--active,
+.sparks-smart-grid .sparks-data-explorer-header-filter-clear:hover {
+  background: #dcebe5;
+  color: #176b53;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-filter-input-wrap {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-filter-input {
+  width: 100%;
+  min-width: 0;
+  height: 29px;
+  padding: 0.25rem 0.42rem;
+  border: 1px solid #9eb8ad;
+  border-radius: 7px;
+  background: #fff;
+  color: #18352c;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.sparks-smart-grid .sparks-data-explorer-header-filter-input:focus {
+  border-color: #176b53;
+  box-shadow: 0 0 0 2px rgb(23 116 90 / 0.12);
+}
+
+.sparks-smart-grid__cell-center,
+.sparks-smart-grid__header-center,
+.sparks-smart-grid__header-center .sparks-data-explorer-header-cell {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.sparks-smart-grid__cell-right,
+.sparks-smart-grid__header-right,
+.sparks-smart-grid__header-right .sparks-data-explorer-header-cell {
+  text-align: right !important;
+  justify-content: flex-end !important;
+}
+
+.sparks-smart-grid__filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-bottom: 0.5rem;
+  color: var(--skpe-text-muted, #5f7068);
+  font-size: 0.78rem;
+}
+
+.sparks-smart-grid__filter-summary button {
+  border: 0;
+  background: transparent;
+  color: var(--organization-primary, #176b53);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sparks-smart-grid__empty {
+  padding: 1rem;
+  border: 1px dashed var(--skpe-border, #d7e2dd);
+  border-radius: 0.8rem;
+  text-align: center;
+  color: var(--skpe-text-muted, #5f7068);
+}
+
+.sparks-smart-grid :where(
+  [aria-selected='true'],
+  [data-selected='true'],
+  .wx-selected,
+  .wx-row-selected
+) {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-primary, var(--sparks-accent, #176b53)) 13%,
+      white
+    ) !important;
+  box-shadow:
+    inset 4px 0 0
+      var(
+        --organization-accent,
+        var(--organization-primary, var(--sparks-accent, #176b53))
+      ) !important;
+}
+
+@media (max-width: 860px) {
+  .sparks-smart-grid {
+    height: min(54vh, 520px);
+    max-height: min(54vh, 520px);
+  }
+}
+
+
+.sparks-smart-grid:focus {
+  outline: none;
+}
+
+.sparks-smart-grid:focus-visible {
+  outline: 2px solid
+    var(--organization-primary, var(--sparks-accent, #176b53));
+  outline-offset: 2px;
+}
+
+/* GRID-CANON-03 - viewport contextual
+   standard: tela com um Grid principal
+   balanced: dois ou mais Grids compartilhando a mesma tela
+   compact: apoio/seleção de baixa densidade */
+.sparks-smart-grid.sparks-smart-grid--balanced {
+  height: clamp(220px, 30vh, 340px);
+  max-height: clamp(220px, 30vh, 340px);
+  min-height: 220px;
+}
+
+.sparks-smart-grid.sparks-smart-grid--compact {
+  height: clamp(170px, 22vh, 240px);
+  max-height: clamp(170px, 22vh, 240px);
+  min-height: 170px;
+}
+
+/* GRID-CANON-04 - classificadores centralizados.
+   A classe e aplicada pela definicao canônica da coluna. */
+.sparks-smart-grid .sparks-smart-grid__cell-center {
+  text-align: center !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.sparks-smart-grid .sparks-smart-grid__cell-center > *,
+.sparks-smart-grid .sparks-smart-grid__cell-center :where(
+  span,
+  div,
+  p,
+  strong
+) {
+  width: 100%;
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.sparks-smart-grid .sparks-smart-grid__header-center,
+.sparks-smart-grid .sparks-smart-grid__header-center .sparks-data-explorer-header-cell,
+.sparks-smart-grid .sparks-smart-grid__header-center .sparks-data-explorer-header-label {
+  text-align: center !important;
+  justify-content: center !important;
+}
+/* GRID-HEADER-01 */
+.sparks-data-explorer-header-cell {
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.sparks-data-explorer-header-label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sparks-data-explorer-header-sort-icon {
+  flex: 0 0 auto;
+  opacity: 0.58;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.sparks-data-explorer-header-cell:hover
+  .sparks-data-explorer-header-sort-icon {
+  opacity: 0.95;
+}
+
+.sparks-data-explorer-header-filter-button {
+  flex: 0 0 auto;
+  opacity: 0.72;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.sparks-data-explorer-header-cell:hover
+  .sparks-data-explorer-header-filter-button,
+.sparks-data-explorer-header-filter-button:focus-visible,
+.sparks-data-explorer-header-filter-button--active {
+  opacity: 1;
+}
+
+.sparks-data-explorer-header-filter-button--active {
+  color: var(--sparks-brand-accent, #176b53);
+}
+
+.sparks-smart-grid [data-header-id] {
+  overflow: visible;
+}
+
+.sparks-smart-grid-block {
+  min-width: 0;
+}
+
+.sparks-smart-grid {
+  min-width: 0;
+  overflow-x: auto;
+}

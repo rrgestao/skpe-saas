@@ -1,0 +1,121 @@
+/*
+ * UI-VISUAL-CANON-01
+ *
+ * Regra tipográfica e cromática:
+ * - texto principal = neutro carvão, não azul;
+ * - verde SPARKs = acento, ação, contexto e seleção;
+ * - Manrope = títulos e números executivos;
+ * - Inter = navegação, formulários, grids, tabelas e texto operacional.
+ */
+
+:root {
+  --sparks-font-heading: Manrope, ui-sans-serif, system-ui, sans-serif;
+  --sparks-font-body: Inter, ui-sans-serif, system-ui, sans-serif;
+
+  --sparks-text-primary: #1f2925;
+  --sparks-text-secondary: #4f5e57;
+  --sparks-text-muted: #718078;
+
+  --sparks-brand-accent: #176b53;
+  --sparks-brand-accent-strong: #115541;
+  --sparks-brand-accent-soft: #e7f3ee;
+
+  --sparks-surface-canvas: #f4f6f5;
+  --sparks-surface-card: #ffffff;
+  --sparks-surface-subtle: #f7f9f8;
+  --sparks-border-soft: #dce5e1;
+}
+
+body,
+button,
+input,
+select,
+textarea,
+table,
+.platform-shell,
+.application-shell,
+.skpe-shell {
+  font-family: var(--sparks-font-body) !important;
+  color: var(--sparks-text-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+.brand-name,
+.skpe-cockpit-context strong,
+.network-summary-card strong {
+  font-family: var(--sparks-font-heading) !important;
+  color: var(--sparks-text-primary) !important;
+}
+
+p,
+span,
+small,
+label,
+dt,
+dd,
+.supporting-text,
+.brand-caption {
+  font-family: var(--sparks-font-body);
+}
+
+.eyebrow,
+.organization-code,
+.module-code,
+.back-button,
+.text-button,
+.platform-content a,
+.skpe-main a {
+  color: var(--sparks-brand-accent) !important;
+}
+
+.topbar,
+.platform-shell,
+.platform-content {
+  color: var(--sparks-text-primary) !important;
+}
+
+.platform-content > .page-heading h1 {
+  color: var(--sparks-text-primary) !important;
+}
+
+.platform-content table,
+.platform-content table th,
+.platform-content table td {
+  color: var(--sparks-text-primary) !important;
+}
+
+.platform-content table th {
+  background: #eef2f0 !important;
+}
+
+.platform-content table td {
+  background: var(--sparks-surface-card) !important;
+}
+
+.primary-list-view-toggle button.active,
+.primary-list-sort.active {
+  color: var(--sparks-brand-accent) !important;
+}
+
+/* Dark mode mantém neutralidade; não transforma texto em azul. */
+:root[data-sparks-theme='dark'] {
+  --sparks-text-primary: #edf4f0;
+  --sparks-text-secondary: #c6d2cc;
+  --sparks-text-muted: #9fb0a7;
+  --sparks-brand-accent: #78c7aa;
+  --sparks-brand-accent-strong: #9bdbc4;
+}
+
+:root[data-sparks-theme='dark'] body,
+:root[data-sparks-theme='dark'] h1,
+:root[data-sparks-theme='dark'] h2,
+:root[data-sparks-theme='dark'] h3,
+:root[data-sparks-theme='dark'] h4,
+:root[data-sparks-theme='dark'] table,
+:root[data-sparks-theme='dark'] th,
+:root[data-sparks-theme='dark'] td {
+  color: var(--sparks-text-primary) !important;
+}

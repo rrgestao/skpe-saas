@@ -1,0 +1,46 @@
+/* GRID-TREE-01B V1.1 — native SparksSmartGrid tree consumer */
+
+.organization-hierarchy-view--smart-grid {
+  width: 100%;
+  min-width: 0;
+  margin-top: var(--sparks-space-3, 0.75rem) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--sparks-border-soft, #dce5e1) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+}
+
+.organization-hierarchy-smart-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.organization-hierarchy-smart-grid .sparks-smart-grid {
+  min-height: clamp(300px, 52vh, 610px);
+  max-height: min(68vh, 680px);
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.organization-hierarchy-smart-grid .wx-tree-cell {
+  font-weight: 750;
+}
+
+.organization-hierarchy-smart-grid .wx-table-tree-toggle {
+  color: var(--sparks-brand-accent, #176b53) !important;
+}
+
+.organization-hierarchy-smart-grid
+  .sparks-smart-grid__header-center,
+.organization-hierarchy-smart-grid
+  .sparks-smart-grid__cell-center {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+:root[data-sparks-theme='dark']
+  .organization-hierarchy-view--smart-grid {
+  background: var(--sparks-dark-surface) !important;
+  border-color: var(--sparks-dark-border) !important;
+}

@@ -43,6 +43,7 @@ import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoa
 import { InitiativeDataExplorerBeta } from '../initiatives/explorer/InitiativeDataExplorerBeta'
 import { InitiativePortfolioSmartGrid } from '../initiatives/components/InitiativePortfolioSmartGrid'
 import { InitiativePerformanceCockpit } from '../initiatives/analytics/InitiativePerformanceCockpit'
+import { MeasuresPerformanceWorkspace } from '../measures/MeasuresPerformanceWorkspace'
 import '../initiatives/InitiativeWorkspace.css'
 import { InitiativeEconomicExecutionDialog } from '../initiatives/economics/InitiativeEconomicExecutionDialog'
 import { InitiativeScheduleWorkspace } from '../initiatives/schedule/InitiativeScheduleWorkspace'
@@ -69,7 +70,8 @@ export type CockpitSection =
   | 'strategic-positioning'
   | 'evolution-cycles'
   | 'initiatives'
-  | 'monitoring'
+    | 'indicators'
+| 'monitoring'
   | 'agenda'
   | 'artifacts'
   | 'governance'
@@ -1741,17 +1743,20 @@ type InitiativesSectionProps = {
   organizationId: string
   canManageCanvas: boolean
   canManageInitiatives: boolean
+  canAdjustStrategicMap: boolean
   drilldownTarget: {
     initiativeId: string
     actionId: string | null
   } | null
   refreshRequestKey?: number
+  analyticsReturnRequestKey?: number
   JourneyIcon: () => ReactNode
   MonitoringIcon: () => ReactNode
   canViewJourney: boolean
   canViewMonitoring: boolean
   onOpenJourney: () => void
   onOpenMonitoring: () => void
+  onObjectivePerformanceDrilldown: (objectiveId: string, objectiveTitle: string) => void
 }
 
 function getInitiativeClassLabel(value: string) {
@@ -1792,14 +1797,17 @@ function InitiativesSection({
   organizationId,
   canManageCanvas,
   canManageInitiatives,
+  canAdjustStrategicMap,
   drilldownTarget,
   refreshRequestKey = 0,
+  analyticsReturnRequestKey = 0,
   JourneyIcon,
   MonitoringIcon,
   canViewJourney,
   canViewMonitoring,
   onOpenJourney,
   onOpenMonitoring,
+  onObjectivePerformanceDrilldown,
 }: InitiativesSectionProps) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -1823,9 +1831,20 @@ function InitiativesSection({
     useState<InitiativeParentCandidate[]>([])
   const [formMessage, setFormMessage] = useState<ActionMessage | null>(null)
   const [quickFilter, setQuickFilter] = useState('all')
+  const [objectiveInitiativeFilter, setObjectiveInitiativeFilter] = useState<{
+    objectiveId: string
+    objectiveTitle: string
+    initiativeIds: string[]
+  } | null>(null)
   const [initiativeViewMode, setInitiativeViewMode] =
     useState<'portfolio' | 'explorer' | 'kanban' | 'analytics'>('portfolio')
-  const [kanbanInitiativeId, setKanbanInitiativeId] =
+
+  useEffect(() => {
+    if (analyticsReturnRequestKey <= 0) return
+    setObjectiveInitiativeFilter(null)
+    setInitiativeViewMode('analytics')
+  }, [analyticsReturnRequestKey])
+const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
   const [selectedPortfolioInitiativeId, setSelectedPortfolioInitiativeId] =
     useState<string | null>(null)
@@ -2028,6 +2047,9 @@ function InitiativesSection({
         (initiative.category_name ?? '')
           .toLowerCase()
           .includes(normalized)
+      const matchesObjectiveInitiativeFilter =
+        !objectiveInitiativeFilter ||
+        objectiveInitiativeFilter.initiativeIds.includes(initiative.initiative_id)
 
       const matchesQuickFilter =
         quickFilter === 'all' ||
@@ -2063,6 +2085,7 @@ function InitiativesSection({
       return (
         matchesSearch &&
         matchesQuickFilter &&
+        matchesObjectiveInitiativeFilter &&
         (
           areaFilter === 'all' ||
           initiative.responsible_area_name ===
@@ -2075,6 +2098,8 @@ function InitiativesSection({
     searchTerm,
     areaFilter,
     quickFilter,
+
+    objectiveInitiativeFilter,
   ])
   const loadInitiatives = async () => {
     setLoading(true)
@@ -2192,9 +2217,19 @@ function InitiativesSection({
   }
 
   const closeInitiativeWorkspace = () => {
+    const returnToObjectiveMap = Boolean(objectiveInitiativeFilter)
+
     setKanbanInitiativeId(null)
     setInitiativeWorkspaceTab('summary')
-    setInitiativeViewMode('portfolio')
+    setInitiativeDetailFrameOpen(false)
+    setSelectedPortfolioInitiativeId(null)
+
+    if (returnToObjectiveMap) {
+      setObjectiveInitiativeFilter(null)
+      setInitiativeViewMode('analytics')
+    } else {
+      setInitiativeViewMode('portfolio')
+    }
 
     if (requestedInitiativeId) {
       const params = new URLSearchParams(location.search)
@@ -2230,7 +2265,7 @@ function InitiativesSection({
 
       <section className={`skpe-page-heading skpe-administration-heading skpe-initiatives-context-actions ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div className="skpe-shell-consumed-page-heading" aria-hidden="true">
-          <p className="skpe-eyebrow">Execução da estratégia</p>
+
           <h1>Plano de Ação</h1>
           <p>Acompanhe as iniciativas estratégicas e sua execução governada.</p>
         </div>
@@ -2523,12 +2558,88 @@ function InitiativesSection({
         </section>
       )}
 
-            <div className="skpe-initiative-executive-title">
-        <h2>
-          {initiativeViewMode === 'analytics'
-            ? 'Cockpit de Resultados e Desempenho'
-            : 'Visão executiva das iniciativas'}
-        </h2>
+            <div
+        id="skpe-initiative-results"
+        className="skpe-initiative-executive-title skpe-initiative-executive-title-with-modes"
+      >
+        <div className="skpe-initiative-executive-title-copy">
+          <h2>
+            {initiativeViewMode === 'analytics'
+              ? 'Painel de Resultados e Desempenho'
+              : initiativeViewMode === 'explorer'
+                ? 'Exploração hierárquica'
+                : 'Visão executiva das iniciativas'}
+          </h2>
+
+          {initiativeViewMode === 'analytics' ? (
+            <p className="skpe-initiative-executive-description">
+              Onde queremos chegar, como estamos performando, o que está sendo executado e onde a gestão precisa agir.
+            </p>
+          ) : null}
+        </div>
+
+        <div
+          className="skpe-initiative-title-mode-actions"
+          role="group"
+          aria-label="Alternar modo de visualização"
+        >
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'portfolio' ? 'is-active' : ''}`}
+            onClick={() => setInitiativeViewMode('portfolio')}
+            title="Visão executiva"
+            aria-label="Visão executiva"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 7h14" />
+              <path d="M5 12h14" />
+              <path d="M5 17h14" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'explorer' ? 'is-active' : ''}`}
+            onClick={() => setInitiativeViewMode('explorer')}
+            title="Exploração hierárquica"
+            aria-label="Exploração hierárquica"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.8" />
+              <circle cx="6" cy="18" r="1.8" />
+              <circle cx="18" cy="18" r="1.8" />
+              <path d="M12 6.8v5.2" />
+              <path d="M6 16.2v-2.4h12v2.4" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'analytics' ? 'is-active' : ''}`}
+            onClick={() => setInitiativeViewMode('analytics')}
+            title="Painel de desempenho"
+            aria-label="Painel de desempenho"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="7.2" />
+              <path d="M12 12 16.6 8.8" />
+              <path d="M12 4.8v1.7" />
+              <path d="M19.2 12h-1.7" />
+              <path d="M12 19.2v-1.7" />
+              <path d="M4.8 12h1.7" />
+            </svg>
+          </button>
+        </div>
+
+        {quickFilter !== 'all' && initiativeViewMode !== 'kanban' ? (
+          <button
+            type="button"
+            className="skpe-user-details-button skpe-initiative-title-clear-filter"
+            onClick={() => setQuickFilter('all')}
+          >
+            Limpar filtro do cartão
+          </button>
+        ) : null}
       </div>
 <section className={`skpe-initiative-filters ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div className="skpe-admin-search">
@@ -2599,75 +2710,6 @@ function InitiativesSection({
           <option value="completed">Concluídas</option>
           <option value="cancelled">Canceladas</option>
         </select>
-      </section>
-      <section id="skpe-initiative-results" className={`skpe-initiative-results-heading ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
-        <div>
-          <p className="skpe-card-code">Painel analítico</p>
-          <h2>
-            {initiativeViewMode === 'portfolio'
-              ? ''
-              : 'Exploração hierárquica'}
-          </h2>
-
-        </div>
-
-        <div className="skpe-initiative-view-actions">
-          <div
-            className="skpe-initiative-view-toggle"
-            role="group"
-            aria-label="Visualização do painel de iniciativas"
-          >
-            <button
-              type="button"
-              className={
-                initiativeViewMode === 'portfolio'
-                  ? 'skpe-initiative-view-toggle-active'
-                  : ''
-              }
-              onClick={() =>
-                setInitiativeViewMode('portfolio')
-              }
-            >
-              Visão executiva
-            </button>
-            <button
-              type="button"
-              className={`skpe-chip ${initiativeViewMode === 'analytics' ? 'is-active' : ''}`}
-              onClick={() => setInitiativeViewMode('analytics')}
-            >
-              Cockpit de desempenho
-            </button>
-
-            <button
-              type="button"
-              className={
-                initiativeViewMode === 'explorer'
-                  ? 'skpe-initiative-view-toggle-active'
-                  : ''
-              }
-              onClick={() =>
-                setInitiativeViewMode('explorer')
-              }
-            >
-              Exploração hierárquica
-            </button>
-
-
-          </div>
-
-          {quickFilter !== 'all' &&
-            initiativeViewMode !== 'kanban' && (
-              <button
-                type="button"
-                className="skpe-user-details-button"
-                onClick={() =>
-                  setQuickFilter('all')
-                }
-              >
-                Limpar filtro do cartão
-              </button>
-            )}
-        </div>
       </section>
       {dashboard && initiativeViewMode === 'portfolio' ? (
         <section
@@ -2995,10 +3037,25 @@ function InitiativesSection({
         <InitiativePerformanceCockpit
           dashboard={dashboard}
           initiatives={initiatives}
+          canAdjustStrategicMap={canAdjustStrategicMap}
           onStatusDrilldown={(filter) => {
+            setObjectiveInitiativeFilter(null)
             setQuickFilter(filter)
             setInitiativeViewMode('portfolio')
           }}
+          onObjectiveInitiativesDrilldown={(objectiveId, objectiveTitle, initiativeIds) => {
+            setObjectiveInitiativeFilter({
+              objectiveId,
+              objectiveTitle,
+              initiativeIds,
+            })
+            setQuickFilter('all')
+            setSearchTerm('')
+            setAreaFilter('all')
+            setStatusFilter('all')
+            setInitiativeViewMode('portfolio')
+          }}
+          onObjectivePerformanceDrilldown={onObjectivePerformanceDrilldown}
         />
       ) : initiativeViewMode === 'explorer' ? (
         <InitiativeDataExplorerBeta
@@ -3007,7 +3064,28 @@ function InitiativesSection({
         />
       ) : (
         <section className="skpe-initiative-operational-layout">
-          <div className="skpe-initiative-operational-layout__grid">
+          {objectiveInitiativeFilter ? (
+            <div className="skpe-admin-state-card">
+              <p>
+                <strong>Iniciativas vinculadas ao OE:</strong>{' '}
+                {objectiveInitiativeFilter.objectiveTitle}
+              </p>
+              <button
+                type="button"
+                className="skpe-user-details-button"
+                onClick={() => {
+                  setObjectiveInitiativeFilter(null)
+                  setInitiativeViewMode('analytics')
+                }}
+              >
+                Voltar ao Mapa Estratégico
+              </button>
+            </div>
+          ) : null}
+          <div
+            className="skpe-initiative-operational-layout__grid"
+            data-skpe-oe-initiative-grid
+          >
             <InitiativePortfolioSmartGrid
               initiatives={filteredInitiatives}
               selectedInitiativeId={selectedPortfolioInitiativeId}
@@ -3016,6 +3094,11 @@ function InitiativesSection({
               }}
               onOpenInitiative={(initiative) => {
                 setSelectedPortfolioInitiativeId(initiative.initiative_id)
+                if (objectiveInitiativeFilter) {
+                  setInitiativeDetailFrameOpen(false)
+                  openInitiativeKanban(initiative)
+                  return
+                }
                 setInitiativeDetailFrameOpen(true)
               }}
             />
@@ -3048,7 +3131,14 @@ function InitiativesSection({
                     <button
                       type="button"
                       className="skpe-user-details-button"
-                      onClick={() => setInitiativeDetailFrameOpen(false)}
+                      onClick={() => {
+                        setInitiativeDetailFrameOpen(false)
+                        setSelectedPortfolioInitiativeId(null)
+                        if (objectiveInitiativeFilter) {
+                          setObjectiveInitiativeFilter(null)
+                          setInitiativeViewMode('analytics')
+                        }
+                      }}
                     >
                       Fechar
                     </button>
@@ -7684,7 +7774,11 @@ export function SkpeCockpit({
     initiativeId: string
     actionId: string | null
   } | null>(null)
-  const [startingProject, setStartingProject] = useState(false)
+    const [measureDrilldown, setMeasureDrilldown] = useState<{
+    objectiveId: string
+    objectiveTitle: string
+  } | null>(null)
+const [startingProject, setStartingProject] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [personalWorkspaceOverlay, setPersonalWorkspaceOverlay] =
@@ -7692,6 +7786,7 @@ export function SkpeCockpit({
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [journeyRefreshRequestKey, setJourneyRefreshRequestKey] = useState(0)
   const [initiativesRefreshRequestKey, setInitiativesRefreshRequestKey] = useState(0)
+  const [initiativesAnalyticsReturnRequestKey, setInitiativesAnalyticsReturnRequestKey] = useState(0)
   const [monitoringRefreshRequestKey, setMonitoringRefreshRequestKey] = useState(0)
   const [agendaRefreshRequestKey, setAgendaRefreshRequestKey] = useState(0)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sparks-theme') === 'dark' ? 'dark' : 'light'))
@@ -7959,6 +8054,7 @@ export function SkpeCockpit({
       formulations: canShowFormulation,
       'evolution-cycles': canViewEvolution,
       initiatives: canViewInitiatives,
+      indicators: canViewMonitoring,
       monitoring: canViewMonitoring,
       agenda: canViewAgenda,
       artifacts: canViewArtifacts,
@@ -7992,7 +8088,9 @@ export function SkpeCockpit({
         return 'Ciclos de Evolução'
       case 'initiatives':
         return 'Acompanhamento e Evolução Contínua'
-      case 'monitoring':
+            case 'indicators':
+        return 'Medidas e Desempenho'
+case 'monitoring':
         return 'Monitoramento'
       case 'agenda':
         return 'Agenda'
@@ -8213,6 +8311,22 @@ export function SkpeCockpit({
                 <StructureIcon />
                 <span>Estrutura organizacional</span>
               </button>
+              <button
+                type="button"
+                className={
+                  activeSection === 'indicators'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() =>
+                  navigateToSection('indicators')
+                }
+                title="Medidas e Desempenho"
+              >
+                <MonitoringIcon />
+                <span>Medidas e Desempenho</span>
+              </button>
+
 
               <button
                 type="button"
@@ -8395,27 +8509,7 @@ export function SkpeCockpit({
               </button>
             )}
 
-            <button
-              type="button"
-              className="skpe-cockpit-icon-button"
-              onClick={() =>
-                setTheme(theme === 'light' ? 'dark' : 'light')
-              }
-              aria-label={
-                theme === 'light'
-                  ? 'Ativar tema escuro'
-                  : 'Ativar tema claro'
-              }
-              title={
-                theme === 'light'
-                  ? 'Ativar tema escuro'
-                  : 'Ativar tema claro'
-              }
-            >
-              <span aria-hidden="true">
-                {theme === 'light' ? '☾' : '☀'}
-              </span>
-            </button>
+
             {isPlatformSuperAdmin && onOpenPlatformAdmin && (
               <button
                 type="button"
@@ -8489,6 +8583,19 @@ export function SkpeCockpit({
                       }}
                     >
                       Meu perfil
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setUserMenuOpen(false)
+                        setTheme(theme === 'light' ? 'dark' : 'light')
+                      }}
+                    >
+                      {theme === 'light'
+                        ? 'Aparência: usar modo escuro'
+                        : 'Aparência: usar modo claro'}
                     </button>
 
                     {mode === 'module' && (
@@ -8648,6 +8755,7 @@ export function SkpeCockpit({
             <StrategicFormulationSection
               organizationId={organizationId}
               projectId={projectContext.project_id}
+              canAdjustStrategicMap={canManageGovernance}
             />
           )}
         {activeSection === 'strategic-identity' && canViewJourney && (
@@ -8733,16 +8841,61 @@ export function SkpeCockpit({
             canManageInitiatives={
               canManageInitiatives
             }
+            canAdjustStrategicMap={
+              canManageGovernance
+            }
             drilldownTarget={initiativeDrilldown}
             refreshRequestKey={initiativesRefreshRequestKey}
+            analyticsReturnRequestKey={initiativesAnalyticsReturnRequestKey}
             JourneyIcon={JourneyIcon}
             MonitoringIcon={MonitoringIcon}
             canViewJourney={canViewJourney}
             canViewMonitoring={canViewMonitoring}
             onOpenJourney={() => navigateToSection('journey')}
             onOpenMonitoring={() => navigateToSection('monitoring')}
+            onObjectivePerformanceDrilldown={(objectiveId, objectiveTitle) => {
+              setMeasureDrilldown({ objectiveId, objectiveTitle })
+              navigateToSection('indicators')
+            }}
           />
         )}
+        {activeSection === 'indicators' && (
+          <MeasuresPerformanceWorkspace
+            organizationId={organizationId}
+            projectId={
+              mode === 'module'
+                ? projectContext?.project_id ?? null
+                : null
+            }
+            sourceModuleCode="SK-PE"
+            subjectType={
+              mode === 'module' && measureDrilldown
+                ? 'strategic_objective'
+                : null
+            }
+            subjectId={
+              mode === 'module'
+                ? measureDrilldown?.objectiveId ?? null
+                : null
+            }
+            subjectLabel={
+              mode === 'module'
+                ? measureDrilldown?.objectiveTitle ?? null
+                : null
+            }
+            mode={
+              mode === 'organization-admin'
+                ? 'administration'
+                : 'context'
+            }
+            onBack={mode === 'module' ? () => {
+              setMeasureDrilldown(null)
+              setInitiativesAnalyticsReturnRequestKey((current) => current + 1)
+              navigateToSection('initiatives')
+            } : undefined}
+          />
+        )}
+
 
         {activeSection === 'monitoring' && canViewMonitoring && (
           <MonitoringSection

@@ -1,0 +1,261 @@
+/*
+ * UI-THEME-01 — tema escuro transversal
+ *
+ * Contrato:
+ * - aparência é preferência global, não de uma única tela;
+ * - contraste e legibilidade precedem decoração;
+ * - cores semânticas preservam significado;
+ * - superfícies, grids, formulários, headers e navegação compartilham tokens.
+ */
+
+:root[data-sparks-theme='dark'] {
+  color-scheme: dark;
+
+  --sparks-dark-canvas: #111714;
+  --sparks-dark-surface: #18201c;
+  --sparks-dark-surface-2: #202a25;
+  --sparks-dark-surface-3: #26322c;
+  --sparks-dark-border: #34433c;
+  --sparks-dark-border-strong: #44574e;
+  --sparks-dark-text: #edf4f0;
+  --sparks-dark-text-soft: #c6d2cc;
+  --sparks-dark-text-muted: #9fb0a7;
+  --sparks-dark-primary: #6fc3a6;
+  --sparks-dark-primary-strong: #8bd5bb;
+  --sparks-dark-focus: rgba(111, 195, 166, 0.34);
+
+  --surface: var(--sparks-dark-surface);
+  --border: var(--sparks-dark-border);
+  --skpe-surface: var(--sparks-dark-surface);
+  --sparks-role-text-muted: var(--sparks-dark-text-muted);
+}
+
+:root[data-sparks-theme='dark'] body,
+:root[data-sparks-theme='dark'] #root {
+  background: var(--sparks-dark-canvas) !important;
+  color: var(--sparks-dark-text) !important;
+}
+
+/* ---------- superfícies globais ---------- */
+:root[data-sparks-theme='dark'] .platform-shell,
+:root[data-sparks-theme='dark'] .application-shell,
+:root[data-sparks-theme='dark'] .application-shell-content,
+:root[data-sparks-theme='dark'] .skpe-shell,
+:root[data-sparks-theme='dark'] .skpe-main,
+:root[data-sparks-theme='dark'] .platform-content {
+  background: var(--sparks-dark-canvas) !important;
+  color: var(--sparks-dark-text) !important;
+}
+
+:root[data-sparks-theme='dark'] .topbar,
+:root[data-sparks-theme='dark'] .application-shell-header,
+:root[data-sparks-theme='dark'] .application-shell-sidebar,
+:root[data-sparks-theme='dark'] .application-shell-footer,
+:root[data-sparks-theme='dark'] .skpe-cockpit-header,
+:root[data-sparks-theme='dark'] .skpe-sidebar,
+:root[data-sparks-theme='dark'] .panel,
+:root[data-sparks-theme='dark'] .organization-card,
+:root[data-sparks-theme='dark'] .module-card,
+:root[data-sparks-theme='dark'] .network-dashboard,
+:root[data-sparks-theme='dark'] .network-summary-card,
+:root[data-sparks-theme='dark'] .state-card,
+:root[data-sparks-theme='dark'] .primary-list-toolbar,
+:root[data-sparks-theme='dark'] .sparks-transversal-workspace__pane,
+:root[data-sparks-theme='dark'] .sparks-measure-dual-selector__pane,
+:root[data-sparks-theme='dark'] .platform-account-menu-popover {
+  background: var(--sparks-dark-surface) !important;
+  color: var(--sparks-dark-text) !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+/* ---------- textos ---------- */
+:root[data-sparks-theme='dark'] h1,
+:root[data-sparks-theme='dark'] h2,
+:root[data-sparks-theme='dark'] h3,
+:root[data-sparks-theme='dark'] h4,
+:root[data-sparks-theme='dark'] strong,
+:root[data-sparks-theme='dark'] .brand-name,
+:root[data-sparks-theme='dark'] .organization-card dd,
+:root[data-sparks-theme='dark'] .module-meta strong {
+  color: var(--sparks-dark-text) !important;
+}
+
+:root[data-sparks-theme='dark'] p,
+:root[data-sparks-theme='dark'] span,
+:root[data-sparks-theme='dark'] small,
+:root[data-sparks-theme='dark'] label,
+:root[data-sparks-theme='dark'] dt,
+:root[data-sparks-theme='dark'] .supporting-text,
+:root[data-sparks-theme='dark'] .brand-caption,
+:root[data-sparks-theme='dark'] .module-description,
+:root[data-sparks-theme='dark'] .module-meta span,
+:root[data-sparks-theme='dark'] .organization-card dt {
+  color: var(--sparks-dark-text-soft);
+}
+
+:root[data-sparks-theme='dark'] .eyebrow,
+:root[data-sparks-theme='dark'] .organization-code,
+:root[data-sparks-theme='dark'] .module-code {
+  color: var(--sparks-dark-primary-strong) !important;
+}
+
+/* ---------- headers / navegação ---------- */
+:root[data-sparks-theme='dark'] .topbar,
+:root[data-sparks-theme='dark'] .application-shell-header,
+:root[data-sparks-theme='dark'] .application-shell-sidebar,
+:root[data-sparks-theme='dark'] .skpe-cockpit-header,
+:root[data-sparks-theme='dark'] .skpe-sidebar {
+  border-color: var(--sparks-dark-border) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+}
+
+:root[data-sparks-theme='dark'] .application-shell-navigation-item,
+:root[data-sparks-theme='dark'] .skpe-navigation button {
+  color: var(--sparks-dark-text-soft) !important;
+}
+
+:root[data-sparks-theme='dark'] .application-shell-navigation-item:hover,
+:root[data-sparks-theme='dark'] .application-shell-navigation-item:focus-visible,
+:root[data-sparks-theme='dark'] .skpe-navigation button:hover,
+:root[data-sparks-theme='dark'] .skpe-navigation button:focus-visible {
+  background: rgba(111,195,166,0.10) !important;
+  color: var(--sparks-dark-primary-strong) !important;
+}
+
+:root[data-sparks-theme='dark'] .application-shell-navigation-item.active,
+:root[data-sparks-theme='dark'] .skpe-navigation button.active {
+  background: rgba(111,195,166,0.16) !important;
+  border-color: rgba(111,195,166,0.28) !important;
+  color: var(--sparks-dark-primary-strong) !important;
+}
+
+/* ---------- formulários ---------- */
+:root[data-sparks-theme='dark'] input,
+:root[data-sparks-theme='dark'] select,
+:root[data-sparks-theme='dark'] textarea {
+  background: var(--sparks-dark-surface-2) !important;
+  color: var(--sparks-dark-text) !important;
+  border-color: var(--sparks-dark-border-strong) !important;
+}
+
+:root[data-sparks-theme='dark'] input::placeholder,
+:root[data-sparks-theme='dark'] textarea::placeholder {
+  color: var(--sparks-dark-text-muted) !important;
+}
+
+:root[data-sparks-theme='dark'] input:focus,
+:root[data-sparks-theme='dark'] select:focus,
+:root[data-sparks-theme='dark'] textarea:focus {
+  border-color: var(--sparks-dark-primary) !important;
+  outline-color: var(--sparks-dark-focus) !important;
+}
+
+/* ---------- botões ---------- */
+:root[data-sparks-theme='dark'] .secondary-button,
+:root[data-sparks-theme='dark'] .platform-admin-topbar-icon-button,
+:root[data-sparks-theme='dark'] .platform-theme-button,
+:root[data-sparks-theme='dark'] .primary-list-sort,
+:root[data-sparks-theme='dark'] .primary-list-view-toggle button,
+:root[data-sparks-theme='dark'] .skpe-cockpit-icon-button {
+  background: var(--sparks-dark-surface-2) !important;
+  color: var(--sparks-dark-text) !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+:root[data-sparks-theme='dark'] .primary-button,
+:root[data-sparks-theme='dark'] .organization-access-button,
+:root[data-sparks-theme='dark'] .module-access-button {
+  background: #2f8f70 !important;
+  color: #ffffff !important;
+}
+
+/* ---------- badges ---------- */
+:root[data-sparks-theme='dark'] .badge-platform,
+:root[data-sparks-theme='dark'] .badge-organization,
+:root[data-sparks-theme='dark'] .organization-summary span {
+  background: var(--sparks-dark-surface-2) !important;
+  color: var(--sparks-dark-text-soft) !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+/* ---------- tabelas e SmartGrid ---------- */
+:root[data-sparks-theme='dark'] table,
+:root[data-sparks-theme='dark'] .network-table,
+:root[data-sparks-theme='dark'] .sparks-smart-grid,
+:root[data-sparks-theme='dark'] .wx-grid,
+:root[data-sparks-theme='dark'] .wx-table {
+  background: var(--sparks-dark-surface) !important;
+  color: var(--sparks-dark-text) !important;
+}
+
+:root[data-sparks-theme='dark'] th,
+:root[data-sparks-theme='dark'] .wx-header,
+:root[data-sparks-theme='dark'] .wx-header .wx-cell {
+  background: var(--sparks-dark-surface-3) !important;
+  color: var(--sparks-dark-text) !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+:root[data-sparks-theme='dark'] td,
+:root[data-sparks-theme='dark'] .wx-cell {
+  background: var(--sparks-dark-surface) !important;
+  color: var(--sparks-dark-text-soft) !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+:root[data-sparks-theme='dark'] tr:hover td,
+:root[data-sparks-theme='dark'] .wx-row:hover .wx-cell {
+  background: var(--sparks-dark-surface-2) !important;
+}
+
+:root[data-sparks-theme='dark'] .wx-row.wx-selected .wx-cell,
+:root[data-sparks-theme='dark'] .wx-cell.wx-selected {
+  background: rgba(111,195,166,0.17) !important;
+}
+
+/* ---------- conta ---------- */
+:root[data-sparks-theme='dark'] .platform-account-menu-identity {
+  border-color: var(--sparks-dark-border) !important;
+}
+
+:root[data-sparks-theme='dark'] .platform-account-menu-popover > button {
+  color: var(--sparks-dark-text-soft) !important;
+}
+
+:root[data-sparks-theme='dark'] .platform-account-menu-popover > button:hover:not(:disabled),
+:root[data-sparks-theme='dark'] .platform-account-menu-popover > button:focus-visible {
+  background: var(--sparks-dark-surface-2) !important;
+  color: var(--sparks-dark-primary-strong) !important;
+}
+
+:root[data-sparks-theme='dark'] .platform-account-menu-popover > .platform-account-menu-logout {
+  color: #ffb1b1 !important;
+  border-color: var(--sparks-dark-border) !important;
+}
+
+/* ---------- mensagens semânticas: significado preservado ---------- */
+:root[data-sparks-theme='dark'] .message-info {
+  background: #17283a !important;
+  border-color: #36516b !important;
+  color: #d8eaff !important;
+}
+
+:root[data-sparks-theme='dark'] .message-success {
+  background: #173227 !important;
+  border-color: #35634d !important;
+  color: #d8f2e4 !important;
+}
+
+:root[data-sparks-theme='dark'] .message-error {
+  background: #3a1d20 !important;
+  border-color: #704249 !important;
+  color: #ffd8dc !important;
+}
+
+/* ---------- foco ---------- */
+:root[data-sparks-theme='dark'] button:focus-visible,
+:root[data-sparks-theme='dark'] [role='button']:focus-visible,
+:root[data-sparks-theme='dark'] summary:focus-visible {
+  outline: 3px solid var(--sparks-dark-focus) !important;
+  outline-offset: 2px;
+}

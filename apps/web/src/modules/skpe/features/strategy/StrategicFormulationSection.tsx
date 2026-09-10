@@ -28,6 +28,7 @@ type InitiativeRow = {
 type Props = {
   organizationId: string
   projectId: string
+  canAdjustStrategicMap: boolean
 }
 
 function percent(value: number | null | undefined) {
@@ -39,6 +40,7 @@ function percent(value: number | null | undefined) {
 export function StrategicFormulationSection({
   organizationId,
   projectId,
+  canAdjustStrategicMap,
 }: Props) {
   const [formulationId, setFormulationId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<FormulationTab>('overview')
@@ -201,7 +203,10 @@ export function StrategicFormulationSection({
 
       {activeTab === 'architecture' ? (
         <section className="skpe-formulation-tab-panel">
-          <StrategicBscMap formulationId={formulationId} />
+          <StrategicBscMap
+            formulationId={formulationId}
+            canAdjustLayout={canAdjustStrategicMap}
+          />
           <StrategicArchitectureSummary formulationId={formulationId} />
         </section>
       ) : null}

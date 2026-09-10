@@ -4,6 +4,7 @@ import type { FormEvent, KeyboardEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { prepareOrganizationLogo } from './prepareOrganizationLogo'
 import { AdminUserAvatarEditor } from './AdminUserAvatarEditor'
+import { PlatformMeasureCatalog } from './PlatformMeasureCatalog'
 import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
 
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
@@ -21,6 +22,7 @@ type AdminTab =
   | 'memberships'
   | 'modules'
   | 'roles'
+  | 'measure-catalog'
   | 'invitations'
   | 'portability'
 
@@ -513,6 +515,7 @@ const TAB_LABELS: Record<AdminTab, string> = {
   memberships: 'Vínculos e acessos',
   modules: 'Módulos',
   roles: 'Perfis globais',
+  'measure-catalog': 'Medidas e Desempenho',
   invitations: 'Convites',
   portability: 'Importação, exportação e portabilidade',
 }
@@ -1836,10 +1839,11 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     const childrenByParent = new Map<string, Organization[]>()
     const rootKey = '__root__'
 
-    const compareOrganizations = (first: Organization, second: Organization) => {
-      const comparison = (first.trade_name ?? first.legal_name).localeCompare(second.trade_name ?? second.legal_name, 'pt-BR')
-      return sortDirection === 'asc' ? comparison : -comparison
-    }
+    const compareOrganizations = (first: Organization, second: Organization) =>
+      (first.trade_name ?? first.legal_name).localeCompare(
+        second.trade_name ?? second.legal_name,
+        'pt-BR',
+      )
 
     for (const organization of organizations) {
       const parentId = organization.parent_organization_id
@@ -1893,7 +1897,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     }
 
     return { byId, childrenByParent, roots, visibleIds, matchIds, expandableIds }
-  }, [organizations, normalizedSearch, sortDirection])
+  }, [organizations, normalizedSearch])
   useEffect(() => {
     const hierarchyTabs: AdminTab[] = ['organizations', 'users', 'memberships']
     if (!hierarchyTabs.includes(activeTab) && viewMode === 'hierarchy') {
@@ -3086,6 +3090,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 <button type="button" onClick={() => { setActiveTab('memberships'); openNewMembership() }}><strong>Novo vínculo</strong><span>Associe um usuário existente a uma organização.</span></button>
                 <button type="button" onClick={() => setActiveTab('modules')}><strong>Habilitar módulos</strong><span>Defina os módulos disponíveis por organização.</span></button>
                 <button type="button" onClick={() => setActiveTab('roles')}><strong>Perfis globais</strong><span>Gerencie atribuições de SUPER-ADMIN e outros perfis globais.</span></button>
+                <button type="button" onClick={() => setActiveTab('measure-catalog')}><strong>Medidas e Desempenho</strong><span>Mantenha o Catálogo GERAL de indicadores, versões e benchmarks transversais.</span></button>
                 <button type="button" onClick={() => setActiveTab('portability')}><strong>Importação e exportação</strong><span>Gerencie planilhas, portais HTML e pacotes estratégicos portáveis.</span></button>
               </section>
 
@@ -3149,10 +3154,10 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               ) : (
                 <div className="pa-table-card">
                   <table>
-                    <thead><tr><th onClick={() => setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Código</th><th>Tipo</th><th>Nível</th><th>Superior</th><th>Situação</th><th>Usuários</th><th>Módulos</th><th>Ações</th></tr></thead>
+                    <thead><tr><th onClick={() => setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Código</th><th>CNPJ</th><th>Tipo</th><th>Nível</th><th>Superior</th><th>Situação</th><th>Usuários</th><th>Módulos</th><th>Ações</th></tr></thead>
                     <tbody>{filteredOrganizations.map((organization) => (
                       <tr key={organization.organization_id} className="pa-interactive-record" role="button" tabIndex={0} aria-label={`Abrir manutenção de ${organization.trade_name ?? organization.legal_name}`} onClick={() => openOrganizationEdit(organization)} onKeyDown={(event) => activateWithKeyboard(event, () => openOrganizationEdit(organization))}>
-                        <td><strong>{organization.trade_name ?? organization.legal_name}</strong></td><td>{organization.organization_code}</td><td>{labelOrganizationType(organization.organization_type)}</td><td>{organizationLevels.find((level) => level.level_code === organization.organization_level)?.level_name ?? organization.organization_level}</td><td>{organization.parent_organization_name ?? '—'}</td><td>{labelStatus(organization.status)}</td><td>{organization.memberships_count}</td><td>{organization.enabled_modules_count}</td>
+                        <td><strong>{organization.trade_name ?? organization.legal_name}</strong></td><td>{organization.organization_code}</td><td>{organization.cnpj ? formatCnpjInput(organization.cnpj) : String.fromCharCode(8212)}</td><td>{labelOrganizationType(organization.organization_type)}</td><td>{organizationLevels.find((level) => level.level_code === organization.organization_level)?.level_name ?? organization.organization_level}</td><td>{organization.parent_organization_name ?? '—'}</td><td>{labelStatus(organization.status)}</td><td>{organization.memberships_count}</td><td>{organization.enabled_modules_count}</td>
                         <td><button type="button" title="Editar" onClick={(event) => { event.stopPropagation(); openOrganizationEdit(organization) }}><EditIcon /></button></td>
                       </tr>
                     ))}</tbody>
@@ -3244,6 +3249,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 <>{toolbar()}<section className="pa-card-grid">{filteredRoles.map((role) => <article className="pa-record-card" key={role.platform_role_id}><div className="pa-record-card-header"><div><small>{labelTechnicalCode(role.role_code)}</small><h3>{role.role_name}</h3></div><span className={`pa-status pa-status-${role.active ? 'active' : 'inactive'}`}>{role.active ? 'Ativo' : 'Inativo'}</span></div><p>{role.description ?? 'Perfil global da plataforma.'}</p><dl><div><dt>Nível</dt><dd>{role.role_level}</dd></div><div><dt>Usuários</dt><dd>{role.users_count}</dd></div></dl></article>)}</section></>
               )}
             </>
+          ) : activeTab === 'measure-catalog' ? (
+            <PlatformMeasureCatalog />
           ) : activeTab === 'invitations' ? (
             <>
               <div className="pa-section-heading"><div><h2>Convites</h2><p>Crie novos usuários por meio de convite seguro e auditável.</p></div></div>
