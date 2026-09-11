@@ -396,3 +396,360 @@
     justify-items: start;
   }
 }
+
+/* RAE_FE01_EDIT_RATIFY */
+.skpe-meetings-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-meetings-title-row h3 {
+  margin: 0;
+}
+
+.skpe-meetings-manage-rae {
+  flex: 0 0 auto;
+}
+
+.skpe-rae-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.36);
+}
+
+.skpe-rae-editor {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 3rem);
+  overflow: auto;
+  border-radius: 18px;
+  background: var(--surface, #fff);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+  padding: 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.skpe-rae-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.skpe-rae-editor-heading span,
+.skpe-rae-editor label > span,
+.skpe-rae-editor-context span {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.72;
+}
+
+.skpe-rae-editor-heading h3 {
+  margin: 0.25rem 0;
+}
+
+.skpe-rae-editor-heading p {
+  margin: 0;
+  max-width: 62ch;
+}
+
+.skpe-rae-editor-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.skpe-rae-editor-context > div {
+  padding: 0.8rem;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 12px;
+}
+
+.skpe-rae-editor label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.skpe-rae-editor textarea,
+.skpe-rae-editor input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 10px;
+  padding: 0.75rem;
+  font: inherit;
+  background: inherit;
+  color: inherit;
+}
+
+.skpe-rae-editor textarea {
+  resize: vertical;
+}
+
+.skpe-rae-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.skpe-rae-editor-message {
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(22, 163, 74, 0.1);
+}
+
+.skpe-rae-editor-error {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+@media (max-width: 720px) {
+  .skpe-rae-editor-context {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-meetings-title-row,
+  .skpe-rae-editor-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+/* RAE_FE02A_PAUTA_SUGERIDA */
+.skpe-rae-agenda-suggestion {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(100, 116, 139, 0.22);
+  border-radius: 14px;
+}
+
+.skpe-rae-agenda-heading,
+.skpe-rae-agenda-actions,
+.skpe-rae-agenda-item-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-rae-agenda-heading p {
+  margin: 0.3rem 0 0;
+  max-width: 65ch;
+}
+
+.skpe-rae-agenda-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.skpe-rae-agenda-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.8rem;
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  border-radius: 12px;
+}
+
+.skpe-rae-agenda-item-selected {
+  border-width: 2px;
+}
+
+.skpe-rae-agenda-item p {
+  margin: 0.25rem 0;
+}
+
+.skpe-rae-agenda-item small,
+.skpe-rae-agenda-actions small {
+  opacity: 0.72;
+}
+
+.skpe-rae-agenda-item-title span {
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.skpe-rae-agenda-actions {
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .skpe-rae-agenda-heading,
+  .skpe-rae-agenda-actions,
+  .skpe-rae-agenda-item-title {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* RAE_FE02B_ANALISE_PAUTA */
+.skpe-rae-analysis {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(100,116,139,0.22);
+  border-radius: 14px;
+}
+
+.skpe-rae-analysis-heading,
+.skpe-rae-analysis-footer,
+.skpe-rae-analysis-item-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skpe-rae-analysis-heading p {
+  margin: 0.3rem 0 0;
+  max-width: 65ch;
+}
+
+.skpe-rae-analysis-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.skpe-rae-analysis-item {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(100,116,139,0.18);
+  border-radius: 12px;
+}
+
+.skpe-rae-analysis-item-meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.skpe-rae-analysis-item-meta span {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.skpe-rae-analysis-footer {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.skpe-rae-analysis-decision {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: auto;
+}
+
+.skpe-rae-analysis-state {
+  padding: 0.9rem;
+  border-radius: 10px;
+  background: rgba(100,116,139,0.08);
+}
+
+@media (max-width:720px){
+  .skpe-rae-analysis-heading,
+  .skpe-rae-analysis-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* RAE_FE03A_DELIBERACOES */
+.skpe-rae-decisions {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(100,116,139,0.22);
+  border-radius: 14px;
+}
+
+.skpe-rae-decisions-heading,
+.skpe-rae-decision-meta,
+.skpe-rae-decision-actions,
+.skpe-rae-decision-grid {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skpe-rae-decisions-heading p {
+  margin: 0.3rem 0 0;
+  max-width: 65ch;
+}
+
+.skpe-rae-decisions-list,
+.skpe-rae-decision-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skpe-rae-decision-item {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(100,116,139,0.18);
+  border-radius: 12px;
+}
+
+.skpe-rae-decision-item p {
+  margin: 0;
+}
+
+.skpe-rae-decision-meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.skpe-rae-decision-meta span {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.skpe-rae-decision-grid > label {
+  flex: 1 1 0;
+}
+
+.skpe-rae-decision-actions {
+  align-items: center;
+}
+
+.skpe-rae-decision-actions small {
+  max-width: 60ch;
+  opacity: 0.72;
+}
+
+@media (max-width:720px){
+  .skpe-rae-decisions-heading,
+  .skpe-rae-decision-actions,
+  .skpe-rae-decision-grid {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* RAE_FE03B_CICLO_DELIBERACAO */
+.skpe-rae-decision-notes {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.skpe-rae-decision-transition-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.skpe-rae-decision-transition-actions button {
+  white-space: nowrap;
+}
