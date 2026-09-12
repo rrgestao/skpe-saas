@@ -1317,32 +1317,16 @@
 }
 
 .pa-scroll-top-button {
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
-  z-index: 1300;
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 50%;
-  cursor: pointer;
-  background: #176b53;
-  color: #ffffff;
-  box-shadow: 0 12px 30px rgba(23, 107, 83, 0.28);
-  font-size: 1.25rem;
-  font-weight: 900;
-  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  position: fixed; right: 1.15rem; bottom: 1.15rem; z-index: 1300;
+  display: grid; width: 42px; height: 42px; place-items: center;
+  padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: transparent; color: var(--organization-accent, #176b53); box-shadow: none;
+  transition: transform 150ms ease, opacity 150ms ease;
 }
-
-.pa-scroll-top-button:hover,
-.pa-scroll-top-button:focus-visible {
-  transform: translateY(-3px);
-  background: #105440;
-  box-shadow: 0 16px 34px rgba(23, 107, 83, 0.34);
-  outline: 3px solid rgba(23, 107, 83, 0.2);
-  outline-offset: 2px;
+.pa-scroll-top-button svg { width: 30px; height: 30px; overflow: visible; }
+.pa-scroll-top-button path { fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.pa-scroll-top-button:hover, .pa-scroll-top-button:focus-visible {
+  transform: translateY(-3px); background: transparent; box-shadow: none; outline: none; opacity: .78;
 }
 
 @media (max-width: 760px) {

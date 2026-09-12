@@ -205,3 +205,16 @@ Nenhuma implementação da Plataforma SPARKs deve ser iniciada apenas a partir d
 Toda execução deve partir de:
 
 **estado real do Git + fontes canônicas + análise de impacto + critérios de aceite + validação reproduzível.**
+
+## 17. Grid canônico da Administração da Plataforma
+
+Listagens em `apps/web/src/modules/platform-admin` devem usar exclusivamente o `SparksSmartGrid` do design system.
+
+É vedado:
+
+- reintroduzir `<table>` HTML como implementação de Grid administrativo;
+- importar `@svar-ui/react-grid` diretamente em módulos da Administração;
+- duplicar filtros, ordenação, resize, auto-fit/fill ou sticky header fora do componente canônico;
+- criar comportamento visual específico que quebre o drawer lateral ou a ocupação da largura útil.
+
+O gate automatizado `platformAdminGridContract.test.ts` deve permanecer verde. Qualquer exceção exige decisão arquitetural explícita e registro de governança antes da implementação.

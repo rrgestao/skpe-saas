@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { prepareOrganizationLogo } from './prepareOrganizationLogo'
 import { AdminUserAvatarEditor } from './AdminUserAvatarEditor'
 import { PlatformMeasureCatalog } from './PlatformMeasureCatalog'
+import { SparksSmartGrid, type SparksSmartGridColumn, type SparksSmartGridContextAction } from '../../components/design-system/SparksSmartGrid'
 import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
 
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
@@ -966,6 +967,7 @@ function GlobalMembershipHierarchy({
 
 export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -2838,6 +2840,29 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     await loadAll()
   }
 
+  useEffect(() => {
+    const getScrollTop = () => Math.max(
+      window.scrollY,
+      document.documentElement.scrollTop,
+      document.body.scrollTop,
+      document.querySelector<HTMLElement>('.platform-content')?.scrollTop ?? 0,
+    )
+    const update = () => setShowScrollTop(getScrollTop() > 180)
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    const platformContent = document.querySelector<HTMLElement>('.platform-content')
+    platformContent?.addEventListener('scroll', update, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', update)
+      platformContent?.removeEventListener('scroll', update)
+    }
+  }, [])
+
+  const openAdminTab = (tab: AdminTab) => {
+    setActiveTab(tab)
+    window.requestAnimationFrame(() => scrollToPageTop())
+  }
+
   const scrollToPageTop = () => {
     const scrollingElement = document.scrollingElement
     scrollingElement?.scrollTo({ top: 0, behavior: 'smooth' })
@@ -2999,6 +3024,71 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       )
     }
   }, [loadUserAvatarUrls])
+  const organizationGridRows = filteredOrganizations.map((organization) => ({
+    id: organization.organization_id, organization: organization.trade_name ?? organization.legal_name,
+    code: organization.organization_code, cnpj: organization.cnpj ? formatCnpjInput(organization.cnpj) : '—',
+    type: labelOrganizationType(organization.organization_type),
+    level: organizationLevels.find((level) => level.level_code === organization.organization_level)?.level_name ?? organization.organization_level,
+    parent: organization.parent_organization_name ?? '—', status: labelStatus(organization.status),
+    users: organization.memberships_count, modules: organization.enabled_modules_count,
+  }))
+  const userGridRows = filteredUsers.map((user) => ({
+    id: user.user_id, user: getUserName(user), email: user.email ?? '—', status: user.active ? 'Ativo' : 'Inativo',
+    roles: user.platform_roles || '—', organizations: user.memberships_count, localAdmin: user.admin_memberships_count,
+  }))
+  const membershipGridRows = filteredMemberships.map((membership) => ({
+    id: membership.membership_id, organization: membership.organization_name, user: membership.user_name,
+    job: membership.job_title ?? '—', status: labelStatus(membership.membership_status),
+    localAdmin: membership.is_organization_admin ? 'Sim' : 'Não', validity: formatDate(membership.valid_until),
+  }))
+  const organizationColumns = [
+    { id: 'organization', label: 'Organização', minWidth: 220, tooltip: true }, { id: 'code', label: 'Código', minWidth: 110 },
+    { id: 'cnpj', label: 'CNPJ', minWidth: 150 }, { id: 'type', label: 'Tipo', minWidth: 140 }, { id: 'level', label: 'Nível', minWidth: 120 },
+    { id: 'parent', label: 'Superior', minWidth: 180, tooltip: true }, { id: 'status', label: 'Situação', minWidth: 110, align: 'center' },
+    { id: 'users', label: 'Usuários', minWidth: 100, align: 'center' }, { id: 'modules', label: 'Módulos', minWidth: 100, align: 'center' },
+  ] satisfies SparksSmartGridColumn[]
+  const userColumns = [
+    { id: 'user', label: 'Usuário', minWidth: 220 }, { id: 'email', label: 'E-mail', minWidth: 220, tooltip: true },
+    { id: 'status', label: 'Situação', minWidth: 110, align: 'center' }, { id: 'roles', label: 'Perfis globais', minWidth: 190 },
+    { id: 'organizations', label: 'Organizações', minWidth: 120, align: 'center' }, { id: 'localAdmin', label: 'Admin local', minWidth: 120, align: 'center' },
+  ] satisfies SparksSmartGridColumn[]
+  const membershipColumns = [
+    { id: 'organization', label: 'Organização', minWidth: 220 }, { id: 'user', label: 'Usuário', minWidth: 210 },
+    { id: 'job', label: 'Cargo/função', minWidth: 180 }, { id: 'status', label: 'Situação', minWidth: 110, align: 'center' },
+    { id: 'localAdmin', label: 'Admin local', minWidth: 120, align: 'center' }, { id: 'validity', label: 'Vigência', minWidth: 130 },
+  ] satisfies SparksSmartGridColumn[]
+  const moduleGridRows = selectedOrganizationForModules
+    ? organizationModules.map((module) => ({ id: module.module_id, code: module.module_code, module: module.module_name,
+        status: labelStatus(module.module_status), enabled: module.enabled ? 'Habilitado' : 'Desabilitado' }))
+    : filteredModules.map((module) => ({ id: module.module_id, code: module.module_code, module: module.module_name,
+        status: labelStatus(module.status), enabled: module.enabled_organizations_count, core: module.is_core ? 'Sim' : 'Não' }))
+  const moduleColumns = selectedOrganizationForModules
+    ? [{ id: 'code', label: 'Código', minWidth: 120 }, { id: 'module', label: 'Módulo', minWidth: 240 },
+       { id: 'status', label: 'Situação', minWidth: 120, align: 'center' }, { id: 'enabled', label: 'Na organização', minWidth: 150, align: 'center' }] satisfies SparksSmartGridColumn[]
+    : [{ id: 'code', label: 'Código', minWidth: 120 }, { id: 'module', label: 'Módulo', minWidth: 240 },
+       { id: 'status', label: 'Situação', minWidth: 120, align: 'center' }, { id: 'enabled', label: 'Organizações habilitadas', minWidth: 190, align: 'center' },
+       { id: 'core', label: 'Núcleo da plataforma', minWidth: 170, align: 'center' }] satisfies SparksSmartGridColumn[]
+  const moduleContextActions: SparksSmartGridContextAction[] = [{ id: 'toggle-module', text: 'Habilitar / desabilitar', icon: 'wxi-edit' }]
+  const roleGridRows = selectedUserForRoles
+    ? userRoles.map((role) => ({ id: role.platform_role_id, code: labelTechnicalCode(role.role_code), role: role.role_name,
+        level: role.role_level, assigned: role.assigned ? 'Atribuído' : 'Não atribuído' }))
+    : filteredRoles.map((role) => ({ id: role.platform_role_id, code: labelTechnicalCode(role.role_code), role: role.role_name,
+        description: role.description ?? '—', level: role.role_level, status: role.active ? 'Ativo' : 'Inativo', users: role.users_count }))
+  const roleColumns = selectedUserForRoles
+    ? [{ id: 'code', label: 'Código', minWidth: 140 }, { id: 'role', label: 'Perfil global', minWidth: 240 },
+       { id: 'level', label: 'Nível', minWidth: 100, align: 'center' }, { id: 'assigned', label: 'Atribuição', minWidth: 140, align: 'center' }] satisfies SparksSmartGridColumn[]
+    : [{ id: 'code', label: 'Código', minWidth: 140 }, { id: 'role', label: 'Perfil global', minWidth: 220 },
+       { id: 'description', label: 'Descrição', minWidth: 260, tooltip: true }, { id: 'level', label: 'Nível', minWidth: 100, align: 'center' },
+       { id: 'status', label: 'Situação', minWidth: 120, align: 'center' }, { id: 'users', label: 'Usuários', minWidth: 100, align: 'center' }] satisfies SparksSmartGridColumn[]
+  const roleContextActions: SparksSmartGridContextAction[] = [{ id: 'toggle-role', text: 'Atribuir / revogar perfil', icon: 'wxi-edit' }]
+  const invitationGridRows = filteredInvitations.map((invitation) => ({ id: invitation.invitation_id,
+    name: invitation.full_name ?? '—', email: invitation.email, organization: invitation.organization_name ?? '—',
+    role: invitation.platform_role_name ?? '—', status: labelStatus(invitation.status), date: formatDate(invitation.requested_at) }))
+  const invitationColumns = [
+    { id: 'name', label: 'Nome', minWidth: 210 }, { id: 'email', label: 'E-mail', minWidth: 230, tooltip: true },
+    { id: 'organization', label: 'Organização', minWidth: 220 }, { id: 'role', label: 'Perfil global', minWidth: 180 },
+    { id: 'status', label: 'Situação', minWidth: 120, align: 'center' }, { id: 'date', label: 'Data', minWidth: 130 },
+  ] satisfies SparksSmartGridColumn[]
   return (
     <section className="platform-admin">
       <div className="pa-heading">
@@ -3074,19 +3164,19 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               </div>
 
               <section className="pa-summary-grid" aria-label="Atalhos da visão geral">
-                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('organizations')} title="Consultar organizações">
+                <button type="button" className="pa-summary-card" onClick={() => openAdminTab('organizations')} title="Consultar organizações">
                   <span>Organizações</span><strong>{summary.organizations_total}</strong><small>{summary.organizations_active} ativas</small>
                 </button>
-                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('users')} title="Consultar usuários">
+                <button type="button" className="pa-summary-card" onClick={() => openAdminTab('users')} title="Consultar usuários">
                   <span>Usuários</span><strong>{summary.users_total}</strong><small>{summary.users_active} ativos</small>
                 </button>
-                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('memberships')} title="Consultar vínculos e acessos">
+                <button type="button" className="pa-summary-card" onClick={() => openAdminTab('memberships')} title="Consultar vínculos e acessos">
                   <span>Vínculos ativos</span><strong>{summary.memberships_active}</strong><small>usuário × organização</small>
                 </button>
-                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('modules')} title="Consultar módulos">
+                <button type="button" className="pa-summary-card" onClick={() => openAdminTab('modules')} title="Consultar módulos">
                   <span>Módulos</span><strong>{summary.modules_total}</strong><small>{summary.modules_active} ativos</small>
                 </button>
-                <button type="button" className="pa-summary-card" onClick={() => setActiveTab('invitations')} title="Consultar convites">
+                <button type="button" className="pa-summary-card" onClick={() => openAdminTab('invitations')} title="Consultar convites">
                   <span>Convites pendentes</span><strong>{summary.pending_invitations}</strong><small>aguardando envio ou aceite</small>
                 </button>
               </section>
@@ -3095,10 +3185,10 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 <button type="button" onClick={() => { setActiveTab('organizations'); openNewOrganization() }}><strong>Nova organização</strong><span>Cadastre uma nova organização e seu contexto institucional.</span></button>
                 <button type="button" onClick={() => { setActiveTab('invitations'); setInvitationPanelOpen(true) }}><strong>Novo usuário</strong><span>Crie ou convide uma pessoa, defina o vínculo organizacional e atribua o perfil inicial.</span></button>
                 <button type="button" onClick={() => { setActiveTab('memberships'); openNewMembership() }}><strong>Novo vínculo</strong><span>Associe um usuário existente a uma organização.</span></button>
-                <button type="button" onClick={() => setActiveTab('modules')}><strong>Habilitar módulos</strong><span>Defina os módulos disponíveis por organização.</span></button>
-                <button type="button" onClick={() => setActiveTab('roles')}><strong>Perfis globais</strong><span>Gerencie atribuições de SUPER-ADMIN e outros perfis globais.</span></button>
-                <button type="button" onClick={() => setActiveTab('measure-catalog')}><strong>Medidas e Desempenho</strong><span>Mantenha o Catálogo GERAL de indicadores, versões e benchmarks transversais.</span></button>
-                <button type="button" onClick={() => setActiveTab('portability')}><strong>Importação e exportação</strong><span>Gerencie planilhas, portais HTML e pacotes estratégicos portáveis.</span></button>
+                <button type="button" onClick={() => openAdminTab('modules')}><strong>Habilitar módulos</strong><span>Defina os módulos disponíveis por organização.</span></button>
+                <button type="button" onClick={() => openAdminTab('roles')}><strong>Perfis globais</strong><span>Gerencie atribuições de SUPER-ADMIN e outros perfis globais.</span></button>
+                <button type="button" onClick={() => openAdminTab('measure-catalog')}><strong>Medidas e Desempenho</strong><span>Mantenha o Catálogo GERAL de indicadores, versões e benchmarks transversais.</span></button>
+                <button type="button" onClick={() => openAdminTab('portability')}><strong>Importação e exportação</strong><span>Gerencie planilhas, portais HTML e pacotes estratégicos portáveis.</span></button>
               </section>
 
               <aside className="pa-guidance-card">
@@ -3159,17 +3249,13 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   )}
                 </section>
               ) : (
-                <div className="pa-table-card">
-                  <table>
-                    <thead><tr><th onClick={() => setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Código</th><th>CNPJ</th><th>Tipo</th><th>Nível</th><th>Superior</th><th>Situação</th><th>Usuários</th><th>Módulos</th><th>Ações</th></tr></thead>
-                    <tbody>{filteredOrganizations.map((organization) => (
-                      <tr key={organization.organization_id} className="pa-interactive-record" role="button" tabIndex={0} aria-label={`Abrir manutenção de ${organization.trade_name ?? organization.legal_name}`} onClick={() => openOrganizationEdit(organization)} onKeyDown={(event) => activateWithKeyboard(event, () => openOrganizationEdit(organization))}>
-                        <td><strong>{organization.trade_name ?? organization.legal_name}</strong></td><td>{organization.organization_code}</td><td>{organization.cnpj ? formatCnpjInput(organization.cnpj) : String.fromCharCode(8212)}</td><td>{labelOrganizationType(organization.organization_type)}</td><td>{organizationLevels.find((level) => level.level_code === organization.organization_level)?.level_name ?? organization.organization_level}</td><td>{organization.parent_organization_name ?? '—'}</td><td>{labelStatus(organization.status)}</td><td>{organization.memberships_count}</td><td>{organization.enabled_modules_count}</td>
-                        <td><button type="button" title="Editar" onClick={(event) => { event.stopPropagation(); openOrganizationEdit(organization) }}><EditIcon /></button></td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
-                </div>
+                <SparksSmartGrid
+                  rows={organizationGridRows}
+                  columns={organizationColumns}
+                  ariaLabel="Organizações"
+                  viewportMode="standard"
+                  onSelect={(id) => { const organization = filteredOrganizations.find((item) => item.organization_id === id); if (organization) openOrganizationEdit(organization) }}
+                />
               )}
             </>
           ) : activeTab === 'users' ? (
@@ -3213,7 +3299,13 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   ))}
                 </section>
               ) : (
-                <div className="pa-table-card"><table><thead><tr><th onClick={() => setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Usuário</th><th>E-mail</th><th>Situação</th><th>Perfis globais</th><th>Organizações</th><th>Admin local</th></tr></thead><tbody>{filteredUsers.map((user) => <tr key={user.user_id} className="pa-interactive-record" role="button" tabIndex={0} aria-label={`Abrir manutenção de ${getUserName(user)}`} onClick={() => openUserMaintenance(user)} onKeyDown={(event) => activateWithKeyboard(event, () => openUserMaintenance(user))}><td><strong>{getUserName(user)}</strong></td><td>{user.email ?? '—'}</td><td>{user.active ? 'Ativo' : 'Inativo'}</td><td>{user.platform_roles || '—'}</td><td>{user.memberships_count}</td><td>{user.admin_memberships_count}</td></tr>)}</tbody></table></div>
+                <SparksSmartGrid
+                  rows={userGridRows}
+                  columns={userColumns}
+                  ariaLabel="Usuários"
+                  viewportMode="standard"
+                  onSelect={(id) => { const user = filteredUsers.find((item) => item.user_id === id); if (user) openUserMaintenance(user) }}
+                />
               )}
             </>
           ) : activeTab === 'memberships' ? (
@@ -3233,7 +3325,13 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   ))}
                 </section>
               ) : (
-                <div className="pa-table-card"><table><thead><tr><th onClick={() => setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')}>Organização</th><th>Usuário</th><th>Cargo/função</th><th>Situação</th><th>Admin local</th><th>Vigência</th><th>Ações</th></tr></thead><tbody>{filteredMemberships.map((membership) => <tr key={membership.membership_id} className="pa-interactive-record" role="button" tabIndex={0} aria-label={`Abrir vínculo de ${membership.user_name}`} onClick={() => openMembershipEdit(membership)} onKeyDown={(event) => activateWithKeyboard(event, () => openMembershipEdit(membership))}><td><strong>{membership.organization_name}</strong></td><td>{membership.user_name}</td><td>{membership.job_title ?? '—'}</td><td>{labelStatus(membership.membership_status)}</td><td>{membership.is_organization_admin ? 'Sim' : 'Não'}</td><td>{formatDate(membership.valid_until)}</td><td><button type="button" title="Editar" onClick={(event) => { event.stopPropagation(); openMembershipEdit(membership) }}><EditIcon /></button></td></tr>)}</tbody></table></div>
+                <SparksSmartGrid
+                  rows={membershipGridRows}
+                  columns={membershipColumns}
+                  ariaLabel="Vínculos e acessos"
+                  viewportMode="standard"
+                  onSelect={(id) => { const membership = filteredMemberships.find((item) => item.membership_id === id); if (membership) openMembershipEdit(membership) }}
+                />
               )}
             </>
           ) : activeTab === 'modules' ? (
@@ -3241,9 +3339,20 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               <div className="pa-section-heading"><div><h2>Módulos</h2><p>Consulte o catálogo e habilite módulos por organização.</p></div></div>
               <div className="pa-selector-card"><label>Organização<select value={selectedOrganizationForModules} onChange={(event) => setSelectedOrganizationForModules(event.target.value)}><option value="">Selecione uma organização</option>{organizations.map((organization) => <option key={organization.organization_id} value={organization.organization_id}>{organization.trade_name ?? organization.legal_name}</option>)}</select></label></div>
               {selectedOrganizationForModules ? (
-                <section className="pa-card-grid pa-module-grid">{organizationModules.map((module) => <article className="pa-record-card" key={module.module_id}><div className="pa-record-card-header"><div><small>{module.module_code}</small><h3>{module.module_name}</h3></div><span className={`pa-status pa-status-${module.enabled ? 'active' : 'inactive'}`}>{module.enabled ? 'Habilitado' : 'Desabilitado'}</span></div><p>{labelStatus(module.module_status)}</p><button type="button" className={module.enabled ? 'pa-danger-button' : 'pa-primary-button'} onClick={() => void toggleOrganizationModule(module)}>{module.enabled ? 'Desabilitar' : 'Habilitar'}</button></article>)}</section>
+                <SparksSmartGrid
+                  rows={moduleGridRows}
+                  columns={moduleColumns}
+                  ariaLabel="Módulos da organização"
+                  viewportMode="standard"
+                  contextMenu={moduleContextActions}
+                  onContextAction={(actionId, rowId) => {
+                    if (actionId !== 'toggle-module') return
+                    const module = organizationModules.find((item) => item.module_id === rowId)
+                    if (module) void toggleOrganizationModule(module)
+                  }}
+                />
               ) : (
-                <>{toolbar()}<section className="pa-card-grid">{filteredModules.map((module) => <article className="pa-record-card" key={module.module_id}><div className="pa-record-card-header"><div><small>{module.module_code}</small><h3>{module.module_name}</h3></div><span className={`pa-status pa-status-${module.status}`}>{labelStatus(module.status)}</span></div><p>{module.description ?? 'Módulo da Plataforma SPARKs.'}</p><dl><div><dt>Organizações habilitadas</dt><dd>{module.enabled_organizations_count}</dd></div><div><dt>Núcleo da plataforma</dt><dd>{module.is_core ? 'Sim' : 'Não'}</dd></div></dl></article>)}</section></>
+                <><div style={{ marginBottom: '.75rem' }}>{toolbar()}</div><SparksSmartGrid rows={moduleGridRows} columns={moduleColumns} ariaLabel="Módulos" viewportMode="standard" /></>
               )}
             </>
           ) : activeTab === 'roles' ? (
@@ -3251,9 +3360,20 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               <div className="pa-section-heading"><div><h2>Perfis globais</h2><p>Atribua ou revogue papéis globais dos usuários da plataforma.</p></div></div>
               <div className="pa-selector-card"><label>Usuário<select value={selectedUserForRoles} onChange={(event) => setSelectedUserForRoles(event.target.value)}><option value="">Selecione um usuário</option>{users.map((user) => <option key={user.user_id} value={user.user_id}>{getUserName(user)} — {user.email ?? 'sem e-mail'}</option>)}</select></label></div>
               {selectedUserForRoles ? (
-                <section className="pa-card-grid pa-module-grid">{userRoles.map((role) => <article className="pa-record-card" key={role.platform_role_id}><div className="pa-record-card-header"><div><small>{labelTechnicalCode(role.role_code)}</small><h3>{role.role_name}</h3></div><span className={`pa-status pa-status-${role.assigned ? 'active' : 'inactive'}`}>{role.assigned ? 'Atribuído' : 'Não atribuído'}</span></div><p>Nível global {role.role_level}</p><button type="button" className={role.assigned ? 'pa-danger-button' : 'pa-primary-button'} onClick={() => void toggleUserRole(role)}>{role.assigned ? 'Revogar perfil' : 'Atribuir perfil'}</button></article>)}</section>
+                <SparksSmartGrid
+                  rows={roleGridRows}
+                  columns={roleColumns}
+                  ariaLabel="Perfis globais do usuário"
+                  viewportMode="standard"
+                  contextMenu={roleContextActions}
+                  onContextAction={(actionId, rowId) => {
+                    if (actionId !== 'toggle-role') return
+                    const role = userRoles.find((item) => item.platform_role_id === rowId)
+                    if (role) void toggleUserRole(role)
+                  }}
+                />
               ) : (
-                <>{toolbar()}<section className="pa-card-grid">{filteredRoles.map((role) => <article className="pa-record-card" key={role.platform_role_id}><div className="pa-record-card-header"><div><small>{labelTechnicalCode(role.role_code)}</small><h3>{role.role_name}</h3></div><span className={`pa-status pa-status-${role.active ? 'active' : 'inactive'}`}>{role.active ? 'Ativo' : 'Inativo'}</span></div><p>{role.description ?? 'Perfil global da plataforma.'}</p><dl><div><dt>Nível</dt><dd>{role.role_level}</dd></div><div><dt>Usuários</dt><dd>{role.users_count}</dd></div></dl></article>)}</section></>
+                <><div style={{ marginBottom: '.75rem' }}>{toolbar()}</div><SparksSmartGrid rows={roleGridRows} columns={roleColumns} ariaLabel="Perfis globais" viewportMode="standard" /></>
               )}
             </>
           ) : activeTab === 'measure-catalog' ? (
@@ -3265,7 +3385,12 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
               {viewMode === 'cards' ? (
                 <section className="pa-card-grid">{filteredInvitations.map((invitation) => <article className="pa-record-card" key={invitation.invitation_id}><div className="pa-record-card-header"><div><small>{invitation.email}</small><h3>{invitation.full_name ?? invitation.email}</h3></div><span className={`pa-status pa-status-${invitation.status}`}>{labelStatus(invitation.status)}</span></div><dl><div><dt>Organização</dt><dd>{invitation.organization_name ?? 'Sem vínculo inicial'}</dd></div><div><dt>Perfil global</dt><dd>{invitation.platform_role_name ?? 'Nenhum'}</dd></div><div><dt>Solicitado em</dt><dd>{formatDate(invitation.requested_at)}</dd></div></dl>{invitation.failure_reason && <p className="pa-inline-error">{invitation.failure_reason}</p>}</article>)}</section>
               ) : (
-                <div className="pa-table-card"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Organização</th><th>Perfil global</th><th>Situação</th><th>Data</th></tr></thead><tbody>{filteredInvitations.map((invitation) => <tr key={invitation.invitation_id}><td><strong>{invitation.full_name ?? '—'}</strong></td><td>{invitation.email}</td><td>{invitation.organization_name ?? '—'}</td><td>{invitation.platform_role_name ?? '—'}</td><td>{labelStatus(invitation.status)}</td><td>{formatDate(invitation.requested_at)}</td></tr>)}</tbody></table></div>
+                <SparksSmartGrid
+                  rows={invitationGridRows}
+                  columns={invitationColumns}
+                  ariaLabel="Convites"
+                  viewportMode="standard"
+                />
               )}
             </>
           ) : (
@@ -3804,7 +3929,11 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
           </aside>
         </div>
       )}
-      <button type="button" className="pa-scroll-top-button" onClick={scrollToPageTop} title="Voltar ao início da tela" aria-label="Voltar ao início da tela">↑</button>
+      {showScrollTop ? (
+        <button type="button" className="pa-scroll-top-button" onClick={scrollToPageTop} title="Voltar ao início da tela" aria-label="Voltar ao início da tela">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15.5 12 8l7 7.5" /></svg>
+        </button>
+      ) : null}
     </section>
   )
 }
