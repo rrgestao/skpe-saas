@@ -9517,3 +9517,1355 @@ button.skpe-admin-kpi-card:hover,
   .skpe-cockpit-role-badge{max-width:108px!important;font-size:.62rem!important}
   .skpe-main>:not(.skpe-cockpit-header){margin-left:.45rem!important;margin-right:.45rem!important}
 }
+
+/* UX-CANON-03-V2 - avatar access context */
+.skpe-user-menu-access-context {
+  display: grid;
+  gap: .5rem;
+  margin: .35rem 0 .65rem;
+  padding: .65rem .8rem;
+  border-top: 1px solid var(--skpe-border, #d7e2dd);
+  border-bottom: 1px solid var(--skpe-border, #d7e2dd);
+  background: color-mix(
+    in srgb,
+    var(--organization-accent, #176b53) 4%,
+    var(--skpe-surface, #fff)
+  );
+}
+
+.skpe-user-menu-access-context > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-user-menu-access-context span {
+  color: var(--skpe-muted-text, #62716b);
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+.skpe-user-menu-access-context strong {
+  max-width: 15rem;
+  color: var(--skpe-text, #17202a);
+  font-size: .76rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.skpe-cockpit-user-button .skpe-cockpit-role-badge {
+  display: none;
+}
+/* UX-CANON-03B-V3 - controle do menu no header */
+.skpe-cockpit-header {
+  position: relative;
+}
+
+.skpe-header-sidebar-toggle {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: .05rem;
+  margin-right: .35rem;
+  padding: 0;
+  border: 1px solid var(--skpe-border, #d7e2dd);
+  border-radius: .55rem;
+  background: var(--skpe-surface, #fff);
+  color: var(--organization-accent, #176b53);
+  cursor: pointer;
+}
+
+.skpe-header-sidebar-toggle:hover {
+  background: color-mix(
+    in srgb,
+    var(--organization-accent, #176b53) 7%,
+    var(--skpe-surface, #fff)
+  );
+}
+
+.skpe-header-sidebar-toggle:focus-visible {
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 24%,
+      transparent
+    );
+  outline-offset: 2px;
+}
+
+.skpe-header-sidebar-toggle svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+/* UX-CANON-04-V10 - organization switcher and ghost header */
+.skpe-organization-switcher {
+  width: 100%;
+  min-width: 0;
+}
+
+.skpe-organization-switcher label {
+  display: grid;
+  min-width: 0;
+}
+
+.skpe-organization-switcher-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.skpe-organization-switcher select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: .35rem 1.45rem .35rem .4rem;
+  border: 1px solid transparent;
+  border-radius: .5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.skpe-organization-switcher select:hover:not(:disabled),
+.skpe-organization-switcher select:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 12%,
+      transparent
+    );
+  border-color:
+    color-mix(
+      in srgb,
+      currentColor 24%,
+      transparent
+    );
+  outline: none;
+}
+
+.skpe-organization-switcher select:disabled {
+  appearance: none;
+  padding-right: .4rem;
+  cursor: default;
+  opacity: 1;
+}
+
+.skpe-cockpit-icon-button,
+.skpe-header-sidebar-toggle {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.skpe-cockpit-icon-button:hover,
+.skpe-cockpit-icon-button:focus-visible,
+.skpe-header-sidebar-toggle:hover,
+.skpe-header-sidebar-toggle:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 8%,
+      transparent
+    ) !important;
+  border-color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 18%,
+      transparent
+    ) !important;
+}
+
+.skpe-cockpit-icon-button:active,
+.skpe-header-sidebar-toggle:active {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 14%,
+      transparent
+    ) !important;
+  border-color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 28%,
+      transparent
+    ) !important;
+}
+/* UX-CANON-04B - organization switcher neutral popup surface */
+.skpe-organization-switcher select {
+  color-scheme: light;
+}
+
+.skpe-organization-switcher select option {
+  background: var(--skpe-surface, #ffffff);
+  color: var(--skpe-text, #22302c);
+}
+
+.skpe-organization-switcher select option:checked {
+  background: var(--skpe-surface-subtle, #eef3f1);
+  color: var(--skpe-text-strong, #16221f);
+}
+/* UX-CANON-04B-V2 - organization switcher green tonal surface */
+.skpe-organization-switcher select {
+  color-scheme: light;
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 10%,
+      white
+    );
+  color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 78%,
+      #12231d
+    );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 24%,
+      transparent
+    );
+}
+
+.skpe-organization-switcher select:hover:not(:disabled),
+.skpe-organization-switcher select:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 16%,
+      white
+    );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 42%,
+      transparent
+    );
+}
+
+.skpe-organization-switcher select option {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 8%,
+      white
+    );
+  color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 84%,
+      #102019
+    );
+}
+
+.skpe-organization-switcher select option:hover {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 18%,
+      white
+    );
+}
+
+.skpe-organization-switcher select option:checked {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 24%,
+      white
+    );
+  color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 92%,
+      #0d1a15
+    );
+  font-weight: 800;
+}
+/* UX-CANON-04B-V3 - custom green tonal organization switcher */
+.skpe-organization-switcher {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.skpe-organization-switcher-details {
+  position: relative;
+  width: 100%;
+}
+
+.skpe-organization-switcher-details > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .4rem;
+  width: 100%;
+  min-height: 2.05rem;
+  padding: .42rem .55rem;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 36%,
+      transparent
+    );
+  border-radius: .55rem;
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 24%,
+      white
+    );
+  color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 88%,
+      #0d1a15
+    );
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.skpe-organization-switcher-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.skpe-organization-switcher-details[data-disabled='true'] > summary {
+  cursor: default;
+}
+
+.skpe-organization-switcher-details[data-disabled='true']
+  > summary
+  .skpe-organization-switcher-chevron {
+  display: none;
+}
+
+.skpe-organization-switcher-details[open] > summary,
+.skpe-organization-switcher-details > summary:hover,
+.skpe-organization-switcher-details > summary:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 34%,
+      white
+    );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 58%,
+      transparent
+    );
+  outline: none;
+}
+
+.skpe-organization-switcher-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.skpe-organization-switcher-chevron {
+  font-size: .7rem;
+  transition: transform .16s ease;
+}
+
+.skpe-organization-switcher-details[open]
+  .skpe-organization-switcher-chevron {
+  transform: rotate(180deg);
+}
+
+.skpe-organization-switcher-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + .35rem);
+  left: 0;
+  width: 100%;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: .28rem;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 42%,
+      transparent
+    );
+  border-radius: .58rem;
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 18%,
+      white
+    );
+  box-shadow: 0 .65rem 1.6rem rgba(13, 42, 32, .18);
+}
+
+.skpe-organization-switcher-option {
+  display: block;
+  width: 100%;
+  min-height: 1.9rem;
+  padding: .42rem .5rem;
+  border: 0;
+  border-radius: .38rem;
+  background: transparent;
+  color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 90%,
+      #0d1a15
+    );
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 750;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.skpe-organization-switcher-option:hover,
+.skpe-organization-switcher-option:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 30%,
+      white
+    );
+  outline: none;
+}
+
+.skpe-organization-switcher-option.active {
+  background:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 42%,
+      white
+    );
+  color:
+    color-mix(
+      in srgb,
+      var(--organization-accent, #176b53) 96%,
+      #07110d
+    );
+  font-weight: 850;
+}
+/* UX-CANON-04B-V4 - fixed green organization switcher palette */
+.skpe-organization-switcher-details > summary {
+  background: #dcefe7 !important;
+  border-color: #9ccab7 !important;
+  color: #174f3f !important;
+}
+
+.skpe-organization-switcher-details[open] > summary,
+.skpe-organization-switcher-details > summary:hover,
+.skpe-organization-switcher-details > summary:focus-visible {
+  background: #c7e5d8 !important;
+  border-color: #72b296 !important;
+  color: #103d31 !important;
+}
+
+.skpe-organization-switcher-menu {
+  background: #edf7f2 !important;
+  border-color: #9ccab7 !important;
+  box-shadow: 0 .65rem 1.6rem rgba(13, 74, 55, .18) !important;
+}
+
+.skpe-organization-switcher-option {
+  background: transparent !important;
+  color: #174f3f !important;
+}
+
+.skpe-organization-switcher-option:hover,
+.skpe-organization-switcher-option:focus-visible {
+  background: #d6ecdf !important;
+  color: #103d31 !important;
+}
+
+.skpe-organization-switcher-option.active {
+  background: #b9dccb !important;
+  color: #0d3a2e !important;
+  font-weight: 850 !important;
+}
+/* UX-CANON-04C - current organization header-like surface */
+.skpe-organization-switcher-details > summary {
+  background: #ffffff !important;
+  border-color: rgba(255, 255, 255, .72) !important;
+  color: #174f3f !important;
+  box-shadow:
+    0 1px 2px rgba(7, 46, 35, .08),
+    0 0 0 1px rgba(19, 93, 70, .12) !important;
+}
+
+.skpe-organization-switcher-details[open] > summary,
+.skpe-organization-switcher-details > summary:hover,
+.skpe-organization-switcher-details > summary:focus-visible {
+  background: #eef8f3 !important;
+  border-color: #9ccab7 !important;
+  color: #103d31 !important;
+  box-shadow:
+    0 2px 6px rgba(7, 46, 35, .12),
+    0 0 0 1px rgba(19, 93, 70, .16) !important;
+}
+
+.skpe-organization-switcher-current {
+  color: inherit !important;
+}
+
+.skpe-organization-switcher-chevron {
+  color: #2e725d !important;
+}
+/* UX-CANON-04D-V3 - compact header action cluster */
+.skpe-cockpit-actions {
+  gap: .28rem !important;
+}
+
+.skpe-cockpit-actions > .skpe-cockpit-icon-button,
+.skpe-cockpit-actions > .skpe-cockpit-user-menu {
+  margin-left: 0 !important;
+}
+
+.skpe-cockpit-icon-button {
+  width: 1.95rem;
+  min-width: 1.95rem;
+  height: 1.95rem;
+}
+
+.skpe-cockpit-user-button {
+  min-height: 1.95rem;
+  margin-left: .05rem !important;
+}
+/* UX-CANON-04F - collapsed journey subnav icons */
+.skpe-nav-submenu-icon {
+  display: none;
+  width: 1.12rem;
+  height: 1.12rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.skpe-nav-submenu-label {
+  min-width: 0;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-journey-disclosure {
+  display: grid !important;
+  justify-items: center;
+  gap: .28rem;
+  width: 100%;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-journey-disclosure > summary {
+  width: 48px !important;
+  min-width: 48px !important;
+  min-height: 46px !important;
+  padding: .65rem !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  overflow: visible !important;
+  font-size: 0 !important;
+}
+
+.skpe-sidebar-collapsed
+  .skpe-nav-journey-disclosure
+  > summary
+  > span {
+  display: none !important;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-journey-disclosure > summary::after {
+  display: none !important;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-submenu {
+  display: grid !important;
+  width: 100% !important;
+  gap: .22rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-submenu button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  min-height: 42px !important;
+  margin: 0 auto !important;
+  padding: .55rem !important;
+  gap: 0 !important;
+  border-radius: 10px !important;
+  overflow: visible !important;
+  font-size: 0 !important;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-submenu-icon {
+  display: block !important;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-submenu-label {
+  display: none !important;
+}
+
+.skpe-sidebar-collapsed .skpe-nav-submenu button:hover,
+.skpe-sidebar-collapsed .skpe-nav-submenu button:focus-visible {
+  background: rgba(255, 255, 255, .08);
+}
+
+.skpe-sidebar-collapsed .skpe-nav-submenu button.skpe-nav-submenu-active {
+  background: rgba(255, 255, 255, .14);
+  color: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .skpe-nav-submenu-icon {
+    display: block;
+  }
+
+  .skpe-nav-submenu-label {
+    display: none;
+  }
+
+  .skpe-nav-journey-disclosure .skpe-nav-submenu {
+    display: flex !important;
+    align-items: center;
+    gap: .22rem !important;
+    padding: 0 !important;
+  }
+
+  .skpe-nav-journey-disclosure .skpe-nav-submenu button {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+  }
+}
+/* UX-CANON-04E - module transition continuity + centered organization */
+.skpe-shell,
+.skpe-main {
+  background: var(--skpe-page-background, #f4f7f5);
+}
+
+.skpe-main {
+  min-height: 100dvh;
+}
+
+.skpe-main > :not(.skpe-cockpit-header) {
+  animation: skpe-context-enter 120ms ease-out both;
+}
+
+@keyframes skpe-context-enter {
+  from {
+    opacity: .94;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Current organization must remain visually centered in the combolist. */
+.skpe-organization-switcher-details > summary {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.skpe-organization-switcher-current {
+  width: 100% !important;
+  padding-inline: 1.3rem !important;
+  text-align: center !important;
+}
+
+.skpe-organization-switcher-chevron {
+  position: absolute !important;
+  right: .55rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.skpe-organization-switcher-details[open]
+  .skpe-organization-switcher-chevron {
+  transform: translateY(-50%) rotate(180deg) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skpe-main > :not(.skpe-cockpit-header) {
+    animation: none;
+  }
+
+  .skpe-organization-switcher-chevron {
+    transition: none !important;
+  }
+}
+/* UX_MONITORAMENTO_CLEANUP_V4_START */
+
+/* Contextual actions removed from this Strategic Monitoring surface. */
+.skpe-heading-actions:has(> .skpe-context-icon-actions[aria-label="Ações do Painel de Iniciativas"]) {
+  display: none !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.skpe-context-icon-actions[aria-label="Ações do Painel de Iniciativas"] {
+  display: none !important;
+}
+
+/* Pull the real panel content up after removing the unused action row. */
+#skpe-initiative-results {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* One compact toolbar: Search + 3 filters + 3 view buttons. */
+.skpe-initiative-filters {
+  display: block !important;
+  position: relative !important;
+  z-index: 3 !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0.35rem 0 0.7rem 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.skpe-initiative-filters > .skpe-admin-search {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.42rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0.35rem 0.45rem !important;
+  overflow: visible !important;
+  border: 1px solid var(--skpe-border, #dce5e1) !important;
+  border-radius: 13px !important;
+  background: var(--skpe-surface, #ffffff) !important;
+}
+
+.skpe-initiative-filters > .skpe-admin-search > svg {
+  flex: 0 0 17px !important;
+  width: 17px !important;
+  height: 17px !important;
+}
+
+/* Search gives space to filters and view controls. */
+.skpe-initiative-filters > .skpe-admin-search > input {
+  flex: 1 1 210px !important;
+  min-width: 150px !important;
+  width: auto !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  margin: 0 !important;
+  padding: 0.35rem 0.5rem !important;
+  border: 1px solid #cbd7d2 !important;
+  border-radius: 9px !important;
+  box-sizing: border-box !important;
+}
+
+.skpe-monitoring-inline-filter {
+  flex: 0 1 118px !important;
+  width: 118px !important;
+  min-width: 96px !important;
+  max-width: 128px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  margin: 0 !important;
+  padding: 0 1.55rem 0 0.45rem !important;
+  border: 1px solid #cbd7d2 !important;
+  border-radius: 9px !important;
+  background-color: #ffffff !important;
+  color: #263830 !important;
+  font-size: 0.72rem !important;
+  box-sizing: border-box !important;
+}
+
+/* Three view buttons at the end of the same frame. */
+.skpe-monitoring-search-view-actions {
+  display: inline-flex !important;
+  flex: 0 0 110px !important;
+  width: 110px !important;
+  min-width: 110px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.3rem !important;
+  position: static !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button {
+  appearance: none !important;
+  display: inline-flex !important;
+  flex: 0 0 34px !important;
+  width: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #c9d6d1 !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  color: #405c51 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  position: static !important;
+  transform: none !important;
+  cursor: pointer !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button.is-active {
+  border-color: #176b53 !important;
+  background: #e9f5ef !important;
+  color: #176b53 !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button > svg {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  color: currentColor !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button > svg * {
+  stroke: currentColor !important;
+  fill: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* The filters no longer exist as loose children below the search frame. */
+.skpe-initiative-filters > select {
+  display: none !important;
+}
+
+/* Quick-card reset is not allowed to create a fourth loose control. */
+.skpe-initiative-title-clear-filter {
+  margin: 0 !important;
+}
+
+/* Keep the Strategic Map fully below the toolbar. */
+.skpe-initiative-filters + * {
+  clear: both !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+@media (max-width: 1050px) {
+  .skpe-initiative-filters > .skpe-admin-search {
+    gap: 0.3rem !important;
+  }
+
+  .skpe-initiative-filters > .skpe-admin-search > input {
+    flex-basis: 170px !important;
+    min-width: 120px !important;
+  }
+
+  .skpe-monitoring-inline-filter {
+    flex-basis: 104px !important;
+    width: 104px !important;
+    min-width: 88px !important;
+    font-size: 0.68rem !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .skpe-initiative-filters > .skpe-admin-search {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    min-height: 46px !important;
+  }
+
+  .skpe-initiative-filters > .skpe-admin-search > input {
+    flex: 1 1 calc(100% - 40px) !important;
+  }
+
+  .skpe-monitoring-inline-filter {
+    flex: 1 1 30% !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  .skpe-monitoring-search-view-actions {
+    margin-left: auto !important;
+  }
+}
+
+/* UX_MONITORAMENTO_CLEANUP_V4_END */
+/* UX_MONITORAMENTO_POLISH_V45_START */
+
+/*
+  IMPORTANT:
+  Do NOT change the application header.
+  Reduce ONLY the vertical distance between the header and
+  #skpe-initiative-results, moving this content block and all following
+  content upward through normal document flow.
+*/
+#skpe-initiative-results {
+  position: relative !important;
+  top: -22px !important;
+  margin-top: 0 !important;
+  margin-bottom: -18px !important;
+  padding-top: 0 !important;
+}
+
+/*
+  The OUTER filter section is now the visible container.
+  This makes the increase in height visually explicit.
+*/
+.skpe-initiative-filters {
+  box-sizing: border-box !important;
+  display: block !important;
+  width: 100% !important;
+  min-height: 78px !important;
+  height: 78px !important;
+  margin: 0 0 0.8rem 0 !important;
+  padding: 9px 10px !important;
+  border: 1px solid var(--skpe-border, #dce5e1) !important;
+  border-radius: 14px !important;
+  background: var(--skpe-surface, #ffffff) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 4 !important;
+}
+
+/*
+  Inner row has no second frame. It simply aligns Search + filters +
+  3 view buttons inside the taller outer container.
+*/
+.skpe-initiative-filters > .skpe-admin-search {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  width: 100% !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+/* Search icon gets its own fixed slot, never on top of placeholder text. */
+.skpe-initiative-filters > .skpe-admin-search > svg {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  flex: 0 0 18px !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  max-height: 18px !important;
+  margin: 0 0.15rem 0 0 !important;
+  color: #5d746a !important;
+  pointer-events: none !important;
+}
+
+/* Search field intentionally reduced to give room to the 3 filters. */
+.skpe-initiative-filters > .skpe-admin-search > input {
+  box-sizing: border-box !important;
+  position: static !important;
+  flex: 1 1 180px !important;
+  width: auto !important;
+  min-width: 140px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 0 0.7rem !important;
+  border: 1px solid #cbd7d2 !important;
+  border-radius: 9px !important;
+}
+
+/* Three compact inline filters. */
+.skpe-monitoring-inline-filter {
+  box-sizing: border-box !important;
+  position: static !important;
+  flex: 0 1 112px !important;
+  width: 112px !important;
+  min-width: 92px !important;
+  max-width: 118px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 0 1.45rem 0 0.45rem !important;
+  border: 1px solid #cbd7d2 !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  font-size: 0.69rem !important;
+}
+
+/* Three view buttons remain at the far right. */
+.skpe-monitoring-search-view-actions {
+  box-sizing: border-box !important;
+  position: static !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 40px) !important;
+  flex: 0 0 128px !important;
+  width: 128px !important;
+  min-width: 128px !important;
+  max-width: 128px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Use the actual SVGs already present in JSX. */
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button::before,
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button::after {
+  content: none !important;
+  display: none !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button > svg {
+  display: block !important;
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  color: currentColor !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* REAL tooltip element, not a pseudo-element. */
+.skpe-monitoring-view-tooltip {
+  position: absolute !important;
+  z-index: 800 !important;
+  left: 50% !important;
+  bottom: calc(100% + 9px) !important;
+  transform: translateX(-50%) !important;
+  display: none !important;
+  width: max-content !important;
+  max-width: 260px !important;
+  padding: 0.45rem 0.6rem !important;
+  border-radius: 7px !important;
+  background: #183f34 !important;
+  color: #ffffff !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 20px rgba(24, 63, 52, 0.22) !important;
+  pointer-events: none !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button:hover > .skpe-monitoring-view-tooltip,
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button:focus-visible > .skpe-monitoring-view-tooltip {
+  display: block !important;
+}
+
+/* Map remains below the now visibly taller toolbar. */
+.skpe-initiative-filters + * {
+  clear: both !important;
+  margin-top: 0 !important;
+}
+
+/* UX_MONITORAMENTO_POLISH_V45_END */
+/* UX_MONITORAMENTO_FIX_V49_START */
+
+/* ------------------------------------------------------------------
+   1) Hide the three contextual top actions WITHOUT depending on accented
+      aria-label text. Scope is the heading action area only.
+   ------------------------------------------------------------------ */
+.skpe-heading-actions .skpe-context-icon-actions {
+  display: none !important;
+}
+
+.skpe-heading-actions:has(.skpe-context-icon-actions) {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ------------------------------------------------------------------
+   2) Reduce ONLY the empty distance between app header and results panel.
+      The header itself is not resized.
+   ------------------------------------------------------------------ */
+#skpe-initiative-results {
+  position: relative !important;
+  transform: translateY(-22px) !important;
+  margin-bottom: -22px !important;
+  padding-top: 0 !important;
+}
+
+/* ------------------------------------------------------------------
+   3) Make the OUTER search/filter/button container visibly taller.
+      Use descendant selectors because prior patches changed nesting.
+   ------------------------------------------------------------------ */
+.skpe-initiative-filters {
+  box-sizing: border-box !important;
+  min-height: 82px !important;
+  height: 82px !important;
+  padding: 12px 12px !important;
+  margin-top: 0.35rem !important;
+  margin-bottom: 0.9rem !important;
+  border: 1px solid var(--skpe-border, #dce5e1) !important;
+  border-radius: 14px !important;
+  background: var(--skpe-surface, #ffffff) !important;
+  overflow: visible !important;
+}
+
+/* The inner row fills the larger container. */
+.skpe-initiative-filters .skpe-admin-search {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  min-height: 56px !important;
+  height: 56px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0.45rem !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+/* Search icon: fixed slot, never over placeholder. */
+.skpe-initiative-filters .skpe-admin-search > svg {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  flex: 0 0 18px !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  margin: 0 0.15rem 0 0 !important;
+  pointer-events: none !important;
+}
+
+/* Search gives room to filters and buttons. */
+.skpe-initiative-filters .skpe-admin-search > input {
+  box-sizing: border-box !important;
+  position: static !important;
+  flex: 1 1 180px !important;
+  min-width: 140px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+}
+
+/* Keep all three inline filters inside the tall container. */
+.skpe-initiative-filters .skpe-monitoring-inline-filter {
+  box-sizing: border-box !important;
+  position: static !important;
+  flex: 0 1 112px !important;
+  width: 112px !important;
+  min-width: 92px !important;
+  max-width: 118px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+}
+
+/* Three view buttons at the far right. */
+.skpe-initiative-filters .skpe-monitoring-search-view-actions {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 40px) !important;
+  flex: 0 0 128px !important;
+  width: 128px !important;
+  min-width: 128px !important;
+  max-width: 128px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+/* Explicit tooltip from the existing title attribute. */
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button::after {
+  content: attr(title) !important;
+  position: absolute !important;
+  z-index: 900 !important;
+  left: 50% !important;
+  bottom: calc(100% + 9px) !important;
+  transform: translateX(-50%) !important;
+  display: none !important;
+  width: max-content !important;
+  max-width: 260px !important;
+  padding: 0.45rem 0.6rem !important;
+  border-radius: 7px !important;
+  background: #183f34 !important;
+  color: #ffffff !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 20px rgba(24, 63, 52, 0.22) !important;
+  pointer-events: none !important;
+}
+
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button:hover::after,
+.skpe-monitoring-search-view-actions > .skpe-initiative-title-mode-button:focus-visible::after {
+  display: block !important;
+}
+
+/* Map must start below the full toolbar. */
+.skpe-initiative-filters + * {
+  clear: both !important;
+  margin-top: 0 !important;
+}
+
+/* UX_MONITORAMENTO_FIX_V49_END */
+
+/* SKPE_MONITORING_TOOLBAR_POLISH_POST_V49
+   Preserve V4.9 layout; only rebalance search/filter widths and center icons. */
+.skpe-initiative-filters {
+  grid-template-columns:
+    minmax(250px, 1.05fr)
+    minmax(118px, 0.52fr)
+    minmax(118px, 0.52fr)
+    minmax(150px, 0.66fr)
+    auto !important;
+}
+
+.skpe-initiative-filters > .skpe-admin-search {
+  min-width: 0 !important;
+}
+
+.skpe-monitoring-search-view-actions,
+.skpe-initiative-title-mode-actions {
+  align-items: center !important;
+}
+
+.skpe-monitoring-search-view-actions .skpe-initiative-title-mode-button,
+.skpe-initiative-filters .skpe-initiative-title-mode-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.skpe-monitoring-search-view-actions .skpe-initiative-title-mode-button > svg,
+.skpe-initiative-filters .skpe-initiative-title-mode-button > svg {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 auto !important;
+  transform: none !important;
+}
+
+@media (max-width: 1250px) {
+  .skpe-initiative-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .skpe-initiative-filters {
+    grid-template-columns: 1fr !important;
+  }
+}

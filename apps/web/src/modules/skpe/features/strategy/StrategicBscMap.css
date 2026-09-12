@@ -1122,3 +1122,678 @@
 .skpe-theme-dark .skpe-bsc-toolbar:focus-within {
   background: rgba(23, 37, 31, 0.92);
 }
+/* MON-FORM-CANONICAL-REUSE-V1
+ * The map owns one canonical toolbar. Keep controls in normal flow so the
+ * same StrategicBscMap can be consumed by Formulation and Monitoring
+ * without overlaying consumer headers or search controls.
+ */
+.skpe-bsc-map-canvas {
+  isolation: isolate;
+}
+
+.skpe-bsc-toolbar {
+  position: absolute !important;
+  top: 0.75rem !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 18 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--skpe-surface, #fff) 94%, transparent);
+  box-shadow: 0 8px 24px rgba(18, 58, 45, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transform: translateX(-50%) !important;
+}
+
+.skpe-bsc-toolbar > button {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+}
+
+.skpe-bsc-toolbar > button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  width: max-content;
+  max-width: min(16rem, 80vw);
+  padding: 0.38rem 0.5rem;
+  border: 1px solid var(--skpe-border, #dce5e1);
+  border-radius: 0.45rem;
+  background: var(--skpe-surface, #fff);
+  color: var(--skpe-text, #1c2924);
+  box-shadow: 0 8px 24px rgba(18, 58, 45, 0.12);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.15rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.skpe-bsc-toolbar > button[data-tooltip]:hover::after,
+.skpe-bsc-toolbar > button[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 760px) {
+  .skpe-bsc-toolbar {
+    top: 0.55rem !important;
+    width: calc(100% - 1rem);
+    max-width: calc(100% - 1rem);
+    justify-content: center;
+  }
+
+  .skpe-bsc-toolbar > button[data-tooltip]::after {
+    right: 50%;
+    left: auto;
+    transform: translate(50%, -0.15rem);
+  }
+
+  .skpe-bsc-toolbar > button[data-tooltip]:hover::after,
+  .skpe-bsc-toolbar > button[data-tooltip]:focus-visible::after {
+    transform: translate(50%, 0);
+  }
+}
+/* MON-FORM-CANONICAL-REUSE-V1_1
+ * Canonical strategic-map toolbar floats centered over the map canvas.
+ * This presentation is shared by Formulation and Monitoring consumers.
+ */
+
+/* MON-FORM-CANONICAL-REUSE-V1_2 START */
+/* Toolbar do Mapa Estratégico:
+   - flutuante
+   - centralizada
+   - ações em linha no desktop
+   - empilhamento só em telas pequenas */
+.skpe-bsc-map-shell,
+.skpe-bsc-map-stage,
+.skpe-bsc-map-board,
+.skpe-strategic-map-shell,
+.skpe-strategic-map-stage,
+.skpe-strategic-map-board {
+  position: relative;
+}
+
+.skpe-bsc-toolbar {
+  position: absolute !important;
+  top: 0.75rem !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 18 !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  gap: 0.5rem !important;
+  width: auto !important;
+  max-width: calc(100% - 2rem) !important;
+  margin: 0 !important;
+  padding: 0.45rem 0.55rem !important;
+  border: 1px solid var(--skpe-border, #dce5e1) !important;
+  border-radius: 0.8rem !important;
+  background: color-mix(in srgb, var(--skpe-surface, #ffffff) 94%, transparent) !important;
+  box-shadow: 0 8px 24px rgba(18, 58, 45, 0.12) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transform: translateX(-50%) !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.skpe-bsc-toolbar > * {
+  flex: 0 0 auto !important;
+}
+
+.skpe-bsc-toolbar > button,
+.skpe-bsc-toolbar > .skpe-bsc-toolbar-button,
+.skpe-bsc-toolbar .skpe-bsc-toolbar-button {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: max-content !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 760px) {
+  .skpe-bsc-toolbar {
+    top: 0.55rem !important;
+    width: calc(100% - 1rem) !important;
+    max-width: calc(100% - 1rem) !important;
+    padding: 0.4rem !important;
+    gap: 0.35rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  .skpe-bsc-toolbar > button,
+  .skpe-bsc-toolbar > .skpe-bsc-toolbar-button,
+  .skpe-bsc-toolbar .skpe-bsc-toolbar-button {
+    min-width: auto !important;
+  }
+}
+/* MON-FORM-CANONICAL-REUSE-V1_2 END */
+
+/* MAPA-UX-RUNTIME-FIX-V1 START */
+
+/* Real floating/movable toolbar. */
+.skpe-bsc-map-canvas {
+  position: relative !important;
+}
+
+.skpe-bsc-toolbar {
+  position: absolute !important;
+  top: 0.75rem !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 80 !important;
+
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  gap: 0.45rem !important;
+
+  width: auto !important;
+  max-width: calc(100% - 1.5rem) !important;
+  margin: 0 !important;
+  padding: 0.4rem 0.5rem !important;
+
+  transform: translateX(-50%) !important;
+  user-select: none !important;
+  overflow: visible !important;
+}
+
+.skpe-bsc-toolbar[style*="transform: none"] {
+  transform: none !important;
+}
+
+.skpe-bsc-toolbar > * {
+  flex: 0 0 auto !important;
+}
+
+.skpe-bsc-toolbar-drag-handle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 1.65rem !important;
+  min-width: 1.65rem !important;
+  height: 1.8rem !important;
+  padding: 0 !important;
+  margin: 0 0.05rem 0 0 !important;
+
+  border: 0 !important;
+  border-right: 1px solid var(--skpe-border, #dce5e1) !important;
+  border-radius: 0.45rem 0 0 0.45rem !important;
+
+  background: transparent !important;
+  box-shadow: none !important;
+  color: currentColor !important;
+
+  cursor: grab !important;
+  touch-action: none !important;
+  opacity: 0.72 !important;
+}
+
+.skpe-bsc-toolbar-drag-handle:hover {
+  opacity: 1 !important;
+  background: rgba(16, 78, 61, 0.08) !important;
+}
+
+.skpe-bsc-toolbar-drag-handle:active {
+  cursor: grabbing !important;
+}
+
+.skpe-bsc-toolbar-drag-handle > span {
+  display: block !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+/* Real visual tooltip for Strategic Objective description. */
+.skpe-bsc-objective {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.react-flow__node:has(.skpe-bsc-objective:hover),
+.react-flow__node:has(.skpe-bsc-objective:focus-within) {
+  z-index: 120 !important;
+}
+
+.skpe-bsc-objective-description-tooltip {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: calc(100% + 0.55rem) !important;
+  z-index: 140 !important;
+
+  width: max-content !important;
+  max-width: min(24rem, 72vw) !important;
+  min-width: 12rem !important;
+
+  padding: 0.65rem 0.75rem !important;
+  border: 1px solid rgba(26, 73, 59, 0.18) !important;
+  border-radius: 0.6rem !important;
+
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 10px 28px rgba(17, 45, 37, 0.18) !important;
+
+  color: #173c31 !important;
+  font-size: 0.78rem !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+  white-space: normal !important;
+
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+
+  transform: translate(-50%, 0.2rem) !important;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 120ms ease !important;
+}
+
+.skpe-bsc-objective-description-tooltip::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 50% !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: 0.38rem solid transparent !important;
+  border-top-color: rgba(255, 255, 255, 0.98) !important;
+  transform: translateX(-50%) !important;
+}
+
+.skpe-bsc-objective:hover .skpe-bsc-objective-description-tooltip,
+.skpe-bsc-objective:focus-within .skpe-bsc-objective-description-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translate(-50%, 0) !important;
+}
+
+@media (max-width: 760px) {
+  .skpe-bsc-toolbar {
+    width: calc(100% - 1rem) !important;
+    max-width: calc(100% - 1rem) !important;
+    flex-wrap: wrap !important;
+  }
+
+  .skpe-bsc-objective-description-tooltip {
+    max-width: min(20rem, 82vw) !important;
+  }
+}
+
+/* MAPA-UX-RUNTIME-FIX-V1 END */
+
+/* SKPE_MAP_RESPONSIBILITY_ROUTE_INTERACTION_V1
+   Gold/orange border = personal responsibility, never performance.
+   Cause-effect relations are hypotheses pending organizational validation. */
+
+.skpe-bsc-hypothesis-notice {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--skpe-text-muted, #5f6f68);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+/* SKPE_BSC_RELATION_STORY_TOOLTIP_V1
+   Broad arrow = aggregate BSC contribution between adjacent perspectives.
+   Relation tooltips narrate the causal hypothesis on hover. */
+.skpe-bsc-perspective-contribution-arrow {
+  fill: color-mix(
+    in srgb,
+    var(--organization-accent, var(--skpe-accent, #176b53)) 30%,
+    transparent
+  );
+  stroke: color-mix(
+    in srgb,
+    var(--organization-accent, var(--skpe-accent, #176b53)) 64%,
+    transparent
+  );
+  stroke-width: 1.5;
+  cursor: help;
+  pointer-events: all;
+}
+
+.skpe-bsc-perspective-contribution-arrow:hover {
+  fill: color-mix(
+    in srgb,
+    var(--organization-accent, var(--skpe-accent, #176b53)) 42%,
+    transparent
+  );
+  stroke-width: 2;
+}
+
+.skpe-bsc-edge-tooltip-hitbox {
+  cursor: help;
+  pointer-events: stroke;
+}
+
+.skpe-bsc-objective[data-personal-responsibility='true'] {
+  border: 2px solid #d99a2b !important;
+  box-shadow:
+    0 0 0 2px rgba(217, 154, 43, 0.15),
+    0 8px 18px rgba(45, 55, 50, 0.08) !important;
+}
+
+.skpe-bsc-map-canvas[data-map-interaction='passive'] .react-flow__pane {
+  cursor: default;
+}
+
+.skpe-bsc-map-canvas[data-map-interaction='active'] .react-flow__pane {
+  cursor: grab;
+}
+
+.skpe-bsc-map-canvas[data-map-interaction='active'] .react-flow__pane:active {
+  cursor: grabbing;
+}
+/* SKPE_BSC_STRAIGHT_RELATIONS_V1
+   Auto causal relations use center-to-center geometry.
+   Cards sit above the edge and mask the segment inside each OE. */
+.skpe-bsc-center-handle {
+  left: 50% !important;
+  top: 50% !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-width: 1px !important;
+  min-height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+/* SKPE_FE04_CAUSAL_ASSIST_V1 */
+.skpe-bsc-causal-manager {
+  margin: 0 0 16px;
+  padding: 18px;
+  border: 1px solid var(--skpe-border-subtle, #d9e0e7);
+  border-radius: 14px;
+  background: var(--skpe-surface, #fff);
+  box-shadow: 0 12px 30px rgba(15, 35, 55, 0.08);
+}
+
+.skpe-bsc-causal-manager > header,
+.skpe-bsc-causal-actions,
+.skpe-bsc-causal-assist-line,
+.skpe-bsc-causal-existing > ul > li,
+.skpe-bsc-causal-existing-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skpe-bsc-causal-manager > header {
+  justify-content: space-between;
+}
+
+.skpe-bsc-causal-manager > header div {
+  display: grid;
+  gap: 2px;
+}
+
+.skpe-bsc-causal-manager-intro,
+.skpe-bsc-causal-message {
+  margin: 12px 0;
+  line-height: 1.45;
+}
+
+.skpe-bsc-causal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skpe-bsc-causal-grid label,
+.skpe-bsc-causal-rationale {
+  display: grid;
+  gap: 6px;
+}
+
+.skpe-bsc-causal-grid select,
+.skpe-bsc-causal-rationale textarea {
+  width: 100%;
+  border: 1px solid var(--skpe-border-subtle, #cbd5df);
+  border-radius: 10px;
+  background: var(--skpe-surface, #fff);
+  padding: 9px 10px;
+  font: inherit;
+}
+
+.skpe-bsc-causal-rationale {
+  margin-top: 12px;
+}
+
+.skpe-bsc-causal-rationale textarea {
+  resize: vertical;
+  min-height: 170px;
+  line-height: 1.45;
+}
+
+.skpe-bsc-causal-assist-line {
+  justify-content: space-between;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.skpe-bsc-causal-actions {
+  margin-top: 12px;
+}
+
+.skpe-bsc-causal-existing {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--skpe-border-subtle, #e2e8ef);
+}
+
+.skpe-bsc-causal-existing > ul {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.skpe-bsc-causal-existing > ul > li {
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--skpe-border-subtle, #e2e8ef);
+  border-radius: 10px;
+}
+
+.skpe-bsc-causal-existing > ul > li > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.skpe-bsc-causal-existing p {
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.skpe-bsc-causal-existing-actions {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 860px) {
+  .skpe-bsc-causal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-bsc-causal-existing > ul > li {
+    flex-direction: column;
+  }
+}
+/* SKPE_FE04_CAUSAL_ASSIST_UX_V1_6 */
+.skpe-bsc-causal-integrity {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--skpe-border-subtle, #d9e0e7);
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.skpe-bsc-causal-integrity.is-fragile {
+  border-style: dashed;
+}
+
+.skpe-bsc-causal-primary-action {
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skpe-bsc-causal-primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.skpe-bsc-causal-action-help {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.35;
+}
+/* SKPE_FE04_CAUSAL_SIDE_PANEL_V1_9 */
+:root {
+  --skpe-causal-sidepanel-width: clamp(400px, 34vw, 520px);
+}
+
+.skpe-bsc-causal-sidepanel {
+  position: fixed;
+  top: 72px;
+  right: 0;
+  bottom: 0;
+  width: var(--skpe-causal-sidepanel-width);
+  max-width: calc(100vw - 56px);
+  margin: 0;
+  border-radius: 14px 0 0 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 60;
+}
+
+.skpe-bsc-map-canvas {
+  transition: width 180ms ease, margin-right 180ms ease;
+}
+
+.skpe-bsc-map-canvas.is-causal-manager-open {
+  width: calc(100% - var(--skpe-causal-sidepanel-width));
+  margin-right: var(--skpe-causal-sidepanel-width);
+}
+
+.skpe-bsc-causal-integrity {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--skpe-border-subtle, #d9e0e7);
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.skpe-bsc-causal-integrity.is-fragile {
+  border-style: dashed;
+}
+
+.skpe-bsc-causal-primary-action {
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skpe-bsc-causal-primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 980px) {
+  :root {
+    --skpe-causal-sidepanel-width: min(440px, 92vw);
+  }
+
+  .skpe-bsc-causal-sidepanel {
+    top: 64px;
+  }
+
+  .skpe-bsc-map-canvas.is-causal-manager-open {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+/* SKPE_FE04_CAUSAL_CONTAINER_ALIGN_V2_0 */
+
+/* The FE-04 editor belongs to the Strategic Map container, not to the viewport. */
+.skpe-bsc-map {
+  position: relative;
+}
+
+.skpe-bsc-causal-sidepanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  height: 100%;
+  max-height: 100%;
+  z-index: 20;
+  border-radius: 0 14px 14px 0;
+  box-sizing: border-box;
+}
+
+/* Keep the map visible beside the maintenance frame. */
+.skpe-bsc-map-canvas.is-causal-manager-open {
+  width: calc(100% - var(--skpe-causal-sidepanel-width));
+  margin-right: var(--skpe-causal-sidepanel-width);
+}
+
+/* Do not let the side panel escape the Map container on smaller screens. */
+@media (max-width: 980px) {
+  .skpe-bsc-causal-sidepanel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .skpe-bsc-map-canvas.is-causal-manager-open {
+    width: 100%;
+    margin-right: 0;
+  }
+}

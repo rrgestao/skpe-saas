@@ -1,4 +1,7 @@
-import type { StrategicMapObjective } from '../../contracts/strategic-map.ts'
+import type {
+  StrategicMapObjective,
+  StrategicMapPerspective,
+} from '../../contracts/strategic-map.ts'
 
 export type StrategicCauseEffectSuggestion = {
   sourceCode: string
@@ -122,16 +125,40 @@ function matchesExpectedObjectiveSignature(
 
 export function resolveStrategicCauseEffectSuggestions(
   objectives: StrategicMapObjective[],
+  perspectives: StrategicMapPerspective[] = [],
 ): ResolvedStrategicCauseEffectSuggestion[] {
   if (!matchesExpectedObjectiveSignature(objectives)) return []
 
   const byCode = new Map(objectives.map((objective) => [objective.code, objective]))
+  const perspectiveSequence = new Map(
+    [...perspectives]
+      .sort((left, right) => left.displayOrder - right.displayOrder)
+      .map((perspective, index) => [perspective.id, index]),
+  )
 
   return strategicCauseEffectSuggestions.flatMap((suggestion) => {
     const source = byCode.get(suggestion.sourceCode)
     const target = byCode.get(suggestion.targetCode)
 
     if (!source || !target) return []
+
+    const sourcePerspectiveIndex = source.perspectiveId
+      ? perspectiveSequence.get(source.perspectiveId)
+      : undefined
+    const targetPerspectiveIndex = target.perspectiveId
+      ? perspectiveSequence.get(target.perspectiveId)
+      : undefined
+
+    // Suggested cause-effect follows the contribution ladder:
+    // PE1 -> PE2 -> PE3 -> ... . Do not create cross-layer shortcuts.
+    if (
+      perspectives.length > 0 &&
+      (sourcePerspectiveIndex == null ||
+        targetPerspectiveIndex == null ||
+        targetPerspectiveIndex !== sourcePerspectiveIndex + 1)
+    ) {
+      return []
+    }
 
     return [
       {

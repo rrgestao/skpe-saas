@@ -408,3 +408,76 @@ button.skpe-performance-summary-card{cursor:pointer}.skpe-performance-summary-ca
     margin-left: 0;
   }
 }
+/* MON-FORM-PERFORMANCE-ACTIONS-V1
+ * Keep the three analysis mode controls in the panel header flow.
+ * Do not float them over the Results and Performance icons/content.
+ */
+.skpe-initiative-results-heading.skpe-initiative-analysis-mode-bar {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 0.65rem 1rem !important;
+  min-width: 0;
+}
+
+.skpe-initiative-analysis-mode-layout {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  z-index: auto !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.skpe-initiative-analysis-icon-button {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.skpe-initiative-analysis-icon-button[aria-label]::after {
+  content: attr(aria-label);
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 0.42rem);
+  right: 0;
+  width: max-content;
+  max-width: min(17rem, 80vw);
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--skpe-border-color, #d7e1dc);
+  border-radius: 0.45rem;
+  background: var(--skpe-surface, #fff);
+  color: var(--skpe-text, #1c2924);
+  box-shadow: 0 8px 24px rgba(18, 58, 45, 0.12);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.15rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.skpe-initiative-analysis-icon-button[aria-label]:hover::after,
+.skpe-initiative-analysis-icon-button[aria-label]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 760px) {
+  .skpe-initiative-analysis-mode-layout {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .skpe-initiative-analysis-icon-button[aria-label]::after {
+    right: auto;
+    left: 0;
+  }
+}

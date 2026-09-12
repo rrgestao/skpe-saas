@@ -45,7 +45,10 @@ export function StrategicArchitectureSummary({ formulationId }: Props) {
   const suggestions = useMemo(
     () =>
       payload
-        ? resolveStrategicCauseEffectSuggestions(payload.objectives)
+        ? resolveStrategicCauseEffectSuggestions(
+            payload.objectives,
+            payload.perspectives,
+          )
         : [],
     [payload],
   )

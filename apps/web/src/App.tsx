@@ -28,6 +28,7 @@ import './App.css'
 const LAST_SUCCESSFUL_EMAIL_KEY =
   'skpe:last-successful-email'
 const PLATFORM_THEME_KEY = 'sparks:platform-theme'
+const LAST_ORGANIZATION_KEY = 'sparks:last-organization-id'
 
 type MessageType = 'info' | 'success' | 'error'
 
@@ -141,7 +142,7 @@ function getOrganizationMembershipStatusLabel(
     return 'Ativo'
   }
 
-  return normalized || 'Nao informado'
+  return normalized || 'Não informado'
 }
 
 function isHierarchicalReadOnlyAccess(
@@ -781,7 +782,7 @@ function App() {
 
       if (error) {
         console.error(
-          'Nao foi possivel carregar o papel organizacional do usuario:',
+          'Não foi possível carregar o papel organizacional do usuário:',
           error,
         )
         setSelectedOrganizationJobTitle(null)
@@ -1137,6 +1138,10 @@ function App() {
     setPlatformAdminOpen(false)
     setOrganizationAdminOpen(false)
     setSelectedOrganization(organization)
+    localStorage.setItem(
+      LAST_ORGANIZATION_KEY,
+      organization.organization_id,
+    )
     setOpenedModule(null)
     setModules([])
     setOrganizationNetwork([])
@@ -1223,7 +1228,7 @@ function App() {
 
     if (!canManageOrganization) {
       showMessage(
-        'Seu perfil nao possui permissao para administrar esta organização.',
+        'Seu perfil não possui permissão para administrar esta organização.',
         'error',
       )
       return
@@ -1536,6 +1541,7 @@ function App() {
     [location.pathname],
   )
 
+
   useEffect(() => {
     if (!session || passwordRecoveryMode || loading) {
       return
@@ -1775,6 +1781,25 @@ function App() {
         userDisplayName={userDisplayName || session?.user.email || 'Usuário'}
         userEmail={session?.user.email ?? ''}
         userAvatarUrl={userAvatarUrl}
+        organizationOptions={organizations.map((organization) => ({
+          organizationId: organization.organization_id,
+          organizationName:
+            organization.trade_name ??
+            organization.legal_name ??
+            organization.organization_code,
+        }))}
+        onSwitchOrganization={(organizationId) => {
+          localStorage.setItem(
+            LAST_ORGANIZATION_KEY,
+            organizationId,
+          )
+          navigate(
+            platformRoutes.module(
+              organizationId,
+              'SK-PE',
+            ),
+          )
+        }}
         onOpenPlatformAdmin={handleOpenPlatformAdmin}
         onOpenUserProfile={() => setUserProfileOpen(true)}
         onLogout={handleLogout}
@@ -2189,21 +2214,6 @@ function App() {
                 </strong>
 
                 <div className="user-badges">
-                  {selectedOrganization ? (
-                    <span className="badge badge-organization">
-                      {selectedOrganization.is_organization_admin
-                        ? 'Administrador'
-                        : selectedOrganizationJobTitle ?? 'Participante'}
-                    </span>
-                  ) : isPlatformSuperAdmin ? (
-                    <span className="badge badge-platform">
-                      Super-admin
-                    </span>
-                  ) : platformRoles[0] ? (
-                    <span className="badge badge-platform">
-                      {platformRoles[0].role_name}
-                    </span>
-                  ) : null}
                 </div>
               </div>
 
@@ -2220,6 +2230,23 @@ function App() {
               <div className="platform-account-menu-identity">
                 <strong>{userDisplayName || session.user.email}</strong>
                 <span>{session.user.email}</span>
+              </div>
+
+              <div
+                className="platform-account-menu-role"
+                role="presentation"
+                aria-label="Perfil atual"
+              >
+                <span>Perfil</span>
+                <strong>
+                  {selectedOrganization
+                    ? selectedOrganization.is_organization_admin
+                      ? 'Administrador'
+                      : selectedOrganizationJobTitle ?? 'Participante'
+                    : isPlatformSuperAdmin
+                      ? 'Super-admin'
+                      : platformRoles[0]?.role_name ?? 'Usuário'}
+                </strong>
               </div>
 
               <button
@@ -2361,6 +2388,44 @@ function App() {
                   }
                 </span>
               </div>
+            </section>
+
+            <section
+              className="organization-workspace-entry"
+              aria-label="Acesso rápido ao espaço de trabalho"
+            >
+              <div>
+                <p className="eyebrow">Seu espaço de trabalho</p>
+                <h2>Planejamento Estratégico</h2>
+                <p>
+                  Entre diretamente no ambiente de trabalho do SPARKs PE
+                  para esta organização.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="organization-workspace-entry-action"
+                data-ux-canon-04d="open-workspace"
+                disabled={
+                  !modules.some(
+                    (module) =>
+                      module.module_code.toUpperCase() === 'SK-PE',
+                  )
+                }
+                onClick={() => {
+                  const skpeModule = modules.find(
+                    (module) =>
+                      module.module_code.toUpperCase() === 'SK-PE',
+                  )
+
+                  if (skpeModule) {
+                    handleOpenModule(skpeModule)
+                  }
+                }}
+              >
+                Abrir meu espaço de trabalho
+              </button>
             </section>
 
             {message && (

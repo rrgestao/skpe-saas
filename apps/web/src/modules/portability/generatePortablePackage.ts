@@ -75,20 +75,20 @@ export async function createPortablePackage(document: ExportDocument) {
   docs?.file(
     'LEIA-ME.txt',
     [
-      'PACOTE ESTRATEGICO PORTATIL SPARKs',
+      'PACOTE ESTRATÉGICO PORTÁTIL SPARKs',
       '',
       `Organizacao: ${String(organizacao.name ?? organizacao.legal_name ?? organizationCode)}`,
       `Projeto: ${String(projeto.name ?? projectCode)}`,
       `Gerado em: ${new Date().toLocaleString('pt-BR')}`,
       '',
       'Este pacote contem o manifesto, os dados estruturados, a Planilha Canonica e o Portal HTML Portatil.',
-      'Quando a organizacao opera no SaaS, a Plataforma SPARKs permanece como fonte oficial.',
-      'Qualquer importacao deve passar por validacao, pre-visualizacao, tratamento de conflitos e confirmacao auditavel.',
+      'Quando a organização opera no SaaS, a Plataforma SPARKs permanece como fonte oficial.',
+      'Qualquer importação deve passar por validação, pré-visualização, tratamento de conflitos e confirmação auditável.',
     ].join('\n'),
   )
   docs?.folder('relatorios')?.file('LEIA-ME.txt', 'Relatorios Executivos e documentos de fase serao incluidos nesta pasta.')
   docs?.folder('apresentacoes')?.file('LEIA-ME.txt', 'Apresentacoes executivas serao incluidas nesta pasta.')
-  docs?.folder('decisoes')?.file('LEIA-ME.txt', 'Decisoes executivas e registros de validacao serao incluidos nesta pasta.')
+  docs?.folder('decisoes')?.file('LEIA-ME.txt', 'Decisões executivas e registros de validação serão incluídos nesta pasta.')
   docs?.folder('evidencias')?.file('LEIA-ME.txt', 'Evidencias documentais autorizadas serao incluidas nesta pasta.')
   docs?.folder('prompts')?.file('LEIA-ME.txt', 'Prompts de Gamma, continuidade e proxima fase serao incluidos nesta pasta.')
 

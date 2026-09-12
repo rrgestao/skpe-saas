@@ -4,7 +4,7 @@
    Plataforma: azul operacional, sem conflitar com cores semânticas.
    Inter = interface; Manrope = títulos executivos. */
 .platform-admin {
-  --pmc-platform-blue: #2563eb;
+  --pmc-platform-blue: var(--organization-accent, #2563eb);
   --pmc-platform-blue-soft: #eff6ff;
   --pmc-platform-blue-border: #bfdbfe;
   --pmc-neutral-950: #111827;
@@ -617,5 +617,153 @@
 
   .pmc-benchmark__actions {
     justify-content: flex-start;
+  }
+}
+
+/* UX-CANON-01 — Medidas e Desempenho / Catálogo GERAL
+   Uso integral da largura útil, fluxo horizontal equilibrado e hierarquia
+   de ações coerente com a nova experiência. */
+
+.pmc-shell {
+  width: 100%;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.pmc-heading {
+  align-items: center;
+}
+
+.pmc-heading > .pa-secondary-button {
+  flex: 0 0 auto;
+}
+
+.pmc-flow {
+  width: 100%;
+  grid-template-columns:
+    minmax(15rem, 1fr)
+    minmax(2rem, auto)
+    minmax(15rem, 1fr)
+    minmax(2rem, auto)
+    minmax(15rem, 1fr);
+  gap: .7rem;
+}
+
+.pmc-flow article {
+  min-height: 4.6rem;
+  align-items: center;
+  padding: .9rem 1rem;
+}
+
+.pmc-flow article > div {
+  min-width: 0;
+}
+
+.pmc-flow article strong {
+  font-size: .9rem;
+}
+
+.pmc-flow article small {
+  font-size: .74rem;
+  line-height: 1.35;
+}
+
+.pmc-grid {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  gap: 1rem;
+}
+
+.pmc-panel {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pmc-panel-heading {
+  align-items: center;
+}
+
+.pmc-reference-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .55rem;
+}
+
+.pmc-reference-heading-actions > span {
+  color: var(--pmc-neutral-500);
+  font-size: .76rem;
+  white-space: nowrap;
+}
+
+.pmc-history-toggle {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .55rem .7rem;
+  border: 1px solid var(--pmc-neutral-200);
+  border-radius: .65rem;
+  background: #fff;
+  font-size: .76rem;
+  font-weight: 500;
+}
+
+.pmc-history-toggle input {
+  margin: 0;
+}
+
+.pmc-new-reference-button {
+  min-height: 40px;
+}
+
+.pmc-panel .sparks-smart-grid-block {
+  width: 100%;
+  min-width: 0;
+}
+
+.pmc-panel .sparks-smart-grid {
+  width: 100%;
+  max-width: 100%;
+}
+
+.pmc-grid-hint {
+  line-height: 1.45;
+}
+
+@media (max-width: 1180px) {
+  .pmc-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .pmc-flow > span {
+    display: none;
+  }
+
+  .pmc-panel-heading {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .pmc-reference-heading-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+/* UX-CANON-01B-V4 - acao redundante removida */
+.pmc-heading {
+  justify-content: flex-start;
+}
+
+.pmc-reference-heading-actions {
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  .pmc-reference-heading-actions {
+    margin-left: 0;
   }
 }

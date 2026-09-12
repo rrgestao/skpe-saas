@@ -102,6 +102,11 @@ type SkpeCockpitProps = {
   userDisplayName: string
   userEmail: string
   userAvatarUrl: string | null
+  organizationOptions?: Array<{
+    organizationId: string
+    organizationName: string
+  }>
+  onSwitchOrganization?: (organizationId: string) => void
   onOpenPlatformAdmin?: () => void
   onOpenUserProfile?: () => void
   onLogout?: () => void | Promise<void>
@@ -481,14 +486,6 @@ function StructureIcon() {
   )
 }
 
-function AdministrationIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 00-1.88-.34 1.7 1.7 0 00-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 00-1.03-1.56 1.7 1.7 0 00-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 007 15a1.7 1.7 0 00-1.56-1.03h-.08v-3h.08A1.7 1.7 0 007 9a1.7 1.7 0 00-.34-1.88l-.06-.06 2.12-2.12.06.06A1.7 1.7 0 0010.68 5 1.7 1.7 0 0011.7 3.44v-.08h3v.08A1.7 1.7 0 0015.74 5a1.7 1.7 0 001.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0019.4 9a1.7 1.7 0 001.56 1.03h.08v3h-.08A1.7 1.7 0 0019.4 15z" fill="none" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 
 
@@ -1283,7 +1280,7 @@ function CanvasSection({
           </p>
         </div>
 
-        <button
+        <button hidden
           type="button"
           className="skpe-refresh-button"
           onClick={() => void loadCanvas()}
@@ -1521,7 +1518,7 @@ function CanvasSection({
                         </option>
                       </select>
 
-                      <button
+                      <button hidden
                         type="button"
                         onClick={() =>
                           void addItem(block)
@@ -1837,7 +1834,7 @@ function InitiativesSection({
     initiativeIds: string[]
   } | null>(null)
   const [initiativeViewMode, setInitiativeViewMode] =
-    useState<'portfolio' | 'explorer' | 'kanban' | 'analytics'>('portfolio')
+    useState<'portfolio' | 'explorer' | 'kanban' | 'analytics'>('analytics')
 
   useEffect(() => {
     if (analyticsReturnRequestKey <= 0) return
@@ -2272,7 +2269,7 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
         <div className="skpe-heading-actions">
           <div
             className="skpe-context-icon-actions"
-            aria-label="Ações do Painel de Iniciativas"
+            aria-label="Mapa Estratégico / Painel de desempenho"
           >
             {canManageInitiatives ? (
               <IconActionButton
@@ -2290,9 +2287,9 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                 type="button"
                 className="skpe-context-icon-action"
                 onClick={onOpenJourney}
-                aria-label="Abrir Jornada Estratégica"
-                title="Abrir Jornada Estratégica"
-                data-tooltip="Abrir Jornada Estratégica"
+                aria-label="Mapa Estratégico / Painel de desempenho"
+                title="Mapa Estratégico / Painel de desempenho"
+                data-tooltip="Mapa Estratégico / Painel de desempenho"
               >
                 <JourneyIcon />
               </button>
@@ -2577,69 +2574,6 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
             </p>
           ) : null}
         </div>
-
-        <div
-          className="skpe-initiative-title-mode-actions"
-          role="group"
-          aria-label="Alternar modo de visualização"
-        >
-          <button
-            type="button"
-            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'portfolio' ? 'is-active' : ''}`}
-            onClick={() => setInitiativeViewMode('portfolio')}
-            title="Visão executiva"
-            aria-label="Visão executiva"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 7h14" />
-              <path d="M5 12h14" />
-              <path d="M5 17h14" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'explorer' ? 'is-active' : ''}`}
-            onClick={() => setInitiativeViewMode('explorer')}
-            title="Exploração hierárquica"
-            aria-label="Exploração hierárquica"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="5" r="1.8" />
-              <circle cx="6" cy="18" r="1.8" />
-              <circle cx="18" cy="18" r="1.8" />
-              <path d="M12 6.8v5.2" />
-              <path d="M6 16.2v-2.4h12v2.4" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'analytics' ? 'is-active' : ''}`}
-            onClick={() => setInitiativeViewMode('analytics')}
-            title="Painel de desempenho"
-            aria-label="Painel de desempenho"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="7.2" />
-              <path d="M12 12 16.6 8.8" />
-              <path d="M12 4.8v1.7" />
-              <path d="M19.2 12h-1.7" />
-              <path d="M12 19.2v-1.7" />
-              <path d="M4.8 12h1.7" />
-            </svg>
-          </button>
-        </div>
-
-        {quickFilter !== 'all' && initiativeViewMode !== 'kanban' ? (
-          <button
-            type="button"
-            className="skpe-user-details-button skpe-initiative-title-clear-filter"
-            onClick={() => setQuickFilter('all')}
-          >
-            Limpar filtro do cartão
-          </button>
-        ) : null}
       </div>
 <section className={`skpe-initiative-filters ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div className="skpe-admin-search">
@@ -2649,11 +2583,13 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
             onChange={(e) =>
               setSearchTerm(e.target.value)
             }
-            placeholder="Buscar no Plano de Ação"
+            /* UX_MONITORAMENTO_CLEANUP_V16 */
+            placeholder="Buscar no Plano Estratégico"
           />
-        </div>
 
-        <select
+                    <select
+            className="skpe-monitoring-inline-filter"
+            aria-label="Filtrar por tipo de iniciativa"
           value={typeFilter}
           onChange={(e) =>
             setTypeFilter(e.target.value)
@@ -2671,9 +2607,11 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
           <option value="sprint">Sprints</option>
           <option value="task">Tarefas</option>
           <option value="work">Trabalhos</option>
-        </select>
+          </select>
 
-        <select
+          <select
+            className="skpe-monitoring-inline-filter"
+            aria-label="Filtrar por área"
           value={areaFilter}
           onChange={(e) =>
             setAreaFilter(e.target.value)
@@ -2685,9 +2623,11 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
               {area}
             </option>
           ))}
-        </select>
+          </select>
 
-        <select
+          <select
+            className="skpe-monitoring-inline-filter"
+            aria-label="Filtrar por situação"
           value={statusFilter}
           onChange={(e) =>
             setStatusFilter(e.target.value)
@@ -2709,7 +2649,68 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
           <option value="blocked">Bloqueadas</option>
           <option value="completed">Concluídas</option>
           <option value="cancelled">Canceladas</option>
-        </select>
+          </select>
+<div
+          className="skpe-initiative-title-mode-actions skpe-monitoring-search-view-actions"
+          role="group"
+          aria-label="Alternar modo de visualização"
+        >
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'portfolio' ? 'is-active' : ''}`}
+            onClick={() => setInitiativeViewMode('portfolio')}
+            title="Visão executiva das iniciativas"
+            aria-label="Visão executiva das iniciativas"
+            data-tooltip="Visão executiva das iniciativas"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 7h14" />
+              <path d="M5 12h14" />
+              <path d="M5 17h14" />
+            </svg>
+            <span className="skpe-monitoring-view-tooltip" role="tooltip">Visão executiva das iniciativas</span>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'explorer' ? 'is-active' : ''}`}
+            onClick={() => setInitiativeViewMode('explorer')}
+            title="Exploração hierárquica"
+            aria-label="Exploração hierárquica"
+            data-tooltip="Exploração hierárquica"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="3" width="6" height="4" rx="1" /><rect x="3" y="17" width="6" height="4" rx="1" /><rect x="15" y="17" width="6" height="4" rx="1" /><path d="M12 7v5" /><path d="M6 12h12" /><path d="M6 12v5" /><path d="M18 12v5" /></svg>
+            <span className="skpe-monitoring-view-tooltip" role="tooltip">Exploração hierárquica</span>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'analytics' ? 'is-active' : ''}`}
+            onClick={() => setInitiativeViewMode('analytics')}
+            title="Mapa Estratégico / Painel de desempenho"
+            aria-label="Mapa Estratégico / Painel de desempenho"
+            data-tooltip="Painel de desempenho / Mapa Estratégico"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="7.2" />
+              <path d="M12 12 16.6 8.8" />
+              <path d="M12 4.8v1.7" />
+              <path d="M19.2 12h-1.7" />
+              <path d="M12 19.2v-1.7" />
+              <path d="M4.8 12h1.7" />
+            </svg>
+            <span className="skpe-monitoring-view-tooltip" role="tooltip">Mapa Estratégico / Painel de desempenho</span>
+          </button>
+
+          {quickFilter !== 'all' && initiativeViewMode !== 'kanban' ? (
+          <button
+            type="button"
+            className="skpe-user-details-button skpe-initiative-title-clear-filter"
+            onClick={() => setQuickFilter('all')}
+          >
+            Limpar filtro do cartão
+          </button>
+        ) : null}</div></div>
       </section>
       {dashboard && initiativeViewMode === 'portfolio' ? (
         <section
@@ -3460,7 +3461,7 @@ function OrganizationSection({
     if (cnaesResponse.error) {
       setMessage({
         type: 'error',
-        text: `Cadastro carregado, mas nao foi possivel consultar os CNAEs: ${cnaesResponse.error.message}`,
+        text: `Cadastro carregado, mas não foi possível consultar os CNAEs: ${cnaesResponse.error.message}`,
       })
     } else {
       const cnaeRows = (cnaesResponse.data ?? []) as OrganizationCnaeRow[]
@@ -3842,7 +3843,7 @@ function OrganizationSection({
     if (cnaeError) {
       setMessage({
         type: 'error',
-        text: `Os dados institucionais foram processados, mas os CNAEs oficiais nao puderam ser confirmados: ${cnaeError.message}`,
+        text: `Os dados institucionais foram processados, mas os CNAEs oficiais não puderam ser confirmados: ${cnaeError.message}`,
       })
       setSaving(false)
       return
@@ -5732,7 +5733,7 @@ function OrganizationHierarchySection({ organizationId, canManage }: { organizat
     setLoading(true); setMessage(null)
     const [orgResult, typeResult, relResult, policyResult] = await Promise.all([
       supabase.from('organizations').select('id,code,legal_name,trade_name,organization_level,organization_type').is('archived_at', null).order('trade_name', { ascending: true }),
-      supabase.from('organization_relationship_types').select('id,code,name,description,relationship_nature,is_hierarchical').eq('active', true).order('name', { ascending: true }),
+      supabase.from('organization_relationship_types').select('id,code,name,description,relationship_nature,is_hierarchical').eq('active', true).order('display_order', { ascending: true }),
       supabase.from('organization_relationships').select('id,parent_organization_id,child_organization_id,relationship_type_id,is_primary,allows_consolidated_view,allows_delegated_administration,valid_from,valid_until,status,notes').order('created_at', { ascending: false }),
       supabase.from('organization_descendant_access_policies').select('id,source_organization_id,relationship_scope,target_organization_id,module_code,access_mode,can_view_consolidated,can_view_detail,can_create,can_update,can_delete,can_manage_users,includes_confidential_data,requires_child_consent,child_consent_status,valid_from,valid_until,status,reason').order('created_at', { ascending: false }),
     ])
@@ -7730,6 +7731,8 @@ export function SkpeCockpit({
   userDisplayName,
   userEmail,
   userAvatarUrl,
+  organizationOptions = [],
+  onSwitchOrganization,
   onOpenPlatformAdmin,
   onOpenUserProfile,
   onLogout,
@@ -7785,9 +7788,9 @@ const [startingProject, setStartingProject] = useState(false)
     useState<'favorites' | 'dashboards' | 'notifications' | null>(null)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [journeyRefreshRequestKey, setJourneyRefreshRequestKey] = useState(0)
-  const [initiativesRefreshRequestKey, setInitiativesRefreshRequestKey] = useState(0)
+  const [initiativesRefreshRequestKey] = useState(0)
   const [initiativesAnalyticsReturnRequestKey, setInitiativesAnalyticsReturnRequestKey] = useState(0)
-  const [monitoringRefreshRequestKey, setMonitoringRefreshRequestKey] = useState(0)
+  const [monitoringRefreshRequestKey] = useState(0)
   const [agendaRefreshRequestKey, setAgendaRefreshRequestKey] = useState(0)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sparks-theme') === 'dark' ? 'dark' : 'light'))
   const [capabilities, setCapabilities] = useState<SkpeCapabilities | null>(null)
@@ -8142,22 +8145,76 @@ case 'monitoring':
               )}
             </div>
 
-            <div className="skpe-sidebar-brand-text">
-              <strong>
-                {organizationProfile?.trade_name ?? organizationName}
-              </strong>
+            <div className="skpe-sidebar-brand-text skpe-organization-switcher">
+              <details
+                className="skpe-organization-switcher-details"
+                data-disabled={
+                  !onSwitchOrganization ||
+                  organizationOptions.length <= 1
+                    ? 'true'
+                    : 'false'
+                }
+              >
+                <summary
+                  aria-label="Trocar organização"
+                  title="Trocar organização"
+                >
+                  <span className="skpe-organization-switcher-current">
+                    {organizationProfile?.trade_name ?? organizationName}
+                  </span>
+                  <span
+                    className="skpe-organization-switcher-chevron"
+                    aria-hidden="true"
+                  >
+                    ▾
+                  </span>
+                </summary>
+
+                {organizationOptions.length > 1 && (
+                  <div
+                    className="skpe-organization-switcher-menu"
+                    role="listbox"
+                    aria-label="Organizações disponíveis"
+                  >
+                    {organizationOptions.map((organization) => {
+                      const isCurrent =
+                        organization.organizationId === organizationId
+
+                      return (
+                        <button
+                          key={organization.organizationId}
+                          type="button"
+                          role="option"
+                          aria-selected={isCurrent}
+                          className={
+                            isCurrent
+                              ? 'skpe-organization-switcher-option active'
+                              : 'skpe-organization-switcher-option'
+                          }
+                          onClick={(event) => {
+                            const details =
+                              event.currentTarget.closest('details')
+
+                            if (!isCurrent) {
+                              onSwitchOrganization?.(
+                                organization.organizationId,
+                              )
+                            }
+
+                            details?.removeAttribute('open')
+                          }}
+                        >
+                          {organization.organizationName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </details>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="skpe-sidebar-icon-button"
-            onClick={() => setSidebarCollapsed((value) => !value)}
-            aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}
-            title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}
-          >
-            <SidebarToggleIcon collapsed={sidebarCollapsed} />
-          </button>
+
         </div>
 
         <nav
@@ -8195,7 +8252,7 @@ case 'monitoring':
                         ? 'skpe-nav-active'
                         : ''
                     }
-                    title="Expandir ou recolher Jornada Estratégica"
+                    title={sidebarCollapsed ? 'Jornada Estratégica' : 'Expandir ou recolher Jornada Estratégica'}
                   >
                     <JourneyIcon />
                     <span>Jornada Estratégica</span>
@@ -8203,6 +8260,7 @@ case 'monitoring':
                   <div
                     className="skpe-nav-submenu"
                     aria-label="Submenu da Jornada Estratégica"
+                    data-ux-canon-04f="journey-subnav"
                   >
                     <button
                       type="button"
@@ -8212,8 +8270,18 @@ case 'monitoring':
                           : ''
                       }
                       onClick={() => navigateToSection('journey')}
+                      aria-label="Jornada"
+                      title="Jornada"
                     >
-                      Jornada
+                      <svg
+                        className="skpe-nav-submenu-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path d="M8 3 5 21M16 3l3 18" />
+                        <path d="M12 4v3M12 10v4M12 17v3" />
+                      </svg>
+                      <span className="skpe-nav-submenu-label">Jornada</span>
                     </button>
 
                     {canShowDiagnosis ? (
@@ -8225,8 +8293,22 @@ case 'monitoring':
                             : ''
                         }
                         onClick={() => navigateToSection('diagnosis')}
+                        aria-label="Diagnóstico Estratégico"
+                        title="Diagnóstico Estratégico"
                       >
-                        Diagnóstico Estratégico
+                        <svg
+                          className="skpe-nav-submenu-icon"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 3v5a5 5 0 0 0 10 0V3" />
+                          <path d="M6 3H4M16 3h2" />
+                          <path d="M11 13v2a4 4 0 0 0 8 0v-1" />
+                          <circle cx="19" cy="11" r="2" />
+                        </svg>
+                        <span className="skpe-nav-submenu-label">
+                          Diagnóstico Estratégico
+                        </span>
                       </button>
                     ) : null}
 
@@ -8239,8 +8321,20 @@ case 'monitoring':
                             : ''
                         }
                         onClick={() => navigateToSection('formulations')}
+                        aria-label="Formulação Estratégica"
+                        title="Formulação Estratégica"
                       >
-                        Formulação Estratégica
+                        <svg
+                          className="skpe-nav-submenu-icon"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <rect x="5" y="3" width="14" height="18" rx="2" />
+                          <path d="M8 3v18M11 8h5M11 12h5M11 16h4" />
+                        </svg>
+                        <span className="skpe-nav-submenu-label">
+                          Formulação Estratégica
+                        </span>
                       </button>
                     ) : null}
                   </div>
@@ -8261,21 +8355,7 @@ case 'monitoring':
               </button>
 
 
-              <button
-                type="button"
-                className={
-                  activeSection === 'administration'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('administration')
-                }
-                title="Administração do SK-PE"
-               hidden={!canOpenAdministration}>
-                <AdministrationIcon />
-                <span>Administração do SK-PE</span>
-              </button>
+
             </>
           ) : (
             <>
@@ -8404,6 +8484,15 @@ case 'monitoring':
               : ''
           }`}
         >
+          <button
+            type="button"
+            className="skpe-header-sidebar-toggle"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            <SidebarToggleIcon collapsed={sidebarCollapsed} />
+          </button>
 
           <div
             className="skpe-cockpit-context"
@@ -8427,33 +8516,6 @@ case 'monitoring':
                 }
                 aria-label="Atualizar Jornada Estratégica"
                 title="Atualizar Jornada Estratégica"
-              >
-                <RefreshIcon />
-              </button>
-            )}
-
-            {mode === 'module' && activeSection === 'initiatives' && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
-                onClick={() =>
-                  setInitiativesRefreshRequestKey((current) => current + 1)
-                }
-                aria-label="Atualizar Painel de Iniciativas"
-                title="Atualizar Painel de Iniciativas"
-              >
-                <RefreshIcon />
-              </button>
-            )}
-            {mode === 'module' && activeSection === 'monitoring' && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
-                onClick={() =>
-                  setMonitoringRefreshRequestKey((current) => current + 1)
-                }
-                aria-label="Atualizar Monitoramento"
-                title="Atualizar Monitoramento"
               >
                 <RefreshIcon />
               </button>
@@ -8510,17 +8572,6 @@ case 'monitoring':
             )}
 
 
-            {isPlatformSuperAdmin && onOpenPlatformAdmin && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button"
-                onClick={onOpenPlatformAdmin}
-                aria-label="Administração da Plataforma"
-                title="Administração da Plataforma"
-              >
-                <AdministrationIcon />
-              </button>
-            )}
 
             <div className="skpe-cockpit-user-menu">
               <button
@@ -8543,9 +8594,6 @@ case 'monitoring':
                 </div>
                 <div>
                   {(userDisplayName || userEmail || '').trim().toUpperCase() !== (userDisplayName || userEmail || 'U').trim().slice(0, 2).toUpperCase() ? <strong>{userDisplayName || userEmail}</strong> : null}
-                  <small className="skpe-cockpit-role-badge">
-                    {userRoleName}
-                  </small>
                 </div>
                 <span className="skpe-user-menu-chevron" aria-hidden="true">
                   ▾
@@ -8569,6 +8617,20 @@ case 'monitoring':
                     <div className="skpe-user-menu-identity">
                       <strong>{userDisplayName || userEmail}</strong>
                       <span>{userEmail}</span>
+                    </div>
+                    <div className="skpe-user-menu-access-context">
+                      <div>
+                        <span>Perfil no módulo</span>
+                        <strong>{userRoleName || 'Usuário'}</strong>
+                      </div>
+                      <div>
+                        <span>Administração do módulo</span>
+                        <strong>
+                          {canOpenAdministration
+                            ? 'Pode administrar o SPARKs PE'
+                            : 'Sem permissão de administração'}
+                        </strong>
+                      </div>
                     </div>
 
                     <div className="skpe-user-menu-section-label">CONTA</div>
@@ -8598,11 +8660,40 @@ case 'monitoring':
                         : 'Aparência: usar modo claro'}
                     </button>
 
+                    {isPlatformSuperAdmin && onOpenPlatformAdmin && (
+                      <>
+                        <div className="skpe-user-menu-section-label">
+                          PLATAFORMA
+                        </div>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            onOpenPlatformAdmin()
+                          }}
+                        >
+                          Administração da Plataforma
+                        </button>
+                      </>
+                    )}
                     {mode === 'module' && (
                       <>
                         <div className="skpe-user-menu-section-label">
                           PLANEJAMENTO ESTRATÉGICO · SK-PE
                         </div>
+                        {canOpenAdministration && (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setUserMenuOpen(false)
+                              navigateToSection('administration')
+                            }}
+                          >
+                            Administração do SK-PE
+                          </button>
+                        )}
 
                         <button
                           type="button"
@@ -8756,6 +8847,14 @@ case 'monitoring':
               organizationId={organizationId}
               projectId={projectContext.project_id}
               canAdjustStrategicMap={canManageGovernance}
+              /* FORMULATION_CANONICAL_MAP_DRILLDOWNS */
+              onObjectivePerformanceDrilldown={(objectiveId, objectiveTitle) => {
+                setMeasureDrilldown({ objectiveId, objectiveTitle })
+                navigateToSection('indicators')
+              }}
+              onObjectiveInitiativesDrilldown={() => {
+                navigateToSection('initiatives')
+              }}
             />
           )}
         {activeSection === 'strategic-identity' && canViewJourney && (

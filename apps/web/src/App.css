@@ -2191,3 +2191,125 @@ td,
     display: none;
   }
 }
+
+/* UX-CANON-02 - perfil dentro do menu do avatar */
+.platform-account-menu-role {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: .35rem 0 .5rem;
+  padding: .65rem .8rem;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+}
+
+.platform-account-menu-role > span {
+  color: #6b7280;
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.platform-account-menu-role > strong {
+  color: #111827;
+  font-size: .78rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.user-profile-summary .user-badges {
+  display: none;
+}
+/* UX-CANON-04D-V3 - organization workspace entry */
+.organization-workspace-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: .9rem 0 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(23, 107, 83, .16);
+  border-radius: .85rem;
+  background: rgba(23, 107, 83, .055);
+}
+
+.organization-workspace-entry > div {
+  min-width: 0;
+}
+
+.organization-workspace-entry h2 {
+  margin: .15rem 0 .2rem;
+  font-size: 1.05rem;
+}
+
+.organization-workspace-entry p {
+  margin: 0;
+}
+
+.organization-workspace-entry .eyebrow {
+  margin-bottom: .12rem;
+}
+
+.organization-workspace-entry-action {
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  padding: .55rem .85rem;
+  border: 1px solid rgba(23, 107, 83, .28);
+  border-radius: .65rem;
+  background: #176b53;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.organization-workspace-entry-action:hover:not(:disabled),
+.organization-workspace-entry-action:focus-visible {
+  background: #125943;
+  outline: none;
+}
+
+.organization-workspace-entry-action:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  .organization-workspace-entry {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .organization-workspace-entry-action {
+    width: 100%;
+  }
+}
+/* UX-CANON-04E - stable context transition surface */
+.platform-content {
+  min-height: calc(100dvh - 56px);
+  background: var(--platform-page-background, #f4f7f5);
+  isolation: isolate;
+}
+
+.platform-content > * {
+  animation: sparks-context-enter 120ms ease-out both;
+}
+
+@keyframes sparks-context-enter {
+  from {
+    opacity: .92;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-content > * {
+    animation: none;
+  }
+}

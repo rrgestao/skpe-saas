@@ -29,6 +29,15 @@ type Props = {
   organizationId: string
   projectId: string
   canAdjustStrategicMap: boolean
+  onObjectiveInitiativesDrilldown?: (
+    objectiveId: string,
+    objectiveTitle: string,
+    initiativeIds: string[],
+  ) => void
+  onObjectivePerformanceDrilldown?: (
+    objectiveId: string,
+    objectiveTitle: string,
+  ) => void
 }
 
 function percent(value: number | null | undefined) {
@@ -41,6 +50,8 @@ export function StrategicFormulationSection({
   organizationId,
   projectId,
   canAdjustStrategicMap,
+  onObjectiveInitiativesDrilldown,
+  onObjectivePerformanceDrilldown,
 }: Props) {
   const [formulationId, setFormulationId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<FormulationTab>('overview')
@@ -206,6 +217,8 @@ export function StrategicFormulationSection({
           <StrategicBscMap
             formulationId={formulationId}
             canAdjustLayout={canAdjustStrategicMap}
+            onObjectiveInitiativesDrilldown={onObjectiveInitiativesDrilldown}
+            onObjectivePerformanceDrilldown={onObjectivePerformanceDrilldown}
           />
           <StrategicArchitectureSummary formulationId={formulationId} />
         </section>

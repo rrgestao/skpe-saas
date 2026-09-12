@@ -89,7 +89,7 @@ export function JourneyEventCreateDialog({
     }
 
     if (!initiativeId) {
-      setErrorMessage('Nao foi possivel resolver o fuso horario da origem.')
+      setErrorMessage('Não foi possível resolver o fuso horário da origem.')
       setTimezoneLoading(false)
       return
     }
@@ -121,7 +121,7 @@ export function JourneyEventCreateDialog({
       const resolved = first?.organization_timezone ?? ''
 
       if (!resolved || !isValidTimeZone(resolved)) {
-        setErrorMessage('O fuso horario da organizacao nao pode ser resolvido.')
+        setErrorMessage('O fuso horário da organização não pode ser resolvido.')
         setTimezoneLoading(false)
         return
       }

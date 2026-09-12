@@ -22,6 +22,7 @@ type MeasuresPerformanceWorkspaceProps = {
 
 type MeasureContextRow = {
   indicator_id: string
+  source_context_id: string | null
   code: string | null
   name: string | null
   description: string | null
@@ -39,9 +40,42 @@ type MeasureContextRow = {
   benchmark_id: string | null
   benchmark_value: number | null
   benchmark_source_name: string | null
+  evidence_reference: string | null
+  owner_user_id?: string | null
+  owner_name?: string | null
+  key_result_id?: string | null
+  key_result_code?: string | null
+  key_result_name?: string | null
   updated_at: string | null
 }
 
+type IndicatorLinkRow = {
+  id: string
+  owner_user_id: string | null
+  key_result_id: string | null
+}
+
+type WorkScopePersonRow = {
+  user_id: string
+  display_name: string | null
+  email: string | null
+}
+
+type KeyResultLookupRow = {
+  key_result_id: string
+  code: string | null
+  name: string | null
+}
+
+type MonitoringParameters = {
+  formulation_id: string
+  monitoring_package_id: string | null
+  package_status: string | null
+  critical_threshold: number
+  attention_threshold: number
+  on_track_threshold: number
+  parameter_source: 'application_default' | 'organization_package' | string
+}
 type ReferenceCatalogRow = {
   reference_catalog_id: string
   catalog_code: string
@@ -120,6 +154,9 @@ export function MeasuresPerformanceWorkspace({
   const [rows, setRows] = useState<MeasureContextRow[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [monitoringParameters, setMonitoringParameters] =
+    useState<MonitoringParameters | null>(null)
+  const [monitoringParametersError, setMonitoringParametersError] = useState('')
 
   const [catalog, setCatalog] = useState<ReferenceCatalogRow[]>([])
   const [catalogLoading, setCatalogLoading] = useState(false)
@@ -165,10 +202,111 @@ export function MeasuresPerformanceWorkspace({
       return
     }
 
-    setRows(normalizeRows<MeasureContextRow>(response.data))
+    const baseRows = normalizeRows<MeasureContextRow>(response.data)
+    const formulationId =
+      baseRows.find((row) => row.source_context_id)?.source_context_id ?? null
+
+    await loadMonitoringParameters(formulationId)
+    const indicatorIds = Array.from(
+      new Set(baseRows.map((row) => row.indicator_id).filter(Boolean)),
+    )
+
+    if (indicatorIds.length === 0) {
+      setRows(baseRows)
+      setLoading(false)
+      return
+    }
+
+    const [indicatorLinksResponse, peopleResponse, keyResultsResponse] =
+      await Promise.all([
+        supabase
+          .from('skpe_indicators')
+          .select('id, owner_user_id, key_result_id')
+          .in('id', indicatorIds),
+        supabase.rpc('get_my_skpe_work_scope_people' as never, {
+          target_organization_id: organizationId,
+        } as never),
+        supabase.rpc('get_my_skpe_key_results' as never, {
+          target_organization_id: organizationId,
+          target_project_id: projectId,
+          target_formulation_id: null,
+        } as never),
+      ])
+
+    const indicatorLinks = indicatorLinksResponse.error
+      ? []
+      : normalizeRows<IndicatorLinkRow>(indicatorLinksResponse.data)
+
+    const people = peopleResponse.error
+      ? []
+      : normalizeRows<WorkScopePersonRow>(peopleResponse.data)
+
+    const keyResults = keyResultsResponse.error
+      ? []
+      : normalizeRows<KeyResultLookupRow>(keyResultsResponse.data)
+
+    const linksByIndicator = new Map(
+      indicatorLinks.map((item) => [item.id, item]),
+    )
+    const peopleByUser = new Map(
+      people.map((person) => [person.user_id, person]),
+    )
+    const keyResultsById = new Map(
+      keyResults.map((keyResult) => [keyResult.key_result_id, keyResult]),
+    )
+
+    const enrichedRows = baseRows.map((row) => {
+      const link = linksByIndicator.get(row.indicator_id)
+      const owner = link?.owner_user_id
+        ? peopleByUser.get(link.owner_user_id)
+        : null
+      const keyResult = link?.key_result_id
+        ? keyResultsById.get(link.key_result_id)
+        : null
+
+      return {
+        ...row,
+        owner_user_id: link?.owner_user_id ?? null,
+        owner_name:
+          owner?.display_name?.trim() ||
+          owner?.email?.trim() ||
+          null,
+        key_result_id: link?.key_result_id ?? null,
+        key_result_code: keyResult?.code ?? null,
+        key_result_name: keyResult?.name ?? null,
+      }
+    })
+
+    setRows(enrichedRows)
     setLoading(false)
   }
 
+  const loadMonitoringParameters = async (formulationId: string | null) => {
+    if (!formulationId) {
+      setMonitoringParameters(null)
+      setMonitoringParametersError('')
+      return
+    }
+
+    setMonitoringParametersError('')
+
+    const response = await supabase.rpc(
+      'get_sparks_measure_monitoring_parameters' as never,
+      {
+        target_organization_id: organizationId,
+        target_formulation_id: formulationId,
+      } as never,
+    )
+
+    if (response.error) {
+      setMonitoringParameters(null)
+      setMonitoringParametersError(response.error.message)
+      return
+    }
+
+    const parameterRows = normalizeRows<MonitoringParameters>(response.data)
+    setMonitoringParameters(parameterRows[0] ?? null)
+  }
   const loadCatalog = async () => {
     if (mode !== 'administration') return
 
@@ -498,6 +636,11 @@ export function MeasuresPerformanceWorkspace({
         </div>
       </div>
 
+      {monitoringParametersError ? (
+        <div className="sparks-measures-workspace__state is-error">
+          Não foi possível carregar os parâmetros do farol: {monitoringParametersError}
+        </div>
+      ) : null}
       {errorMessage ? (
         <div className="sparks-measures-workspace__state is-error">
           {errorMessage}
@@ -513,6 +656,9 @@ export function MeasuresPerformanceWorkspace({
       ) : (
         <OrganizationIndicatorsSmartGrid
           rows={summaryFilteredRows}
+          organizationId={organizationId}
+          sourceModuleCode={sourceModuleCode}
+          monitoringParameters={monitoringParameters}
           onReload={loadMeasures}
         />
       )}

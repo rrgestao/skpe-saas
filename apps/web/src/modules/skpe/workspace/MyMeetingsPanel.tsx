@@ -109,6 +109,22 @@ type MyMeeting = {
   updated_at: string
 }
 
+type RaeDecisionMetadata = {
+  fiveW2H?: {
+    what?: string | null
+    why?: string | null
+    where?: string | null
+    who?: string | null
+    whenStart?: string | null
+    whenEnd?: string | null
+    how?: string | null
+    howMuch?: string | null
+  }
+  source?: string
+  destination?: string
+  [key: string]: unknown
+}
+
 type RaeDecision = {
   id: string
   strategy_review_item_id: string | null
@@ -122,7 +138,10 @@ type RaeDecision = {
   due_date: string | null
   status: string
   escalation_level: string
+  completion_notes: string | null
+  completed_at: string | null
   ratified_at: string | null
+  metadata: RaeDecisionMetadata | null
 }
 
 type RaeDecisionDraft = {
@@ -133,7 +152,13 @@ type RaeDecisionDraft = {
   rationale: string
   decisionType: string
   priority: string
+  whoText: string
+  startDate: string
   dueDate: string
+  howText: string
+  whyText: string
+  whereText: string
+  howMuchText: string
   escalationLevel: string
 }
 type RaeReviewItem = {
@@ -358,13 +383,26 @@ export function MyMeetingsPanel({
     rationale: '',
     decisionType: 'corrective_action',
     priority: 'medium',
+    whoText: '',
+    startDate: '',
     dueDate: '',
+    howText: '',
+    whyText: '',
+    whereText: '',
+    howMuchText: '',
     escalationLevel: 'none',
   })
   // RAE_FE03A_DELIBERACOES
   const [raeDecisionTransitionId, setRaeDecisionTransitionId] = useState<string | null>(null)
   const [raeDecisionCompletionNotes, setRaeDecisionCompletionNotes] = useState<Record<string, string>>({})
   // RAE_FE03B_CICLO_DELIBERACAO
+  const [raePreviousReview, setRaePreviousReview] = useState<MyMeeting | null>(null)
+  const [raePreviousDecisions, setRaePreviousDecisions] = useState<RaeDecision[]>([])
+  const [raeFollowupLoading, setRaeFollowupLoading] = useState(false)
+  const [raeFollowupTransitionId, setRaeFollowupTransitionId] = useState<string | null>(null)
+  const [raeFollowupNotes, setRaeFollowupNotes] = useState<Record<string, string>>({})
+  // RAE_FE04_5W2H_FOLLOWUP
+  // RAE_FE04_RUNTIME_HARDENING_V13
 
   useEffect(() => {
     let active = true
@@ -438,6 +476,158 @@ export function MyMeetingsPanel({
     return items.filter((item) => item.status === 'in_progress')
   }, [filter, items])
 
+  async function loadPreviousRaeFollowup(current: MyMeeting) {
+    setRaeFollowupLoading(true)
+    setRaePreviousReview(null)
+    setRaePreviousDecisions([])
+    setRaeFollowupNotes({})
+
+    let previousReviewQuery = supabase
+      .from('skpe_strategy_reviews')
+      .select(
+        'id,organization_id,project_id,formulation_id,monitoring_cycle_id,code,title,review_type,status,scheduled_at,held_at,chair_user_id,secretary_user_id,participants,executive_summary,conclusions,minutes_reference,ratified_at,ratified_by,created_at,updated_at',
+      )
+      .eq('organization_id', current.organization_id)
+      .eq('formulation_id', current.formulation_id)
+      .eq('review_type', current.review_type)
+      .neq('id', current.strategy_review_id)
+      .not('held_at', 'is', null)
+      .lt('held_at', current.held_at ?? current.scheduled_at ?? new Date().toISOString())
+      .order('held_at', { ascending: false })
+      .limit(1)
+
+    previousReviewQuery = current.project_id
+      ? previousReviewQuery.eq('project_id', current.project_id)
+      : previousReviewQuery.is('project_id', null)
+
+    const { data: previousReviews, error: previousError } =
+      await previousReviewQuery
+
+    if (previousError) {
+      setRaeActionError(translateBackendMessage(previousError.message))
+      setRaeFollowupLoading(false)
+      return
+    }
+
+    const previousRaw = previousReviews?.[0]
+    if (!previousRaw) {
+      setRaeFollowupLoading(false)
+      return
+    }
+
+    const previous = {
+      ...current,
+      strategy_review_id: previousRaw.id,
+      code: previousRaw.code,
+      title: previousRaw.title,
+      review_type: previousRaw.review_type,
+      status: previousRaw.status,
+      scheduled_at: previousRaw.scheduled_at,
+      held_at: previousRaw.held_at,
+      executive_summary: previousRaw.executive_summary,
+      conclusions: previousRaw.conclusions,
+      minutes_reference: previousRaw.minutes_reference,
+      ratified_at: previousRaw.ratified_at,
+      ratified_by: previousRaw.ratified_by,
+      created_at: previousRaw.created_at,
+      updated_at: previousRaw.updated_at,
+      is_ratified: Boolean(previousRaw.ratified_at),
+      is_scheduled: Boolean(previousRaw.scheduled_at),
+      is_today: false,
+      is_upcoming: false,
+      is_overdue: false,
+      days_until_meeting: null,
+      review_item_count: 0,
+      open_review_item_count: 0,
+      decision_count: 0,
+      open_decision_count: 0,
+    } as MyMeeting
+
+    const { data: previousDecisions, error: decisionsError } = await supabase
+      .from('skpe_governance_decisions')
+      .select(
+        'id,strategy_review_item_id,code,title,decision_text,rationale,decision_type,priority,responsible_user_id,due_date,status,escalation_level,completion_notes,completed_at,ratified_at,metadata',
+      )
+      .eq('strategy_review_id', previousRaw.id)
+      .order('created_at', { ascending: true })
+
+    if (decisionsError) {
+      setRaeActionError(translateBackendMessage(decisionsError.message))
+      setRaeFollowupLoading(false)
+      return
+    }
+
+    setRaePreviousReview(previous)
+    setRaePreviousDecisions((previousDecisions ?? []) as RaeDecision[])
+    setRaeFollowupLoading(false)
+  }
+
+  async function transitionRaeFollowupDecision(
+    decision: RaeDecision,
+    action: 'start' | 'block' | 'complete' | 'cancel' | 'reopen',
+  ) {
+    const reason = raeChangeReason.trim()
+    if (!reason) {
+      setRaeActionError(
+        'Informe o motivo da alteração para registrar a prestação de contas com rastreabilidade.',
+      )
+      return
+    }
+
+    const notes = (raeFollowupNotes[decision.id] ?? '').trim()
+
+    if ((action === 'complete' || action === 'cancel') && !notes) {
+      setRaeActionError(
+        'Informe a prestação de contas antes de concluir ou cancelar a deliberação.',
+      )
+      return
+    }
+
+    setRaeFollowupTransitionId(decision.id)
+    setRaeActionError(null)
+    setRaeActionSuccess(null)
+
+    const { error } = await supabase.rpc(
+      'transition_skpe_governance_decision',
+      {
+        p_decision_id: decision.id,
+        p_action: action,
+        p_completion_notes:
+          action === 'complete' || action === 'cancel' ? notes : null,
+        p_change_reason: reason,
+      },
+    )
+
+    if (error) {
+      setRaeActionError(translateBackendMessage(error.message))
+      setRaeFollowupTransitionId(null)
+      return
+    }
+
+    setRaeActionSuccess('Prestação de contas registrada.')
+    if (selectedRae) {
+      await loadPreviousRaeFollowup(selectedRae)
+    }
+    setReloadToken((value) => value + 1)
+    setRaeFollowupTransitionId(null)
+  }
+
+  function getFiveW2H(decision: RaeDecision) {
+    return decision.metadata?.fiveW2H ?? {}
+  }
+
+  function getFiveW2HCoreCoverage(decision: RaeDecision) {
+    const fiveW2H = getFiveW2H(decision)
+    const core = [
+      decision.decision_text,
+      fiveW2H.who,
+      fiveW2H.whenStart,
+      decision.due_date ?? fiveW2H.whenEnd,
+      fiveW2H.how,
+    ]
+    const completed = core.filter((value) => Boolean(String(value ?? '').trim())).length
+    return { completed, total: core.length }
+  }
   async function loadRaeDecisions(reviewId: string) {
     setRaeDecisionLoading(true)
     setRaeActionError(null)
@@ -445,7 +635,7 @@ export function MyMeetingsPanel({
     const { data, error } = await supabase
       .from('skpe_governance_decisions')
       .select(
-        'id,strategy_review_item_id,code,title,decision_text,rationale,decision_type,priority,responsible_user_id,due_date,status,escalation_level,ratified_at',
+        'id,strategy_review_item_id,code,title,decision_text,rationale,decision_type,priority,responsible_user_id,due_date,status,escalation_level,completion_notes,completed_at,ratified_at,metadata',
       )
       .eq('strategy_review_id', reviewId)
       .order('created_at', { ascending: true })
@@ -470,7 +660,13 @@ export function MyMeetingsPanel({
       rationale: '',
       decisionType: 'corrective_action',
       priority: 'medium',
+      whoText: '',
+      startDate: '',
       dueDate: '',
+      howText: '',
+      whyText: '',
+      whereText: '',
+      howMuchText: '',
       escalationLevel: 'none',
     })
   }
@@ -579,6 +775,16 @@ export function MyMeetingsPanel({
         metadata: {
           source: 'rae_frontend',
           destination: 'to_be_classified',
+          fiveW2H: {
+            what: raeDecisionDraft.decisionText.trim(),
+            why: raeDecisionDraft.whyText.trim() || null,
+            where: raeDecisionDraft.whereText.trim() || null,
+            who: raeDecisionDraft.whoText.trim() || null,
+            whenStart: raeDecisionDraft.startDate || null,
+            whenEnd: raeDecisionDraft.dueDate || null,
+            how: raeDecisionDraft.howText.trim() || null,
+            howMuch: raeDecisionDraft.howMuchText.trim() || null,
+          },
         },
       },
       p_change_reason: reason,
@@ -942,6 +1148,7 @@ export function MyMeetingsPanel({
     setSelectedRae(item)
     void loadRaeReviewItems(item.strategy_review_id)
     void loadRaeDecisions(item.strategy_review_id)
+    void loadPreviousRaeFollowup(item)
     setRaeExecutiveSummary(item.executive_summary ?? '')
     setRaeConclusions(item.conclusions ?? '')
     setRaeMinutesReference(item.minutes_reference ?? '')
@@ -1469,6 +1676,200 @@ export function MyMeetingsPanel({
                 </>
               )}
             </section>
+            <section className="skpe-rae-followup">
+              <div className="skpe-rae-followup-heading">
+                <div>
+                  <span>Abertura da reunião</span>
+                  <strong>Follow-up da reunião anterior</strong>
+                  <p>
+                    A reunião começa pela prestação de contas das deliberações da
+                    reunião anterior do mesmo nível de governança.
+                  </p>
+                </div>
+                {selectedRae && (
+                  <button
+                    type="button"
+                    onClick={() => void loadPreviousRaeFollowup(selectedRae)}
+                    disabled={raeFollowupLoading}
+                  >
+                    {raeFollowupLoading ? 'Atualizando...' : 'Atualizar follow-up'}
+                  </button>
+                )}
+              </div>
+
+              {raeFollowupLoading ? (
+                <div className="skpe-rae-analysis-state">
+                  Carregando reunião anterior...
+                </div>
+              ) : !raePreviousReview ? (
+                <div className="skpe-rae-analysis-state">
+                  Não há reunião anterior realizada deste mesmo nível para
+                  prestação de contas.
+                </div>
+              ) : (
+                <>
+                  <div className="skpe-rae-followup-source">
+                    <strong>
+                      {raePreviousReview.code} · {raePreviousReview.title}
+                    </strong>
+                    <small>
+                      Realizada em {formatDateTime(raePreviousReview.held_at)}
+                    </small>
+                  </div>
+
+                  {raePreviousDecisions.length === 0 ? (
+                    <div className="skpe-rae-analysis-state">
+                      A reunião anterior não possui deliberações registradas.
+                    </div>
+                  ) : (
+                    <div className="skpe-rae-followup-list">
+                      {raePreviousDecisions.map((decision) => {
+                        const fiveW2H = getFiveW2H(decision)
+                        const coverage = getFiveW2HCoreCoverage(decision)
+
+                        return (
+                          <article key={decision.id} className="skpe-rae-followup-item">
+                            <div className="skpe-rae-decision-meta">
+                              <span>{decision.code}</span>
+                              <span>{decision.status}</span>
+                              <span>
+                                5W2H essencial {coverage.completed}/{coverage.total}
+                              </span>
+                            </div>
+
+                            <strong>{decision.title}</strong>
+
+                            <dl className="skpe-rae-followup-5w2h">
+                              <div>
+                                <dt>O quê</dt>
+                                <dd>{fiveW2H.what ?? decision.decision_text}</dd>
+                              </div>
+                              <div>
+                                <dt>Quem</dt>
+                                <dd>{fiveW2H.who ?? 'Não informado'}</dd>
+                              </div>
+                              <div>
+                                <dt>Quando</dt>
+                                <dd>
+                                  {fiveW2H.whenStart
+                                    ? formatDate(fiveW2H.whenStart)
+                                    : 'Início não informado'}
+                                  {' → '}
+                                  {decision.due_date
+                                    ? formatDate(decision.due_date)
+                                    : fiveW2H.whenEnd
+                                      ? formatDate(fiveW2H.whenEnd)
+                                      : 'Fim não informado'}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Como</dt>
+                                <dd>{fiveW2H.how ?? 'Não informado'}</dd>
+                              </div>
+                              <div>
+                                <dt>Por quê</dt>
+                                <dd>{fiveW2H.why ?? 'Não informado'}</dd>
+                              </div>
+                              <div>
+                                <dt>Onde</dt>
+                                <dd>{fiveW2H.where ?? 'Não informado'}</dd>
+                              </div>
+                              <div>
+                                <dt>Quanto</dt>
+                                <dd>{fiveW2H.howMuch ?? 'Não informado'}</dd>
+                              </div>
+                            </dl>
+
+                            {decision.completion_notes && (
+                              <div className="skpe-rae-followup-evidence">
+                                <span>Última prestação de contas</span>
+                                <p>{decision.completion_notes}</p>
+                              </div>
+                            )}
+
+                            {!['completed', 'cancelled'].includes(decision.status) && (
+                              <>
+                                <label>
+                                  <span>Prestação de contas / evidência do andamento</span>
+                                  <textarea
+                                    rows={3}
+                                    value={raeFollowupNotes[decision.id] ?? ''}
+                                    onChange={(event) =>
+                                      setRaeFollowupNotes((current) => ({
+                                        ...current,
+                                        [decision.id]: event.target.value,
+                                      }))
+                                    }
+                                    disabled={raeFollowupTransitionId === decision.id}
+                                  />
+                                </label>
+
+                                <div className="skpe-rae-decision-transition-actions">
+                                  {decision.status === 'open' && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void transitionRaeFollowupDecision(decision, 'start')
+                                      }
+                                      disabled={raeFollowupTransitionId === decision.id}
+                                    >
+                                      Registrar em andamento
+                                    </button>
+                                  )}
+
+                                  {['open', 'in_progress', 'overdue'].includes(
+                                    decision.status,
+                                  ) && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void transitionRaeFollowupDecision(decision, 'block')
+                                      }
+                                      disabled={raeFollowupTransitionId === decision.id}
+                                    >
+                                      Registrar bloqueio
+                                    </button>
+                                  )}
+
+                                  {['open', 'in_progress', 'blocked', 'overdue'].includes(
+                                    decision.status,
+                                  ) && (
+                                    <button
+                                      type="button"
+                                      className="skpe-rae-editor-primary"
+                                      onClick={() =>
+                                        void transitionRaeFollowupDecision(decision, 'complete')
+                                      }
+                                      disabled={raeFollowupTransitionId === decision.id}
+                                    >
+                                      Registrar cumprimento
+                                    </button>
+                                  )}
+
+                                  {['open', 'in_progress', 'blocked', 'overdue'].includes(
+                                    decision.status,
+                                  ) && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void transitionRaeFollowupDecision(decision, 'cancel')
+                                      }
+                                      disabled={raeFollowupTransitionId === decision.id}
+                                    >
+                                      Registrar cancelamento
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </article>
+                        )
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
             <section className="skpe-rae-decisions">
               <div className="skpe-rae-decisions-heading">
                 <div>
@@ -1719,22 +2120,132 @@ export function MyMeetingsPanel({
                     </select>
                   </label>
 
+
+                </div>
+
+                <div className="skpe-rae-fivew2h">
+                  <div className="skpe-rae-fivew2h-heading">
+                    <div>
+                      <span>5W2H da deliberação</span>
+                      <strong>Encaminhamento para prestação de contas</strong>
+                    </div>
+                    <small>
+                      O quê já corresponde ao texto da decisão. Os demais campos
+                      ficam disponíveis e podem ser preenchidos conforme aplicabilidade.
+                    </small>
+                  </div>
+
+                  <div className="skpe-rae-decision-grid">
+                    <label>
+                      <span>Quem · responsável pelo encaminhamento</span>
+                      <input
+                        type="text"
+                        value={raeDecisionDraft.whoText}
+                        onChange={(event) =>
+                          setRaeDecisionDraft((current) => ({
+                            ...current,
+                            whoText: event.target.value,
+                          }))
+                        }
+                        disabled={raeDecisionSaving}
+                        placeholder="Pessoa, papel, área ou instância responsável"
+                      />
+                    </label>
+
+                    <label>
+                      <span>Quando · início</span>
+                      <input
+                        type="date"
+                        value={raeDecisionDraft.startDate}
+                        onChange={(event) =>
+                          setRaeDecisionDraft((current) => ({
+                            ...current,
+                            startDate: event.target.value,
+                          }))
+                        }
+                        disabled={raeDecisionSaving}
+                      />
+                    </label>
+
+                    <label>
+                      <span>Quando · fim</span>
+                      <input
+                        type="date"
+                        value={raeDecisionDraft.dueDate}
+                        onChange={(event) =>
+                          setRaeDecisionDraft((current) => ({
+                            ...current,
+                            dueDate: event.target.value,
+                          }))
+                        }
+                        disabled={raeDecisionSaving}
+                      />
+                    </label>
+                  </div>
+
                   <label>
-                    <span>Prazo</span>
-                    <input
-                      type="date"
-                      value={raeDecisionDraft.dueDate}
+                    <span>Como · forma de encaminhamento/realização</span>
+                    <textarea
+                      rows={3}
+                      value={raeDecisionDraft.howText}
                       onChange={(event) =>
                         setRaeDecisionDraft((current) => ({
                           ...current,
-                          dueDate: event.target.value,
+                          howText: event.target.value,
                         }))
                       }
                       disabled={raeDecisionSaving}
                     />
                   </label>
-                </div>
 
+                  <div className="skpe-rae-decision-grid">
+                    <label>
+                      <span>Por quê</span>
+                      <textarea
+                        rows={2}
+                        value={raeDecisionDraft.whyText}
+                        onChange={(event) =>
+                          setRaeDecisionDraft((current) => ({
+                            ...current,
+                            whyText: event.target.value,
+                          }))
+                        }
+                        disabled={raeDecisionSaving}
+                      />
+                    </label>
+
+                    <label>
+                      <span>Onde</span>
+                      <textarea
+                        rows={2}
+                        value={raeDecisionDraft.whereText}
+                        onChange={(event) =>
+                          setRaeDecisionDraft((current) => ({
+                            ...current,
+                            whereText: event.target.value,
+                          }))
+                        }
+                        disabled={raeDecisionSaving}
+                      />
+                    </label>
+                  </div>
+
+                  <label>
+                    <span>Quanto · recursos, custo ou referência econômica</span>
+                    <input
+                      type="text"
+                      value={raeDecisionDraft.howMuchText}
+                      onChange={(event) =>
+                        setRaeDecisionDraft((current) => ({
+                          ...current,
+                          howMuchText: event.target.value,
+                        }))
+                      }
+                      disabled={raeDecisionSaving}
+                      placeholder="Opcional"
+                    />
+                  </label>
+                </div>
                 <label>
                   <span>Nível de escalonamento</span>
                   <select

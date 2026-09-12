@@ -2701,7 +2701,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
       nextAssigned
         ? `Informe a justificativa para atribuir ${role.role_name} em ${role.organization_name}:`
         : `Informe a justificativa para revogar ${role.role_name} em ${role.organization_name}:`,
-      'Manutencao realizada pela Administracao da Plataforma.',
+      'Manutenção realizada pela Administração da Plataforma.',
     )
 
     if (!reason?.trim()) return
@@ -2717,7 +2717,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
       if (startDate === null) return
       if (!startDate.trim()) {
-        showMessage('Informe a data de inicio do mandato para concluir a atribuicao.', 'error')
+        showMessage('Informe a data de início do mandato para concluir a atribuição.', 'error')
         return
       }
 
@@ -2744,15 +2744,15 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     })
 
     if (error) {
-      showMessage(`Nao foi possivel alterar o papel na Organizacao: ${error.message}`, 'error')
+      showMessage(`Não foi possível alterar o papel na Organização: ${error.message}`, 'error')
       return
     }
 
     await refreshUserOrganizationalRoleData()
     showMessage(
       nextAssigned
-        ? 'Papel na Organizacao atribuido com sucesso.'
-        : 'Papel na Organizacao revogado com sucesso.',
+        ? 'Papel na Organização atribuído com sucesso.'
+        : 'Papel na Organização revogado com sucesso.',
       'success',
     )
     await loadAll()
@@ -3014,19 +3014,26 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 window.location.replace('/')
               }, 80)
             }}
-            aria-label="Voltar ao Portal da Plataforma"
-            title="Voltar ao Portal da Plataforma"
+            aria-label="Voltar ao SPARKs"
+            title="Voltar ao SPARKs"
           >
-            ← Voltar ao Portal da Plataforma
+            ← Voltar ao SPARKs
           </a>
-          <p className="pa-eyebrow">SUPER-ADMIN</p>
+
           <h1>Administração da Plataforma</h1>
           <p>Gerencie os cadastros mestres, as organizações, os usuários, os módulos e os acessos globais da Plataforma SPARKs.</p>
         </div>
 
-        <button type="button" className="pa-secondary-button" onClick={() => void loadAll()} disabled={loading}>
-          {loading ? 'Atualizando...' : 'Atualizar dados'}
-        </button>
+        {activeTab === 'measure-catalog' ? null : (
+          <button
+            type="button"
+            className="pa-secondary-button"
+            onClick={() => void loadAll()}
+            disabled={loading}
+          >
+            {loading ? 'Atualizando...' : 'Atualizar administração'}
+          </button>
+        )}
       </div>
 
       <div className="pa-layout">
