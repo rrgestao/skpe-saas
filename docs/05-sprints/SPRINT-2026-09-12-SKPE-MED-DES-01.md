@@ -1,7 +1,7 @@
 ---
 id: sprint-2026-09-12-skpe-med-des-01
 title: Sprint 2026-09-12 — SKPE-MED-DES-01
-status: active
+status: completed
 owner: dev
 language: pt-BR
 ---
@@ -32,11 +32,11 @@ Runtime `skpe-saas-dev` confirma `skpe_indicators`, `skpe_indicator_targets`,
 
 ## Gates de aceite
 
-- `G1_RUNTIME_CONTRACT_INVENTORY=IN_PROGRESS`
-- `G2_READ_MODEL_REUSE=PLANNED`
-- `G3_UI_READ_ONLY=PLANNED`
-- `G4_AUTHORIZATION_RUNTIME_AUDIT=PLANNED`
-- `G5_TESTS_BUILD_AND_TRACEABILITY=PLANNED`
+- `G1_RUNTIME_CONTRACT_INVENTORY=PASS`
+- `G2_READ_MODEL_REUSE=PASS`
+- `G3_UI_READ_ONLY=PASS`
+- `G4_AUTHORIZATION_RUNTIME_AUDIT=PASS`
+- `G5_TESTS_BUILD_AND_TRACEABILITY=PASS`
 
 ## Achados iniciais
 
@@ -93,3 +93,33 @@ Validação técnica:
 - testes: 131/131 PASS antes do guard específico do G3;
 - build: PASS;
 - Supabase alterado: NÃO.
+
+## G4 — Authorization Runtime Audit
+
+Status: PASS
+
+Evidências runtime:
+- RPC contextual exige autenticação e valida escopo organizacional + acesso ao módulo;
+- usuário autenticado e autorizado leu o contexto com sucesso;
+- usuário autenticado fora da organização recebeu `42501`;
+- usuário não autenticado recebeu `42501`;
+- views `sparks_measure_*` usam `security_invoker=true`;
+- outsider obteve zero linhas em `sparks_measure_indicators`;
+- enriquecimento de responsabilidade degrada para “Não disponível nesta leitura” quando o RLS não autoriza a view.
+
+Supabase alterado: NÃO.
+
+## G5 — Tests, Build e Rastreabilidade
+
+Status: PASS
+
+Validação técnica consolidada:
+- contrato G3: 2/2 PASS;
+- suíte completa: 133/133 PASS;
+- build de produção: PASS;
+- `git diff --check`: PASS;
+- nenhum DDL, migration ou escrita no Supabase.
+
+## Encerramento da sprint
+
+A primeira fatia governada de `SKPE-MED-DES-01` está concluída em `READ_ONLY_REUSE`, com contratos de leitura, autorização, evidência, responsabilidade e interpretação reconciliados. A dependência declarada para `SKPE-MON-ANL-01` está suficientemente atendida para iniciar sua descoberta/implementação read-only sem alterar a autoridade de medição.
