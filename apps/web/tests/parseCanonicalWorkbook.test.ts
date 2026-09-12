@@ -72,7 +72,7 @@ async function representativeV26(options: { prefixedOoxml?: boolean; valuesSheet
 }
 
 function asFile(bytes: Uint8Array, name = 'SPARKs_PE_COOTAQUARA_v26.xlsx', type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-  return new File([bytes], name, { type, lastModified: Date.UTC(2026, 7, 15) })
+  return new File([new Uint8Array(bytes)], name, { type, lastModified: Date.UTC(2026, 7, 15) })
 }
 
 describe('parseCanonicalWorkbook', () => {

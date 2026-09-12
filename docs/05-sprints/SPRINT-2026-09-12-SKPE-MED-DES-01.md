@@ -50,3 +50,24 @@ Runtime `skpe-saas-dev` confirma `skpe_indicators`, `skpe_indicator_targets`,
 
 Qualquer necessidade de migration, escrita, novo contrato físico ou mudança de
 autoridade semântica exige gate próprio antes de implementação.
+## G2 — Read Model Reuse
+
+Status: PASS
+
+Achados:
+- `get_sparks_measure_performance_context` é o read-model contextual vigente;
+- o runtime expõe indicador, baseline, meta, apuração, evidência, desempenho e benchmark;
+- o primeiro gate permaneceu sem migration, sem DDL e sem escrita no Supabase;
+- a UI contextual foi endurecida como read-only;
+- ações mutantes de benchmark não são expostas no contexto de consulta;
+- o grid passou a exibir fonte de dados, linha de base, horizonte da meta, data/fonte/evidência da apuração e contexto do benchmark;
+- ausência de apuração continua distinta de valor zero.
+
+Validação técnica:
+- TypeScript dos testes: PASS;
+- testes: 124/124 PASS;
+- build: PASS;
+- Supabase alterado: NÃO.
+
+Próximo gate sugerido:
+- G3 — reconciliar responsabilidade, vínculo direto com KR, evidência e regra de interpretação já existentes, sem criar schema novo.

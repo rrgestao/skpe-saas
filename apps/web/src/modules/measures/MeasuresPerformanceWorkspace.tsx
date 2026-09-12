@@ -28,17 +28,34 @@ type MeasureContextRow = {
   unit: string | null
   polarity: string | null
   measurement_frequency: string | null
+  data_source: string | null
+  baseline_value: number | null
+  baseline_date: string | null
   indicator_status: string | null
   target_id: string | null
+  target_type: string | null
   target_value: number | null
   minimum_value: number | null
   challenge_value: number | null
+  target_period_start: string | null
+  target_period_end: string | null
+  target_status: string | null
+  measurement_id: string | null
+  measurement_date: string | null
   measured_value: number | null
   effective_performance: number | null
+  measurement_source_name: string | null
+  measurement_source_reference: string | null
+  evidence_reference: string | null
   measurement_state: string | null
   benchmark_id: string | null
+  benchmark_type: string | null
   benchmark_value: number | null
+  benchmark_reference_organization: string | null
   benchmark_source_name: string | null
+  benchmark_source_reference: string | null
+  benchmark_reference_period: string | null
+  benchmark_status: string | null
   updated_at: string | null
 }
 
@@ -514,6 +531,7 @@ export function MeasuresPerformanceWorkspace({
         <OrganizationIndicatorsSmartGrid
           rows={summaryFilteredRows}
           onReload={loadMeasures}
+          readOnly
         />
       )}
 

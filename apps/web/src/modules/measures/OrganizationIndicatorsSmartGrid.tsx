@@ -15,13 +15,25 @@ export type OrganizationIndicatorGridItem = {
   unit: string | null
   polarity: string | null
   measurement_frequency: string | null
+  data_source?: string | null
+  baseline_value?: number | null
+  baseline_date?: string | null
   indicator_status: string | null
   target_id: string | null
+  target_type?: string | null
   target_value: number | null
   minimum_value: number | null
   challenge_value: number | null
+  target_period_start?: string | null
+  target_period_end?: string | null
+  target_status?: string | null
+  measurement_id?: string | null
+  measurement_date?: string | null
   measured_value: number | null
   effective_performance: number | null
+  measurement_source_name?: string | null
+  measurement_source_reference?: string | null
+  evidence_reference?: string | null
   measurement_state: string | null
   benchmark_id: string | null
   benchmark_type?: string | null
@@ -37,6 +49,7 @@ export type OrganizationIndicatorGridItem = {
 type Props = {
   rows: OrganizationIndicatorGridItem[]
   onReload: () => Promise<void>
+  readOnly?: boolean
 }
 
 type GridRow = {
@@ -46,12 +59,19 @@ type GridRow = {
   name: string
   unit: string
   frequency: string
+  dataSource: string
+  baseline: string
   status: string
   target: string
+  targetPeriod: string
   measurement: string
+  measurementDate: string
+  measurementSource: string
+  evidence: string
   performance: string
   benchmark: string
   benchmarkSource: string
+  benchmarkContext: string
 }
 
 function display(value: string | number | null | undefined, fallback = 'Não informado') {
@@ -95,7 +115,19 @@ function performanceLabel(value: number | null) {
   return value == null ? 'Não avaliado' : `${value.toFixed(1)}%`
 }
 
-export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
+function dateLabel(value: string | null | undefined) {
+  if (!value) return 'Não informada'
+  const parsed = new Date(`${value}T00:00:00`)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('pt-BR')
+}
+
+function periodLabel(start: string | null | undefined, end: string | null | undefined) {
+  if (!start && !end) return 'Não informado'
+  if (start && end) return `${dateLabel(start)} a ${dateLabel(end)}`
+  return start ? `Desde ${dateLabel(start)}` : `Até ${dateLabel(end)}`
+}
+
+export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = false }: Props) {
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -125,12 +157,23 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
         name: display(row.name),
         unit: display(row.unit, 'Não informada'),
         frequency: frequencyLabel(row.measurement_frequency),
+        dataSource: display(row.data_source, 'Não informada'),
+        baseline: row.baseline_value == null
+          ? 'Não informada'
+          : `${row.baseline_value}${row.baseline_date ? ` · ${dateLabel(row.baseline_date)}` : ''}`,
         status: statusLabel(row.indicator_status),
         target: row.target_id ? display(row.target_value) : 'Não informada',
+        targetPeriod: periodLabel(row.target_period_start, row.target_period_end),
         measurement: measurementLabel(row),
+        measurementDate: dateLabel(row.measurement_date),
+        measurementSource: display(row.measurement_source_name, 'Não informada'),
+        evidence: display(row.evidence_reference, 'Não informada'),
         performance: performanceLabel(row.effective_performance),
         benchmark: row.benchmark_id ? display(row.benchmark_value) : 'Não informado',
         benchmarkSource: row.benchmark_source_name ?? 'Não informada',
+        benchmarkContext: [row.benchmark_reference_organization, row.benchmark_reference_period]
+          .filter(Boolean)
+          .join(' · ') || 'Não informado',
       })),
     [rows],
   )
@@ -146,14 +189,20 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
         minWidth: 135,
         align: 'center',
       },
+      { id: 'dataSource', label: 'Fonte de dados', minWidth: 180 },
+      { id: 'baseline', label: 'Linha de base', minWidth: 150 },
       { id: 'status', label: 'Situação', minWidth: 115, align: 'center' },
       { id: 'target', label: 'Meta', minWidth: 120, align: 'center' },
+      { id: 'targetPeriod', label: 'Horizonte da meta', minWidth: 185 },
       {
         id: 'measurement',
         label: 'Apuração',
         minWidth: 135,
         align: 'center',
       },
+      { id: 'measurementDate', label: 'Data da apuração', minWidth: 150 },
+      { id: 'measurementSource', label: 'Fonte da apuração', minWidth: 180 },
+      { id: 'evidence', label: 'Evidência', minWidth: 180 },
       {
         id: 'performance',
         label: 'Desempenho',
@@ -170,6 +219,11 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
         id: 'benchmarkSource',
         label: 'Fonte do benchmark',
         minWidth: 180,
+      },
+      {
+        id: 'benchmarkContext',
+        label: 'Contexto do benchmark',
+        minWidth: 190,
       },
     ],
     [],
@@ -293,9 +347,9 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
         viewportMode="balanced"
         selectedId={selectedIndicatorId}
         onSelect={(id) => setSelectedIndicatorId(id)}
-        onDoubleClick={(id) => openPanel(id)}
-        contextMenu={menu}
-        onContextAction={(action, id) => {
+        onDoubleClick={readOnly ? undefined : (id) => openPanel(id)}
+        contextMenu={readOnly ? undefined : menu}
+        onContextAction={readOnly ? undefined : (action, id) => {
           setSelectedIndicatorId(id)
           const row = byId.get(id)
           if (!row) return
@@ -312,7 +366,7 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
         }}
       />
 
-      {panelOpen && selectedIndicatorId ? (
+      {!readOnly && panelOpen && selectedIndicatorId ? (
         <aside className="sparks-measures-side-panel" aria-label="Manutenção de benchmark">
           <div className="sparks-measures-side-panel__header">
             <div>
@@ -354,7 +408,7 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
         </aside>
       ) : null}
 
-      {panelOpen ? (
+      {!readOnly && panelOpen ? (
         <button
           type="button"
           className="sparks-measures-side-panel__backdrop"
@@ -363,7 +417,7 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload }: Props) {
         />
       ) : null}
 
-      {!panelOpen && message ? (
+      {!readOnly && !panelOpen && message ? (
         <div className="sparks-measures-side-panel__message">{message}</div>
       ) : null}
     </>
