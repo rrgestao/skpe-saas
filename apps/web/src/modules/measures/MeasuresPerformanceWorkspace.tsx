@@ -22,6 +22,9 @@ type MeasuresPerformanceWorkspaceProps = {
 
 type MeasureContextRow = {
   indicator_id: string
+  subject_type: string | null
+  subject_id: string | null
+  owner_user_id?: string | null
   code: string | null
   name: string | null
   description: string | null
@@ -43,6 +46,8 @@ type MeasureContextRow = {
   measurement_id: string | null
   measurement_date: string | null
   measured_value: number | null
+  automatic_performance: number | null
+  manual_performance_override: number | null
   effective_performance: number | null
   measurement_source_name: string | null
   measurement_source_reference: string | null
@@ -163,7 +168,8 @@ export function MeasuresPerformanceWorkspace({
     setLoading(true)
     setErrorMessage('')
 
-    const response = await supabase.rpc(
+    const [response, ownershipResponse] = await Promise.all([
+      supabase.rpc(
       'get_sparks_measure_performance_context',
       {
         target_organization_id: organizationId,
@@ -173,7 +179,9 @@ export function MeasuresPerformanceWorkspace({
         target_subject_type: subjectType,
         target_subject_id: subjectId,
       },
-    )
+    ),
+      supabase.from('sparks_measure_indicators' as never).select('id, owner_user_id' as never).eq('organization_id', organizationId).eq('source_module_code', sourceModuleCode),
+    ])
 
     if (response.error) {
       setRows([])
@@ -182,7 +190,9 @@ export function MeasuresPerformanceWorkspace({
       return
     }
 
-    setRows(normalizeRows<MeasureContextRow>(response.data))
+    const ownershipByIndicator = new Map<string, string | null>()
+    if (!ownershipResponse.error) for (const item of normalizeRows<{ id: string; owner_user_id: string | null }>(ownershipResponse.data)) ownershipByIndicator.set(item.id, item.owner_user_id)
+    setRows(normalizeRows<MeasureContextRow>(response.data).map((row) => ({ ...row, ...(ownershipResponse.error ? {} : { owner_user_id: ownershipByIndicator.get(row.indicator_id) ?? null }) })))
     setLoading(false)
   }
 

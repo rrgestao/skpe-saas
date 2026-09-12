@@ -9,6 +9,9 @@ import { supabase } from '../../lib/supabase'
 
 export type OrganizationIndicatorGridItem = {
   indicator_id: string
+  subject_type?: string | null
+  subject_id?: string | null
+  owner_user_id?: string | null
   code: string | null
   name: string | null
   description: string | null
@@ -30,6 +33,8 @@ export type OrganizationIndicatorGridItem = {
   measurement_id?: string | null
   measurement_date?: string | null
   measured_value: number | null
+  automatic_performance?: number | null
+  manual_performance_override?: number | null
   effective_performance: number | null
   measurement_source_name?: string | null
   measurement_source_reference?: string | null
@@ -61,6 +66,8 @@ type GridRow = {
   frequency: string
   dataSource: string
   baseline: string
+  responsibility: string
+  strategicBinding: string
   status: string
   target: string
   targetPeriod: string
@@ -68,6 +75,7 @@ type GridRow = {
   measurementDate: string
   measurementSource: string
   evidence: string
+  interpretation: string
   performance: string
   benchmark: string
   benchmarkSource: string
@@ -113,6 +121,23 @@ function measurementLabel(row: OrganizationIndicatorGridItem) {
 
 function performanceLabel(value: number | null) {
   return value == null ? 'Não avaliado' : `${value.toFixed(1)}%`
+}
+
+function responsibilityLabel(value: string | null | undefined) {
+  if (value === undefined) return 'Não disponível nesta leitura'
+  return value ? 'Responsável definido' : 'Não definido'
+}
+
+function strategicBindingLabel(row: OrganizationIndicatorGridItem) {
+  if (row.subject_type === 'key_result') return 'Resultado-Chave vinculado'
+  if (row.subject_type === 'strategic_objective') return 'Objetivo Estratégico vinculado'
+  return row.subject_id ? 'Vínculo estratégico definido' : 'Sem vínculo estratégico'
+}
+
+function interpretationLabel(row: OrganizationIndicatorGridItem) {
+  if (row.manual_performance_override != null) return 'Override manual'
+  if (row.automatic_performance != null) return 'Automática'
+  return 'Não avaliada'
 }
 
 function dateLabel(value: string | null | undefined) {
@@ -161,6 +186,8 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
         baseline: row.baseline_value == null
           ? 'Não informada'
           : `${row.baseline_value}${row.baseline_date ? ` · ${dateLabel(row.baseline_date)}` : ''}`,
+        responsibility: responsibilityLabel(row.owner_user_id),
+        strategicBinding: strategicBindingLabel(row),
         status: statusLabel(row.indicator_status),
         target: row.target_id ? display(row.target_value) : 'Não informada',
         targetPeriod: periodLabel(row.target_period_start, row.target_period_end),
@@ -168,6 +195,7 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
         measurementDate: dateLabel(row.measurement_date),
         measurementSource: display(row.measurement_source_name, 'Não informada'),
         evidence: display(row.evidence_reference, 'Não informada'),
+        interpretation: interpretationLabel(row),
         performance: performanceLabel(row.effective_performance),
         benchmark: row.benchmark_id ? display(row.benchmark_value) : 'Não informado',
         benchmarkSource: row.benchmark_source_name ?? 'Não informada',
@@ -191,6 +219,8 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
       },
       { id: 'dataSource', label: 'Fonte de dados', minWidth: 180 },
       { id: 'baseline', label: 'Linha de base', minWidth: 150 },
+      { id: 'responsibility', label: 'Responsabilidade', minWidth: 175 },
+      { id: 'strategicBinding', label: 'Vínculo estratégico', minWidth: 205 },
       { id: 'status', label: 'Situação', minWidth: 115, align: 'center' },
       { id: 'target', label: 'Meta', minWidth: 120, align: 'center' },
       { id: 'targetPeriod', label: 'Horizonte da meta', minWidth: 185 },
@@ -203,6 +233,7 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
       { id: 'measurementDate', label: 'Data da apuração', minWidth: 150 },
       { id: 'measurementSource', label: 'Fonte da apuração', minWidth: 180 },
       { id: 'evidence', label: 'Evidência', minWidth: 180 },
+      { id: 'interpretation', label: 'Interpretação', minWidth: 150 },
       {
         id: 'performance',
         label: 'Desempenho',

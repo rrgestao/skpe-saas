@@ -71,3 +71,25 @@ Validação técnica:
 
 Próximo gate sugerido:
 - G3 — reconciliar responsabilidade, vínculo direto com KR, evidência e regra de interpretação já existentes, sem criar schema novo.
+
+## G3 — Reconciliação dos contratos parciais
+
+Status: PASS
+
+Achados confirmados no runtime:
+- responsabilidade da medida existe em `skpe_indicators.owner_user_id` e na fachada `sparks_measure_indicators`;
+- vínculo direto com KR existe em `skpe_indicators.key_result_id` e é projetado como `subject_type='key_result'` + `subject_id`;
+- evidência de apuração existe em `skpe_indicator_measurements.evidence_reference`;
+- interpretação de desempenho distingue `automatic_performance`, `manual_performance_override` e `effective_performance`.
+
+Implementação:
+- UI contextual passou a exibir Responsabilidade, Vínculo estratégico, Evidência e Interpretação;
+- responsabilidade é apresentada como estado definido/não definido, sem expor UUID;
+- override manual é explicitamente distinguido da interpretação automática;
+- nenhuma migration, DDL ou escrita foi executada.
+
+Validação técnica:
+- TypeScript: PASS;
+- testes: 131/131 PASS antes do guard específico do G3;
+- build: PASS;
+- Supabase alterado: NÃO.
