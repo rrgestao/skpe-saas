@@ -120,6 +120,9 @@ type OperationalProjection = {
   }
 }
 
+type MonitoringPackageReadiness = { packageStatus: string | null; readyForValidation: boolean; readyForFormulation: boolean; blockingIssues?: Array<{ code: string; severity: string; message: string }>; recommendations?: Array<{ code: string; severity: string; message: string }> }
+type StrategicPerformance = { aggregationPolicy?: string | null; objectives?: Array<{ strategicObjectiveId: string; code: string; name: string; performance: number | null; performanceStatus: string }>; themes?: Array<{ strategicThemeId: string; code: string; name: string; performance: number | null; performanceStatus: string }>; visionProgress?: number | null; visionProgressStatus?: string | null }
+
 function currencyDisplayLabel(currency: string | null | undefined) {
   const code = currency?.trim().toUpperCase() || 'BRL'
   return code === 'BRL' ? 'R$' : code
@@ -233,6 +236,8 @@ export function MonitoringSection({
   const workspace = useSkpeWorkspace()
   const projectId = workspace.route.projectId ?? fallbackProjectId
   const organizationId = workspace.organization.id
+  const formulationId = workspace.route.formulationId
+  const cycleId = workspace.route.cycleId
 
   const [projection, setProjection] = useState<OperationalProjection | null>(null)
   const [loading, setLoading] = useState(true)
@@ -243,6 +248,10 @@ export function MonitoringSection({
   const [canManageCapacity, setCanManageCapacity] = useState(false)
   const [capacityPermissionLoading, setCapacityPermissionLoading] = useState(true)
   const [capacityPermissionError, setCapacityPermissionError] = useState('')
+  const [strategicReadiness, setStrategicReadiness] = useState<MonitoringPackageReadiness | null>(null)
+  const [strategicPerformance, setStrategicPerformance] = useState<StrategicPerformance | null>(null)
+  const [strategicLoading, setStrategicLoading] = useState(false)
+  const [strategicError, setStrategicError] = useState('')
 
   useEffect(() => {
     let active = true
@@ -290,6 +299,25 @@ export function MonitoringSection({
       active = false
     }
   }, [organizationId])
+
+  useEffect(() => {
+    let active = true
+    const loadStrategicMonitoring = async () => {
+      if (!formulationId) { setStrategicReadiness(null); setStrategicPerformance(null); setStrategicError(''); setStrategicLoading(false); return }
+      setStrategicLoading(true); setStrategicError('')
+      const readinessResult = await supabase.rpc('get_skpe_monitoring_package_readiness', { p_formulation_id: formulationId, p_include_package_state: true })
+      if (!active) return
+      if (readinessResult.error) { setStrategicReadiness(null); setStrategicPerformance(null); setStrategicError(readinessResult.error.message); setStrategicLoading(false); return }
+      setStrategicReadiness((readinessResult.data ?? null) as MonitoringPackageReadiness | null)
+      if (!cycleId) { setStrategicPerformance(null); setStrategicLoading(false); return }
+      const performanceResult = await supabase.rpc('get_skpe_strategic_performance', { p_cycle_id: cycleId })
+      if (!active) return
+      if (performanceResult.error) { setStrategicPerformance(null); setStrategicError(performanceResult.error.message) } else { setStrategicPerformance((performanceResult.data ?? null) as StrategicPerformance | null) }
+      setStrategicLoading(false)
+    }
+    void loadStrategicMonitoring()
+    return () => { active = false }
+  }, [formulationId, cycleId])
 
   useEffect(() => {
     let active = true
@@ -470,6 +498,21 @@ export function MonitoringSection({
         <div className="skpe-monitoring-state is-error" role="alert">
           {capacityPermissionError}
         </div>
+      )}
+
+      {strategicLoading && <div className="skpe-monitoring-state">Verificando prontidão do desempenho estratégico...</div>}
+      {!strategicLoading && strategicError && <div className="skpe-monitoring-state is-error" role="alert">{strategicError}</div>}
+      {!strategicLoading && strategicReadiness && (
+        <article className="skpe-monitoring-panel" aria-label="Desempenho estratégico governado">
+          <header><div><span>Desempenho estratégico</span><h2>Painel de resultados</h2></div></header>
+          {(strategicReadiness.blockingIssues ?? []).some((item) => item.code === 'FE08_PACKAGE_MISSING') ? (
+            <><p className="skpe-monitoring-empty">O desempenho ainda não pode ser consolidado: o pacote FE-08 desta Formulação não foi configurado.</p><div className="skpe-monitoring-tags">{(strategicReadiness.blockingIssues ?? []).map((item) => <span key={item.code}>{item.message}</span>)}</div></>
+          ) : !cycleId ? (
+            <p className="skpe-monitoring-empty">O pacote de monitoramento existe, mas nenhum ciclo está selecionado neste contexto. O painel não sintetiza desempenho sem um ciclo formal.</p>
+          ) : strategicPerformance ? (
+            <><div className="skpe-monitoring-grid"><article><span>Progresso da Visão</span><strong>{strategicPerformance.visionProgress == null ? 'Não avaliado' : `${strategicPerformance.visionProgress.toFixed(1)}%`}</strong><small>{strategicPerformance.visionProgressStatus ?? 'sem classificação'}</small></article><article><span>Objetivos avaliados</span><strong>{strategicPerformance.objectives?.length ?? 0}</strong><small>agregados pelo runtime governado</small></article><article><span>Temas avaliados</span><strong>{strategicPerformance.themes?.length ?? 0}</strong><small>agregados pelo runtime governado</small></article></div><p className="skpe-monitoring-empty">Política de agregação: {strategicPerformance.aggregationPolicy ?? 'não informada'}.</p></>
+          ) : null}
+        </article>
       )}
 
       {loading && <div className="skpe-monitoring-state">Carregando monitoramento...</div>}
