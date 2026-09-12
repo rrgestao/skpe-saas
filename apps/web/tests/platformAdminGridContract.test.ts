@@ -46,3 +46,31 @@ test('atalho de voltar ao topo só aparece depois de rolagem real', () => {
   assert.match(platformAdmin, /\{showScrollTop \? \(/)
   assert.match(platformAdmin, /<path d="M5 15\.5 12 8l7 7\.5"/)
 })
+
+test('grid inicia como padrão e respeita preferência persistida por aba', () => {
+  assert.match(platformAdmin, /useState<ViewMode>\('grid'\)/)
+  assert.match(platformAdmin, /sparks\.platform-admin\.view-mode\.\$\{activeTab\}/)
+  assert.match(platformAdmin, /allowed\.includes\(stored as ViewMode\) \? stored as ViewMode : 'grid'/)
+})
+
+test('um clique seleciona e duplo clique abre manutenção', () => {
+  assert.ok((platformAdmin.match(/onSelect=\{setSelectedGridRowId\}/g) ?? []).length >= 8)
+  assert.match(platformAdmin, /ariaLabel="Organizações"[\s\S]*onDoubleClick=[\s\S]*openOrganizationEdit/)
+  assert.match(platformAdmin, /ariaLabel="Usuários"[\s\S]*onDoubleClick=[\s\S]*openUserMaintenance/)
+  assert.match(platformAdmin, /ariaLabel="Vínculos e acessos"[\s\S]*onDoubleClick=[\s\S]*openMembershipEdit/)
+  assert.match(measureCatalog, /onSelect=\{setSelectedReferenceId\}[\s\S]*onDoubleClick=/)
+})
+
+test('Administração da Plataforma usa acento laranja canônico', () => {
+  const adminCss = readFileSync(
+    join(testDir, '../src/modules/platform-admin/PlatformAdmin.css'),
+    'utf8',
+  )
+  const measureCss = readFileSync(
+    join(testDir, '../src/modules/platform-admin/PlatformMeasureCatalog.css'),
+    'utf8',
+  )
+  assert.match(adminCss, /--sparks-accent:\s*#ff4f0c/)
+  assert.match(adminCss, /pa-navigation button\.active[\s\S]*#ff4f0c/)
+  assert.match(measureCss, /--pmc-platform-blue:\s*var\(--organization-accent, #ff4f0c\)/)
+})

@@ -987,7 +987,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
   const [search, setSearch] = useState('')
   const [includeRevoked, setIncludeRevoked] = useState(false)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
-  const [viewMode, setViewMode] = useState<ViewMode>('cards')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [selectedGridRowId, setSelectedGridRowId] = useState<string | null>(null)
   const [expandedOrganizationIds, setExpandedOrganizationIds] =
     useState<Set<string>>(() => new Set())
 
@@ -1901,11 +1902,14 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     return { byId, childrenByParent, roots, visibleIds, matchIds, expandableIds }
   }, [organizations, normalizedSearch])
   useEffect(() => {
-    const hierarchyTabs: AdminTab[] = ['organizations', 'users', 'memberships']
-    if (!hierarchyTabs.includes(activeTab) && viewMode === 'hierarchy') {
-      setViewMode('cards')
-    }
-  }, [activeTab, viewMode])
+    const stored = window.localStorage.getItem(`sparks.platform-admin.view-mode.${activeTab}`)
+    const allowed: ViewMode[] = activeTab === 'organizations' || activeTab === 'users' || activeTab === 'memberships'
+      ? ['grid', 'cards', 'hierarchy']
+      : ['grid', 'cards']
+    setViewMode(allowed.includes(stored as ViewMode) ? stored as ViewMode : 'grid')
+    setSelectedGridRowId(null)
+  }, [activeTab])
+
 
   useEffect(() => {
     if (viewMode !== 'hierarchy') return
@@ -2991,7 +2995,11 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
 
       <ViewToggle
         value={viewMode}
-        onChange={setViewMode}
+        onChange={(nextMode) => {
+          setViewMode(nextMode)
+          setSelectedGridRowId(null)
+          window.localStorage.setItem(`sparks.platform-admin.view-mode.${activeTab}`, nextMode)
+        }}
         showHierarchy={activeTab === 'organizations' || activeTab === 'users' || activeTab === 'memberships'}
       />
 
@@ -3254,7 +3262,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   columns={organizationColumns}
                   ariaLabel="Organizações"
                   viewportMode="standard"
-                  onSelect={(id) => { const organization = filteredOrganizations.find((item) => item.organization_id === id); if (organization) openOrganizationEdit(organization) }}
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId}
+                  onDoubleClick={(id) => { const organization = filteredOrganizations.find((item) => item.organization_id === id); if (organization) openOrganizationEdit(organization) }}
                 />
               )}
             </>
@@ -3304,7 +3314,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   columns={userColumns}
                   ariaLabel="Usuários"
                   viewportMode="standard"
-                  onSelect={(id) => { const user = filteredUsers.find((item) => item.user_id === id); if (user) openUserMaintenance(user) }}
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId}
+                  onDoubleClick={(id) => { const user = filteredUsers.find((item) => item.user_id === id); if (user) openUserMaintenance(user) }}
                 />
               )}
             </>
@@ -3330,7 +3342,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   columns={membershipColumns}
                   ariaLabel="Vínculos e acessos"
                   viewportMode="standard"
-                  onSelect={(id) => { const membership = filteredMemberships.find((item) => item.membership_id === id); if (membership) openMembershipEdit(membership) }}
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId}
+                  onDoubleClick={(id) => { const membership = filteredMemberships.find((item) => item.membership_id === id); if (membership) openMembershipEdit(membership) }}
                 />
               )}
             </>
@@ -3344,6 +3358,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   columns={moduleColumns}
                   ariaLabel="Módulos da organização"
                   viewportMode="standard"
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId}
                   contextMenu={moduleContextActions}
                   onContextAction={(actionId, rowId) => {
                     if (actionId !== 'toggle-module') return
@@ -3352,7 +3368,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   }}
                 />
               ) : (
-                <><div style={{ marginBottom: '.75rem' }}>{toolbar()}</div><SparksSmartGrid rows={moduleGridRows} columns={moduleColumns} ariaLabel="Módulos" viewportMode="standard" /></>
+                <><div style={{ marginBottom: '.75rem' }}>{toolbar()}</div><SparksSmartGrid rows={moduleGridRows} columns={moduleColumns} ariaLabel="Módulos" viewportMode="standard"
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId} /></>
               )}
             </>
           ) : activeTab === 'roles' ? (
@@ -3365,6 +3383,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   columns={roleColumns}
                   ariaLabel="Perfis globais do usuário"
                   viewportMode="standard"
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId}
                   contextMenu={roleContextActions}
                   onContextAction={(actionId, rowId) => {
                     if (actionId !== 'toggle-role') return
@@ -3373,7 +3393,9 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   }}
                 />
               ) : (
-                <><div style={{ marginBottom: '.75rem' }}>{toolbar()}</div><SparksSmartGrid rows={roleGridRows} columns={roleColumns} ariaLabel="Perfis globais" viewportMode="standard" /></>
+                <><div style={{ marginBottom: '.75rem' }}>{toolbar()}</div><SparksSmartGrid rows={roleGridRows} columns={roleColumns} ariaLabel="Perfis globais" viewportMode="standard"
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId} /></>
               )}
             </>
           ) : activeTab === 'measure-catalog' ? (
@@ -3390,6 +3412,8 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   columns={invitationColumns}
                   ariaLabel="Convites"
                   viewportMode="standard"
+                  selectedId={selectedGridRowId}
+                  onSelect={setSelectedGridRowId}
                 />
               )}
             </>

@@ -802,12 +802,7 @@ export function PlatformMeasureCatalog() {
                 ariaLabel="Referências gerais de Medidas e Desempenho"
                 viewportMode="standard"
                 selectedId={selectedReferenceId}
-                onSelect={(id) => {
-                  const reference = referenceById.get(id)
-                  if (!reference) return
-                  setSelectedReferenceId(id)
-                  openReferenceMaintenance(reference)
-                }}
+                onSelect={setSelectedReferenceId}
                 onDoubleClick={(id) => {
                   const reference = referenceById.get(id)
                   if (!reference) return

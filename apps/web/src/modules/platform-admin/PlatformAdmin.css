@@ -2424,3 +2424,8 @@ label.pa-field-invalid::after {
   background: #f6faf8;
   text-decoration: none;
 }
+/* ADMIN-UX-CONTRACT-01 */
+.platform-admin { --sparks-accent:#ff4f0c; --sparks-accent-soft:#fff1eb; --organization-primary:#ff4f0c; --organization-accent:#ff4f0c; }
+.platform-admin .pa-navigation button.active, .platform-admin .pa-primary-button { background:#ff4f0c !important; border-color:#ff4f0c !important; color:#fff !important; }
+.platform-admin .pa-primary-button:hover:not(:disabled) { background:#e84300 !important; border-color:#e84300 !important; }
+.platform-admin .pa-view-toggle button.active { border-color:#ff4f0c; background:#fff1eb; color:#d83f00; }

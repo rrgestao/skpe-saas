@@ -218,3 +218,10 @@ Listagens em `apps/web/src/modules/platform-admin` devem usar exclusivamente o `
 - criar comportamento visual específico que quebre o drawer lateral ou a ocupação da largura útil.
 
 O gate automatizado `platformAdminGridContract.test.ts` deve permanecer verde. Qualquer exceção exige decisão arquitetural explícita e registro de governança antes da implementação.
+A interação e a identidade visual do Grid administrativo também são contrato:
+
+- um clique seleciona o registro e preserva a seleção para navegação por teclado;
+- duplo clique abre a manutenção quando o registro possuir fluxo de manutenção;
+- o modo inicial é `grid`; preferências persistidas por aba podem substituir esse padrão;
+- a Administração da Plataforma usa o acento laranja canônico `#ff4f0c` para ações primárias, seleção e estado ativo;
+- alterações nessas regras devem atualizar e passar `platformAdminGridContract.test.ts`.
