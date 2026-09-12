@@ -169,6 +169,10 @@ export function SparksSmartGrid({
   const contextRowIdRef = useRef<string | null>(null)
   const gridShellRef = useRef<HTMLDivElement | null>(null)
   const [gridViewportWidth, setGridViewportWidth] = useState(0)
+  const [sortState, setSortState] = useState<{
+    columnId: string
+    direction: 'asc' | 'desc'
+  } | null>(null)
   const effectiveSelectedIds =
     selectedIds.length > 0
       ? selectedIds
@@ -218,6 +222,86 @@ export function SparksSmartGrid({
     [columnFilters],
   )
 
+  const compareValues = (left: unknown, right: unknown) => {
+    const leftText = String(left ?? '').trim()
+    const rightText = String(right ?? '').trim()
+
+    const leftNumber = Number(leftText.replace(',', '.'))
+    const rightNumber = Number(rightText.replace(',', '.'))
+
+    if (
+      leftText !== '' &&
+      rightText !== '' &&
+      Number.isFinite(leftNumber) &&
+      Number.isFinite(rightNumber)
+    ) {
+      return leftNumber - rightNumber
+    }
+
+    return leftText.localeCompare(rightText, 'pt-BR', {
+      sensitivity: 'base',
+      numeric: true,
+    })
+  }
+
+  const sortRows = (
+    items: SparksSmartGridRow[],
+    columnId: string,
+    direction: 'asc' | 'desc',
+  ): SparksSmartGridRow[] => {
+    const definition = columns.find((column) => column.id === columnId)
+    const factor = direction === 'asc' ? 1 : -1
+
+    return [...items]
+      .sort((left, right) => {
+        const leftValue = definition?.filterValue
+          ? definition.filterValue(left)
+          : left[columnId]
+        const rightValue = definition?.filterValue
+          ? definition.filterValue(right)
+          : right[columnId]
+
+        return compareValues(leftValue, rightValue) * factor
+      })
+      .map((row) =>
+        tree && Array.isArray(row.data)
+          ? {
+              ...row,
+              data: sortRows(row.data, columnId, direction),
+            }
+          : row,
+      )
+  }
+
+  const sortedRows = useMemo(
+    () =>
+      sortState
+        ? sortRows(
+            filteredRows,
+            sortState.columnId,
+            sortState.direction,
+          )
+        : filteredRows,
+    [filteredRows, sortState, columns, tree],
+  )
+
+  const toggleSort = (columnId: string) => {
+    const definition = columns.find((column) => column.id === columnId)
+    if (definition?.sortable === false) return
+
+    setSortState((current) => {
+      if (!current || current.columnId !== columnId) {
+        return { columnId, direction: 'asc' }
+      }
+
+      if (current.direction === 'asc') {
+        return { columnId, direction: 'desc' }
+      }
+
+      return null
+    })
+  }
+
   function SmartHeaderCell({ column }: { column: any }) {
     const id = String(column?.id ?? '')
     const definition = columns.find((candidate) => candidate.id === id)
@@ -265,19 +349,39 @@ export function SparksSmartGrid({
           </div>
         ) : (
           <>
-            <span
+            <button
+              type="button"
               className="sparks-data-explorer-header-label"
               title={sortable ? `Classificar por ${label}` : undefined}
+              aria-label={
+                sortable
+                  ? `Classificar por ${label}${
+                      sortState?.columnId === id
+                        ? sortState.direction === 'asc'
+                          ? ', ordem crescente'
+                          : ', ordem decrescente'
+                        : ''
+                    }`
+                  : undefined
+              }
+              onClick={(event) => {
+                event.stopPropagation()
+                if (sortable) toggleSort(id)
+              }}
             >
               <span>{label}</span>
               {sortable ? (
                 <ArrowUpDown
                   size={13}
                   aria-hidden="true"
-                  className="sparks-data-explorer-header-sort-icon"
+                  className={
+                    sortState?.columnId === id
+                      ? `sparks-data-explorer-header-sort-icon is-${sortState.direction}`
+                      : 'sparks-data-explorer-header-sort-icon'
+                  }
                 />
               ) : null}
-            </span>
+            </button>
             {filterable ? (
               <button
                 type="button"
@@ -503,7 +607,7 @@ export function SparksSmartGrid({
 
   const grid = (
     <Grid
-      data={filteredRows}
+      data={sortedRows}
       columns={gridColumns}
       init={init}
       tree={tree}

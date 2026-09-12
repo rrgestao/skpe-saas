@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Filter, X } from 'lucide-react'
-import { ContextMenu, Grid, Willow, type IColumnConfig } from '@svar-ui/react-grid'
 
-import '@svar-ui/react-grid/all.css'
-import '../../components/design-system/SparksGridSemantics.css'
-import { SparksGridNavigator } from '../../components/design-system/SparksGridNavigator'
 import {
-  gridSemanticCellClass,
-  gridSemanticHeaderClass,
-} from '../../components/design-system/SparksGridSemantics'
+  SparksSmartGrid,
+  type SparksSmartGridColumn,
+  type SparksSmartGridContextAction,
+} from '../../components/design-system/SparksSmartGrid'
 import '../skpe/components/OrganizationUsersSmartGrid.css'
-
 import { supabase } from '../../lib/supabase'
 import { statusLabelPtBr } from '../../shared/i18n/ptBR'
 
@@ -136,28 +131,6 @@ function polarityLabel(value: string | null | undefined) {
   return labelFrom(value, polarityLabels, 'Não informada')
 }
 
-function normalize(value: unknown) {
-  return String(value ?? '')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLocaleLowerCase('pt-BR')
-    .trim()
-}
-
-function fittedColumnWidth(
-  header: string,
-  values: Array<string | number | null | undefined>,
-  minimum: number,
-) {
-  const longest = values.reduce<number>(
-    (current, value) =>
-      Math.max(current, String(value ?? '').trim().length),
-    header.length,
-  )
-
-  const estimated = Math.ceil(longest * 7.8 + 64)
-  return Math.max(minimum, estimated)
-}
 
 type PlatformReferenceGridRow = {
   id: string
@@ -199,12 +172,9 @@ export function PlatformMeasureCatalog() {
   const [benchmarkValue, setBenchmarkValue] = useState('')
   const [benchmarkReason, setBenchmarkReason] = useState('')
   const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null)
-  const [referenceGridApi, setReferenceGridApi] = useState<any>(null)
   const [maintenanceMode, setMaintenanceMode] = useState<
     'reference' | 'benchmark' | null
   >(null)
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
-  const [openColumnFilter, setOpenColumnFilter] = useState<string | null>(null)
 
   const visibleRows = useMemo(
     () => (includeHistory ? rows : rows.filter((row) => row.is_current)),
@@ -249,320 +219,46 @@ export function PlatformMeasureCatalog() {
     [visibleRows],
   )
 
-  const filteredGridRows = useMemo(() => {
-    const activeFilters = Object.entries(columnFilters).filter(
-      ([, value]) => value.trim(),
-    )
+  const gridColumns = useMemo<SparksSmartGridColumn[]>(
+    () => {
+      const columns: SparksSmartGridColumn[] = [
+        { id: 'code', label: 'Código', minWidth: 105 },
+        { id: 'name', label: 'Referência', minWidth: 240, tooltip: true },
+        { id: 'category', label: 'Categoria', minWidth: 140, align: 'center' },
+        { id: 'unit', label: 'Unidade', minWidth: 110, align: 'center' },
+        {
+          id: 'frequency',
+          label: 'Periodicidade',
+          minWidth: 135,
+          align: 'center',
+        },
+        {
+          id: 'polarity',
+          label: 'Polaridade',
+          minWidth: 140,
+          align: 'center',
+        },
+        { id: 'status', label: 'Situação', minWidth: 115, align: 'center' },
+        {
+          id: 'benchmarks',
+          label: 'Benchmarks',
+          minWidth: 115,
+          align: 'center',
+        },
+      ]
 
-    if (activeFilters.length === 0) return gridRows
-
-    return gridRows.filter((row) =>
-      activeFilters.every(([id, value]) => {
-        const record = row as unknown as Record<string, unknown>
-        return normalize(record[id]).includes(normalize(value))
-      }),
-    )
-  }, [columnFilters, gridRows])
-
-  const fittedWidths = useMemo(
-    () => ({
-      code: fittedColumnWidth('Código', gridRows.map((row) => row.code), 105),
-      name: fittedColumnWidth('Referência', gridRows.map((row) => row.name), 240),
-      category: fittedColumnWidth('Categoria', gridRows.map((row) => row.category), 140),
-      unit: fittedColumnWidth('Unidade', gridRows.map((row) => row.unit), 110),
-      frequency: fittedColumnWidth('Periodicidade', gridRows.map((row) => row.frequency), 135),
-      polarity: fittedColumnWidth('Polaridade', gridRows.map((row) => row.polarity), 140),
-      status: fittedColumnWidth('Situação', gridRows.map((row) => row.status), 115),
-      current: fittedColumnWidth('Vigência', gridRows.map((row) => row.current), 110),
-      benchmarks: fittedColumnWidth('Benchmarks', gridRows.map((row) => row.benchmarks), 115),
-      version: fittedColumnWidth('Versão', gridRows.map((row) => row.version), 90),
-    }),
-    [gridRows],
-  )
-
-  const gridHeaderLabels: Record<
-    keyof Omit<PlatformReferenceGridRow, 'id'>,
-    string
-  > = {
-    code: 'Código',
-    name: 'Referência',
-    category: 'Categoria',
-    unit: 'Unidade',
-    frequency: 'Periodicidade',
-    polarity: 'Polaridade',
-    status: 'Situação',
-    current: 'Vigência',
-    benchmarks: 'Benchmarks',
-    version: 'Versão',
-  }
-
-  function PlatformReferenceHeaderCell({ column }: { column: any }) {
-    const id = String(column?.id ?? '')
-    const label =
-      gridHeaderLabels[id as keyof typeof gridHeaderLabels] ??
-      String(column?.header?.text ?? '')
-    const value = columnFilters[id] ?? ''
-    const open = openColumnFilter === id
-
-    return (
-      <div className="sparks-data-explorer-header-cell">
-        {open ? (
-          <div
-            className="sparks-data-explorer-header-filter-input-wrap"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <input
-              autoFocus
-              className="sparks-data-explorer-header-filter-input"
-              value={value}
-              placeholder={`Filtrar ${label.toLocaleLowerCase('pt-BR')}`}
-              aria-label={`Filtrar ${label}`}
-              onChange={(event) =>
-                setColumnFilters((current) => ({
-                  ...current,
-                  [id]: event.target.value,
-                }))
-              }
-            />
-            <button
-              type="button"
-              title="Fechar filtro"
-              aria-label={`Fechar filtro de ${label}`}
-              onClick={() => setOpenColumnFilter(null)}
-            >
-              <X size={14} aria-hidden="true" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <span>{label}</span>
-            <button
-              type="button"
-              title={`Filtrar ${label}`}
-              aria-label={`Filtrar ${label}`}
-              className={
-                value.trim()
-                  ? 'sparks-data-explorer-header-filter is-active'
-                  : 'sparks-data-explorer-header-filter'
-              }
-              onClick={(event) => {
-                event.stopPropagation()
-                setOpenColumnFilter(id)
-              }}
-            >
-              <Filter size={14} aria-hidden="true" />
-            </button>
-          </>
-        )}
-      </div>
-    )
-  }
-
-  function smartHeader(text: string, semanticId?: string) {
-    const semanticClass = semanticId
-      ? gridSemanticHeaderClass(semanticId)
-      : ''
-
-    return {
-      text,
-      cell: PlatformReferenceHeaderCell,
-      css: semanticClass
-        ? `sparks-data-explorer-header-main ${semanticClass}`
-        : 'sparks-data-explorer-header-main',
-    }
-  }
-
-  const allGridColumns: IColumnConfig[] = [
-    { id: 'code', header: smartHeader('Código'), width: fittedWidths.code, sort: true, resize: true },
-    { id: 'name', header: smartHeader('Referência'), width: fittedWidths.name, sort: true, resize: true, tooltip: true },
-    {
-      id: 'category',
-      header: smartHeader('Categoria', 'status'),
-      width: fittedWidths.category,
-      sort: true,
-      resize: true,
-      css: 'sparks-grid-cell--semantic-center',
-    },
-    {
-      id: 'unit',
-      header: smartHeader('Unidade', 'status'),
-      width: fittedWidths.unit,
-      sort: true,
-      resize: true,
-      css: 'sparks-grid-cell--semantic-center',
-    },
-    {
-      id: 'frequency',
-      header: smartHeader('Periodicidade', 'status'),
-      width: fittedWidths.frequency,
-      sort: true,
-      resize: true,
-      css: 'sparks-grid-cell--semantic-center',
-    },
-    {
-      id: 'polarity',
-      header: smartHeader('Polaridade', 'status'),
-      width: fittedWidths.polarity,
-      sort: true,
-      resize: true,
-      css: 'sparks-grid-cell--semantic-center',
-    },
-    {
-      id: 'status',
-      header: smartHeader('Situação', 'status'),
-      width: fittedWidths.status,
-      sort: true,
-      resize: true,
-      css: gridSemanticCellClass('status'),
-    },
-    {
-      id: 'current',
-      header: smartHeader('Vigência', 'status'),
-      width: fittedWidths.current,
-      sort: true,
-      resize: true,
-      css: 'sparks-grid-cell--semantic-center',
-    },
-    {
-      id: 'benchmarks',
-      header: smartHeader('Benchmarks', 'status'),
-      width: fittedWidths.benchmarks,
-      sort: true,
-      resize: true,
-      css: 'sparks-grid-cell--semantic-center',
-    },
-    {
-      id: 'version',
-      header: smartHeader('Versão', 'status'),
-      width: fittedWidths.version,
-      sort: true,
-      resize: true,
-      css: 'sparks-grid-cell--semantic-center',
-    },
-  ]
-
-  const gridColumns = useMemo(
-    () =>
-      includeHistory
-        ? allGridColumns
-        : allGridColumns.filter(
-            (column) => !['current', 'version'].includes(String(column.id)),
-          ),
-    [includeHistory, allGridColumns],
-  )
-  function resolveGridReferenceId(event: any) {
-    const raw =
-      event?.id ??
-      event?.row?.id ??
-      event?.data?.id ??
-      event?.item?.id ??
-      null
-
-    return raw === null || raw === undefined ? null : String(raw)
-  }
-
-  function findGridScrollableElement(
-    shell: HTMLElement,
-    horizontal: boolean,
-  ) {
-    const candidates = [
-      shell,
-      ...Array.from(shell.querySelectorAll<HTMLElement>('*')),
-    ]
-
-    let best = shell
-    let bestRange = horizontal
-      ? shell.scrollWidth - shell.clientWidth
-      : shell.scrollHeight - shell.clientHeight
-
-    for (const candidate of candidates) {
-      const range = horizontal
-        ? candidate.scrollWidth - candidate.clientWidth
-        : candidate.scrollHeight - candidate.clientHeight
-
-      if (range > bestRange + 2) {
-        best = candidate
-        bestRange = range
+      if (includeHistory) {
+        columns.push(
+          { id: 'current', label: 'Vigência', minWidth: 110, align: 'center' },
+          { id: 'version', label: 'Versão', minWidth: 90, align: 'center' },
+        )
       }
-    }
 
-    return best
-  }
-
-  function handleReferenceGridKeyDown(
-    event: React.KeyboardEvent<HTMLDivElement>,
-  ) {
-    const target = event.target as HTMLElement
-    if (
-      target.matches(
-        'input, textarea, select, button, a, [contenteditable="true"]',
-      )
-    ) {
-      return
-    }
-
-    const direction = event.key
-    const horizontal =
-      direction === 'ArrowLeft' || direction === 'ArrowRight'
-    const vertical =
-      direction === 'ArrowUp' || direction === 'ArrowDown'
-
-    if (!horizontal && !vertical) return
-
-    const scrollable = findGridScrollableElement(
-      event.currentTarget,
-      horizontal,
-    )
-
-    event.preventDefault()
-    scrollable.scrollBy({
-      left:
-        direction === 'ArrowLeft'
-          ? -140
-          : direction === 'ArrowRight'
-            ? 140
-            : 0,
-      top:
-        direction === 'ArrowUp'
-          ? -48
-          : direction === 'ArrowDown'
-            ? 48
-            : 0,
-      behavior: 'smooth',
-    })
-  }
-
-  function initReferenceGrid(api: {
-    on: (action: string, handler: (event: any) => void) => void
-    getState?: () => any
-    getRow?: (id: string) => any
-  }) {
-    setReferenceGridApi(api)
-    api.on('select-row', (event) => {
-      const id = resolveGridReferenceId(event)
-      if (id && referenceById.has(id)) setSelectedReferenceId(id)
-    })
-
-    const openSelected = (event: any) => {
-      const id = resolveGridReferenceId(event) ?? selectedReferenceId
-      if (!id || !referenceById.has(id)) return
-      setSelectedReferenceId(id)
-      window.setTimeout(() => {
-        document
-          .getElementById('pmc-reference-detail')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      }, 0)
-    }
-
-    api.on('dblclick-row', openSelected)
-    api.on('double-click-row', openSelected)
-  }
-
-  const activeFilterCount = Object.values(columnFilters).filter((value) =>
-    value.trim(),
-  ).length
-
-  const contextMenuOptions = [
+      return columns
+    },
+    [includeHistory],
+  )
+  const contextMenuOptions: SparksSmartGridContextAction[] = [
     { id: 'view-details', text: 'Ver detalhes', icon: 'wxi-eye' },
     { comp: 'separator' },
     { id: 'new-version', text: 'Preparar nova versão', icon: 'wxi-plus' },
@@ -576,12 +272,9 @@ export function PlatformMeasureCatalog() {
     { id: 'delete-draft', text: 'Excluir rascunho', icon: 'wxi-delete' },
   ]
 
-  const resolveContextReference = () => {
-    const gridSelectedId =
-      referenceGridApi?.getState?.()?.selectedRows?.[0] ?? selectedReferenceId
-
+  const resolveContextReference = (rowId?: string | null) => {
+    const gridSelectedId = rowId ?? selectedReferenceId
     if (!gridSelectedId) return null
-
     return referenceById.get(String(gridSelectedId)) ?? null
   }
 
@@ -641,9 +334,8 @@ export function PlatformMeasureCatalog() {
     }, 0)
   }
 
-  const handleContextMenuClick = (event: any) => {
-    const actionId = String(event?.action?.id ?? '')
-    const reference = resolveContextReference()
+  const handleContextMenuClick = (actionId: string, rowId: string) => {
+    const reference = resolveContextReference(rowId)
 
     if (!reference) {
       setMessage('Selecione uma referência antes de executar esta ação.')
@@ -1045,9 +737,6 @@ export function PlatformMeasureCatalog() {
             adotam por vínculo; os módulos apenas consomem o contexto organizacional.
           </p>
         </div>
-        <button type="button" className="pa-secondary-button" onClick={() => void load()}>
-          Atualizar catálogo
-        </button>
       </header>
 
       <div className="pmc-flow">
@@ -1107,65 +796,27 @@ export function PlatformMeasureCatalog() {
             </div>
           ) : (
             <>
-              {activeFilterCount > 0 ? (
-                <div className="pmc-grid-filter-summary">
-                  <span>
-                    {activeFilterCount}{' '}
-                    {activeFilterCount === 1 ? 'filtro ativo' : 'filtros ativos'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setColumnFilters({})
-                      setOpenColumnFilter(null)
-                    }}
-                  >
-                    Limpar filtros
-                  </button>
-                </div>
-              ) : null}
-
-              <div
-                className="sparks-user-grid pmc-reference-grid"
-                data-sparks-grid-shell
-                role="region"
-                aria-label="Referências gerais de Medidas e Desempenho"
-                tabIndex={0}
-                onKeyDown={handleReferenceGridKeyDown}
-              >
-                <Willow>
-                  <ContextMenu
-                    api={referenceGridApi}
-                    options={contextMenuOptions}
-                    onClick={handleContextMenuClick}
-                  >
-                  <Grid
-                    data={filteredGridRows}
-                    columns={gridColumns}
-                    init={initReferenceGrid}
-                    cellStyle={(_row, column) =>
-                      [
-                        'category',
-                        'unit',
-                        'frequency',
-                        'polarity',
-                        'status',
-                        'current',
-                        'benchmarks',
-                        'version',
-                      ].includes(String(column.id))
-                        ? 'pmc-grid-cell-center'
-                        : ''
-                    }
-                    select
-                    selectedRows={selectedReferenceId ? [selectedReferenceId] : []}
-                    autoRowHeight
-                  />
-                  </ContextMenu>
-                </Willow>
-                <SparksGridNavigator />
-              </div>
-
+              <SparksSmartGrid
+                rows={gridRows}
+                columns={gridColumns}
+                ariaLabel="Referências gerais de Medidas e Desempenho"
+                viewportMode="standard"
+                selectedId={selectedReferenceId}
+                onSelect={(id) => {
+                  const reference = referenceById.get(id)
+                  if (!reference) return
+                  setSelectedReferenceId(id)
+                  openReferenceMaintenance(reference)
+                }}
+                onDoubleClick={(id) => {
+                  const reference = referenceById.get(id)
+                  if (!reference) return
+                  setSelectedReferenceId(id)
+                  openReferenceMaintenance(reference)
+                }}
+                contextMenu={contextMenuOptions}
+                onContextAction={handleContextMenuClick}
+              />
               <p className="pmc-grid-hint">
                 Clique uma vez para selecionar a referência. Dê duplo clique
                 para abrir seus detalhes. Use os filtros dos cabeçalhos,
@@ -1173,7 +824,7 @@ export function PlatformMeasureCatalog() {
                 Catálogo GERAL.
               </p>
 
-              {selectedReference ? (
+              {selectedReference && !maintenanceMode ? (
                 <article
                   id="pmc-reference-detail"
                   className={

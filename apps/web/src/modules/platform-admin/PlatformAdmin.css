@@ -2346,3 +2346,97 @@ label.pa-field-invalid::after {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* UX-CANON-01 — Administração da Plataforma
+   Reconciliação com o padrão visual das telas novas.
+   Não redefine o ApplicationShell; aproxima a Administração da mesma gramática
+   até a consolidação estrutural definitiva do shell transversal. */
+
+.platform-admin {
+  width: 100%;
+  min-width: 0;
+}
+
+.platform-admin .pa-heading {
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.platform-admin .pa-heading > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.platform-admin .pa-heading p {
+  max-width: 72rem;
+}
+
+.platform-admin .pa-layout {
+  grid-template-columns: minmax(13.5rem, 15.5rem) minmax(0, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+.platform-admin .pa-navigation {
+  top: .75rem;
+  gap: .2rem;
+  padding: .55rem;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.platform-admin .pa-navigation button {
+  min-height: 38px;
+  padding: .58rem .7rem;
+  border-radius: 9px;
+  font-size: .84rem;
+}
+
+.platform-admin .pa-content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.platform-admin .pa-section-heading {
+  align-items: center;
+}
+
+@media (min-width: 1440px) {
+  .platform-admin .pa-layout {
+    grid-template-columns: 14.5rem minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .platform-admin .pa-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-admin .pa-navigation {
+    position: static;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+}
+/* UX-CANON-01B-V4 - retorno compacto ao SPARKs */
+.platform-admin .pa-back-button,
+.platform-admin .pa-back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: .35rem .75rem;
+  border: 1px solid rgba(15, 23, 42, .10);
+  border-radius: 999px;
+  background: #fff;
+  color: #174b3d;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.platform-admin .pa-back-button:hover,
+.platform-admin .pa-back-link:hover {
+  background: #f6faf8;
+  text-decoration: none;
+}
