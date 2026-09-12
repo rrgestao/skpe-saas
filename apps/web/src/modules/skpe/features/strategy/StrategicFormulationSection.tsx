@@ -11,6 +11,7 @@ import { StrategicExecutiveOverview } from './StrategicExecutiveOverview'
 import { StrategicArchitectureSummary } from './StrategicArchitectureSummary'
 import { StrategicOkrDecompositionSection } from './StrategicOkrDecompositionSection'
 import { StrategicBscMap } from './StrategicBscMap'
+import { phase2SuggestionGovernanceNotice } from '../../contracts/strategic-suggestion-governance.ts'
 
 import './StrategicFormulationSection.css'
 
@@ -170,6 +171,11 @@ export function StrategicFormulationSection({
         activeId={activeTab}
         onChange={(id) => setActiveTab(id)}
       />
+
+      <article className="skpe-formulation-synthesis" aria-label="Governança das sugestões da Fase 2">
+        <h3>Análise assistida e validação humana</h3>
+        <p>{phase2SuggestionGovernanceNotice}</p>
+      </article>
 
       {errorMessage ? (
         <div className="skpe-admin-message skpe-admin-message-error">

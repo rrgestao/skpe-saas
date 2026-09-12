@@ -43,3 +43,19 @@ Validação:
 - migration/DDL: NÃO.
 
 Próximo gate: decidir e materializar, sob autorização própria, o pacote/ciclo FE-08 necessário para produzir desempenho real no runtime.
+
+## Gate transversal — Governança das sugestões da Fase 2
+
+Status: PASS
+
+Antes de avançar o monitoramento, foi formalizado o contrato transversal da Fase 2:
+- aplicação analisa e sugere; ser humano delibera;
+- ações canônicas: KEEP, ADJUST, REPLACE, ADD e REMOVE;
+- KEEP é conclusão técnica válida, não ausência de análise;
+- sugestão exige evidência, fontes, motivação e justificativa;
+- benchmark exige comparabilidade e aplicabilidade explícitas;
+- maturidade, alinhamento com a Visão e contribuição de valor são obrigatórios;
+- decisão final exige rastreabilidade humana.
+
+Contrato: `docs/03-methodology/CONTRATO_SUGESTOES_GOVERNADAS_FASE2.md`.
+Supabase alterado: NÃO.
