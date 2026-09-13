@@ -248,7 +248,9 @@ A política completa de mensageria será tratada em etapa posterior.
 
 ## 7. Reuniões de análise
 
-A interface deve tratar RAE, RAD e outras reuniões como templates de análise estratégica.
+A interface deve tratar RAE, RAD, RAI e outras reuniões como templates de análise estratégica.
+
+Decisão de Produto de 13/09/2026: papéis estruturais da reunião, como quem preside/lidera (`chair`) e quem secretaria (`secretary`), são contextuais à reunião específica. Eles podem permanecer indefinidos no convite/agendamento, ser indicados antes do início e ser alterados durante a reunião por ausência, substituição ou ajuste deliberado. A alteração deve preservar estado anterior, novo estado, ator, data/hora e justificativa; o encerramento da reunião deve refletir quem efetivamente exerceu cada papel. Nenhum template deve presumir esses papéis como obrigatórios por padrão.
 
 Cada template pode definir:
 
