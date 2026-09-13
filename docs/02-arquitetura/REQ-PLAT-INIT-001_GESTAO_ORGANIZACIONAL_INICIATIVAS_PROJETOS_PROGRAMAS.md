@@ -110,7 +110,9 @@ A alteração posterior de responsável não pode sobrescrever silenciosamente o
 
 A Jornada Estratégica do SK-PE deverá estar vinculada a esse mesmo Projeto e atuar como especialização de sua execução.
 
-`GAP_RUNTIME`: o requisito anterior apenas permitia criar/materializar o Projeto e não comprovava criação automática, atribuição inicial ao Líder SPARKOOP nem o rito da Reunião de Abertura. Esses comportamentos precisam ser implementados e testados antes de serem considerados concluídos.
+`IMPLEMENTACAO CANDIDATA — 2026-09-13`: a criação automática e atômica `Iniciativa → Projeto SK-PE → binding → Jornada → auditoria` já existia. A branch `sprint/2026-09-13-journey-project-governance` endurece o bootstrap para criar somente `owner` inicial resolvido por **Pessoa vinculada à SPARKOOP + papel organizacional ativo `project_leader`**, eliminando o bootstrap legado `owner+sponsor+facilitator` baseado apenas no usuário criador. Também introduz `reconcile_skpe_project_opening_owner(...)`, que na Reunião de Abertura encerra exclusivamente o owner inicial SPARKOOP registrado pelo próprio bootstrap e cria o responsável da Organização com trilha auditável.
+
+`GATE_RUNTIME PENDENTE`: a migration ainda não deve ser aplicada ao Supabase operacional enquanto a SPARKOOP não possuir, no domínio transversal, ao menos uma Pessoa→Organização ativa com atribuição ativa ao papel `project_leader`. O histórico existente, inclusive COOTAQUARA, não será reescrito automaticamente.
 
 ## 6. Jornada Estratégica especializada
 
