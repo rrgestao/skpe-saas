@@ -11,6 +11,7 @@ import { ManagementTimeline } from './ManagementTimeline'
 import { ManagementExecutionMatrix } from './ManagementExecutionMatrix'
 import { MonitoringPackageConfigurationPanel } from './MonitoringPackageConfigurationPanel'
 import { MonitoringPackageWorkflowPanel } from './MonitoringPackageWorkflowPanel'
+import { MonitoringCyclePanel, type MonitoringCycleOption } from './MonitoringCyclePanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -288,6 +289,13 @@ export function MonitoringSection({
   const [canValidateMonitoringPackage, setCanValidateMonitoringPackage] = useState(false)
   const [monitoringPackageTransitioning, setMonitoringPackageTransitioning] = useState(false)
   const [monitoringPackageWorkflowMessage, setMonitoringPackageWorkflowMessage] = useState('')
+  const [monitoringCycles, setMonitoringCycles] = useState<MonitoringCycleOption[]>([])
+  const [localCycleId, setLocalCycleId] = useState<string | null>(null)
+  const [formulationLifecycleStatus, setFormulationLifecycleStatus] = useState<string | null>(null)
+  const [canOpenMonitoringCycle, setCanOpenMonitoringCycle] = useState(false)
+  const [monitoringCycleOpening, setMonitoringCycleOpening] = useState(false)
+  const [monitoringCycleMessage, setMonitoringCycleMessage] = useState('')
+  const effectiveCycleId = cycleId ?? localCycleId
 
   useEffect(() => {
     let active = true
@@ -358,6 +366,55 @@ export function MonitoringSection({
     void loadMonitoringPackagePermissions()
     return () => { active = false }
   }, [formulationId, organizationId])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadMonitoringCycles() {
+      if (!formulationId) {
+        setMonitoringCycles([])
+        setFormulationLifecycleStatus(null)
+        setCanOpenMonitoringCycle(false)
+        setLocalCycleId(null)
+        return
+      }
+
+      const [formulationResponse, cyclesResponse, permissionResponse] = await Promise.all([
+        supabase
+          .from('skpe_strategic_formulations')
+          .select('status')
+          .eq('id', formulationId)
+          .maybeSingle(),
+        supabase
+          .from('skpe_monitoring_cycles')
+          .select('id,code,name,cycle_type,period_start,period_end,status')
+          .eq('formulation_id', formulationId)
+          .order('period_start', { ascending: false }),
+        supabase.rpc('can_manage_skpe_monitoring', { target_organization_id: organizationId }),
+      ])
+
+      if (!active) return
+
+      setFormulationLifecycleStatus(formulationResponse.error ? null : formulationResponse.data?.status ?? null)
+      setCanOpenMonitoringCycle(permissionResponse.error ? false : permissionResponse.data === true)
+      setMonitoringCycles(
+        cyclesResponse.error
+          ? []
+          : ((cyclesResponse.data ?? []) as Array<{ id: string; code: string; name: string; cycle_type: string; period_start: string; period_end: string; status: string }>).map((cycle) => ({
+              id: cycle.id,
+              code: cycle.code,
+              name: cycle.name,
+              cycleType: cycle.cycle_type,
+              periodStart: cycle.period_start,
+              periodEnd: cycle.period_end,
+              status: cycle.status,
+            })),
+      )
+    }
+
+    void loadMonitoringCycles()
+    return () => { active = false }
+  }, [formulationId, organizationId, strategicReloadToken])
 
   useEffect(() => {
     let active = true
@@ -453,15 +510,15 @@ export function MonitoringSection({
       if (!active) return
       if (readinessResult.error) { setStrategicReadiness(null); setStrategicPerformance(null); setStrategicError(readinessResult.error.message); setStrategicLoading(false); return }
       setStrategicReadiness((readinessResult.data ?? null) as MonitoringPackageReadiness | null)
-      if (!cycleId) { setStrategicPerformance(null); setStrategicLoading(false); return }
-      const performanceResult = await supabase.rpc('get_skpe_strategic_performance', { p_cycle_id: cycleId })
+      if (!effectiveCycleId) { setStrategicPerformance(null); setStrategicLoading(false); return }
+      const performanceResult = await supabase.rpc('get_skpe_strategic_performance', { p_cycle_id: effectiveCycleId })
       if (!active) return
       if (performanceResult.error) { setStrategicPerformance(null); setStrategicError(performanceResult.error.message) } else { setStrategicPerformance((performanceResult.data ?? null) as StrategicPerformance | null) }
       setStrategicLoading(false)
     }
     void loadStrategicMonitoring()
     return () => { active = false }
-  }, [formulationId, cycleId, strategicReloadToken])
+  }, [formulationId, effectiveCycleId, strategicReloadToken])
 
   useEffect(() => {
     let active = true
@@ -645,6 +702,48 @@ export function MonitoringSection({
     setStrategicReloadToken((current) => current + 1)
   }
 
+  const openMonitoringCycle = async (payload: {
+    code: string
+    name: string
+    cycleType: string
+    periodStart: string
+    periodEnd: string
+    cutoffDate: string | null
+    reason: string
+  }) => {
+    if (!formulationId) return
+    if (formulationLifecycleStatus !== 'approved' || strategicReadiness?.packageStatus !== 'validated' || !canOpenMonitoringCycle) {
+      setMonitoringCycleMessage('A abertura exige Formulação aprovada, pacote FE-08 validado e autoridade de monitoramento.')
+      return
+    }
+
+    setMonitoringCycleOpening(true)
+    setMonitoringCycleMessage('')
+    const { data, error: openError } = await supabase.rpc('open_skpe_monitoring_cycle', {
+      p_formulation_id: formulationId,
+      p_payload: {
+        code: payload.code,
+        name: payload.name,
+        cycleType: payload.cycleType,
+        periodStart: payload.periodStart,
+        periodEnd: payload.periodEnd,
+        cutoffDate: payload.cutoffDate,
+      },
+      p_change_reason: payload.reason,
+    })
+
+    setMonitoringCycleOpening(false)
+    if (openError) {
+      setMonitoringCycleMessage(openError.code === '42501' ? 'Seu perfil não possui permissão para abrir ciclos de monitoramento.' : openError.message)
+      return
+    }
+
+    const newCycleId = typeof data === 'string' ? data : null
+    if (newCycleId) setLocalCycleId(newCycleId)
+    setMonitoringCycleMessage('Ciclo de monitoramento aberto e selecionado para análise.')
+    setStrategicReloadToken((current) => current + 1)
+  }
+
   return (
     <section className="skpe-monitoring" aria-label="Monitoramento gerencial do Planejamento Estratégico">
       <header className="skpe-monitoring-header">
@@ -734,6 +833,19 @@ export function MonitoringSection({
       {!strategicLoading && strategicReadiness && (
         <article className="skpe-monitoring-panel" aria-label="Desempenho estratégico governado">
           <header><div><span>Desempenho estratégico</span><h2>Painel de resultados</h2></div></header>
+          <MonitoringCyclePanel
+            cycles={monitoringCycles}
+            selectedCycleId={effectiveCycleId}
+            selectionLocked={Boolean(cycleId)}
+            formulationStatus={formulationLifecycleStatus}
+            packageStatus={strategicReadiness.packageStatus}
+            canOpen={canOpenMonitoringCycle}
+            defaultCycleType={monitoringPackageDraft.cycleFrequency}
+            opening={monitoringCycleOpening}
+            message={monitoringCycleMessage}
+            onSelect={setLocalCycleId}
+            onOpen={(payload) => { void openMonitoringCycle(payload) }}
+          />
           {((strategicReadiness.blockingIssues ?? []).some((item) => item.code === 'FE08_PACKAGE_MISSING') || strategicReadiness.packageStatus === 'in_elaboration') ? (
             <>
               <p className="skpe-monitoring-empty">
@@ -784,7 +896,7 @@ export function MonitoringSection({
                 />
               ) : null}
             </>
-          ) : !cycleId ? (
+          ) : !effectiveCycleId ? (
             <>
               <p className="skpe-monitoring-empty">O pacote de monitoramento existe, mas nenhum ciclo está selecionado neste contexto. O painel não sintetiza desempenho sem um ciclo formal.</p>
               {strategicReadiness.packageStatus === 'pending_validation' ? (

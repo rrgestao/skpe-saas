@@ -30,15 +30,23 @@ test('G2B resolve responsáveis por identidade autenticável e salva configuraç
   assert.match(source, /profile_user_id/)
   assert.match(source, /configure_skpe_monitoring_package/)
   assert.match(source, /Configuração FE-08 salva em elaboração/)
-  assert.doesNotMatch(source, /open_skpe_monitoring_cycle/)
 })
 
-test('G2C separa permissões e transições humanas sem abrir ciclo automaticamente', () => {
+test('G2C separa permissões e transições humanas do pacote', () => {
   assert.match(source, /can_manage_skpe_formulation/)
   assert.match(source, /can_validate_skpe_formulation/)
   assert.match(source, /transition_skpe_monitoring_package/)
   assert.match(source, /Pacote FE-08 submetido para validação humana/)
   assert.match(source, /Pacote FE-08 validado humanamente/)
   assert.match(source, /Pacote FE-08 devolvido para ajustes/)
-  assert.doesNotMatch(source, /open_skpe_monitoring_cycle/)
+})
+
+test('G3B abre ciclo somente após pré-requisitos governados e seleciona o ciclo real', () => {
+  assert.match(source, /can_manage_skpe_monitoring/)
+  assert.match(source, /skpe_monitoring_cycles/)
+  assert.match(source, /formulationLifecycleStatus !== 'approved'/)
+  assert.match(source, /packageStatus !== 'validated'/)
+  assert.match(source, /open_skpe_monitoring_cycle/)
+  assert.match(source, /setLocalCycleId\(newCycleId\)/)
+  assert.match(source, /effectiveCycleId/)
 })

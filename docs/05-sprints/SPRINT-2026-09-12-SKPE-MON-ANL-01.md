@@ -146,3 +146,24 @@ Validação:
 - Supabase alterado pela execução do agente: NÃO.
 
 Próximo gate: abertura governada do primeiro ciclo FE-08 somente quando Formulação=`approved` e pacote FE-08=`validated`.
+
+## G3B — Abertura governada do ciclo FE-08
+
+Status: PASS.
+
+- lista ciclos reais da Formulação sob RLS de monitoramento;
+- respeita `cycleId` explícito da rota e permite seleção local quando ausente;
+- só habilita abertura com Formulação `approved`, pacote FE-08 `validated` e `can_manage_skpe_monitoring=true`;
+- exige código, nome, tipo, período e justificativa auditável;
+- usa exclusivamente `open_skpe_monitoring_cycle`;
+- seleciona o `cycleId` real retornado pelo runtime após abertura;
+- não sintetiza ciclo nem desempenho;
+- nenhum ciclo foi criado durante o gate.
+
+Evidências técnicas:
+
+- targeted contracts: 9/9 PASS;
+- full tests: 153/153 PASS;
+- typecheck: PASS;
+- production build: PASS;
+- Supabase data changed: NO.
