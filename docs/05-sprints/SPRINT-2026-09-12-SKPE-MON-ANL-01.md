@@ -188,3 +188,18 @@ Evidências técnicas:
 - typecheck: PASS;
 - production build: PASS;
 - Supabase data changed: NO.
+
+## G4B — Check-ins governados de Resultados-Chave e Iniciativas
+
+Status: PASS
+
+- Reutiliza `record_skpe_key_result_check_in` e `record_skpe_initiative_check_in`.
+- KR preserva valor atual, progresso automático, situação, saúde, confiança, previsão, bloqueios, evidência e observações.
+- Iniciativa preserva progresso, situação, saúde, risco, custo, benefício, previsão de término, marcos, atrasos, bloqueios, decisão requerida e evidência.
+- Validação/rejeição/ressubmissão permanecem em `transition_skpe_monitoring_record`.
+- Submissão não atualiza silenciosamente a projeção oficial do KR (`validation_required`).
+- G4B targeted: 13/13 PASS.
+- Full suite: 161/161 PASS.
+- Typecheck: PASS.
+- Build: PASS.
+- Supabase alterado: NO.

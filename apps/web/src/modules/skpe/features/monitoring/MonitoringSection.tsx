@@ -13,6 +13,7 @@ import { MonitoringPackageConfigurationPanel } from './MonitoringPackageConfigur
 import { MonitoringPackageWorkflowPanel } from './MonitoringPackageWorkflowPanel'
 import { MonitoringCyclePanel, type MonitoringCycleOption } from './MonitoringCyclePanel'
 import { MonitoringIndicatorCollectionPanel } from './MonitoringIndicatorCollectionPanel'
+import { MonitoringExecutionCheckInsPanel } from './MonitoringExecutionCheckInsPanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -848,12 +849,20 @@ export function MonitoringSection({
             onOpen={(payload) => { void openMonitoringCycle(payload) }}
           />
           {effectiveCycleId && formulationId ? (
-            <MonitoringIndicatorCollectionPanel
-              organizationId={organizationId}
-              formulationId={formulationId}
-              cycleId={effectiveCycleId}
-              onChanged={() => setStrategicReloadToken((current) => current + 1)}
-            />
+            <>
+              <MonitoringIndicatorCollectionPanel
+                organizationId={organizationId}
+                formulationId={formulationId}
+                cycleId={effectiveCycleId}
+                onChanged={() => setStrategicReloadToken((current) => current + 1)}
+              />
+              <MonitoringExecutionCheckInsPanel
+                organizationId={organizationId}
+                formulationId={formulationId}
+                cycleId={effectiveCycleId}
+                onChanged={() => setStrategicReloadToken((current) => current + 1)}
+              />
+            </>
           ) : null}
           {((strategicReadiness.blockingIssues ?? []).some((item) => item.code === 'FE08_PACKAGE_MISSING') || strategicReadiness.packageStatus === 'in_elaboration') ? (
             <>
