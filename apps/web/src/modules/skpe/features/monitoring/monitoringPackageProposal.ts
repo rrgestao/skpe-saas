@@ -37,3 +37,62 @@ export function monitoringPackageProposalDisplayValue(
   if (typeof item.value === 'boolean') return item.value ? 'Sim' : 'Não'
   return String(item.value)
 }
+
+export type MonitoringPackageDraft = {
+  cycleFrequency: string
+  reviewFrequency: string
+  cycleOverlapPolicy: string
+  evidenceRequired: boolean
+  dataQualityRequired: boolean
+  confidenceRequiredForKeyResults: boolean
+  allowManualProgressOverride: boolean
+  dataFreshnessDays: number
+  lateToleranceDays: number
+  aggregationPolicy: string
+  criticalThreshold: number
+  attentionThreshold: number
+  onTrackThreshold: number
+  ownerUserId: string
+  governanceOwnerUserId: string
+  changeReason: string
+}
+
+export function createInitialMonitoringPackageDraft(): MonitoringPackageDraft {
+  const value = (key: string) =>
+    monitoringPackageInitialProposal.find((item) => item.key === key)?.value
+
+  return {
+    cycleFrequency: String(value('cycleFrequency') ?? 'monthly'),
+    reviewFrequency: String(value('reviewFrequency') ?? 'quarterly'),
+    cycleOverlapPolicy: String(value('cycleOverlapPolicy') ?? 'block'),
+    evidenceRequired: value('evidenceRequired') === true,
+    dataQualityRequired: value('dataQualityRequired') === true,
+    confidenceRequiredForKeyResults: value('confidenceRequiredForKeyResults') === true,
+    allowManualProgressOverride: value('allowManualProgressOverride') === true,
+    dataFreshnessDays: Number(value('dataFreshnessDays') ?? 45),
+    lateToleranceDays: Number(value('lateToleranceDays') ?? 5),
+    aggregationPolicy: String(value('aggregationPolicy') ?? 'explicit_weight'),
+    criticalThreshold: Number(value('criticalThreshold') ?? 50),
+    attentionThreshold: Number(value('attentionThreshold') ?? 75),
+    onTrackThreshold: Number(value('onTrackThreshold') ?? 100),
+    ownerUserId: '',
+    governanceOwnerUserId: '',
+    changeReason: '',
+  }
+}
+
+export function monitoringPackageDraftIsMaterializable(
+  draft: MonitoringPackageDraft,
+) {
+  return Boolean(
+    draft.ownerUserId &&
+    draft.governanceOwnerUserId &&
+    draft.changeReason.trim().length >= 10 &&
+    draft.dataFreshnessDays >= 1 && draft.dataFreshnessDays <= 730 &&
+    draft.lateToleranceDays >= 0 && draft.lateToleranceDays <= 365 &&
+    draft.criticalThreshold >= 0 &&
+    draft.attentionThreshold >= draft.criticalThreshold &&
+    draft.onTrackThreshold >= draft.attentionThreshold &&
+    draft.onTrackThreshold <= 100
+  )
+}

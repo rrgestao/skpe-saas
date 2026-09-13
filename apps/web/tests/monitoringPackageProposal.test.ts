@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  createInitialMonitoringPackageDraft,
+  monitoringPackageDraftIsMaterializable,
   monitoringPackageInitialProposal,
   monitoringPackageProposalIsMaterializable,
 } from '../src/modules/skpe/features/monitoring/monitoringPackageProposal.ts'
@@ -33,4 +35,15 @@ test('responsáveis permanecem decisão humana e bloqueiam materialização auto
   assert.equal(valueOf('ownerUserId'), null)
   assert.equal(valueOf('governanceOwnerUserId'), null)
   assert.equal(monitoringPackageProposalIsMaterializable(), false)
+})
+
+test('rascunho FE-08 só é materializável com responsáveis e justificativa auditável', () => {
+  const draft = createInitialMonitoringPackageDraft()
+  assert.equal(monitoringPackageDraftIsMaterializable(draft), false)
+
+  draft.ownerUserId = '11111111-1111-1111-1111-111111111111'
+  draft.governanceOwnerUserId = '22222222-2222-2222-2222-222222222222'
+  draft.changeReason = 'Configuração validada para o ciclo inicial.'
+
+  assert.equal(monitoringPackageDraftIsMaterializable(draft), true)
 })

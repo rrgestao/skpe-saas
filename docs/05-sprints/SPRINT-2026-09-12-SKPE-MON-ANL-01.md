@@ -79,3 +79,25 @@ Implementação:
 - nenhuma RPC de escrita é chamada por este gate.
 
 Validação: 6/6 testes específicos PASS; suíte 146/146 PASS; typecheck PASS; build PASS; Supabase alterado: NÃO.
+
+## G2B — Responsáveis elegíveis e configuração governada do pacote
+
+Status: PASS
+
+Implementação:
+- pessoas elegíveis são resolvidas por `get_skpe_governance_people` + `sparks_people.profile_user_id`;
+- apenas pessoas com identidade autenticável são oferecidas como responsáveis do FE-08;
+- o formulário permite revisar os defaults técnicos e escolher Responsável pelo Monitoramento e Responsável pela Governança/RAE;
+- justificativa auditável é obrigatória;
+- a persistência usa exclusivamente `configure_skpe_monitoring_package`;
+- após salvar, o pacote permanece `in_elaboration`;
+- não há submissão, validação ou abertura automática de ciclo.
+
+Validação:
+- testes específicos G2B: 7/7 PASS;
+- suíte completa: 147/147 PASS;
+- typecheck: PASS;
+- build: PASS;
+- Supabase alterado pela execução do agente: NÃO.
+
+Próximo gate: expor submissão e validação humana explícitas do pacote FE-08, preservando segregação de autoridade e mantendo abertura de ciclo bloqueada até Formulação aprovada + pacote validado.

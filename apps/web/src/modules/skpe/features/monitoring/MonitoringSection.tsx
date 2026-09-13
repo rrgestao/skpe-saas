@@ -9,6 +9,7 @@ import {
 import { PersonCapacityManagementDialog } from './PersonCapacityManagementDialog'
 import { ManagementTimeline } from './ManagementTimeline'
 import { ManagementExecutionMatrix } from './ManagementExecutionMatrix'
+import { MonitoringPackageConfigurationPanel } from './MonitoringPackageConfigurationPanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -20,9 +21,11 @@ import type {
   JourneyTemporalTimelineRow,
 } from './monitoringTimeline'
 import {
+  createInitialMonitoringPackageDraft,
+  monitoringPackageDraftIsMaterializable,
   monitoringPackageInitialProposal,
   monitoringPackageProposalDisplayValue,
-  monitoringPackageProposalIsMaterializable,
+  type MonitoringPackageDraft,
 } from './monitoringPackageProposal'
 
 import './MonitoringSection.css'
@@ -127,6 +130,24 @@ type OperationalProjection = {
 
 type MonitoringPackageReadiness = { packageStatus: string | null; readyForValidation: boolean; readyForFormulation: boolean; blockingIssues?: Array<{ code: string; severity: string; message: string }>; recommendations?: Array<{ code: string; severity: string; message: string }> }
 type StrategicPerformance = { aggregationPolicy?: string | null; objectives?: Array<{ strategicObjectiveId: string; code: string; name: string; performance: number | null; performanceStatus: string }>; themes?: Array<{ strategicThemeId: string; code: string; name: string; performance: number | null; performanceStatus: string }>; visionProgress?: number | null; visionProgressStatus?: string | null }
+type EligibleMonitoringOwner = { userId: string; personId: string; name: string }
+type MonitoringPackageRow = {
+  cycle_frequency: string
+  review_frequency: string
+  cycle_overlap_policy: string
+  evidence_required: boolean
+  data_quality_required: boolean
+  confidence_required_for_key_results: boolean
+  allow_manual_progress_override: boolean
+  data_freshness_days: number
+  late_tolerance_days: number
+  aggregation_policy: string
+  critical_threshold: number
+  attention_threshold: number
+  on_track_threshold: number
+  owner_user_id: string | null
+  governance_owner_user_id: string | null
+}
 
 function currencyDisplayLabel(currency: string | null | undefined) {
   const code = currency?.trim().toUpperCase() || 'BRL'
@@ -257,6 +278,11 @@ export function MonitoringSection({
   const [strategicPerformance, setStrategicPerformance] = useState<StrategicPerformance | null>(null)
   const [strategicLoading, setStrategicLoading] = useState(false)
   const [strategicError, setStrategicError] = useState('')
+  const [strategicReloadToken, setStrategicReloadToken] = useState(0)
+  const [eligibleMonitoringOwners, setEligibleMonitoringOwners] = useState<EligibleMonitoringOwner[]>([])
+  const [monitoringPackageDraft, setMonitoringPackageDraft] = useState<MonitoringPackageDraft>(() => createInitialMonitoringPackageDraft())
+  const [monitoringPackageSaving, setMonitoringPackageSaving] = useState(false)
+  const [monitoringPackageMessage, setMonitoringPackageMessage] = useState('')
 
   useEffect(() => {
     let active = true
@@ -307,6 +333,91 @@ export function MonitoringSection({
 
   useEffect(() => {
     let active = true
+
+    async function loadMonitoringPackageConfiguration() {
+      if (!formulationId) {
+        setEligibleMonitoringOwners([])
+        setMonitoringPackageDraft(createInitialMonitoringPackageDraft())
+        return
+      }
+
+      const [peopleResponse, packageResponse] = await Promise.all([
+        supabase.rpc('get_skpe_governance_people', {
+          target_organization_id: organizationId,
+        }),
+        supabase
+          .from('skpe_monitoring_packages')
+          .select('cycle_frequency,review_frequency,cycle_overlap_policy,evidence_required,data_quality_required,confidence_required_for_key_results,allow_manual_progress_override,data_freshness_days,late_tolerance_days,aggregation_policy,critical_threshold,attention_threshold,on_track_threshold,owner_user_id,governance_owner_user_id')
+          .eq('formulation_id', formulationId)
+          .maybeSingle(),
+      ])
+
+      if (!active) return
+
+      const governancePeople = (peopleResponse.data ?? []) as Array<{
+        person_id: string
+        full_name: string
+        preferred_name: string | null
+      }>
+      const personIds = governancePeople.map((person) => person.person_id)
+      let owners: EligibleMonitoringOwner[] = []
+
+      if (!peopleResponse.error && personIds.length > 0) {
+        const { data: personProfiles } = await supabase
+          .from('sparks_people')
+          .select('id,profile_user_id')
+          .in('id', personIds)
+          .not('profile_user_id', 'is', null)
+
+        const userByPerson = new Map(
+          ((personProfiles ?? []) as Array<{ id: string; profile_user_id: string | null }>)
+            .filter((person) => person.profile_user_id)
+            .map((person) => [person.id, person.profile_user_id as string]),
+        )
+        owners = governancePeople.flatMap((person) => {
+          const userId = userByPerson.get(person.person_id)
+          if (!userId) return []
+          return [{
+            userId,
+            personId: person.person_id,
+            name: person.preferred_name?.trim() || person.full_name,
+          }]
+        })
+      }
+
+      setEligibleMonitoringOwners(owners)
+
+      if (!packageResponse.error && packageResponse.data) {
+        const row = packageResponse.data as MonitoringPackageRow
+        setMonitoringPackageDraft((current) => ({
+          ...current,
+          cycleFrequency: row.cycle_frequency,
+          reviewFrequency: row.review_frequency,
+          cycleOverlapPolicy: row.cycle_overlap_policy,
+          evidenceRequired: row.evidence_required,
+          dataQualityRequired: row.data_quality_required,
+          confidenceRequiredForKeyResults: row.confidence_required_for_key_results,
+          allowManualProgressOverride: row.allow_manual_progress_override,
+          dataFreshnessDays: row.data_freshness_days,
+          lateToleranceDays: row.late_tolerance_days,
+          aggregationPolicy: row.aggregation_policy,
+          criticalThreshold: Number(row.critical_threshold),
+          attentionThreshold: Number(row.attention_threshold),
+          onTrackThreshold: Number(row.on_track_threshold),
+          ownerUserId: row.owner_user_id ?? '',
+          governanceOwnerUserId: row.governance_owner_user_id ?? '',
+        }))
+      } else if (!packageResponse.data) {
+        setMonitoringPackageDraft(createInitialMonitoringPackageDraft())
+      }
+    }
+
+    void loadMonitoringPackageConfiguration()
+    return () => { active = false }
+  }, [formulationId, organizationId, strategicReloadToken])
+
+  useEffect(() => {
+    let active = true
     const loadStrategicMonitoring = async () => {
       if (!formulationId) { setStrategicReadiness(null); setStrategicPerformance(null); setStrategicError(''); setStrategicLoading(false); return }
       setStrategicLoading(true); setStrategicError('')
@@ -322,7 +433,7 @@ export function MonitoringSection({
     }
     void loadStrategicMonitoring()
     return () => { active = false }
-  }, [formulationId, cycleId])
+  }, [formulationId, cycleId, strategicReloadToken])
 
   useEffect(() => {
     let active = true
@@ -421,6 +532,53 @@ export function MonitoringSection({
     )
   const allocations = projection?.capacity?.allocations ?? []
 
+  const saveMonitoringPackage = async () => {
+    if (!formulationId) return
+    if (!monitoringPackageDraftIsMaterializable(monitoringPackageDraft)) {
+      setMonitoringPackageMessage('Defina os dois responsáveis, revise os limites e informe uma justificativa com pelo menos 10 caracteres.')
+      return
+    }
+
+    setMonitoringPackageSaving(true)
+    setMonitoringPackageMessage('')
+    const { error: saveError } = await supabase.rpc(
+      'configure_skpe_monitoring_package',
+      {
+        p_formulation_id: formulationId,
+        p_payload: {
+          cycleFrequency: monitoringPackageDraft.cycleFrequency,
+          reviewFrequency: monitoringPackageDraft.reviewFrequency,
+          cycleOverlapPolicy: monitoringPackageDraft.cycleOverlapPolicy,
+          evidenceRequired: monitoringPackageDraft.evidenceRequired,
+          dataQualityRequired: monitoringPackageDraft.dataQualityRequired,
+          confidenceRequiredForKeyResults: monitoringPackageDraft.confidenceRequiredForKeyResults,
+          allowManualProgressOverride: monitoringPackageDraft.allowManualProgressOverride,
+          dataFreshnessDays: monitoringPackageDraft.dataFreshnessDays,
+          lateToleranceDays: monitoringPackageDraft.lateToleranceDays,
+          aggregationPolicy: monitoringPackageDraft.aggregationPolicy,
+          criticalThreshold: monitoringPackageDraft.criticalThreshold,
+          attentionThreshold: monitoringPackageDraft.attentionThreshold,
+          onTrackThreshold: monitoringPackageDraft.onTrackThreshold,
+          ownerUserId: monitoringPackageDraft.ownerUserId,
+          governanceOwnerUserId: monitoringPackageDraft.governanceOwnerUserId,
+        },
+        p_change_reason: monitoringPackageDraft.changeReason.trim(),
+      },
+    )
+
+    setMonitoringPackageSaving(false)
+    if (saveError) {
+      setMonitoringPackageMessage(saveError.code === '42501'
+        ? 'Seu perfil não possui permissão para configurar o pacote FE-08.'
+        : saveError.message)
+      return
+    }
+
+    setMonitoringPackageMessage('Configuração FE-08 salva em elaboração. A submissão e a validação humana continuam pendentes.')
+    setMonitoringPackageDraft((current) => ({ ...current, changeReason: '' }))
+    setStrategicReloadToken((current) => current + 1)
+  }
+
   return (
     <section className="skpe-monitoring" aria-label="Monitoramento gerencial do Planejamento Estratégico">
       <header className="skpe-monitoring-header">
@@ -510,10 +668,12 @@ export function MonitoringSection({
       {!strategicLoading && strategicReadiness && (
         <article className="skpe-monitoring-panel" aria-label="Desempenho estratégico governado">
           <header><div><span>Desempenho estratégico</span><h2>Painel de resultados</h2></div></header>
-          {(strategicReadiness.blockingIssues ?? []).some((item) => item.code === 'FE08_PACKAGE_MISSING') ? (
+          {((strategicReadiness.blockingIssues ?? []).some((item) => item.code === 'FE08_PACKAGE_MISSING') || strategicReadiness.packageStatus === 'in_elaboration') ? (
             <>
               <p className="skpe-monitoring-empty">
-                O desempenho ainda não pode ser consolidado: o pacote FE-08 desta Formulação não foi configurado.
+                {strategicReadiness.packageStatus === 'in_elaboration'
+                  ? 'O pacote FE-08 está em elaboração. Revise a configuração antes da submissão para validação humana.'
+                  : 'O desempenho ainda não pode ser consolidado: o pacote FE-08 desta Formulação não foi configurado.'}
               </p>
               <div className="skpe-monitoring-tags">
                 {(strategicReadiness.blockingIssues ?? []).map((item) => (
@@ -535,9 +695,17 @@ export function MonitoringSection({
                   ))}
                 </div>
                 <p className="skpe-monitoring-empty">
-                  Materialização automática: {monitoringPackageProposalIsMaterializable() ? 'permitida' : 'bloqueada até decisão humana sobre os responsáveis'}.
+                  Materialização automática permanece bloqueada: os responsáveis são decisão humana explícita.
                 </p>
               </section>
+              <MonitoringPackageConfigurationPanel
+                draft={monitoringPackageDraft}
+                owners={eligibleMonitoringOwners}
+                saving={monitoringPackageSaving}
+                message={monitoringPackageMessage}
+                onChange={(patch) => setMonitoringPackageDraft((current) => ({ ...current, ...patch }))}
+                onSave={() => { void saveMonitoringPackage() }}
+              />
             </>
           ) : !cycleId ? (
             <p className="skpe-monitoring-empty">O pacote de monitoramento existe, mas nenhum ciclo está selecionado neste contexto. O painel não sintetiza desempenho sem um ciclo formal.</p>

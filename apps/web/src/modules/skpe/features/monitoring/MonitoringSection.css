@@ -1211,3 +1211,81 @@ button.skpe-management-timeline-row {
     grid-template-columns: repeat(6, minmax(150px, 1fr)) !important;
   }
 }
+/* FE08-G2B - configuração governada do pacote de monitoramento */
+.skpe-monitoring-package-config {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.skpe-monitoring-package-config h3 {
+  margin: 0 0 .35rem;
+}
+
+.skpe-monitoring-package-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: .9rem;
+}
+
+.skpe-monitoring-package-form-grid label,
+.skpe-monitoring-package-reason {
+  display: grid;
+  gap: .35rem;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.skpe-monitoring-package-form-grid input,
+.skpe-monitoring-package-form-grid select,
+.skpe-monitoring-package-reason textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: .62rem .7rem;
+  font: inherit;
+  background: #fff;
+}
+
+.skpe-monitoring-package-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem 1rem;
+  margin: 1rem 0;
+}
+
+.skpe-monitoring-package-checks label {
+  display: inline-flex;
+  gap: .4rem;
+  align-items: center;
+}
+
+.skpe-monitoring-package-reason textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.skpe-monitoring-package-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: .8rem;
+}
+
+.skpe-monitoring-package-actions button {
+  border: 0;
+  border-radius: 9px;
+  padding: .68rem 1rem;
+  background: #ff4f0c;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .skpe-monitoring-package-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -24,10 +24,12 @@ test('painel não sintetiza desempenho sem pacote ou ciclo formal', () => {
   assert.doesNotMatch(source, /setStrategicPerformance\(\{[^}]*0/)
 })
 
-test('pacote ausente exibe proposta técnica sem persistência automática', () => {
-  assert.match(source, /Proposta inicial de configuração/)
-  assert.match(source, /defaults técnicos atuais do runtime/)
-  assert.match(source, /bloqueada até decisão humana sobre os responsáveis/)
-  assert.doesNotMatch(source, /configure_skpe_monitoring_package/)
+test('G2B resolve responsáveis por identidade autenticável e salva somente configuração', () => {
+  assert.match(source, /get_skpe_governance_people/)
+  assert.match(source, /sparks_people/)
+  assert.match(source, /profile_user_id/)
+  assert.match(source, /configure_skpe_monitoring_package/)
+  assert.match(source, /Configuração FE-08 salva em elaboração/)
   assert.doesNotMatch(source, /open_skpe_monitoring_cycle/)
+  assert.doesNotMatch(source, /transition_skpe_monitoring_package/)
 })
