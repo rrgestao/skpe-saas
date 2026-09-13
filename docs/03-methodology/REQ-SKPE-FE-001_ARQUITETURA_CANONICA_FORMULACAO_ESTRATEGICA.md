@@ -223,10 +223,17 @@ Regras:
 
 ## 6. Escopo e isolamento
 
+`DECISAO PRODUCT — 2026-09-13`: todo artefato metodológico ou estratégico produzido no contexto do SK-PE deve ser justificável a partir da **Formulação Estratégica vigente ou da versão de Formulação à qual pertence**. Nenhum artefato pode ser tratado como conteúdo estratégico válido fora desse contexto quando sua natureza exigir Formulação.
+
+A apresentação, recomendação ou validação de qualquer artefato deve conseguir demonstrar, conforme aplicável: origem, motivação, justificativa, evidências, relação com os elementos anteriores da cadeia metodológica e contribuição para resultados, desempenho, Temas, Objetivos Estratégicos e Visão.
+
+Qualquer read model, tela, adapter ou consulta legada que misture versões ou deixe de respeitar `formulation_id` deve ser tratado como dívida técnica e não como regra de produto.
+
 Toda entidade operacional deve ser vinculada, conforme aplicável, a:
 
 - `organization_id`;
 - `project_id`;
+- `formulation_id` ou referência inequívoca à versão de Formulação, quando aplicável;
 - versão/ciclo;
 - responsável;
 - situação;

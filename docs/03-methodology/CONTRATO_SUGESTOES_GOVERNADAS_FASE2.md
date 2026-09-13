@@ -46,6 +46,10 @@ Nenhuma sugestão pode ser apresentada para deliberação sem:
 - alinhamento com a Visão;
 - contribuição esperada para valor organizacional.
 
+`DECISAO PRODUCT — 2026-09-13`: para a Etapa de Perspectivas, Temas, Objetivos Estratégicos e Mapa Estratégico, cada elemento proposto deve possuir **script de apresentação e validação humana**. O script deve explicitar, conforme aplicável, motivação, justificativa, evidências, vínculo com a Formulação, contribuição para os objetivos e desafios da Visão e racional das relações causa-e-efeito. A aplicação deve apoiar a apresentação e o fortalecimento dessas relações; não apenas exibir registros.
+
+Todo Tema recomendado e posteriormente aprovado deve ser acompanhado de pelo menos um OE destinado ao seu atendimento. Nenhuma proposta de ME pode chegar à validação humana com Tema aprovado sem OE correspondente.
+
 Benchmark não é recomendação automática. Benchmark exige avaliação explícita de comparabilidade e aplicabilidade.
 ## Validação humana
 

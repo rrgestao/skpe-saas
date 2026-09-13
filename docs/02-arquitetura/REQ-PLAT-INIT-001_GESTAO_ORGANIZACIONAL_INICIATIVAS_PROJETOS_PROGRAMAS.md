@@ -89,22 +89,28 @@ A taxonomia definitiva será versionada e administrável, evitando enums rígido
 
 ## 5. Implantação do Planejamento Estratégico
 
-Ao iniciar formalmente um processo de Planejamento Estratégico, a plataforma deverá permitir criar ou materializar uma única Iniciativa organizacional com identidade equivalente a:
+`DECISAO PRODUCT — 2026-09-13`: ao criar/iniciar formalmente a Jornada Estratégica do SK-PE, a plataforma deve **criar ou materializar automaticamente**, de forma idempotente, uma única Iniciativa organizacional equivalente a:
 
 **Implantação do Planejamento Estratégico**
 
-Configuração esperada:
+Configuração obrigatória:
 
 - Classe: Projeto;
 - Categoria/Natureza: Estratégica;
-- origem registrada;
+- origem: Planejamento Estratégico / metodologia SPARKs PE;
 - status governado;
-- patrocinador;
-- responsável;
+- responsável inicial: **Líder do Projeto pela SPARKOOP**;
+- patrocinador, quando definido;
 - período de execução;
 - custos, benefícios, riscos e indicadores quando aplicáveis.
 
+Na **Reunião de Abertura**, a Jornada deve conduzir e registrar a identificação dos membros da Equipe pela Organização e a definição de um deles como **responsável pelo Projeto pela Organização**. Essa definição deve ser auditável, com autoria, data/hora, origem da decisão e histórico.
+
+A alteração posterior de responsável não pode sobrescrever silenciosamente o histórico: deve preservar responsável anterior, novo responsável, vigência e motivo da mudança.
+
 A Jornada Estratégica do SK-PE deverá estar vinculada a esse mesmo Projeto e atuar como especialização de sua execução.
+
+`GAP_RUNTIME`: o requisito anterior apenas permitia criar/materializar o Projeto e não comprovava criação automática, atribuição inicial ao Líder SPARKOOP nem o rito da Reunião de Abertura. Esses comportamentos precisam ser implementados e testados antes de serem considerados concluídos.
 
 ## 6. Jornada Estratégica especializada
 

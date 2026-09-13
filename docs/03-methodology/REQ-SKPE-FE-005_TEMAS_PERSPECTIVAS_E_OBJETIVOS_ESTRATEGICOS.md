@@ -80,35 +80,33 @@ Em elaboração
 → Validado
 ```
 
-Uma devolução retorna o pacote para **Em elaboração**.
+Uma devolução anterior à validação humana retorna o pacote para **Em elaboração**.
 
-Qualquer mutação posterior em Tema, Perspectiva, Objetivo ou relação causal:
+`DECISAO PRODUCT — 2026-09-13`: quando o Mapa Estratégico for validado humanamente, aquele conjunto de Perspectivas, Temas, Objetivos Estratégicos e relações causa-e-efeito passa a constituir a **versão oficial do ME** daquela Formulação. A versão oficial não pode ser sobrescrita.
 
-1. invalida a validação anterior;
-2. retorna o pacote para `in_elaboration`;
-3. limpa os registros de submissão e validação;
-4. redefine os Objetivos como `draft` no controle de validação;
-5. registra auditoria.
+Qualquer mudança material posterior no ME validado deve:
 
-### 3.2 Configurações metodológicas
+1. preservar integralmente a versão oficial anterior;
+2. criar nova versão/revisão derivada da Formulação e do ME;
+3. registrar motivação, justificativa, autoria, data/hora e evidências que originaram a revisão;
+4. colocar a nova versão em elaboração e submetê-la novamente à validação humana;
+5. somente substituir a versão oficial quando a nova versão concluir o fluxo de validação aplicável.
 
-Cada versão pode configurar:
+`GAP_RUNTIME`: o comportamento legado de invalidar e reabrir o mesmo pacote após mutação deve ser restringido a pacotes ainda não validados. Para ME já validado, a implementação deverá materializar revisão/versionamento em vez de mutação destrutiva da versão oficial.
 
-- `theme_required`: exige ou não Tema principal para cada Objetivo ativo;
-- `causal_cycle_policy`:
-  - `warn`: permite o ciclo e gera recomendação metodológica;
-  - `block`: impede a criação de relação que produza ciclo;
-- `owner_recommended`: recomenda responsável para cada Objetivo ativo.
+### 3.2 Regras metodológicas obrigatórias
 
-A configuração padrão é:
+`DECISAO PRODUCT — 2026-09-13`
 
-```text
-theme_required = true
-causal_cycle_policy = warn
-owner_recommended = true
-```
+- `theme_required` deixa de ser uma escolha metodológica da organização no SPARKs PE: todo Objetivo Estratégico ativo deve possuir um Tema Estratégico principal aprovado.
+- Todo Tema Estratégico aprovado deve possuir ao menos um Objetivo Estratégico destinado ao seu atendimento e à consecução dos objetivos e desafios da Visão.
+- Um Tema aprovado sem OE constitui bloqueio metodológico da FE-04; não é mera recomendação.
+- `owner_required = true`: todo OE apresentado para validação deve possuir responsável definido.
+- todo OE apresentado para validação deve possuir horizonte definido e governado.
 
-A política padrão para ciclos é **sinalizar**, e não bloquear. O bloqueio pode ser ativado quando a metodologia da organização determinar que o Mapa deve ser estritamente acíclico.
+A análise de loops no grafo de relações causa-e-efeito é um controle próprio do Mapa Estratégico e não deve ser confundida com o **Ciclo Metodológico / Ciclo de Evolução** do Planejamento Estratégico. O ME e seus artefatos devem respeitar o Ciclo Metodológico estabelecido pela Formulação. Loops causais logicamente inválidos devem ser bloqueados ou devolvidos para revisão metodológica conforme a regra canônica do grafo, sem redefinir o Ciclo Metodológico.
+
+`GAP_RUNTIME`: migrations/RPCs legadas ainda expõem `theme_required`, `owner_recommended` e `causal_cycle_policy`; essas opções devem ser reconciliadas antes de serem consideradas implementação da presente decisão.
 
 ---
 
