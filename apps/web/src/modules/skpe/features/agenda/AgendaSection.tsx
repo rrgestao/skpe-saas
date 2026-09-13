@@ -27,6 +27,39 @@ type AgendaItem = {
   is_native: boolean
   route: string | null
   is_visible: boolean
+  visibility_scope?: 'participants' | 'organization'
+  engagement_level?: 'participant' | 'institutional'
+  engagement_message?: string | null
+  is_participant?: boolean
+  participant_role?: string | null
+  participant_function?: string | null
+  response_status?: string | null
+  attendance_status?: string | null
+  detail_access?: boolean
+}
+
+type InstitutionalEventFeedItem = {
+  event_id: string
+  organization_id: string
+  source_module_code: string | null
+  event_type: string
+  title: string
+  description: string | null
+  starts_at: string | null
+  ends_at: string | null
+  all_day: boolean
+  timezone_name: string
+  status: string
+  priority: string
+  visibility_scope: 'participants' | 'organization'
+  is_participant: boolean
+  participant_role: string | null
+  participant_function: string | null
+  response_status: string | null
+  attendance_status: string | null
+  engagement_level: 'participant' | 'institutional'
+  engagement_message: string
+  detail_access: boolean
 }
 
 type InitiativeOption = {
@@ -140,23 +173,88 @@ export function AgendaSection({
     setLoading(true)
     setErrorMessage('')
 
-    const { data, error } = await supabase.rpc('get_my_sparks_agenda', {
-      target_organization_id: organizationId,
-      target_module_code: 'SK-PE',
-      target_date_from: toDateOnly(rangeStart),
-      target_date_to: toDateOnly(rangeEnd),
-      target_item_kind: null,
-      target_status: null,
-      target_include_hidden: false,
-    })
+    const [agendaResult, institutionalResult] = await Promise.all([
+      supabase.rpc('get_my_sparks_agenda', {
+        target_organization_id: organizationId,
+        target_module_code: 'SK-PE',
+        target_date_from: toDateOnly(rangeStart),
+        target_date_to: toDateOnly(rangeEnd),
+        target_item_kind: null,
+        target_status: null,
+        target_include_hidden: false,
+      }),
+      supabase.rpc('get_sparks_organization_event_feed', {
+        target_organization_id: organizationId,
+        target_date_from: toDateOnly(rangeStart),
+        target_date_to: toDateOnly(rangeEnd),
+        target_module_code: 'SK-PE',
+      }),
+    ])
 
-    if (error) {
+    if (agendaResult.error && institutionalResult.error) {
       setItems([])
       setErrorMessage(
-        'Não foi possível carregar sua agenda do Planejamento Estratégico.',
+        'Não foi possível carregar a agenda do Planejamento Estratégico.',
       )
     } else {
-      setItems((data ?? []) as AgendaItem[])
+      const merged = new Map<string, AgendaItem>()
+      for (const item of (agendaResult.data ?? []) as AgendaItem[]) {
+        merged.set(item.agenda_item_key, item)
+      }
+
+      for (const event of (institutionalResult.data ?? []) as InstitutionalEventFeedItem[]) {
+        const nativeKey = `NATIVE:event:${event.event_id}:event`
+        const current = merged.get(nativeKey)
+        const engagement = {
+          visibility_scope: event.visibility_scope,
+          engagement_level: event.engagement_level,
+          engagement_message: event.engagement_message,
+          is_participant: event.is_participant,
+          participant_role: event.participant_role,
+          participant_function: event.participant_function,
+          response_status: event.response_status,
+          attendance_status: event.attendance_status,
+          detail_access: event.detail_access,
+        }
+
+        if (current) {
+          merged.set(nativeKey, { ...current, ...engagement })
+          continue
+        }
+
+        merged.set(nativeKey, {
+          agenda_item_key: nativeKey,
+          organization_id: event.organization_id,
+          source_module_code: event.source_module_code,
+          source_entity_type: 'event',
+          source_entity_id: event.event_id,
+          source_code: null,
+          item_kind: 'event',
+          title: event.title,
+          description: event.description,
+          starts_at: event.starts_at,
+          ends_at: event.ends_at,
+          due_at: null,
+          all_day: event.all_day,
+          timezone_name: event.timezone_name,
+          source_status: event.status,
+          status: event.status,
+          priority: event.priority,
+          user_relation: event.participant_role,
+          is_native: true,
+          route: null,
+          is_visible: true,
+          ...engagement,
+        })
+      }
+
+      setItems(
+        [...merged.values()].sort((left, right) =>
+          (left.starts_at ?? left.due_at ?? '').localeCompare(
+            right.starts_at ?? right.due_at ?? '',
+          ),
+        ),
+      )
     }
 
     setLoading(false)
@@ -417,7 +515,16 @@ export function AgendaSection({
                   {dayItems.slice(0, 3).map((item) => (
                     <div
                       key={item.agenda_item_key}
-                      className="skpe-agenda-chip"
+                      className={[
+                        'skpe-agenda-chip',
+                        item.engagement_level === 'participant'
+                          ? 'is-participant'
+                          : item.engagement_level === 'institutional'
+                            ? 'is-institutional'
+                            : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
                       title={item.title}
                     >
                       <span>{formatTime(item)}</span>
@@ -455,17 +562,42 @@ export function AgendaSection({
         ) : (
           <div className="skpe-agenda-list-items">
             {items.map((item) => (
-              <article key={item.agenda_item_key}>
+              <article
+                key={item.agenda_item_key}
+                className={[
+                  item.engagement_level === 'participant'
+                    ? 'is-participant'
+                    : '',
+                  item.engagement_level === 'institutional'
+                    ? 'is-institutional'
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
                 <div className="skpe-agenda-date-badge">
                   <strong>{itemDateKey(item)?.slice(8, 10) ?? '—'}</strong>
                   <span>{formatTime(item)}</span>
                 </div>
                 <div className="skpe-agenda-item-content">
                   <strong>{item.title}</strong>
+                  {item.engagement_level && (
+                    <p className="skpe-agenda-engagement-message">
+                      <b>
+                        {item.engagement_level === 'participant'
+                          ? 'Você participa'
+                          : 'Evento institucional'}
+                      </b>{' '}
+                      {item.engagement_message}
+                    </p>
+                  )}
                   {item.description && <p>{item.description}</p>}
                   <div>
                     <span>{statusLabel(item.status)}</span>
                     <span>{item.is_native ? 'Evento' : 'Projeção SK-PE'}</span>
+                    {item.participant_function && (
+                      <span>{item.participant_function}</span>
+                    )}
                     {item.user_relation && <span>{item.user_relation}</span>}
                   </div>
                 </div>

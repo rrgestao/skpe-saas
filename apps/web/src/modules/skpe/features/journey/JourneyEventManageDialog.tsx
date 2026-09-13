@@ -158,6 +158,10 @@ export function JourneyEventManageDialog({
     event.meeting_reference ?? '',
   )
   const [changeReason, setChangeReason] = useState('')
+  const [visibilityScope, setVisibilityScope] =
+    useState<'participants' | 'organization' | null>(null)
+  const [visibilityReason, setVisibilityReason] = useState('')
+  const [visibilityBusy, setVisibilityBusy] = useState(false)
   const [targetStatus, setTargetStatus] = useState<EventLifecycle | ''>('')
   const [lifecycleReason, setLifecycleReason] = useState('')
   const [saving, setSaving] = useState(false)
@@ -209,7 +213,8 @@ export function JourneyEventManageDialog({
         keyboardEvent.key === 'Escape' &&
         !saving &&
         !transitioning &&
-        !participantBusy
+        !participantBusy &&
+        !visibilityBusy
       ) {
         onClose()
       }
@@ -217,7 +222,7 @@ export function JourneyEventManageDialog({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, participantBusy, saving, transitioning])
+  }, [onClose, participantBusy, saving, transitioning, visibilityBusy])
 
   async function loadParticipantManagement() {
     setParticipantLoading(true)
@@ -243,6 +248,62 @@ export function JourneyEventManageDialog({
   useEffect(() => {
     void loadParticipantManagement()
   }, [event.event_id])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadVisibilityScope() {
+      const { data, error } = await supabase.rpc(
+        'get_sparks_event_visibility_scope',
+        { target_event_id: event.event_id },
+      )
+
+      if (!active) return
+      if (error) {
+        setVisibilityScope(null)
+        setErrorMessage(translateBackendMessage(error.message))
+        return
+      }
+      setVisibilityScope(data as 'participants' | 'organization')
+    }
+
+    void loadVisibilityScope()
+    return () => {
+      active = false
+    }
+  }, [event.event_id])
+
+  async function setEventVisibility() {
+    const reason = visibilityReason.trim()
+    if (!visibilityScope) {
+      setErrorMessage('A visibilidade do evento ainda não foi carregada.')
+      return
+    }
+    if (reason.length < 10) {
+      setErrorMessage(
+        'Informe uma justificativa de visibilidade com pelo menos 10 caracteres.',
+      )
+      return
+    }
+
+    setVisibilityBusy(true)
+    setErrorMessage(null)
+    const { error } = await supabase.rpc('set_sparks_event_visibility_scope', {
+      target_event_id: event.event_id,
+      target_visibility_scope: visibilityScope,
+      change_reason: reason,
+    })
+
+    if (error) {
+      setErrorMessage(translateBackendMessage(error.message))
+      setVisibilityBusy(false)
+      return
+    }
+
+    setVisibilityReason('')
+    onChanged()
+    setVisibilityBusy(false)
+  }
 
   async function setParticipant() {
     const reason = participantReason.trim()
@@ -640,6 +701,42 @@ export function JourneyEventManageDialog({
               <option value="critical">Cr\u00edtica</option>
             </select>
           </label>
+
+          <label>
+            <span>Visibilidade</span>
+            <select
+              value={visibilityScope ?? ''}
+              onChange={(changeEvent) =>
+                setVisibilityScope(
+                  changeEvent.target.value as 'participants' | 'organization',
+                )
+              }
+              disabled={!visibilityScope || visibilityBusy}
+            >
+              <option value="participants">Somente participantes</option>
+              <option value="organization">Organização</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Justificativa da visibilidade</span>
+            <input
+              value={visibilityReason}
+              onChange={(changeEvent) => setVisibilityReason(changeEvent.target.value)}
+              placeholder="Ex.: dar visibilidade institucional ao movimento da estratégia"
+              disabled={!visibilityScope || visibilityBusy}
+            />
+          </label>
+
+          <div className="is-wide">
+            <button
+              type="button"
+              onClick={() => void setEventVisibility()}
+              disabled={!visibilityScope || visibilityBusy}
+            >
+              {visibilityBusy ? 'Aplicando...' : 'Aplicar visibilidade'}
+            </button>
+          </div>
 
           <label>
             <span>In\u00edcio</span>

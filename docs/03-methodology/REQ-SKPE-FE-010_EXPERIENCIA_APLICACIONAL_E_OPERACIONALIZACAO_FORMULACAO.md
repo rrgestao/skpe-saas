@@ -252,6 +252,8 @@ A interface deve tratar RAE, RAD, RAI e outras reuniões como templates de anál
 
 Decisão de Produto de 13/09/2026: papéis estruturais da reunião, como quem preside/lidera (`chair`) e quem secretaria (`secretary`), são contextuais à reunião específica. Eles podem permanecer indefinidos no convite/agendamento, ser indicados antes do início e ser alterados durante a reunião por ausência, substituição ou ajuste deliberado. A alteração deve preservar estado anterior, novo estado, ator, data/hora e justificativa; o encerramento da reunião deve refletir quem efetivamente exerceu cada papel. Nenhum template deve presumir esses papéis como obrigatórios por padrão.
 
+Decisão de Produto de 13/09/2026: a reunião estratégica é um único evento canônico, mas pode possuir visibilidade institucional para a Organização sem transformar todos os seus membros em participantes. O evento deve distinguir `participants` de `organization`: no primeiro caso, somente pessoas diretamente envolvidas recebem a projeção; no segundo, usuários autorizados da Organização podem visualizar que a estratégia está em movimento. Para participantes, a experiência deve receber destaque próprio de engajamento, com papel/função, aceite e presença quando aplicável. Visibilidade institucional não concede automaticamente acesso a conteúdo reservado, não cria participante artificial e não duplica o evento.
+
 Cada template pode definir:
 
 - periodicidade;

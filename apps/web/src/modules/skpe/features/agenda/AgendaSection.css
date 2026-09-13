@@ -135,6 +135,15 @@
   color: #245747;
 }
 
+.skpe-agenda-chip.is-participant {
+  border-left: 3px solid currentColor;
+  font-weight: 800;
+}
+
+.skpe-agenda-chip.is-institutional {
+  opacity: 0.88;
+}
+
 .skpe-agenda-chip span,
 .skpe-agenda-chip b {
   display: block;
@@ -193,6 +202,18 @@
   gap: 1rem;
   padding: 0.9rem 1.1rem;
   border-bottom: 1px solid #edf1ef;
+}
+
+.skpe-agenda-list-items > article.is-participant {
+  box-shadow: inset 3px 0 0 currentColor;
+}
+
+.skpe-agenda-list-items > article.is-institutional {
+  background: #fbfcfb;
+}
+
+.skpe-agenda-engagement-message {
+  margin: 0.28rem 0;
 }
 
 .skpe-agenda-date-badge {
