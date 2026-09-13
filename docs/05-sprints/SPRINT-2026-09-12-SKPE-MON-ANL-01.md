@@ -125,3 +125,24 @@ Validação:
 - Supabase alterado pela execução do agente: NÃO.
 
 Próximo gate: reconciliar a aprovação da Formulação Estratégica com a abertura governada do primeiro ciclo FE-08.
+
+## G3A — Lifecycle governado da Formulação Estratégica
+
+Status: PASS
+
+Implementação:
+- a tela de Formulação deixou de usar o estado legado `under_review` e passou a reconhecer `draft`, `in_elaboration`, `pending_validation`, `validated`, `pending_approval` e `approved`;
+- o frontend reutiliza `get_skpe_formulation_readiness` e `get_skpe_monitoring_package_readiness`;
+- autoridades são consultadas separadamente por `can_manage_skpe_formulation`, `can_validate_skpe_formulation` e `can_approve_skpe_formulation`;
+- todas as transições usam exclusivamente `transition_skpe_formulation`;
+- o avanço exige simultaneamente prontidão metodológica e pacote FE-08 validado;
+- nenhuma abertura de ciclo é executada neste gate.
+
+Validação:
+- testes específicos G3A: 4/4 PASS;
+- suíte completa: 152/152 PASS;
+- typecheck: PASS;
+- build: PASS;
+- Supabase alterado pela execução do agente: NÃO.
+
+Próximo gate: abertura governada do primeiro ciclo FE-08 somente quando Formulação=`approved` e pacote FE-08=`validated`.
