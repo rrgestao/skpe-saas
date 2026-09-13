@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const testDir = dirname(fileURLToPath(import.meta.url))
 const migration = readFileSync(
-  join(testDir, '../../../supabase/migrations/20260913143000_govern_skpe_sparkoop_project_leader_bootstrap.sql'),
+  join(testDir, '../../../supabase/migrations/20260913155108_govern_skpe_sparkoop_project_leader_bootstrap.sql'),
   'utf8',
 )
 

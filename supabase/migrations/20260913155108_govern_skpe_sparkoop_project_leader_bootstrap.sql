@@ -13,11 +13,19 @@ declare
   sparkoop_organization_id uuid;
   sparkoop_count integer;
 begin
-  select count(*)::integer, min(id)
-  into sparkoop_count, sparkoop_organization_id
+  select count(*)::integer
+  into sparkoop_count
   from public.organizations
   where code = 'SPARKOOP'
     and status = 'active';
+
+  select id
+  into sparkoop_organization_id
+  from public.organizations
+  where code = 'SPARKOOP'
+    and status = 'active'
+  order by id
+  limit 1;
 
   if sparkoop_count <> 1 then
     raise exception
@@ -119,10 +127,12 @@ begin
     raise exception 'Não é possível bootstrapar iniciativa arquivada.' using errcode='23514';
   end if;
 
-  select min(id)
+  select id
   into v_sparkoop_organization_id
   from public.organizations
-  where code='SPARKOOP' and status='active';
+  where code='SPARKOOP' and status='active'
+  order by id
+  limit 1;
 
   select r.id
   into v_project_leader_role_id
@@ -143,8 +153,8 @@ begin
   from public.organizations o
   where o.id = new.organization_id;
 
-  select count(*)::integer, min(sop.id)
-  into v_relationship_count, v_sparkoop_organization_person_id
+  select count(*)::integer
+  into v_relationship_count
   from public.sparks_people sp
   join public.sparks_organization_people sop
     on sop.person_id = sp.id
@@ -155,6 +165,21 @@ begin
   where sp.profile_user_id = new.created_by
     and sp.person_status = 'active'
     and sp.archived_at is null;
+
+  select sop.id
+  into v_sparkoop_organization_person_id
+  from public.sparks_people sp
+  join public.sparks_organization_people sop
+    on sop.person_id = sp.id
+   and sop.organization_id = v_sparkoop_organization_id
+   and sop.status = 'active'
+   and (sop.start_date is null or sop.start_date <= v_effective_date)
+   and (sop.end_date is null or sop.end_date >= v_effective_date)
+  where sp.profile_user_id = new.created_by
+    and sp.person_status = 'active'
+    and sp.archived_at is null
+  order by sop.id
+  limit 1;
 
   if v_relationship_count <> 1 then
     raise exception
