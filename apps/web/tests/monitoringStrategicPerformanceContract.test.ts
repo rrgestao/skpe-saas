@@ -23,3 +23,11 @@ test('painel não sintetiza desempenho sem pacote ou ciclo formal', () => {
   assert.doesNotMatch(source, /visionProgress:\s*0/)
   assert.doesNotMatch(source, /setStrategicPerformance\(\{[^}]*0/)
 })
+
+test('pacote ausente exibe proposta técnica sem persistência automática', () => {
+  assert.match(source, /Proposta inicial de configuração/)
+  assert.match(source, /defaults técnicos atuais do runtime/)
+  assert.match(source, /bloqueada até decisão humana sobre os responsáveis/)
+  assert.doesNotMatch(source, /configure_skpe_monitoring_package/)
+  assert.doesNotMatch(source, /open_skpe_monitoring_cycle/)
+})

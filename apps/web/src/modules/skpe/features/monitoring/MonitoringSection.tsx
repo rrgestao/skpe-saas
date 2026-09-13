@@ -19,6 +19,11 @@ import type {
   JourneyEventTimelineRow,
   JourneyTemporalTimelineRow,
 } from './monitoringTimeline'
+import {
+  monitoringPackageInitialProposal,
+  monitoringPackageProposalDisplayValue,
+  monitoringPackageProposalIsMaterializable,
+} from './monitoringPackageProposal'
 
 import './MonitoringSection.css'
 
@@ -506,7 +511,34 @@ export function MonitoringSection({
         <article className="skpe-monitoring-panel" aria-label="Desempenho estratégico governado">
           <header><div><span>Desempenho estratégico</span><h2>Painel de resultados</h2></div></header>
           {(strategicReadiness.blockingIssues ?? []).some((item) => item.code === 'FE08_PACKAGE_MISSING') ? (
-            <><p className="skpe-monitoring-empty">O desempenho ainda não pode ser consolidado: o pacote FE-08 desta Formulação não foi configurado.</p><div className="skpe-monitoring-tags">{(strategicReadiness.blockingIssues ?? []).map((item) => <span key={item.code}>{item.message}</span>)}</div></>
+            <>
+              <p className="skpe-monitoring-empty">
+                O desempenho ainda não pode ser consolidado: o pacote FE-08 desta Formulação não foi configurado.
+              </p>
+              <div className="skpe-monitoring-tags">
+                {(strategicReadiness.blockingIssues ?? []).map((item) => (
+                  <span key={item.code}>{item.message}</span>
+                ))}
+              </div>
+              <section aria-label="Proposta inicial de configuração FE-08">
+                <h3>Proposta inicial de configuração</h3>
+                <p className="skpe-monitoring-empty">
+                  Os valores abaixo são defaults técnicos atuais do runtime, não decisões organizacionais. Devem ser analisados e validados por pessoa autorizada antes de qualquer persistência.
+                </p>
+                <div className="skpe-monitoring-grid">
+                  {monitoringPackageInitialProposal.map((item) => (
+                    <article key={item.key}>
+                      <span>{item.label}</span>
+                      <strong>{monitoringPackageProposalDisplayValue(item)}</strong>
+                      <small>{item.rationale}</small>
+                    </article>
+                  ))}
+                </div>
+                <p className="skpe-monitoring-empty">
+                  Materialização automática: {monitoringPackageProposalIsMaterializable() ? 'permitida' : 'bloqueada até decisão humana sobre os responsáveis'}.
+                </p>
+              </section>
+            </>
           ) : !cycleId ? (
             <p className="skpe-monitoring-empty">O pacote de monitoramento existe, mas nenhum ciclo está selecionado neste contexto. O painel não sintetiza desempenho sem um ciclo formal.</p>
           ) : strategicPerformance ? (

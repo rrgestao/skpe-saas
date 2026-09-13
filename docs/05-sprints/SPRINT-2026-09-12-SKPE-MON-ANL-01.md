@@ -59,3 +59,23 @@ Antes de avançar o monitoramento, foi formalizado o contrato transversal da Fas
 
 Contrato: `docs/03-methodology/CONTRATO_SUGESTOES_GOVERNADAS_FASE2.md`.
 Supabase alterado: NÃO.
+
+## G2A — Proposta governada de configuração FE-08
+
+Status: PASS
+
+Achados:
+- `configure_skpe_monitoring_package` cria/atualiza o pacote, mas exige justificativa e Formulação editável;
+- `transition_skpe_monitoring_package` preserva submissão e validação humana;
+- `open_skpe_monitoring_cycle` exige Formulação aprovada e pacote FE-08 validado;
+- runtime atual possui uma Formulação `draft` e nenhum KPI estratégico ativo;
+- responsáveis do pacote exigem `owner_user_id`/`governance_owner_user_id`, sem default automático seguro.
+
+Implementação:
+- defaults reais do runtime são exibidos como proposta técnica, não como decisão;
+- cada default apresenta motivação/justificativa operacional;
+- responsáveis permanecem decisão humana obrigatória;
+- materialização automática fica explicitamente bloqueada;
+- nenhuma RPC de escrita é chamada por este gate.
+
+Validação: 6/6 testes específicos PASS; suíte 146/146 PASS; typecheck PASS; build PASS; Supabase alterado: NÃO.
