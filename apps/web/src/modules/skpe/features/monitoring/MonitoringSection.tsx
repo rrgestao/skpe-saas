@@ -12,6 +12,7 @@ import { ManagementExecutionMatrix } from './ManagementExecutionMatrix'
 import { MonitoringPackageConfigurationPanel } from './MonitoringPackageConfigurationPanel'
 import { MonitoringPackageWorkflowPanel } from './MonitoringPackageWorkflowPanel'
 import { MonitoringCyclePanel, type MonitoringCycleOption } from './MonitoringCyclePanel'
+import { MonitoringIndicatorCollectionPanel } from './MonitoringIndicatorCollectionPanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -846,6 +847,14 @@ export function MonitoringSection({
             onSelect={setLocalCycleId}
             onOpen={(payload) => { void openMonitoringCycle(payload) }}
           />
+          {effectiveCycleId && formulationId ? (
+            <MonitoringIndicatorCollectionPanel
+              organizationId={organizationId}
+              formulationId={formulationId}
+              cycleId={effectiveCycleId}
+              onChanged={() => setStrategicReloadToken((current) => current + 1)}
+            />
+          ) : null}
           {((strategicReadiness.blockingIssues ?? []).some((item) => item.code === 'FE08_PACKAGE_MISSING') || strategicReadiness.packageStatus === 'in_elaboration') ? (
             <>
               <p className="skpe-monitoring-empty">

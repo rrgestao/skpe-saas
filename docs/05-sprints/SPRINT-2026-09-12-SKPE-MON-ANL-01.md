@@ -167,3 +167,24 @@ Evidências técnicas:
 - typecheck: PASS;
 - production build: PASS;
 - Supabase data changed: NO.
+
+## G4A — Coleta governada de medições de KPI
+
+Status: PASS.
+
+- inicia coleta por `transition_skpe_monitoring_cycle(start_collection)`;
+- registra medições por `record_skpe_indicator_measurement`;
+- valida, rejeita ou ressubmete por `transition_skpe_monitoring_record`;
+- separa autoridade de monitoramento e autoridade de governança;
+- consulta `get_skpe_monitoring_readiness` antes de permitir `submit_review`;
+- exibe pendências de readiness sem sintetizar estado;
+- monta o painel somente quando existe ciclo real selecionado;
+- nenhum dado operacional foi criado durante o gate.
+
+Evidências técnicas:
+
+- targeted contracts: 9/9 PASS;
+- full tests: 157/157 PASS;
+- typecheck: PASS;
+- production build: PASS;
+- Supabase data changed: NO.

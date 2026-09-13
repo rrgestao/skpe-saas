@@ -1316,3 +1316,49 @@ button.skpe-management-timeline-row {
 .skpe-monitoring-cycle-reason {
   grid-column: 1 / -1;
 }
+
+.skpe-monitoring-collection {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.skpe-monitoring-collection > header,
+.skpe-monitoring-collection-list > article {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-monitoring-collection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.skpe-monitoring-collection-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.skpe-monitoring-collection-list > article {
+  padding: 0.75rem;
+  border: 1px solid #edf1ef;
+  border-radius: 10px;
+}
+
+.skpe-monitoring-collection-list > article > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.skpe-theme-dark .skpe-monitoring-collection {
+  border-color: #365248;
+  background: #172821;
+  color: #f0f7f4;
+}
