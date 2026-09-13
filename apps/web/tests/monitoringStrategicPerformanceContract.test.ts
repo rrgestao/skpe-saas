@@ -24,12 +24,21 @@ test('painel não sintetiza desempenho sem pacote ou ciclo formal', () => {
   assert.doesNotMatch(source, /setStrategicPerformance\(\{[^}]*0/)
 })
 
-test('G2B resolve responsáveis por identidade autenticável e salva somente configuração', () => {
+test('G2B resolve responsáveis por identidade autenticável e salva configuração em elaboração', () => {
   assert.match(source, /get_skpe_governance_people/)
   assert.match(source, /sparks_people/)
   assert.match(source, /profile_user_id/)
   assert.match(source, /configure_skpe_monitoring_package/)
   assert.match(source, /Configuração FE-08 salva em elaboração/)
   assert.doesNotMatch(source, /open_skpe_monitoring_cycle/)
-  assert.doesNotMatch(source, /transition_skpe_monitoring_package/)
+})
+
+test('G2C separa permissões e transições humanas sem abrir ciclo automaticamente', () => {
+  assert.match(source, /can_manage_skpe_formulation/)
+  assert.match(source, /can_validate_skpe_formulation/)
+  assert.match(source, /transition_skpe_monitoring_package/)
+  assert.match(source, /Pacote FE-08 submetido para validação humana/)
+  assert.match(source, /Pacote FE-08 validado humanamente/)
+  assert.match(source, /Pacote FE-08 devolvido para ajustes/)
+  assert.doesNotMatch(source, /open_skpe_monitoring_cycle/)
 })

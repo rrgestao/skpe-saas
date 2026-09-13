@@ -10,6 +10,7 @@ import { PersonCapacityManagementDialog } from './PersonCapacityManagementDialog
 import { ManagementTimeline } from './ManagementTimeline'
 import { ManagementExecutionMatrix } from './ManagementExecutionMatrix'
 import { MonitoringPackageConfigurationPanel } from './MonitoringPackageConfigurationPanel'
+import { MonitoringPackageWorkflowPanel } from './MonitoringPackageWorkflowPanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -283,6 +284,10 @@ export function MonitoringSection({
   const [monitoringPackageDraft, setMonitoringPackageDraft] = useState<MonitoringPackageDraft>(() => createInitialMonitoringPackageDraft())
   const [monitoringPackageSaving, setMonitoringPackageSaving] = useState(false)
   const [monitoringPackageMessage, setMonitoringPackageMessage] = useState('')
+  const [canSubmitMonitoringPackage, setCanSubmitMonitoringPackage] = useState(false)
+  const [canValidateMonitoringPackage, setCanValidateMonitoringPackage] = useState(false)
+  const [monitoringPackageTransitioning, setMonitoringPackageTransitioning] = useState(false)
+  const [monitoringPackageWorkflowMessage, setMonitoringPackageWorkflowMessage] = useState('')
 
   useEffect(() => {
     let active = true
@@ -330,6 +335,29 @@ export function MonitoringSection({
       active = false
     }
   }, [organizationId])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadMonitoringPackagePermissions() {
+      if (!formulationId) {
+        setCanSubmitMonitoringPackage(false)
+        setCanValidateMonitoringPackage(false)
+        return
+      }
+
+      const [submitPermission, validatePermission] = await Promise.all([
+        supabase.rpc('can_manage_skpe_formulation', { target_organization_id: organizationId }),
+        supabase.rpc('can_validate_skpe_formulation', { target_organization_id: organizationId }),
+      ])
+      if (!active) return
+      setCanSubmitMonitoringPackage(submitPermission.error ? false : submitPermission.data === true)
+      setCanValidateMonitoringPackage(validatePermission.error ? false : validatePermission.data === true)
+    }
+
+    void loadMonitoringPackagePermissions()
+    return () => { active = false }
+  }, [formulationId, organizationId])
 
   useEffect(() => {
     let active = true
@@ -579,6 +607,44 @@ export function MonitoringSection({
     setStrategicReloadToken((current) => current + 1)
   }
 
+  const transitionMonitoringPackage = async (
+    action: 'submit' | 'validate' | 'return',
+    reason: string,
+    notes: string,
+  ) => {
+    if (!formulationId || reason.trim().length < 10) return
+    setMonitoringPackageTransitioning(true)
+    setMonitoringPackageWorkflowMessage('')
+
+    const { error: transitionError } = await supabase.rpc(
+      'transition_skpe_monitoring_package',
+      {
+        p_formulation_id: formulationId,
+        p_action: action,
+        p_validation_notes: notes.trim() || null,
+        p_change_reason: reason.trim(),
+      },
+    )
+
+    setMonitoringPackageTransitioning(false)
+    if (transitionError) {
+      setMonitoringPackageWorkflowMessage(
+        transitionError.code === '42501'
+          ? 'Seu perfil não possui permissão para esta transição do pacote FE-08.'
+          : transitionError.message,
+      )
+      return
+    }
+
+    const labels = {
+      submit: 'Pacote FE-08 submetido para validação humana.',
+      validate: 'Pacote FE-08 validado humanamente.',
+      return: 'Pacote FE-08 devolvido para ajustes.',
+    }
+    setMonitoringPackageWorkflowMessage(labels[action])
+    setStrategicReloadToken((current) => current + 1)
+  }
+
   return (
     <section className="skpe-monitoring" aria-label="Monitoramento gerencial do Planejamento Estratégico">
       <header className="skpe-monitoring-header">
@@ -706,9 +772,36 @@ export function MonitoringSection({
                 onChange={(patch) => setMonitoringPackageDraft((current) => ({ ...current, ...patch }))}
                 onSave={() => { void saveMonitoringPackage() }}
               />
+              {strategicReadiness.packageStatus === 'in_elaboration' ? (
+                <MonitoringPackageWorkflowPanel
+                  status={strategicReadiness.packageStatus}
+                  readyForValidation={strategicReadiness.readyForValidation}
+                  canSubmit={canSubmitMonitoringPackage}
+                  canValidate={canValidateMonitoringPackage}
+                  transitioning={monitoringPackageTransitioning}
+                  message={monitoringPackageWorkflowMessage}
+                  onTransition={(action, reason, notes) => { void transitionMonitoringPackage(action, reason, notes) }}
+                />
+              ) : null}
             </>
           ) : !cycleId ? (
-            <p className="skpe-monitoring-empty">O pacote de monitoramento existe, mas nenhum ciclo está selecionado neste contexto. O painel não sintetiza desempenho sem um ciclo formal.</p>
+            <>
+              <p className="skpe-monitoring-empty">O pacote de monitoramento existe, mas nenhum ciclo está selecionado neste contexto. O painel não sintetiza desempenho sem um ciclo formal.</p>
+              {strategicReadiness.packageStatus === 'pending_validation' ? (
+                <MonitoringPackageWorkflowPanel
+                  status={strategicReadiness.packageStatus}
+                  readyForValidation={strategicReadiness.readyForValidation}
+                  canSubmit={canSubmitMonitoringPackage}
+                  canValidate={canValidateMonitoringPackage}
+                  transitioning={monitoringPackageTransitioning}
+                  message={monitoringPackageWorkflowMessage}
+                  onTransition={(action, reason, notes) => { void transitionMonitoringPackage(action, reason, notes) }}
+                />
+              ) : null}
+              {strategicReadiness.packageStatus === 'validated' ? (
+                <p className="skpe-monitoring-empty">Pacote FE-08 validado. A abertura do ciclo permanece condicionada à Formulação aprovada e à autoridade de monitoramento.</p>
+              ) : null}
+            </>
           ) : strategicPerformance ? (
             <><div className="skpe-monitoring-grid"><article><span>Progresso da Visão</span><strong>{strategicPerformance.visionProgress == null ? 'Não avaliado' : `${strategicPerformance.visionProgress.toFixed(1)}%`}</strong><small>{strategicPerformance.visionProgressStatus ?? 'sem classificação'}</small></article><article><span>Objetivos avaliados</span><strong>{strategicPerformance.objectives?.length ?? 0}</strong><small>agregados pelo runtime governado</small></article><article><span>Temas avaliados</span><strong>{strategicPerformance.themes?.length ?? 0}</strong><small>agregados pelo runtime governado</small></article></div><p className="skpe-monitoring-empty">Política de agregação: {strategicPerformance.aggregationPolicy ?? 'não informada'}.</p></>
           ) : null}

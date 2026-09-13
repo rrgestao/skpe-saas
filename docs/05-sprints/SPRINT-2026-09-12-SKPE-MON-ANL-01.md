@@ -101,3 +101,27 @@ Validação:
 - Supabase alterado pela execução do agente: NÃO.
 
 Próximo gate: expor submissão e validação humana explícitas do pacote FE-08, preservando segregação de autoridade e mantendo abertura de ciclo bloqueada até Formulação aprovada + pacote validado.
+
+## G2C — Submissão e validação humana do pacote FE-08
+
+Status: PASS
+
+Implementação:
+- a UX consulta separadamente `can_manage_skpe_formulation` e `can_validate_skpe_formulation`;
+- `submit`, `validate` e `return` são ações humanas explícitas;
+- as transições usam exclusivamente `transition_skpe_monitoring_package`;
+- cada transição exige justificativa auditável;
+- devolução exige nota de ajuste;
+- o pacote `in_elaboration` pode ser submetido somente quando `readyForValidation=true`;
+- o pacote `pending_validation` pode ser validado ou devolvido apenas por autoridade de validação;
+- pacote validado continua sem abertura automática de ciclo.
+
+Validação:
+- testes específicos: 8/8 PASS;
+- suíte completa: 148/148 PASS;
+- typecheck: PASS;
+- build: PASS;
+- `open_skpe_monitoring_cycle`: NÃO chamado neste gate;
+- Supabase alterado pela execução do agente: NÃO.
+
+Próximo gate: reconciliar a aprovação da Formulação Estratégica com a abertura governada do primeiro ciclo FE-08.
