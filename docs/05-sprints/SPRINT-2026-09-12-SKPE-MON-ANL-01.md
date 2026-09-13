@@ -203,3 +203,19 @@ Status: PASS
 - Typecheck: PASS.
 - Build: PASS.
 - Supabase alterado: NO.
+
+## G4C — RAE, decisões e aprendizado estratégico
+
+Status: PASS
+
+- Reutiliza `upsert_skpe_strategy_review` para RAE.
+- Reutiliza `upsert_skpe_strategy_review_item` para achados/análise crítica.
+- Reutiliza `record_skpe_governance_decision` para decisões humanas com responsável e prazo.
+- Reutiliza `record_skpe_strategic_learning` para aprendizado estratégico rastreável.
+- Ratificação permanece separada via `ratify_skpe_strategy_review`.
+- Decisões de alta/crítica exigem responsável e prazo na UX, coerente com a readiness de fechamento.
+- G4C targeted: 17/17 PASS.
+- Full suite: 165/165 PASS.
+- Typecheck: PASS.
+- Build: PASS.
+- Supabase alterado: NO.
