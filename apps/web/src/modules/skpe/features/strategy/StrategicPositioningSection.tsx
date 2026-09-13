@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
 import './StrategicContentSection.css'
 
 type Theme = {
@@ -36,6 +37,10 @@ export function StrategicPositioningSection({
   organizationId,
   projectId,
 }: Props) {
+  const workspace = useSkpeWorkspace()
+  const formulationId = workspace.route.formulationId
+  const effectiveProjectId = workspace.route.projectId ?? projectId
+
   const [themes, setThemes] = useState<Theme[]>([])
   const [perspectives, setPerspectives] = useState<Perspective[]>([])
   const [objectives, setObjectives] = useState<Objective[]>([])
@@ -44,16 +49,30 @@ export function StrategicPositioningSection({
   useEffect(() => {
     let active = true
 
+    if (!formulationId) {
+      setThemes([])
+      setPerspectives([])
+      setObjectives([])
+      setError('')
+      return () => {
+        active = false
+      }
+    }
+
+    setError('')
+
     const themesQuery = supabase
       .from('skpe_strategic_themes')
       .select('id,code,name,description,display_order')
       .eq('organization_id', organizationId)
+      .eq('formulation_id', formulationId)
       .order('display_order')
 
     const perspectivesQuery = supabase
       .from('skpe_bsc_perspectives')
       .select('id,code,name,description,display_order')
       .eq('organization_id', organizationId)
+      .eq('formulation_id', formulationId)
       .order('display_order')
 
     const objectivesQuery = supabase
@@ -62,16 +81,17 @@ export function StrategicPositioningSection({
         'id,code,name,description,perspective_id,perspective_code',
       )
       .eq('organization_id', organizationId)
+      .eq('formulation_id', formulationId)
       .order('code')
 
-    const scopedThemesQuery = projectId
-      ? themesQuery.eq('project_id', projectId)
+    const scopedThemesQuery = effectiveProjectId
+      ? themesQuery.eq('project_id', effectiveProjectId)
       : themesQuery
-    const scopedPerspectivesQuery = projectId
-      ? perspectivesQuery.eq('project_id', projectId)
+    const scopedPerspectivesQuery = effectiveProjectId
+      ? perspectivesQuery.eq('project_id', effectiveProjectId)
       : perspectivesQuery
-    const scopedObjectivesQuery = projectId
-      ? objectivesQuery.eq('project_id', projectId)
+    const scopedObjectivesQuery = effectiveProjectId
+      ? objectivesQuery.eq('project_id', effectiveProjectId)
       : objectivesQuery
 
     void Promise.all([
@@ -98,7 +118,15 @@ export function StrategicPositioningSection({
     return () => {
       active = false
     }
-  }, [organizationId, projectId])
+  }, [organizationId, effectiveProjectId, formulationId])
+
+  if (!formulationId) {
+    return (
+      <section className="skpe-strategy-state">
+        Selecione uma Formulação Estratégica para consultar o Mapa Estratégico.
+      </section>
+    )
+  }
 
   if (error) {
     return <section className="skpe-strategy-state is-error">{error}</section>
