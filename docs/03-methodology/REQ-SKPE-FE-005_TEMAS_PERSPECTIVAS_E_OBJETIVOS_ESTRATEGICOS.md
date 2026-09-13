@@ -465,8 +465,8 @@ A FE-04 somente estará concluída após evidência objetiva de que:
 12. inconsistências de escopo são bloqueadas;
 13. ciclos são tratados conforme a política configurada;
 14. a prontidão separa FE-04 de etapas posteriores;
-15. alterações invalidam a validação anterior;
-16. o pacote pode ser submetido, validado e devolvido;
+15. alterações anteriores à validação podem invalidar o estado de prontidão; após a validação, o ME oficial é imutável e qualquer mudança exige `begin_revision`, preservando a versão oficial anterior;
+16. o pacote pode ser submetido e validado; devolução direta é permitida apenas antes da validação humana, enquanto ME validado somente pode evoluir por revisão controlada;
 17. o avanço da Formulação exige a FE-04 validada;
 18. não existe escrita direta para `authenticated`;
 19. os arquivos foram versionados somente na branch canônica;
@@ -479,12 +479,28 @@ A FE-04 somente estará concluída após evidência objetiva de que:
 ```text
 supabase/migrations/
 20260730060000_create_strategic_themes_perspectives_and_objectives_operations.sql
+20260913130233_govern_strategic_map_product_rules.sql
 
 supabase/verification/
 verificar_fe04_temas_perspectivas_objetivos_estrategicos.sql
+
+apps/web/tests/
+strategicMapProductGovernanceContract.test.ts
 
 docs/03-methodology/
 REQ-SKPE-FE-005_TEMAS_PERSPECTIVAS_E_OBJETIVOS_ESTRATEGICOS.md
 ```
 
 A migration não insere conteúdo da COOTAQUARA nem de qualquer outra organização.
+## 16. Evidência de runtime — 2026-09-13
+
+A migration de governança Product foi aplicada no projeto Supabase `skpe-saas-dev` e registrada pelo runtime com a versão `20260913130233`.
+
+Readback confirmado:
+
+- tabela `public.skpe_strategic_map_versions` criada, inicialmente sem versões oficiais porque não havia ME validado;
+- funções Product e respectivas funções `_legacy_20260913` coexistem com as assinaturas esperadas;
+- `capture_skpe_strategic_map_version(uuid,text)` permanece executável somente por `service_role`;
+- a readiness Product permanece executável por `authenticated`, enquanto a readiness legada não é executável por `authenticated`;
+- o único pacote existente estava `in_elaboration`, com `theme_required=true`, `owner_recommended=true` e sem Tema/OE ativos no momento da aplicação;
+- não houve backfill destrutivo, alteração de conteúdo organizacional nem merge em `main`.
