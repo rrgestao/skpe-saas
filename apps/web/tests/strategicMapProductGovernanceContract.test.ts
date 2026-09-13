@@ -10,7 +10,7 @@ const positioning = readFileSync(
   'utf8',
 )
 const migration = readFileSync(
-  join(testDir, '../../../supabase/migrations/20260913014000_govern_strategic_map_product_rules.sql'),
+  join(testDir, '../../../supabase/migrations/20260913130233_govern_strategic_map_product_rules.sql'),
   'utf8',
 )
 
