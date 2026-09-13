@@ -144,7 +144,9 @@ Antes de gerar novo gate substantivo:
 6. registrar `ROADMAP_CHANGE_CANDIDATE` quando aplicável;
 7. preservar worktree dirty;
 8. não reexecutar migrations aplicadas;
-9. não fazer commit/push automático sem autorização.
+9. não fazer commit/push automático sem autorização;
+10. qualquer mudança relevante encontrada em `rrgestao/skpe-saas` ou outro repositório/branch fora da linha DEV aprovada deve gerar alerta explícito antes de ser considerada para incorporação;
+11. mudanças externas com impacto de produto seguem `ALERTA -> COMPARACAO -> IMPACTO -> RECOMENDACAO -> DECISAO ROBSON -> INCORPORACAO OU REJEICAO`.
 
 ## Links de autoridade
 

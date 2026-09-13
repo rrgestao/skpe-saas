@@ -26,6 +26,17 @@ Esta árvore mantém uma cópia de referência do Product Space canônico do SK-
 `CORPORATE_AUTHORITY=YES`
 `LOCAL_MIRROR_AUTHORITY=NO`
 `LOCAL_MIRROR_EDIT_AS_SOURCE=PROHIBITED`
+`EXTERNAL_CHANGE_AUTO_ADOPTION=PROHIBITED`
+`RRGESTAO_PRODUCT_AUTHORITY=NO`
+
+## Regra de consentimento e alerta
+
+Qualquer mudança observada em GitHub fora da linha DEV aprovada — especialmente em `rrgestao/skpe-saas` — que possa alterar direção de produto, regra de negócio, UX, arquitetura funcional, prioridade, lifecycle, semântica ou roadmap deve ser tratada como proposta externa até decisão humana explícita.
+
+Fluxo obrigatório: `ALERTA -> COMPARACAO -> IMPACTO -> RECOMENDACAO -> DECISAO ROBSON -> INCORPORACAO OU REJEICAO`.
+
+Nenhum agente deve promover automaticamente mudança encontrada em `rrgestao/skpe-saas`, no Corporate ou em outra branch/repositório para a linha canônica executável.
+
 ## Regra de uso
 
 O mirror serve para leitura, comparação, testes documentais e reconciliação Product ↔ DEV.

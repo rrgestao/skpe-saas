@@ -84,10 +84,20 @@ Consequência: esse contrato deve ser proposto ao Corporate e reconciliado com F
 7. Atualizar `roadmap.md` no Corporate somente depois dessas reconciliações.
 8. Atualizar este mirror a partir do novo SHA Corporate; nunca editar `source/` como atalho.
 
+## Regra adicional — mudanças externas e `rrgestao/skpe-saas`
+
+Qualquer mudança encontrada em `rrgestao/skpe-saas`, em outra branch ou em qualquer origem GitHub fora da linha DEV aprovada deve ser tratada como `EXTERNAL_CHANGE_CANDIDATE` quando puder afetar direção, regra, UX, arquitetura funcional, prioridade, lifecycle, semântica ou roadmap.
+
+Nenhuma dessas mudanças pode ser absorvida silenciosamente. Fluxo obrigatório: `ALERTA -> COMPARACAO -> IMPACTO -> RECOMENDACAO -> DECISAO ROBSON -> INCORPORACAO OU REJEICAO`.
+
+`rrgestao/skpe-saas` não possui autoridade autônoma para redefinir o produto. Alterações ali podem servir como colaboração, mirror ou evidência técnica, mas exigem reconciliação explícita antes de influenciar a linha executável canônica.
+
 ## Estado desta reconciliação
 
 `MIRROR_INTEGRITY=PASS`
 `CORPORATE_STATUS_PROMOTED=NO`
 `PRODUCT_DECISIONS_CHANGED=NO`
 `SUPABASE_CHANGED=NO`
+`EXTERNAL_CHANGE_AUTO_ADOPTION=PROHIBITED`
+`RRGESTAO_PRODUCT_AUTHORITY=NO`
 `NEXT_ACTION=CORPORATE_REBASE_AND_ACCEPTANCE_REVIEW`
