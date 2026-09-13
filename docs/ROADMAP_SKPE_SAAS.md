@@ -23,7 +23,7 @@ language: pt-BR
 encoding: UTF-8
 semantic_layer: product-operational-execution
 created: 2026-09-07
-updated: 2026-09-07
+updated: 2026-09-13
 ---
 
 # Roadmap operacional — SKPE-SAAS
@@ -43,6 +43,12 @@ Este documento é o roadmap operacional do repositório executável. Ele orienta
 Roadmap mestre Corporate: `br-robson/projetos`.
 
 Path: `docs/products/sk-pe/roadmap.md`.
+
+Mirror governado local de referência: `docs/corporate/sk-pe/README.md`.
+
+Matriz de reconciliação vigente: `docs/corporate/sk-pe/RECONCILIATION-2026-09-13.md`.
+
+O mirror local não substitui a autoridade Corporate e não deve ser editado como fonte de verdade.
 
 O roadmap Corporate define:
 
