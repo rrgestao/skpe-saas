@@ -219,3 +219,18 @@ Status: PASS
 - Typecheck: PASS.
 - Build: PASS.
 - Supabase alterado: NO.
+
+## G4D — Ratificação, fechamento e reabertura do ciclo
+
+Status: PASS
+
+- Reutiliza `get_skpe_monitoring_readiness` para bloquear transições incompletas.
+- Reutiliza `transition_skpe_monitoring_cycle` para `request_ratification`.
+- Reutiliza `close_skpe_monitoring_cycle` para fechamento com snapshot ratificado.
+- Reutiliza `reopen_skpe_monitoring_cycle` para reabertura controlada e supersessão do snapshot anterior.
+- Fechamento exige `pending_ratification`, `readyForClose=true` e autoridade de ratificação.
+- G4D targeted: 21/21 PASS.
+- Full suite: 169/169 PASS.
+- Typecheck: PASS.
+- Build: PASS.
+- Supabase alterado: NO.

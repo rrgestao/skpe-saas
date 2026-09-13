@@ -15,6 +15,7 @@ import { MonitoringCyclePanel, type MonitoringCycleOption } from './MonitoringCy
 import { MonitoringIndicatorCollectionPanel } from './MonitoringIndicatorCollectionPanel'
 import { MonitoringExecutionCheckInsPanel } from './MonitoringExecutionCheckInsPanel'
 import { MonitoringStrategyReviewPanel } from './MonitoringStrategyReviewPanel'
+import { MonitoringCycleGovernancePanel } from './MonitoringCycleGovernancePanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -866,6 +867,11 @@ export function MonitoringSection({
               <MonitoringStrategyReviewPanel
                 organizationId={organizationId}
                 formulationId={formulationId}
+                cycleId={effectiveCycleId}
+                onChanged={() => setStrategicReloadToken((current) => current + 1)}
+              />
+              <MonitoringCycleGovernancePanel
+                organizationId={organizationId}
                 cycleId={effectiveCycleId}
                 onChanged={() => setStrategicReloadToken((current) => current + 1)}
               />
