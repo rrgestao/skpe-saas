@@ -12,11 +12,37 @@ type DrilldownFilter =
   | 'under_analysis'
   | 'critical'
   | 'blocked'
+  | 'attention'
+  | 'without_due_date'
+
+type JourneyPerformanceSnapshot = {
+  actualProgress: number | null
+  plannedProgress: number | null
+  variancePoints: number | null
+  overdueItems: number
+  completedItems: number
+  totalItems: number
+  referenceDate: string | null
+  hasApprovedPlan: boolean
+  planningStatus: 'approved' | 'proposed' | 'unavailable'
+  currentMacrophaseCode: string | null
+  currentMacrophaseName: string | null
+  currentMacrophaseStatus: string | null
+  currentMacrophaseTargetDate: string | null
+  nextMilestoneCode: string | null
+  nextMilestoneName: string | null
+  nextMilestoneTargetDate: string | null
+}
 
 type InitiativePerformanceCockpitProps = {
+  surface?: 'dashboard' | 'monitoring'
   dashboard: unknown
+  organizationId: string
+  projectId?: string | null
   initiatives: unknown[]
+  journeySnapshot?: JourneyPerformanceSnapshot | null
   canAdjustStrategicMap: boolean
+  onJourneyDrilldown?: () => void
   onStatusDrilldown: (filter: DrilldownFilter) => void
   onObjectiveInitiativesDrilldown: (
     objectiveId: string,
@@ -72,6 +98,13 @@ function readNumber(record: Record<string, unknown>, ...keys: string[]): number 
   return null
 }
 
+function formatDashboardDate(value: string | null | undefined) {
+  if (!value) return '—'
+  const parsed = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return value
+  return new Intl.DateTimeFormat('pt-BR').format(parsed)
+}
+
 function normalizeInitiative(value: unknown): NormalizedInitiative {
   const record = asRecord(value)
   return {
@@ -104,122 +137,18 @@ function normalizeInitiative(value: unknown): NormalizedInitiative {
   }
 }
 
-function labelStatus(initiative: NormalizedInitiative) {
-  if (
-    initiative.status === 'proposed' &&
-    initiative.proposalOrigin === 'sparks_suggestion'
-  ) {
-    return 'Rascunhos'
-  }
-
-  const labels: Record<string, string> = {
-    proposed: 'Propostas',
-    under_analysis: 'Em análise',
-    approved: 'Aprovadas',
-    planned: 'Planejadas',
-    in_progress: 'Em execução',
-    on_hold: 'Em espera',
-    blocked: 'Bloqueadas',
-    completed: 'Concluídas',
-    cancelled: 'Canceladas',
-  }
-
-  return labels[initiative.status] ?? (initiative.status || 'Sem classificação')
-}
-
-function labelPriority(value: string) {
-  const labels: Record<string, string> = {
-    low: 'Baixa',
-    medium: 'Média',
-    high: 'Alta',
-    critical: 'Crítica',
-  }
-  return labels[value] ?? (value || 'Sem classificação')
-}
-
-function labelClass(value: string) {
-  const labels: Record<string, string> = {
-    program: 'Programa',
-    project: 'Projeto',
-    initiative: 'Iniciativa legada',
-    structuring_action: 'Ação estruturante',
-    process: 'Processo',
-    sprint: 'Sprint',
-    task: 'Tarefa',
-    work: 'Trabalho',
-    strategic: 'Estratégica',
-    tactical: 'Tática',
-    operational: 'Operacional',
-    risk_mitigation: 'Mitigação de risco',
-  }
-  return labels[value] ?? (value || 'Sem classificação')
-}
-
-function groupCounts(
-  initiatives: NormalizedInitiative[],
-  selector: (initiative: NormalizedInitiative) => string,
-) {
-  const counts = new Map<string, number>()
-  for (const initiative of initiatives) {
-    const key = selector(initiative)
-    counts.set(key, (counts.get(key) ?? 0) + 1)
-  }
-  return [...counts.entries()]
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label, 'pt-BR'))
-}
-
-function DistributionBars({
-  title,
-  subtitle,
-  items,
-}: {
-  title: string
-  subtitle: string
-  items: Array<{ label: string; value: number }>
-}) {
-  const max = Math.max(1, ...items.map((item) => item.value))
-
-  return (
-    <article className="skpe-performance-card">
-      <header>
-        <div>
-          <p className="skpe-performance-eyebrow">Análise de composição</p>
-          <h3>{title}</h3>
-          <span>{subtitle}</span>
-        </div>
-      </header>
-
-      <div className="skpe-performance-bars">
-        {items.map((item) => (
-          <div key={item.label} className="skpe-performance-bar-row">
-            <div className="skpe-performance-bar-label">
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-            </div>
-            <div className="skpe-performance-bar-track" aria-hidden="true">
-              <span
-                style={{
-                  width: `${Math.max(4, Math.round((item.value / max) * 100))}%`,
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </article>
-  )
-}
-
 export function InitiativePerformanceCockpit({
-  dashboard,
+  surface = 'monitoring',
+  organizationId,
+  projectId: projectIdProp = null,
   initiatives,
+  journeySnapshot = null,
   canAdjustStrategicMap,
+  onJourneyDrilldown,
   onStatusDrilldown,
   onObjectiveInitiativesDrilldown,
   onObjectivePerformanceDrilldown,
 }: InitiativePerformanceCockpitProps) {
-  const dashboardRecord = asRecord(dashboard)
   const normalized = useMemo(
     () => initiatives.map(normalizeInitiative),
     [initiatives],
@@ -228,13 +157,49 @@ export function InitiativePerformanceCockpit({
   const [formulationResolution, setFormulationResolution] = useState<
     'loading' | 'resolved' | 'unavailable'
   >('loading')
+  const [deviationRanges, setDeviationRanges] = useState({ adequateMax: 15, attentionMax: 30 })
+  const [planReadiness, setPlanReadiness] = useState({
+    objectivesReady: null as number | null,
+    objectivesTotal: null as number | null,
+    okrsReady: null as number | null,
+    okrsTotal: null as number | null,
+  })
 
   const projectId = useMemo(() => {
+    if (projectIdProp) return projectIdProp
     const ids = Array.from(
       new Set(normalized.map((item) => item.projectId).filter(Boolean)),
     )
     return ids.length === 1 ? ids[0] : null
-  }, [normalized])
+  }, [normalized, projectIdProp])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadDeviationRanges() {
+      const { data, error } = await supabase.rpc('list_sparks_effective_parameters', {
+        p_organization_id: organizationId,
+        p_module_code: 'SK-PE',
+        p_project_id: projectId,
+      })
+      if (!active || error) return
+
+      let adequateMax = 15
+      let attentionMax = 30
+      for (const raw of data ?? []) {
+        const row = asRecord(raw)
+        const key = readString(row, 'parameter_key')
+        const value = readNumber(row, 'value')
+        if (value == null) continue
+        if (key === 'SKPE.PERFORMANCE.DEVIATION.ADEQUATE_MAX_PERCENT') adequateMax = value
+        if (key === 'SKPE.PERFORMANCE.DEVIATION.ATTENTION_MAX_PERCENT') attentionMax = value
+      }
+      setDeviationRanges({ adequateMax, attentionMax: Math.max(adequateMax, attentionMax) })
+    }
+
+    void loadDeviationRanges()
+    return () => { active = false }
+  }, [organizationId, projectId])
 
   useEffect(() => {
     let active = true
@@ -275,59 +240,472 @@ export function InitiativePerformanceCockpit({
     }
   }, [projectId])
 
-  const total = normalized.length
-  const averageProgress = readNumber(dashboardRecord, 'average_progress')
-  const averageProgressForBar = Math.max(0, Math.min(100, averageProgress ?? 0))
+  useEffect(() => {
+    let active = true
 
+    async function loadPlanReadiness() {
+      if (!projectId || !formulationId || formulationResolution !== 'resolved') {
+        if (active) {
+          setPlanReadiness({
+            objectivesReady: null,
+            objectivesTotal: null,
+            okrsReady: null,
+            okrsTotal: null,
+          })
+        }
+        return
+      }
+
+      const [objectivesResponse, indicatorsResponse, targetsResponse, okrsResponse, keyResultsResponse] = await Promise.all([
+        supabase
+          .from('skpe_strategic_objectives')
+          .select('id, status, validation_status')
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId)
+          .eq('formulation_id', formulationId)
+          .neq('status', 'archived'),
+        supabase
+          .from('skpe_indicators')
+          .select('id, strategic_objective_id, status')
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId)
+          .eq('formulation_id', formulationId)
+          .eq('indicator_scope', 'strategic_kpi')
+          .eq('status', 'active'),
+        supabase
+          .from('skpe_indicator_targets')
+          .select('indicator_id, status')
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId)
+          .eq('formulation_id', formulationId)
+          .eq('status', 'active'),
+        supabase
+          .from('skpe_okrs')
+          .select('id, status')
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId)
+          .eq('formulation_id', formulationId)
+          .neq('status', 'cancelled'),
+        supabase
+          .from('skpe_key_results')
+          .select('id, okr_id, status')
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId)
+          .eq('formulation_id', formulationId)
+          .neq('status', 'cancelled'),
+      ])
+
+      if (!active) return
+
+      if (
+        objectivesResponse.error ||
+        indicatorsResponse.error ||
+        targetsResponse.error ||
+        okrsResponse.error ||
+        keyResultsResponse.error
+      ) {
+        setPlanReadiness({
+          objectivesReady: null,
+          objectivesTotal: null,
+          okrsReady: null,
+          okrsTotal: null,
+        })
+        return
+      }
+
+      const objectiveRows = (objectivesResponse.data ?? []).map(asRecord)
+      const indicatorRows = (indicatorsResponse.data ?? []).map(asRecord)
+      const targetRows = (targetsResponse.data ?? []).map(asRecord)
+      const okrRows = (okrsResponse.data ?? []).map(asRecord)
+      const keyResultRows = (keyResultsResponse.data ?? []).map(asRecord)
+
+      const indicatorsWithActiveTarget = new Set(
+        targetRows.map((row) => readString(row, 'indicator_id')).filter(Boolean),
+      )
+      const objectivesWithReadyMeasure = new Set(
+        indicatorRows
+          .filter((row) => indicatorsWithActiveTarget.has(readString(row, 'id')))
+          .map((row) => readString(row, 'strategic_objective_id'))
+          .filter(Boolean),
+      )
+      const objectivesReady = objectiveRows.filter((row) => {
+        const validationStatus = readString(row, 'validation_status')
+        return (
+          ['validated', 'approved'].includes(validationStatus) &&
+          objectivesWithReadyMeasure.has(readString(row, 'id'))
+        )
+      }).length
+
+      const keyResultIds = keyResultRows
+        .map((row) => readString(row, 'id'))
+        .filter(Boolean)
+      let linkedKeyResultIds = new Set<string>()
+
+      if (keyResultIds.length) {
+        const linksResponse = await supabase
+          .from('skpe_initiative_key_results')
+          .select('initiative_id, key_result_id')
+          .in('key_result_id', keyResultIds)
+
+        if (!active) return
+        if (!linksResponse.error) {
+          const availableInitiativeIds = new Set(normalized.map((item) => item.id))
+          linkedKeyResultIds = new Set(
+            (linksResponse.data ?? [])
+              .map(asRecord)
+              .filter((row) => availableInitiativeIds.has(readString(row, 'initiative_id')))
+              .map((row) => readString(row, 'key_result_id'))
+              .filter(Boolean),
+          )
+        }
+      }
+
+      const keyResultsByOkr = new Map<string, string[]>()
+      for (const row of keyResultRows) {
+        const okrId = readString(row, 'okr_id')
+        const keyResultId = readString(row, 'id')
+        if (!okrId || !keyResultId) continue
+        const current = keyResultsByOkr.get(okrId) ?? []
+        current.push(keyResultId)
+        keyResultsByOkr.set(okrId, current)
+      }
+
+      const okrsReady = okrRows.filter((row) => {
+        const okrId = readString(row, 'id')
+        const keyResults = keyResultsByOkr.get(okrId) ?? []
+        return keyResults.length > 0 && keyResults.every((keyResultId) => linkedKeyResultIds.has(keyResultId))
+      }).length
+
+      setPlanReadiness({
+        objectivesReady,
+        objectivesTotal: objectiveRows.length,
+        okrsReady,
+        okrsTotal: okrRows.length,
+      })
+    }
+
+    void loadPlanReadiness()
+    return () => { active = false }
+  }, [formulationId, formulationResolution, organizationId, projectId, normalized])
+
+  const total = normalized.length
+  const proposals = normalized.filter((item) => item.status === 'proposed').length
   const drafts = normalized.filter(
     (item) =>
       item.status === 'proposed' &&
       item.proposalOrigin === 'sparks_suggestion',
   ).length
   const inProgress = normalized.filter((item) => item.status === 'in_progress').length
+  const underAnalysis = normalized.filter((item) => item.status === 'under_analysis').length
   const blocked = normalized.filter((item) => item.status === 'blocked').length
+  const completed = normalized.filter((item) => item.status === 'completed').length
   const critical = normalized.filter((item) => item.criticality === 'critical').length
   const withoutDueDate = normalized.filter((item) => !item.dueDate).length
+  const otherStatuses = Math.max(
+    0,
+    total - inProgress - proposals - underAnalysis - blocked - completed,
+  )
 
-  const statusDistribution = groupCounts(normalized, labelStatus)
-  const priorityDistribution = groupCounts(normalized, (item) => labelPriority(item.priority))
-  const areaDistribution = groupCounts(
-    normalized,
-    (item) => item.responsibleArea || 'Sem área responsável',
-  )
-  const classDistribution = groupCounts(
-    normalized,
-    (item) => labelClass(item.initiativeClass),
-  )
+  const portfolioSegments = [
+    { key: 'in_progress', label: 'Em execução', value: inProgress, color: 'var(--organization-secondary, #01877A)' },
+    { key: 'proposals', label: 'Propostas', value: proposals, color: 'color-mix(in srgb, var(--organization-secondary, #01877A) 58%, white)' },
+    { key: 'under_analysis', label: 'Em análise', value: underAnalysis, color: 'var(--sparks-warning, #c99500)' },
+    { key: 'blocked', label: 'Bloqueadas', value: blocked, color: 'var(--sparks-danger, #b42318)' },
+    { key: 'completed', label: 'Concluídas', value: completed, color: 'var(--sparks-text-muted, #78847e)' },
+    { key: 'other', label: 'Outras situações', value: otherStatuses, color: '#b8c1bd' },
+  ].filter((segment) => segment.value > 0)
+
+  let portfolioCursor = 0
+  const portfolioGradientStops = portfolioSegments.map((segment) => {
+    const start = portfolioCursor
+    const end = total > 0 ? start + (segment.value / total) * 100 : start
+    portfolioCursor = end
+    return `${segment.color} ${start.toFixed(2)}% ${end.toFixed(2)}%`
+  })
+  const portfolioGradient = total > 0 && portfolioGradientStops.length
+    ? `conic-gradient(${portfolioGradientStops.join(', ')})`
+    : 'conic-gradient(#dfe6e2 0% 100%)'
 
   const attentionTotal = drafts + critical + blocked + withoutDueDate
-
-  const executingInitiatives = normalized.filter(
-    (item) => item.status === 'in_progress',
-  )
-
-  const formatDate = (value: string) => {
-    if (!value) return 'Não informado'
-    const datePart = value.slice(0, 10)
-    const parts = datePart.split('-')
-    return parts.length === 3
-      ? `${parts[2]}/${parts[1]}/${parts[0]}`
-      : value
-  }
+  const attentionMax = Math.max(drafts, critical, blocked, withoutDueDate, 1)
+  const journeyActual = journeySnapshot?.actualProgress == null
+    ? null
+    : Math.max(0, Math.min(100, journeySnapshot.actualProgress))
+  const journeyPlanned = journeySnapshot?.plannedProgress == null
+    ? null
+    : Math.max(0, Math.min(100, journeySnapshot.plannedProgress))
+  const journeyVariance = journeySnapshot?.variancePoints ?? null
+  const journeyVarianceAbs = journeyVariance == null ? null : Math.abs(journeyVariance)
+  const journeyVarianceBand = journeyVarianceAbs == null
+    ? 'unavailable'
+    : journeyVarianceAbs <= deviationRanges.adequateMax
+      ? 'adequate'
+      : journeyVarianceAbs <= deviationRanges.attentionMax
+        ? 'attention'
+        : 'critical'
+  const journeyVarianceTooltip = journeyVarianceAbs == null
+    ? 'Desvio indisponível até existir leitura temporal suficiente.'
+    : journeyVarianceBand === 'adequate'
+      ? `Faixa adequada: desvio absoluto de ${journeyVarianceAbs.toFixed(0)}%, dentro do limite de ${deviationRanges.adequateMax}%.`
+      : journeyVarianceBand === 'attention'
+        ? `Faixa de atenção: desvio absoluto de ${journeyVarianceAbs.toFixed(0)}%, acima de ${deviationRanges.adequateMax}% e até ${deviationRanges.attentionMax}%.`
+        : `Faixa crítica: desvio absoluto de ${journeyVarianceAbs.toFixed(0)}%, acima de ${deviationRanges.attentionMax}%.`
+  const journeyPlanLabel = journeySnapshot?.planningStatus === 'approved'
+    ? 'Planejado aprovado até hoje'
+    : journeySnapshot?.planningStatus === 'proposed'
+      ? 'Proposto até hoje'
+      : 'Planejado até hoje'
+  const macrophasesProgress = journeySnapshot?.totalItems
+    ? Math.max(0, Math.min(100, (journeySnapshot.completedItems / journeySnapshot.totalItems) * 100))
+    : 0
+  const objectivesReadinessProgress = planReadiness.objectivesTotal
+    ? Math.max(0, Math.min(100, ((planReadiness.objectivesReady ?? 0) / planReadiness.objectivesTotal) * 100))
+    : 0
+  const okrsReadinessProgress = planReadiness.okrsTotal
+    ? Math.max(0, Math.min(100, ((planReadiness.okrsReady ?? 0) / planReadiness.okrsTotal) * 100))
+    : 0
 
   return (
     <section className="skpe-performance-cockpit" aria-label="Painel de Resultados e Desempenho">
+      {surface === 'dashboard' ? (
+        <div className="skpe-performance-dashboard-layout">
+      <section className="skpe-performance-results-section">
+        <header className="skpe-performance-panel-heading">
+          <h2>Desenvolvimento do Plano Estratégico</h2>
+          <p>
+            Acompanhe o avanço da Jornada e a prontidão dos elementos necessários à execução da estratégia.
+          </p>
+        </header>
 
+        <article
+          className="skpe-performance-journey-comparison"
+          title="Comparação operacional das macrofases da Jornada: progresso realizado versus avanço previsto pelas datas do plano institucional vigente."
+        >
+          <div className="skpe-performance-journey-comparison__heading">
+            <div>
+              <strong>Jornada frente ao planejado</strong>
+              <span>Leitura atual das macrofases</span>
+            </div>
 
+          </div>
+          <div className="skpe-performance-journey-bars">
+            <div className="skpe-performance-journey-bar-row">
+              <div><span>Realizado</span><strong>{journeyActual == null ? '—' : `${journeyActual.toFixed(0)}%`}</strong></div>
+              <div className="skpe-performance-journey-track"><span style={{ width: journeyActual == null ? '0%' : `${journeyActual}%` }} /></div>
+            </div>
+            <div className="skpe-performance-journey-bar-row is-plan">
+              <div><span>{journeyPlanLabel}</span><strong>{journeyPlanned == null ? '—' : `${journeyPlanned.toFixed(0)}%`}</strong></div>
+              <div className="skpe-performance-journey-track"><span style={{ width: journeyPlanned == null ? '0%' : `${journeyPlanned}%` }} /></div>
+            </div>
+          </div>
+          <div
+            className={`skpe-performance-journey-variance is-${journeyVarianceBand}`}
+            title={journeyVarianceTooltip}
+            aria-label={`Desvio atual. ${journeyVarianceTooltip}`}
+          >
+            <span>Desvio atual</span>
+            <strong className={journeyVariance == null ? '' : journeyVariance < 0 ? 'is-negative' : journeyVariance > 0 ? 'is-positive' : ''}>
+              {journeyVariance == null ? '—' : `${journeyVariance >= 0 ? '+' : ''}${journeyVariance.toFixed(0)}%`}
+            </strong>
+          </div>
+        </article>
+
+        <div className="skpe-performance-results-grid">
+          <article
+            className="skpe-performance-result-card"
+            title={journeySnapshot
+              ? `${journeySnapshot.completedItems} de ${journeySnapshot.totalItems} macrofases concluídas. ${journeySnapshot.overdueItems} com desvio temporal.`
+              : 'Situação das macrofases indisponível.'}
+          >
+            <div className="skpe-performance-result-card__heading">
+              <span>Macrofases</span>
+              <strong>
+                {journeySnapshot ? `${journeySnapshot.completedItems} de ${journeySnapshot.totalItems}` : '—'}
+              </strong>
+              <small>{journeySnapshot ? `${journeySnapshot.overdueItems} com desvio temporal` : 'Situação indisponível'}</small>
+            </div>
+            <div className="skpe-performance-result-track">
+              <span style={{ width: `${macrophasesProgress}%` }} />
+            </div>
+          </article>
+
+          <article
+            className="skpe-performance-result-card"
+            title="Objetivo Estratégico pronto = validado ou aprovado, com pelo menos um indicador estratégico ativo e uma meta ativa associada."
+          >
+            <div className="skpe-performance-result-card__heading">
+              <span>Objetivos Estratégicos</span>
+              <strong>
+                {planReadiness.objectivesTotal == null
+                  ? '—'
+                  : `${planReadiness.objectivesReady ?? 0} de ${planReadiness.objectivesTotal}`}
+              </strong>
+              <small>com indicadores e metas prontos</small>
+            </div>
+            <div className="skpe-performance-result-track">
+              <span style={{ width: `${objectivesReadinessProgress}%` }} />
+            </div>
+          </article>
+
+          <article
+            className="skpe-performance-result-card"
+            title="OKR pronto para execução = possui KRs cadastrados e todos os seus KRs possuem ao menos uma iniciativa do portfólio vinculada."
+          >
+            <div className="skpe-performance-result-card__heading">
+              <span>OKRs</span>
+              <strong>
+                {planReadiness.okrsTotal == null
+                  ? '—'
+                  : `${planReadiness.okrsReady ?? 0} de ${planReadiness.okrsTotal}`}
+              </strong>
+              <small>com KRs cobertos por iniciativas</small>
+            </div>
+            <div className="skpe-performance-result-track">
+              <span style={{ width: `${okrsReadinessProgress}%` }} />
+            </div>
+          </article>
+        </div>
+
+        <button
+          type="button"
+          className="skpe-performance-current-macrophase"
+          onClick={onJourneyDrilldown}
+          disabled={!onJourneyDrilldown}
+        >
+          <div className="skpe-performance-current-macrophase__heading">
+            <div>
+              <span>Macrofase atual em andamento</span>
+              <strong>
+                {journeySnapshot?.currentMacrophaseName ?? 'Macrofase em andamento não identificada'}
+              </strong>
+
+            </div>
+            <span aria-hidden="true">›</span>
+          </div>
+          <div className="skpe-performance-current-macrophase__facts">
+            <div>
+              <span>Status</span>
+              <strong>
+                {journeySnapshot?.currentMacrophaseStatus === 'in_progress'
+                  ? 'Em andamento'
+                  : journeySnapshot?.currentMacrophaseStatus ?? '—'}
+              </strong>
+            </div>
+            <div>
+              <span>Data alvo</span>
+              <strong>{journeySnapshot?.nextMilestoneTargetDate ? formatDashboardDate(journeySnapshot.nextMilestoneTargetDate) : '  /  /  '}</strong>
+            </div>
+          </div>
+        </button>
+      </section>
+
+      <section className="skpe-performance-executive-column" aria-label="Execução estratégica e atenção à gestão">
+        <header className="skpe-performance-panel-heading">
+          <h2>Execução estratégica e atenção à gestão</h2>
+          <p>Acompanhe o que está sendo executado e onde a gestão precisa agir.</p>
+        </header>
+
+      <section className="skpe-performance-execution-section">
+        <header className="skpe-performance-section-heading">
+          <div>
+            <h2>Monitoramento Executivo das Iniciativas</h2>
+          </div>
+          <p title="O avanço operacional das iniciativas é acompanhado separadamente do desempenho dos Objetivos Estratégicos; progresso de execução não é convertido automaticamente em resultado estratégico.">
+            Execução corrente do portfólio de iniciativas.
+          </p>
+        </header>
+
+        <div className="skpe-performance-portfolio-visual">
+          <button
+            type="button"
+            className="skpe-performance-portfolio-donut"
+            style={{ background: portfolioGradient }}
+            onClick={() => onStatusDrilldown('all')}
+            aria-label={`Portfólio: ${total} iniciativas visíveis`}
+          >
+            <span>
+              <strong>{total}</strong>
+              <small>iniciativas</small>
+            </span>
+          </button>
+
+          <div className="skpe-performance-portfolio-legend" aria-label="Distribuição do portfólio por situação">
+            {portfolioSegments.map((segment) => (
+              <div key={segment.key}>
+                <span className="skpe-performance-portfolio-dot" style={{ background: segment.color }} />
+                <span>{segment.label}</span>
+                <strong>
+                  {segment.value}
+                  {total > 0 ? ` (${Math.round((segment.value / total) * 100)}%)` : ''}
+                </strong>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="skpe-performance-attention-card"
+            title="Soma dos sinais governados que exigem atenção da gestão."
+            onClick={() => onStatusDrilldown('attention')}
+          >
+            <span>Atenção necessária</span>
+            <strong>{attentionTotal}</strong>
+            <small>sinais para gestão</small>
+          </button>
+        </div>
+      </section>
+
+      <section className="skpe-performance-attention-section">
+        <header className="skpe-performance-section-heading">
+          <div>
+            <p className="skpe-performance-eyebrow">Gestão por exceção</p>
+            <h2>Atenção da Gestão</h2>
+          </div>
+          <p title="A liderança organizacional é distinta da custódia provisória do consultor SPARKOOP.">
+            Sinais que demandam ação ou decisão da gestão.
+          </p>
+        </header>
+        <div className="skpe-performance-attention-bars">
+          {[
+            { label: 'Propostas para curadoria', value: drafts, filter: 'draft' as const, tone: 'primary' },
+            { label: 'Iniciativas críticas', value: critical, filter: 'critical' as const, tone: 'warning' },
+            { label: 'Bloqueadas', value: blocked, filter: 'blocked' as const, tone: 'danger' },
+            { label: 'Sem término-alvo', value: withoutDueDate, filter: 'without_due_date' as const, tone: 'muted' },
+          ].map((item) => (
+            <button
+              key={item.filter}
+              type="button"
+              className="skpe-performance-attention-bar"
+              onClick={() => onStatusDrilldown(item.filter)}
+            >
+              <span>{item.label}</span>
+              <span className="skpe-performance-attention-track">
+                <span
+                  className={`is-${item.tone}`}
+                  style={{ width: `${(item.value / attentionMax) * 100}%` }}
+                />
+              </span>
+              <strong>{item.value}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+      </section>
+
+        </div>
+      ) : (
+        <>
       <section className="skpe-performance-map-section">
         <header className="skpe-performance-section-heading">
           <div>
-            <h2>Mapa Estratégico</h2>
+            <h2
+              className="skpe-performance-map-title"
+              tabIndex={0}
+              data-tooltip="O farol de cada Objetivo Estratégico permanece cinza enquanto não houver sensibilização governada por execução, indicadores e resultados apurados."
+            >
+              Mapa Estratégico
+            </h2>
           </div>
-          <p>
-            O farol de cada Objetivo Estratégico permanece cinza enquanto não houver
-            sensibilização governada por execução, indicadores e resultados apurados.
-          </p>
         </header>
 
         {formulationResolution === 'loading' ? (
@@ -347,225 +725,8 @@ export function InitiativePerformanceCockpit({
         )}
       </section>
 
-      <section className="skpe-performance-results-section">
-        <header className="skpe-performance-section-heading">
-          <div>
-
-            <h2>Resultados e desempenho da estratégia</h2>
-          </div>
-          <p>
-            Execução, indicadores e resultados aparecem aqui somente quando houver
-            evidência suficiente. Ausência de apuração não é convertida em zero.
-          </p>
-        </header>
-
-        <div className="skpe-performance-results-grid">
-          <article className="skpe-performance-result-card">
-            <div className="skpe-performance-result-card__heading">
-              <span>Execução média do portfólio</span>
-              <strong>
-                {averageProgress == null ? '—' : `${averageProgress.toFixed(0)}%`}
-              </strong>
-            </div>
-            <div className="skpe-performance-result-track">
-              <span
-                style={{
-                  width: averageProgress == null ? '0%' : `${averageProgressForBar}%`,
-                }}
-              />
-            </div>
-            <small>Leitura baseada apenas na regra atualmente governada.</small>
-          </article>
-
-          <article className="skpe-performance-result-card is-pending">
-            <div className="skpe-performance-result-card__heading">
-              <span>Indicadores e metas</span>
-              <strong>—</strong>
-            </div>
-            <div className="skpe-performance-result-placeholder">
-              Aguardando apuração governada
-            </div>
-            <small>
-              Será ativado quando Medidas & Desempenho fornecer série, meta e resultado
-              comparáveis.
-            </small>
-          </article>
-
-          <article className="skpe-performance-result-card is-pending">
-            <div className="skpe-performance-result-card__heading">
-              <span>Resultados dos Objetivos Estratégicos</span>
-              <strong>—</strong>
-            </div>
-            <div className="skpe-performance-result-placeholder">
-              Faróis ainda não sensibilizados
-            </div>
-            <small>
-              Cinza = ainda não sensibilizado. Verde, amarelo, vermelho e azul dependem
-              de regra e evidência governadas.
-            </small>
-          </article>
-        </div>
-      </section>
-
-      <section className="skpe-performance-execution-section">
-        <header className="skpe-performance-section-heading">
-          <div>
-            <h2>Monitoramento das iniciativas em curso</h2>
-          </div>
-          <p>
-            O avanço operacional das iniciativas é acompanhado separadamente do
-            desempenho dos Objetivos Estratégicos. Progresso de execução não é
-            convertido automaticamente em resultado estratégico.
-          </p>
-        </header>
-
-        {executingInitiatives.length > 0 ? (
-          <div className="skpe-performance-executing-list">
-            {executingInitiatives.map((initiative) => {
-              const progress = Math.max(0, Math.min(100, initiative.progress ?? 0))
-              return (
-                <article
-                  key={initiative.id || initiative.code || initiative.name}
-                  className="skpe-performance-executing-card"
-                >
-                  <div className="skpe-performance-executing-main">
-                    <div className="skpe-performance-executing-title">
-                      <span>{initiative.code || 'Iniciativa em execução'}</span>
-                      <strong>{initiative.name || 'Sem título informado'}</strong>
-                    </div>
-
-                    <div
-                      className="skpe-performance-executing-progress"
-                      aria-label={`Progresso da iniciativa: ${progress.toFixed(0)}%`}
-                    >
-                      <div className="skpe-performance-executing-progress-value">
-                        <strong>{initiative.progress == null ? '—' : `${progress.toFixed(0)}%`}</strong>
-                        <span>andamento</span>
-                      </div>
-                      <div className="skpe-performance-executing-progress-track">
-                        <span
-                          style={{
-                            width: initiative.progress == null ? '0%' : `${progress}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="skpe-performance-executing-facts">
-                    <div>
-                      <span>Área responsável</span>
-                      <strong>{initiative.responsibleArea || 'Não definida'}</strong>
-                    </div>
-                    <div>
-                      <span>Responsável atual</span>
-                      <strong>{initiative.responsibleName || 'Liderança organizacional pendente'}</strong>
-                    </div>
-                    <div>
-                      <span>Início</span>
-                      <strong>{formatDate(initiative.startDate)}</strong>
-                    </div>
-                    <div>
-                      <span>Término-alvo</span>
-                      <strong>{formatDate(initiative.dueDate)}</strong>
-                    </div>
-                    <div>
-                      <span>Última atualização</span>
-                      <strong>{formatDate(initiative.lastUpdateAt)}</strong>
-                    </div>
-                    <div>
-                      <span>Saúde</span>
-                      <strong>{initiative.healthStatus || 'Ainda não sensibilizada'}</strong>
-                    </div>
-                  </div>
-
-                  <div className="skpe-performance-executing-objectives">
-                    <span>Objetivos Estratégicos vinculados</span>
-                    <strong>
-                      {initiative.strategicObjectiveNames.length > 0
-                        ? initiative.strategicObjectiveNames.join(' • ')
-                        : 'Nenhum vínculo materializado no portfólio atual'}
-                    </strong>
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="skpe-performance-result-placeholder">
-            Nenhuma iniciativa está atualmente em execução.
-          </div>
-        )}
-
-        <div className="skpe-performance-execution-summary-heading">
-          <span>Visão consolidada do portfólio</span>
-        </div>
-
-        <div className="skpe-performance-summary-grid">
-          <button type="button" className="skpe-performance-summary-card" onClick={() => onStatusDrilldown('all')}>
-            <span>Portfólio</span><strong>{total}</strong><small>iniciativas visíveis</small>
-          </button>
-          <button type="button" className="skpe-performance-summary-card" onClick={() => onStatusDrilldown('in_progress')}>
-            <span>Em execução</span><strong>{inProgress}</strong><small>execução corrente</small>
-          </button>
-          <button type="button" className="skpe-performance-summary-card is-attention" onClick={() => onStatusDrilldown('draft')}>
-            <span>Rascunhos</span><strong>{drafts}</strong><small>aguardando curadoria</small>
-          </button>
-          <div className="skpe-performance-summary-card is-attention">
-            <span>Atenção necessária</span><strong>{attentionTotal}</strong><small>sinais governados para gestão</small>
-          </div>
-        </div>
-      </section>
-
-      <section className="skpe-performance-attention-section">
-        <article className="skpe-performance-card skpe-performance-attention">
-          <header>
-            <div>
-              <p className="skpe-performance-eyebrow">Gestão por exceção</p>
-              <h3>Atenção da Gestão</h3>
-              <span>
-                A liderança organizacional é distinta da custódia provisória do
-                consultor SPARKOOP.
-              </span>
-            </div>
-          </header>
-          <div className="skpe-performance-attention-grid">
-            <button type="button" onClick={() => onStatusDrilldown('draft')}><strong>{drafts}</strong><span>Rascunhos para curadoria</span></button>
-            <button type="button" onClick={() => onStatusDrilldown('critical')}><strong>{critical}</strong><span>Iniciativas críticas</span></button>
-            <button type="button" onClick={() => onStatusDrilldown('blocked')}><strong>{blocked}</strong><span>Bloqueadas</span></button>
-            <div><strong>—</strong><span>Liderança organizacional pendente de designação</span></div>
-            <div><strong>{withoutDueDate}</strong><span>Sem término-alvo</span></div>
-          </div>
-        </article>
-      </section>
-
-      <section className="skpe-performance-composition-section">
-        <header className="skpe-performance-section-heading">
-          <div>
-            <p className="skpe-performance-eyebrow">Composição do portfólio</p>
-            <h2>Leitura estrutural das iniciativas</h2>
-          </div>
-          <p>
-            Distribuições de apoio à análise. Não substituem a leitura de resultados
-            e desempenho.
-          </p>
-        </header>
-        <div className="skpe-performance-grid">
-          <DistributionBars title="Situação do portfólio" subtitle="Composição por situação governada." items={statusDistribution} />
-          <DistributionBars title="Prioridade" subtitle="Composição atual por nível de prioridade." items={priorityDistribution} />
-          <DistributionBars title="Área responsável" subtitle="Distribuição da responsabilidade organizacional registrada." items={areaDistribution} />
-          <DistributionBars title="Classe de iniciativa" subtitle="Composição atual por classificação da iniciativa." items={classDistribution} />
-        </div>
-      </section>
-
-      <div className="skpe-performance-data-note">
-        <strong>Leituras ainda não simuladas:</strong>
-        <span>
-          evolução temporal, planejado x realizado, desempenho de indicadores e metas,
-          atraso, saúde consolidada do Mapa Estratégico e liderança organizacional
-          permanecem bloqueados até existir contrato de dados e evidência suficientes.
-        </span>
-      </div>
+        </>
+      )}
     </section>
   )
 }

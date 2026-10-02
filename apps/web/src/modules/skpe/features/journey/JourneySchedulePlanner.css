@@ -308,4 +308,165 @@
   .skpe-schedule-readiness {
     grid-template-columns: 1fr;
   }
+}.skpe-schedule-draft-gantt,
+.skpe-schedule-grid-workspace,
+.skpe-schedule-item-editor {
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #ffffff;
 }
+
+.skpe-schedule-draft-gantt {
+  padding: 0.9rem;
+}
+
+.skpe-schedule-draft-gantt-heading,
+.skpe-schedule-grid-heading,
+.skpe-schedule-item-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.skpe-schedule-draft-gantt-heading div,
+.skpe-schedule-grid-heading div,
+.skpe-schedule-item-editor-heading div {
+  display: grid;
+  gap: 0.1rem;
+}.skpe-schedule-draft-gantt-heading small,
+.skpe-schedule-grid-heading small,
+.skpe-schedule-item-editor-heading small,
+.skpe-schedule-draft-gantt-heading > span,
+.skpe-schedule-grid-heading > span,
+.skpe-schedule-item-editor-heading > span {
+  color: #687871;
+  font-size: 0.68rem;
+}
+
+.skpe-schedule-grid-workspace {
+  padding: 0.85rem;
+}
+
+.skpe-schedule-smart-grid {
+  min-height: 420px;
+}
+
+.skpe-schedule-item-editor {
+  margin-top: 0.8rem;
+  padding: 0.85rem;
+  background: #f8fbfa;
+}
+
+.skpe-schedule-item-editor-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}.skpe-schedule-item-editor-fields label {
+  display: grid;
+  gap: 0.35rem;
+  color: #4d6158;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.skpe-schedule-item-editor-fields label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.skpe-schedule-item-editor-fields input {
+  min-height: 38px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccd9d4;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #243c34;
+  font: inherit;
+}
+
+.skpe-schedule-item-editor-hint {
+  display: block;
+  margin-top: 0.6rem;
+  color: #6a7a73;
+}@media (max-width: 900px) {
+  .skpe-schedule-item-editor-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-schedule-draft-gantt-heading,
+  .skpe-schedule-grid-heading,
+  .skpe-schedule-item-editor-heading {
+    align-items: flex-start;
+    display: grid;
+  }
+}
+/* SPARKS JOURNEY SCHEDULE VISUAL V1 */
+.skpe-schedule-planner-card,
+.skpe-schedule-planner-header,
+.skpe-schedule-planner-empty,
+.skpe-schedule-approved-banner,
+.skpe-schedule-approval-panel,
+.skpe-schedule-readonly-items,
+.skpe-schedule-table-wrap {
+  border-color: var(--sparks-border, #dbe6e1);
+  border-radius: var(--sparks-radius-card, 14px);
+  background: var(--sparks-surface, #fff);
+  box-shadow: var(--sparks-shadow-card, 0 5px 18px rgba(25,44,37,.045));
+}
+
+.skpe-schedule-planner-header {
+  padding: 1rem 1.1rem;
+}
+
+.skpe-schedule-planner-header h2 {
+  color: var(--sparks-text, #18251f);
+  letter-spacing: -0.02em;
+}
+
+.skpe-schedule-planner-header p {
+  color: var(--sparks-text-muted, #6b7b74);
+}
+
+.skpe-schedule-planner-rules span,
+.skpe-schedule-version-status span,
+.skpe-schedule-version-status strong {
+  border-color: var(--sparks-border, #dbe6e1);
+  background: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 5%, white);
+}
+
+.skpe-schedule-actions button.is-primary {
+  border-color: var(--organization-primary, var(--sparks-accent, #176b53));
+  background: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.skpe-schedule-create-form button,
+.skpe-schedule-actions button,
+.skpe-schedule-approved-banner button {
+  border-radius: var(--sparks-radius-control, 10px);
+}
+
+.skpe-schedule-create-form button:hover,
+.skpe-schedule-actions button:hover,
+.skpe-schedule-approved-banner button:hover {
+  background: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 7%, white);
+}
+
+.skpe-schedule-version-bar,
+.skpe-schedule-readiness > div {
+  border-color: var(--sparks-border, #dbe6e1);
+  border-radius: var(--sparks-radius-control, 10px);
+  background: var(--sparks-surface-subtle, #f3f7f5);
+}
+
+.skpe-schedule-readiness strong {
+  color: var(--sparks-text, #18251f);
+}
+
+.skpe-schedule-table th {
+  background: var(--sparks-surface-subtle, #f3f7f5);
+  color: var(--sparks-text-muted, #6b7b74);
+}
+/* SPARKS JOURNEY SCHEDULE VISUAL V1 END */

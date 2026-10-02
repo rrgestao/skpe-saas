@@ -712,3 +712,58 @@ O [piloto no owner de Medidas](capabilities/SKPE-MED-DES-01-medidas-desempenho.m
 Qualificação das evidências históricas acima: MeasuresPerformanceWorkspace retorna SparksMeasureDualSelector quando mode=administration, antes do JSX antigo de adoção contextual. Assim, a presença do handler adopt_sparks_measure_reference_indicator não comprova UI alcançável para adoção em objetivo; o contrato SQL continua disponível. Ver F-MED-006 e BR-SKPE-MED-042 no owner, com fonte fixada. Adoção organizacional e edição/transição de benchmark continuam com consumidores identificados. C01/C02 permanecem OPEN_PRODUCT_DECISION.
 
 O piloto também distingue a agregação preparatória por ciclo (que pode preferir submitted) do gate de fechamento/snapshot; C04 continua OPEN_PRODUCT_DECISION. Nenhuma regra implementada foi promovida automaticamente a intenção. Testes diretos das regras não foram localizados no escopo pesquisado; runtime e aceite continuam UNKNOWN. Esta documentação não reabre a baseline inteira nem autoriza implementação. Retomada funcional de C01/C02/C04 permanece condicionada à retomada de Medidas.
+
+## Current Truth delta — 2026-09-16 — Medidas e Desempenho
+
+A baseline documental anterior permanece como registro histórico, porém as seguintes decisões de Produto passam a compor o Current Truth:
+
+- `TRANSVERSAL_PLATFORM_DIRECTION=APPROVED` para Medidas e Desempenho;
+- `SKPE-MED-DES-01` preservado como origem/especialização, sem ownership técnico definitivo;
+- transição `Facade -> Convergence -> eventual Storage Evolution`;
+- tabelas `skpe_*` preservadas nesta etapa;
+- `Metric Adoption/Binding` transversal aprovado;
+- `Benchmark Comparability Assessment` aprovado;
+- Performance Rule/Assessment versionáveis aprovados conceitualmente, com preservação dos cálculos atuais;
+- carga KPI/BMK v1.0 bloqueada até reconciliação semântica.
+
+Runtime de catálogo verificado em 16/09/2026: 60 linhas, 46 códigos vigentes e 14 versões históricas. A base recebida contém 78 candidatos; o número canônico final somente será conhecido após merge/reconciliação.
+
+Os avanços de Medidas/Monitoramento/Iniciativas de 11–13/09/2026 são baseline de não regressão.
+
+A autoridade operacional vigente passa a considerar o worktree local como fonte do desenvolvimento ativo, `rrgestao/skpe-saas` como remoto principal e `sparkooptech/skpe-saas` como remoto secundário de comparação/reconciliação.
+
+Referências: `ADR-PLAT-MEAS-001` e `RECONCILIATION-2026-09-16-MEASUREMENT-PERFORMANCE.md`.
+
+## Runtime confirmation — 2026-09-16 — transversal facade x physical authority
+
+Consulta read-only ao Supabase confirmou que `sparks_measure_indicators`, `sparks_measure_targets`, `sparks_measure_benchmarks`, `sparks_measure_measurements`, `sparks_measure_reference_catalog`, `sparks_measure_reference_benchmarks` e `sparks_performance_snapshots` permanecem views. A autoridade física correspondente continua em tabelas `skpe_*`.
+
+A exceção relevante é `sparks_measure_organization_indicators`, que já é tabela física transversal e representa adoção organizacional/reconciliação de referência.
+
+Também foram confirmadas no runtime as RPCs transversais de leitura, escrita, catálogo, adoção organizacional, histórico e parâmetros de monitoramento. As fachadas de escrita de indicador/meta/benchmark/medição ainda delegam para contratos SK-PE.
+
+`TRANSVERSAL_API_EXISTS=YES`
+
+`TRANSVERSAL_PHYSICAL_ADOPTION_LAYER_EXISTS=YES`
+
+`MEASURE_CORE_STORAGE_STILL_SKPE_COUPLED=YES`
+
+`FACADE_THEN_STORAGE_CONVERGENCE_REMAINS_RECOMMENDED=YES`
+
+A consulta live resolve a incerteza anterior de existência/publicação desses objetos, mas não comprova sucesso funcional de todos os fluxos autenticados. Em particular, `adopt_sparks_measure_reference_indicator` permanece `IMPLEMENTED_NOT_RUNTIME_PROVEN` porque não há adoção contextual por catálogo materializada no conjunto observado e não foi localizado teste específico da RPC.
+
+### Delta 2026-09-16 — M1 preparado, nao aplicado
+
+A Fundacao Transversal de Medidas e Desempenho possui agora uma proposta de migration M1 versionada no worktree, ainda sem execucao de DDL.
+
+M1 propoe somente `sparks_measure_bindings` e `sparks_benchmark_comparability_assessments`, mantendo storage, calculos, snapshots e ciclos `skpe_*` inalterados.
+
+O adapter M1 e fail-closed: apenas SK-PE possui validacao de binding/comparabilidade neste incremento. Outros modulos permanecem sem escrita ate adapter governado proprio.
+
+Validacao estatica: `CREATE_TABLE_COUNT=2`; `RLS_ENABLE_COUNT=2`; `SKPE_MUTATION_COUNT=0`; `DIFF_CHECK=PASS`.
+
+`M1_MIGRATION_PROPOSAL=PREPARED`
+
+`M1_APPLIED_TO_DATABASE=NO`
+
+`CATALOG_IMPORT_EXECUTED=NO`

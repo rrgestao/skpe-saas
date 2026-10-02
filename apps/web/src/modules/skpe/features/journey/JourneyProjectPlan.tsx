@@ -55,6 +55,13 @@ type JourneyProjectPlanProps = {
   canManageJourney: boolean
   formatDate: (value: string | null) => string
   onPlanMaterialized: () => void
+  projectLeadName?: string | null
+  projectLeadEmail?: string | null
+  organizationLeadName?: string | null
+  organizationLeadEmail?: string | null
+  sparkoopLeadName?: string | null
+  sparkoopLeadEmail?: string | null
+  initialStage?: ProjectPlanStage
 }
 
 const stages: Array<{
@@ -115,10 +122,17 @@ export function JourneyProjectPlan({
   canManageJourney,
   formatDate,
   onPlanMaterialized,
+  projectLeadName = null,
+  projectLeadEmail = null,
+  organizationLeadName = null,
+  organizationLeadEmail = null,
+  sparkoopLeadName = null,
+  sparkoopLeadEmail = null,
+  initialStage = 'scope',
 }: JourneyProjectPlanProps) {
   const navigate = useNavigate()
   const workspace = useSkpeWorkspace()
-  const [activeStage, setActiveStage] = useState<ProjectPlanStage>('scope')
+  const [activeStage, setActiveStage] = useState<ProjectPlanStage>(initialStage)
   const [operational, setOperational] = useState<OperationalProjectState>({
     binding: null,
     initiative: null,
@@ -128,6 +142,8 @@ export function JourneyProjectPlan({
   })
 
   const project = rows[0] ?? null
+
+  useEffect(() => { setActiveStage(initialStage) }, [initialStage])
 
   useEffect(() => {
     let mounted = true
@@ -387,13 +403,7 @@ export function JourneyProjectPlan({
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={openStrategicProject}
-                disabled={!workspace.route.formulationId}
-              >
-                Abrir Projeto Estratégico
-              </button>
+              <div className="skpe-project-plan-binding-open"><small>Planejamento continua nesta Jornada. Este atalho abre a execução operacional, ações e alocações.</small><button type="button" onClick={openStrategicProject} disabled={!workspace.route.formulationId}>Abrir execução do Projeto</button></div>
             </div>
           </>
         ) : (
@@ -495,6 +505,24 @@ export function JourneyProjectPlan({
           )}
 
           <div className="skpe-project-plan-callout">
+            <strong>Liderança interna do Projeto Estratégico:</strong>{' '}
+            {organizationLeadName ?? projectLeadName ?? 'Pendente de definição'}
+            {(organizationLeadEmail ?? projectLeadEmail)
+              ? ` · ${organizationLeadEmail ?? projectLeadEmail}`
+              : ''}
+          </div>
+
+          <div className="skpe-project-plan-callout">
+            <strong>SPARKOOP:</strong>{' '}
+            {sparkoopLeadName
+              ? `${sparkoopLeadName} · facilitação e governança metodológica`
+              : organizationLeadName
+                ? 'Apoio metodológico conforme governança do projeto.'
+                : 'Liderança provisória até a organização designar e empoderar seu líder interno.'}
+            {sparkoopLeadEmail ? ` · ${sparkoopLeadEmail}` : ''}
+          </div>
+
+          <div className="skpe-project-plan-callout">
             <strong>Responsabilidades formais no Projeto:</strong>{' '}
             {metrics.operationalPeople.length > 0
               ? metrics.operationalPeople.join(', ')
@@ -562,6 +590,16 @@ export function JourneyProjectPlan({
                 existentes no SPARKs.
               </p>
             </div>
+          </div>
+
+          <div className="skpe-project-plan-callout is-guidance">
+            <strong>O que fazer aqui:</strong> revise quem está alocado, a capacidade disponível e os recursos necessários para executar o cronograma. A edição operacional permanece na iniciativa vinculada para não duplicar dados.
+          </div>
+
+          <div className="skpe-project-resource-actions">
+            <button type="button" className="is-primary" onClick={openStrategicProject} disabled={!operational.initiative || !workspace.route.formulationId}>
+              Gerenciar equipe, capacidade e alocações
+            </button>
           </div>
 
           <div className="skpe-project-resource-grid">

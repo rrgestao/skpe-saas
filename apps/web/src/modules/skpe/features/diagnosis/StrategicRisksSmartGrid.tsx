@@ -1,15 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Filter, X } from 'lucide-react'
-import { Grid, Willow, type IColumnConfig } from '@svar-ui/react-grid'
-
-import '@svar-ui/react-grid/all.css'
-import { SparksGridNavigator } from '../../../../components/design-system/SparksGridNavigator'
+import { SparksSmartGrid, type SparksSmartGridColumn } from '../../../../components/design-system/SparksSmartGrid'
 import '../../components/OrganizationUsersSmartGrid.css'
 
 import type { ImportedDiagnosisRecord } from './strategicDiagnosisImportLoader.ts'
 
 type StrategicRisksSmartGridProps = {
   records: ImportedDiagnosisRecord[]
+  onOpenAssociatedInitiative?: (riskCode: string) => void
 }
 
 type RiskGridRow = {
@@ -31,25 +28,7 @@ type RiskGridRow = {
   status: string
 }
 
-const headerLabels: Record<string, string> = {
-  code: 'Código',
-  event: 'Evento de risco',
-  category: 'Categoria',
-  cause: 'Causa',
-  consequence: 'Consequência',
-  probability: 'Probabilidade',
-  impact: 'Impacto',
-  inherent: 'Nível inerente',
-  controls: 'Controles existentes',
-  response: 'Resposta',
-  treatment: 'Plano de tratamento',
-  owner: 'Responsável',
-  due: 'Prazo',
-  residual: 'Risco residual',
-  status: 'Status',
-}
 
-const centeredIds = new Set(['code', 'probability', 'impact', 'inherent', 'residual', 'status'])
 
 function normalize(value: unknown): string {
   return String(value ?? '')
@@ -100,9 +79,8 @@ function riskScoreBand(score: number | null): string {
 
 export function StrategicRisksSmartGrid({
   records,
+  onOpenAssociatedInitiative,
 }: StrategicRisksSmartGridProps) {
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
-  const [openColumnFilter, setOpenColumnFilter] = useState<string | null>(null)
   const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null)
 
   const rows = useMemo<RiskGridRow[]>(
@@ -128,181 +106,37 @@ export function StrategicRisksSmartGrid({
     [records],
   )
 
-  const data = useMemo(() => {
-    const activeFilters = Object.entries(columnFilters).filter(([, value]) =>
-      value.trim(),
-    )
-    if (activeFilters.length === 0) return rows
-
-    return rows.filter((row) =>
-      activeFilters.every(([id, value]) => {
-        const record = row as unknown as Record<string, unknown>
-        return normalize(record[id]).includes(normalize(value))
-      }),
-    )
-  }, [rows, columnFilters])
-
-  function RiskHeaderCell({ column }: { column: any }) {
-    const id = String(column?.id ?? '')
-    const label = headerLabels[id] ?? String(column?.header?.text ?? '')
-    const value = columnFilters[id] ?? ''
-    const open = openColumnFilter === id
-
-    return (
-      <div
-        className={[
-          'sparks-data-explorer-header-cell',
-          centeredIds.has(id) ? 'sparks-data-explorer-header-cell--centered' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-      >
-        {open ? (
-          <div
-            className="sparks-data-explorer-header-filter-input-wrap"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <input
-              autoFocus
-              className="sparks-data-explorer-header-filter-input"
-              value={value}
-              placeholder={`Filtrar ${label.toLocaleLowerCase('pt-BR')}`}
-              aria-label={`Filtrar ${label}`}
-              onChange={(event) =>
-                setColumnFilters((current) => ({
-                  ...current,
-                  [id]: event.target.value,
-                }))
-              }
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') setOpenColumnFilter(null)
-              }}
-            />
-            <button
-              type="button"
-              className="sparks-data-explorer-header-filter-close"
-              aria-label={`Fechar filtro de ${label}`}
-              onClick={(event) => {
-                event.stopPropagation()
-                setOpenColumnFilter(null)
-              }}
-            >
-              <X aria-hidden="true" size={14} />
-            </button>
-          </div>
-        ) : (
-          <>
-            <span className="sparks-data-explorer-header-label">{label}</span>
-            <button
-              type="button"
-              className={[
-                'sparks-data-explorer-header-filter-trigger',
-                value ? 'sparks-data-explorer-header-filter-trigger--active' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              aria-label={`Filtrar ${label}`}
-              title={`Filtrar ${label}`}
-              onClick={(event) => {
-                event.stopPropagation()
-                setOpenColumnFilter(id)
-              }}
-            >
-              <Filter aria-hidden="true" size={14} />
-            </button>
-          </>
-        )}
-      </div>
-    )
-  }
-
-  function smartHeader(text: string) {
-    return {
-      text,
-      cell: RiskHeaderCell,
-      css: 'sparks-data-explorer-header-main',
-    }
-  }
-
-  const columns: IColumnConfig[] = [
-    { id: 'code', header: smartHeader('Código'), width: 110, sort: true, resize: true, tooltip: true },
-    { id: 'event', header: smartHeader('Evento de risco'), width: 340, sort: true, resize: true, tooltip: true },
-    { id: 'category', header: smartHeader('Categoria'), width: 160, sort: true, resize: true },
-    { id: 'cause', header: smartHeader('Causa'), width: 270, sort: true, resize: true, tooltip: true },
-    { id: 'consequence', header: smartHeader('Consequência'), width: 290, sort: true, resize: true, tooltip: true },
-    { id: 'probability', header: smartHeader('Probabilidade'), width: 145, sort: true, resize: true },
-    { id: 'impact', header: smartHeader('Impacto'), width: 125, sort: true, resize: true },
-    { id: 'inherent', header: smartHeader('Nível inerente'), width: 145, sort: true, resize: true },
-    { id: 'controls', header: smartHeader('Controles existentes'), width: 290, sort: true, resize: true, tooltip: true },
-    { id: 'response', header: smartHeader('Resposta'), width: 140, sort: true, resize: true },
-    { id: 'treatment', header: smartHeader('Plano de tratamento'), width: 350, sort: true, resize: true, tooltip: true },
-    { id: 'owner', header: smartHeader('Responsável'), width: 190, sort: true, resize: true },
-    { id: 'due', header: smartHeader('Prazo'), width: 130, sort: true, resize: true },
-    { id: 'residual', header: smartHeader('Risco residual'), width: 145, sort: true, resize: true },
-    { id: 'status', header: smartHeader('Status'), width: 180, sort: true, resize: true },
-  ]
-
-  function init(api: {
-    on: (
-      action: string,
-      handler: (event: { id?: string | number }) => void,
-    ) => void
-  }) {
-    api.on('select-row', (event) => {
-      if (event.id === undefined || event.id === null) return
-      setSelectedRiskId(String(event.id))
-    })
-  }
-
-  function riskCellStyle(
-    row: RiskGridRow,
-    column: { id?: string },
-  ): string {
-    const id = String(column?.id ?? '')
-    const classes: string[] = []
-
-    if (centeredIds.has(id)) {
-      classes.push('sparks-risk-cell', 'sparks-risk-cell--center')
-    }
-
-    if (id === 'probability') {
-      const value = ordinalRiskValue(row.probability)
-      if (value) classes.push(`sparks-risk-cell-${value}`)
-    }
-
-    if (id === 'impact') {
-      const value = ordinalRiskValue(row.impact)
-      if (value) classes.push(`sparks-risk-cell-${value}`)
-    }
-
-    if (id === 'inherent') {
-      const score = numericRiskScore(row.inherent)
-      const band = riskScoreBand(score)
-      if (band) classes.push(`sparks-risk-cell-${band}`)
-    }
-
-    return classes.join(' ')
-  }
+  const columns = useMemo<SparksSmartGridColumn[]>(() => [
+    { id: 'code', label: 'Código', minWidth: 110, maxWidth: 160, tooltip: true, align: 'center' },
+    { id: 'event', label: 'Evento de risco', minWidth: 340, maxWidth: 560, tooltip: true, grow: 2 },
+    { id: 'category', label: 'Categoria', minWidth: 160, maxWidth: 240 },
+    { id: 'cause', label: 'Causa', minWidth: 270, maxWidth: 480, tooltip: true, grow: 2 },
+    { id: 'consequence', label: 'Consequência', minWidth: 290, maxWidth: 500, tooltip: true, grow: 2 },
+    { id: 'probability', label: 'Probabilidade', minWidth: 145, maxWidth: 180, align: 'center', cellStyle: (row) => { const value = ordinalRiskValue(row.probability); return value ? `sparks-risk-cell sparks-risk-cell--center sparks-risk-cell-${value}` : 'sparks-risk-cell sparks-risk-cell--center' } },
+    { id: 'impact', label: 'Impacto', minWidth: 125, maxWidth: 160, align: 'center', cellStyle: (row) => { const value = ordinalRiskValue(row.impact); return value ? `sparks-risk-cell sparks-risk-cell--center sparks-risk-cell-${value}` : 'sparks-risk-cell sparks-risk-cell--center' } },
+    { id: 'inherent', label: 'Nível inerente', minWidth: 145, maxWidth: 180, align: 'center', cellStyle: (row) => { const band = riskScoreBand(numericRiskScore(row.inherent)); return band ? `sparks-risk-cell sparks-risk-cell--center sparks-risk-cell-${band}` : 'sparks-risk-cell sparks-risk-cell--center' } },
+    { id: 'controls', label: 'Controles existentes', minWidth: 290, maxWidth: 500, tooltip: true, grow: 2 },
+    { id: 'response', label: 'Resposta', minWidth: 140, maxWidth: 190 },
+    { id: 'treatment', label: 'Plano de tratamento', minWidth: 350, maxWidth: 620, tooltip: true, grow: 2 },
+    { id: 'owner', label: 'Responsável', minWidth: 190, maxWidth: 300, tooltip: true },
+    { id: 'due', label: 'Prazo', minWidth: 130, maxWidth: 170, align: 'center' },
+    { id: 'residual', label: 'Risco residual', minWidth: 145, maxWidth: 180, align: 'center' },
+    { id: 'status', label: 'Status', minWidth: 180, maxWidth: 240, align: 'center' },
+  ], [])
 
   return (
-    <div
-      className="sparks-user-grid sparks-risk-grid"
-      data-sparks-grid-shell
-      role="region"
-      aria-label="Riscos estratégicos detalhados"
-    >
-      <Willow>
-        <Grid
-          data={data}
-          columns={columns}
-          init={init}
-          select
-          selectedRows={selectedRiskId ? [selectedRiskId] : []}
-          autoRowHeight
-          cellStyle={riskCellStyle as any}
-        />
-      </Willow>
-      <SparksGridNavigator />
-    </div>
+    <SparksSmartGrid
+      rows={rows}
+      columns={columns}
+      ariaLabel="Riscos estratégicos detalhados"
+      selectedId={selectedRiskId}
+      onSelect={setSelectedRiskId}
+      onDoubleClick={(id) => {
+        const risk = rows.find((row) => row.id === id)
+        if (risk) onOpenAssociatedInitiative?.(risk.code)
+      }}
+      viewportMode="standard"
+      className="sparks-risk-grid"
+    />
   )
 }

@@ -23,7 +23,7 @@ language: pt-BR
 encoding: UTF-8
 semantic_layer: product-operational-execution
 created: 2026-09-07
-updated: 2026-09-13
+updated: 2026-09-14
 ---
 
 # Roadmap operacional — SKPE-SAAS
@@ -102,11 +102,29 @@ O roadmap histórico/local anterior não deve ser restaurado literalmente. Esta 
 - Tratar P5: validar se o acesso temporário ainda existe e, se existir, propor remoção controlada sem alterar runtime neste documento.
 - Tratar P7: planejar higienização física de branches, worktrees e diretórios temporários com preservação explícita de trabalho legítimo.
 - Reconciliar qualquer diferença entre execução técnica e roadmap mestre por `ROADMAP_CHANGE_CANDIDATE`.
+- Consolidar a Jornada Estratégica com semântica coerente entre agregadores, itens executáveis, gates, eventos, prazo e progresso, preservando contexto após atualizações.
 
 ### LATER
 
 - Definir gates operacionais para releases, validações e eventuais migrations somente quando uma capability ou decisão Product/Corporate exigir.
 - Separar trilhas de infraestrutura, HOMOL/PRD, backups, storage e observabilidade quando houver decisão de produto e evidência operacional suficiente.
+- Realizar um banho de loja no Orçamento das Iniciativas, cobrindo UX, estrutura de lançamentos, leitura gerencial, orçamento × realizado, esforço, navegação, responsividade e coerência visual com o restante da Plataforma SPARKs.
+
+### DIRETRIZ VISUAL TRANSVERSAL APROVADA — 2026-09-14
+
+- Usar tons de verde-água derivados do menu principal como base visual transversal para grids, botões, tabs, seleção, hover e controles.
+- Reservar o laranja já adotado para destaque, ação principal, alerta ou ênfase contextual.
+- Evitar novas variações cromáticas locais sem justificativa funcional.
+- O refinamento estético completo permanece para a fase final de acabamento, mas novas correções devem respeitar esta direção desde já.
+
+### ROADMAP_CHANGE_CANDIDATE — ORÇAMENTO DAS INICIATIVAS
+
+- Contexto: a capability econômica da iniciativa já existe tecnicamente, porém a experiência atual ainda não alcança o padrão desejado de gestão e usabilidade.
+- Motivo: consolidar uma experiência executiva clara para planejamento, lançamentos, orçamento × realizado, esforço e leitura gerencial sem confundir a funcionalidade com contabilidade corporativa.
+- Impacto no produto: evolução de UX e capacidade gerencial da iniciativa; não altera, por si só, a fronteira conceitual de que o módulo não substitui sistemas contábeis/financeiros.
+- Impacto técnico: revisão do workspace econômico, componentes, fluxos de lançamento, visualizações e integração com os dados já existentes.
+- Recomendação DEV: manter esta frente em LATER e retomá-la após estabilização conceitual da Jornada Estratégica.
+- Decisão solicitada ao Corporate: incorporar esta evolução ao roadmap mestre do SK-PE.
 
 ### BLOCKED
 

@@ -101,3 +101,19 @@ Nenhuma dessas mudanças pode ser absorvida silenciosamente. Fluxo obrigatório:
 `EXTERNAL_CHANGE_AUTO_ADOPTION=PROHIBITED`
 `RRGESTAO_PRODUCT_AUTHORITY=NO`
 `NEXT_ACTION=CORPORATE_REBASE_AND_ACCEPTANCE_REVIEW`
+
+## Supersession note — 2026-09-16
+
+Este documento permanece como evidência da reconciliação executada em 13/09/2026 e não deve ser reescrito retroativamente.
+
+Entretanto, suas conclusões sobre autoridade exclusiva de `sparkooptech/skpe-saas` e classificação de `rrgestao/skpe-saas` como fonte apenas histórica foram supersedidas por decisão operacional/Product de 16/09/2026.
+
+Current Truth vigente para autoridade de desenvolvimento:
+
+- worktree local autorizado = fonte do desenvolvimento ativo;
+- `rrgestao/skpe-saas` = remoto principal;
+- `sparkooptech/skpe-saas` = remoto secundário de comparação/reconciliação;
+- trabalho legítimo mais maduro existente no remoto secundário deve ser reconciliado, não descartado;
+- o período 11–13/09/2026 é janela crítica de reconciliação por alteração/confusão de main/remotos.
+
+Referências vigentes: `SKPE_CANONICAL_REPOSITORY_GOVERNANCE.md` — nota de supersessão 2026-09-16 e `RECONCILIATION-2026-09-16-MEASUREMENT-PERFORMANCE.md`.

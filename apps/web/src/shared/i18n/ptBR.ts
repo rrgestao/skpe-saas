@@ -15,7 +15,7 @@ const STATUS_LABELS_PT_BR: Record<string, string> = {
   under_review: 'Em análise',
   under_analysis: 'Em análise',
   not_started: 'Não iniciado',
-  in_progress: 'Em andamento',
+  in_progress: 'Andamento',
   open: 'Aberto',
   collecting: 'Em coleta',
   on_hold: 'Em espera',

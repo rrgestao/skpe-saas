@@ -8,22 +8,28 @@
   container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.8rem;
   align-items: stretch;
 }
 
 .sparks-summary-card {
   width: 100%;
   min-width: 0;
-  min-height: 5.25rem;
+  min-height: 6.5rem;
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 0.35rem;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--skpe-border, #d7e2dd);
-  border-radius: 0.8rem;
-  background: var(--skpe-surface, #fff);
+  gap: 0.42rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--skpe-border, var(--sparks-border, #d7e2dd));
+  border-radius: var(--sparks-radius-card, 14px);
+  background: var(--skpe-surface, var(--sparks-surface, #fff));
+  box-shadow: 0 4px 16px rgba(25, 44, 37, 0.035);
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
   color: inherit;
   text-align: center;
   font: inherit;
@@ -34,7 +40,9 @@ button.sparks-summary-card {
 }
 
 button.sparks-summary-card:hover {
+  transform: translateY(-1px);
   border-color: var(--organization-primary, var(--sparks-accent, #176b53));
+  box-shadow: 0 8px 22px rgba(25, 44, 37, 0.07);
 }
 
 button.sparks-summary-card:focus-visible {
@@ -46,7 +54,8 @@ button.sparks-summary-card:focus-visible {
   border-color: var(--organization-primary, var(--sparks-accent, #176b53));
   box-shadow:
     inset 0 0 0 1px
-      var(--organization-primary, var(--sparks-accent, #176b53));
+      var(--organization-primary, var(--sparks-accent, #176b53)),
+    0 7px 20px rgba(25, 44, 37, 0.06);
   background:
     color-mix(
       in srgb,
@@ -64,15 +73,17 @@ button.sparks-summary-card:focus-visible {
 
 .sparks-summary-card__label {
   font-size: 0.78rem;
-  line-height: 1.2;
-  color: var(--skpe-text-muted, #5f7068);
+  line-height: 1.25;
+  font-weight: 780;
+  color: var(--skpe-text-muted, var(--sparks-text-muted, #5f7068));
 }
 
 .sparks-summary-card__value {
-  font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+  font-size: clamp(1.35rem, 2.35vw, 1.75rem);
   line-height: 1;
-  font-weight: 800;
-  color: var(--skpe-text-strong, #17231f);
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  color: var(--skpe-text-strong, var(--sparks-text, #17231f));
 }
 
 @container (max-width: 760px) {

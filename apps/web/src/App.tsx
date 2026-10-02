@@ -28,6 +28,7 @@ import './App.css'
 const LAST_SUCCESSFUL_EMAIL_KEY =
   'skpe:last-successful-email'
 const PLATFORM_THEME_KEY = 'sparks:platform-theme'
+const PRIVACY_POLICY_VERSION = 'SPARKS-PRIVACY-2026-10-02'
 
 type MessageType = 'info' | 'success' | 'error'
 
@@ -428,6 +429,15 @@ function App() {
 
   const [passwordFieldReady, setPasswordFieldReady] =
     useState(false)
+  const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false)
+  const [accountRequestOpen, setAccountRequestOpen] = useState(false)
+  const [accountRequestName, setAccountRequestName] = useState('')
+  const [accountRequestEmail, setAccountRequestEmail] = useState('')
+  const [accountRequestOrganization, setAccountRequestOrganization] = useState('')
+  const [accountRequestRole, setAccountRequestRole] = useState('')
+  const [accountRequestReason, setAccountRequestReason] = useState('')
+  const [accountRequestPrivacyAccepted, setAccountRequestPrivacyAccepted] = useState(false)
+  const [accountRequestSubmitting, setAccountRequestSubmitting] = useState(false)
 
   const [organizations, setOrganizations] =
     useState<Organization[]>([])
@@ -1264,6 +1274,50 @@ function App() {
     )
   }
 
+  const handleSwitchWorkspaceOrganization = async (
+    organizationId: string,
+  ) => {
+    const organization = organizations.find(
+      (item) => item.organization_id === organizationId,
+    )
+    if (!organization) return
+
+    const currentModuleCode = openedModule?.module_code ?? 'SK-PE'
+    setPlatformAdminOpen(false)
+    setOrganizationAdminOpen(false)
+    setSelectedOrganization(organization)
+    setLoadingModules(true)
+    clearMessage()
+
+    const { data, error } = await supabase.rpc('get_my_modules', {
+      target_organization_id: organization.organization_id,
+    })
+
+    const nextModules = error ? [] : ((data ?? []) as PlatformModule[])
+    setModules(nextModules)
+    setLoadingModules(false)
+
+    if (error) {
+      setOpenedModule(null)
+      showMessage(`Erro ao carregar módulos: ${error.message}`, 'error')
+      navigate(platformRoutes.organization(organization.organization_id))
+      return
+    }
+
+    const nextModule = nextModules.find(
+      (module) => module.module_code === currentModuleCode,
+    ) ?? nextModules.find((module) => module.module_code === 'SK-PE')
+
+    if (nextModule?.module_code === 'SK-PE') {
+      setOpenedModule(nextModule)
+      navigate(platformRoutes.module(organization.organization_id, nextModule.module_code))
+      return
+    }
+
+    setOpenedModule(null)
+    navigate(platformRoutes.organization(organization.organization_id))
+  }
+
   const handleOpenModule = (
     module: PlatformModule,
   ) => {
@@ -1286,6 +1340,12 @@ function App() {
       'info',
     )
   }
+
+  const handleSwitchWorkspaceModule = (moduleCode: string) => {
+    const module = modules.find((item) => item.module_code === moduleCode)
+    if (module) handleOpenModule(module)
+  }
+
   const handleOpenOrganizationSummary = (
     label: string,
   ) => {
@@ -1323,6 +1383,63 @@ function App() {
         behavior: 'smooth',
         block: 'start',
       })
+  }
+
+  const handleGoogleLogin = async () => {
+    setLoading(true)
+    clearMessage()
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    })
+
+    if (error) {
+      showMessage(
+        `Não foi possível iniciar o acesso com Google: ${error.message}`,
+        'error',
+      )
+      setLoading(false)
+    }
+  }
+
+  const handleAccountRequest = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+
+    if (!accountRequestPrivacyAccepted) {
+      showMessage('É necessário aceitar a Política de Privacidade para enviar a solicitação.', 'error')
+      return
+    }
+
+    setAccountRequestSubmitting(true)
+    clearMessage()
+
+    const { error } = await supabase.rpc('submit_platform_account_request', {
+      p_full_name: accountRequestName.trim(),
+      p_email: accountRequestEmail.trim().toLowerCase(),
+      p_organization_name: accountRequestOrganization.trim() || null,
+      p_requested_role: accountRequestRole.trim() || null,
+      p_phone: null,
+      p_request_reason: accountRequestReason.trim() || null,
+      p_privacy_policy_version: PRIVACY_POLICY_VERSION,
+    })
+
+    setAccountRequestSubmitting(false)
+
+    if (error) {
+      showMessage(`Não foi possível enviar a solicitação: ${error.message}`, 'error')
+      return
+    }
+
+    setAccountRequestOpen(false)
+    showMessage(
+      'Solicitação recebida. A criação e a habilitação de acesso serão avaliadas conforme a governança da organização.',
+      'success',
+    )
   }
 
   const handleLogin = async (
@@ -1761,6 +1878,20 @@ function App() {
         organizationCode={
           selectedOrganization.organization_code
         }
+        workspaceOrganizations={organizations.map((organization) => ({
+          id: organization.organization_id,
+          code: organization.organization_code,
+          name: organization.trade_name ?? organization.legal_name,
+        }))}
+        workspaceModules={modules.map((module) => ({
+          code: module.module_code,
+          name: module.module_name,
+          description: module.module_description,
+          available: module.module_code === 'SK-PE',
+        }))}
+        activeModuleCode={openedModule.module_code}
+        onSwitchOrganization={handleSwitchWorkspaceOrganization}
+        onSwitchModule={handleSwitchWorkspaceModule}
         userRoleCode={openedModule.role_code}
         userRoleName={openedModule.role_name}
         isOrganizationAdmin={
@@ -1934,34 +2065,52 @@ function App() {
 
   if (!session) {
     return (
-      <main className="app-shell">
-        <section className="panel login-panel">
-          <div className="login-brand">
-            <img
-              src="/sparkoop-mascot.png"
-              alt="Mascote da Plataforma SPARKs"
-            />
+      <main className="app-shell sparks-login-shell">
+        <section className="sparks-login-brand-panel" aria-label="Plataforma SPARKs">
+          <div className="sparks-login-brand-lockup">
+            <span className="sparks-login-brand-symbol" aria-hidden="true">
+              <img src="/sparkoop-mascot.png" alt="" />
+            </span>
+            <div>
+              <strong>SPARKs</strong>
+              <span>Plataforma SPARKOOP</span>
+            </div>
+          </div>
 
+          <div className="sparks-login-hero">
+            <p className="sparks-login-brand-kicker">
+              Governança, estratégia e inteligência para organizações.
+            </p>
+            <h1>
+              Unifique governança, estratégia e execução em uma única
+              <span> plataforma inteligente.</span>
+            </h1>
+            <p>
+              Orquestre pessoas, processos, evidências e decisões com módulos
+              integrados, dados confiáveis e inteligência aplicada.
+            </p>
+          </div>
+
+          <div className="sparks-login-brand-footer">
+            <p>© 2026 SPARKOOP</p>
+          </div>
+        </section>
+
+        <section className="panel login-panel sparks-login-card">
+          <div className="login-brand">
             <p className="eyebrow">
               Plataforma SPARKs
             </p>
           </div>
 
           <h1 className="login-title">
-            {forgotPasswordMode ? (
-              'Recuperar acesso'
-            ) : (
-              <>
-                <span>Gestão Integrada das</span>
-                <span>Organizações</span>
-              </>
-            )}
+            {forgotPasswordMode ? 'Recuperar acesso' : 'Entrar na conta'}
           </h1>
 
           <p className="supporting-text">
             {forgotPasswordMode
               ? 'Informe seu e-mail para receber as instruções de recuperação.'
-              : 'Entre com seu usuário para acessar a plataforma.'}
+              : 'Acesse o ambiente da sua organização.'}
           </p>
 
           {forgotPasswordMode ? (
@@ -2029,7 +2178,17 @@ function App() {
               </label>
 
               <label>
-                Senha
+                <span className="sparks-login-label-row">
+                  <span>Senha</span>
+                  <button
+                    type="button"
+                    className="sparks-login-forgot-link"
+                    onClick={openForgotPassword}
+                    disabled={loading}
+                  >
+                    Esqueceu?
+                  </button>
+                </span>
 
                 <div className="password-field">
                   <input
@@ -2075,16 +2234,55 @@ function App() {
                   : 'Entrar'}
               </button>
 
+              <div className="sparks-login-session-note">
+                <span aria-hidden="true">✓</span>
+                <small>Sessão segura preservada neste navegador</small>
+              </div>
+
+              <div className="sparks-login-divider" aria-hidden="true">
+                <span />
+                <small>ou</small>
+                <span />
+              </div>
+
               <button
                 type="button"
-                className="text-button"
-                onClick={openForgotPassword}
+                className="sparks-login-google-button"
+                onClick={() => void handleGoogleLogin()}
                 disabled={loading}
               >
-                Esqueci minha senha
+                <span aria-hidden="true">G</span>
+                Continuar com Google
               </button>
             </form>
           )}
+
+          {!forgotPasswordMode ? (
+            <div className="sparks-login-access-actions">
+              <span>Primeiro acesso?</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountRequestEmail(email)
+                  setAccountRequestOpen(true)
+                }}
+              >
+                Solicitar criação de conta
+              </button>
+            </div>
+          ) : null}
+
+          <p className="sparks-login-legal">
+            Ao continuar, você concorda com os Termos de Serviço e a{' '}
+            <button
+              type="button"
+              className="sparks-login-legal-link"
+              onClick={() => setPrivacyPolicyOpen(true)}
+            >
+              Política de Privacidade
+            </button>{' '}
+            da Plataforma SPARKs.
+          </p>
 
           {message && (
             <p
@@ -2099,6 +2297,61 @@ function App() {
             </p>
           )}
         </section>
+
+        {accountRequestOpen ? (
+          <div className="sparks-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="sparks-account-request-title">
+            <button className="sparks-auth-dialog-backdrop" type="button" aria-label="Fechar" onClick={() => setAccountRequestOpen(false)} />
+            <section className="sparks-auth-dialog-panel">
+              <header>
+                <div>
+                  <span className="eyebrow">Primeiro acesso</span>
+                  <h2 id="sparks-account-request-title">Solicitar criação de conta</h2>
+                  <p>A solicitação cria um pedido de acesso. A habilitação depende da governança da Organização e não concede permissões automaticamente.</p>
+                </div>
+                <button type="button" className="sparks-auth-dialog-close" onClick={() => setAccountRequestOpen(false)} aria-label="Fechar">×</button>
+              </header>
+              <form className="sparks-auth-request-form" onSubmit={handleAccountRequest}>
+                <label>Nome completo<input value={accountRequestName} onChange={(event) => setAccountRequestName(event.target.value)} required minLength={3} /></label>
+                <label>E-mail<input type="email" value={accountRequestEmail} onChange={(event) => setAccountRequestEmail(event.target.value)} required /></label>
+                <label>Organização<input value={accountRequestOrganization} onChange={(event) => setAccountRequestOrganization(event.target.value)} placeholder="Nome da organização ou cooperativa" /></label>
+                <label>Função / papel pretendido<input value={accountRequestRole} onChange={(event) => setAccountRequestRole(event.target.value)} placeholder="Ex.: dirigente, colaborador, consultor" /></label>
+                <label>Motivo da solicitação<textarea value={accountRequestReason} onChange={(event) => setAccountRequestReason(event.target.value)} rows={3} /></label>
+                <label className="sparks-auth-consent">
+                  <input type="checkbox" checked={accountRequestPrivacyAccepted} onChange={(event) => setAccountRequestPrivacyAccepted(event.target.checked)} required />
+                  <span>Li e concordo com a <button type="button" onClick={() => setPrivacyPolicyOpen(true)}>Política de Privacidade</button>.</span>
+                </label>
+                <button type="submit" className="primary-button" disabled={accountRequestSubmitting}>{accountRequestSubmitting ? 'Enviando...' : 'Enviar solicitação'}</button>
+              </form>
+            </section>
+          </div>
+        ) : null}
+
+        {privacyPolicyOpen ? (
+          <div className="sparks-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="sparks-privacy-title">
+            <button className="sparks-auth-dialog-backdrop" type="button" aria-label="Fechar" onClick={() => setPrivacyPolicyOpen(false)} />
+            <article className="sparks-auth-dialog-panel sparks-privacy-panel">
+              <header>
+                <div>
+                  <span className="eyebrow">Versão {PRIVACY_POLICY_VERSION}</span>
+                  <h2 id="sparks-privacy-title">Política de Privacidade da Plataforma SPARKs</h2>
+                  <p>Aplicável ao acesso, uso, governança e integração de dados no ecossistema SPARKOOP.</p>
+                </div>
+                <button type="button" className="sparks-auth-dialog-close" onClick={() => setPrivacyPolicyOpen(false)} aria-label="Fechar">×</button>
+              </header>
+              <div className="sparks-privacy-content">
+                <section><h3>1. Escopo e papéis</h3><p>A Plataforma SPARKs apoia governança, estratégia, gestão, documentos, evidências, conhecimento e decisões organizacionais. A SPARKOOP opera a Plataforma conforme os contratos aplicáveis; cada Organização permanece responsável pelos dados que insere, autoriza ou compartilha em seu contexto.</p></section>
+                <section><h3>2. Dados tratados</h3><p>Podem ser tratados dados de identificação e contato, vínculo e função organizacional, autenticação, permissões, registros de uso e auditoria, dados de projetos, documentos, evidências, decisões, indicadores, agendas e demais conteúdos inseridos legitimamente pelos usuários e Organizações.</p></section>
+                <section><h3>3. Finalidades e bases</h3><p>Os dados são utilizados para autenticar usuários, controlar acessos, executar funcionalidades contratadas, preservar rastreabilidade e segurança, produzir análises autorizadas, manter evidências e histórico, cumprir obrigações legais e contratuais e melhorar a confiabilidade operacional. O tratamento observa a LGPD e as bases legais aplicáveis a cada relação.</p></section>
+                <section><h3>4. Documentos, evidências e conhecimento</h3><p>SK-DOC governa documentos, evidências, versões, proveniência e integridade; SK-KM governa conhecimento, classificação, contexto e recuperação; módulos como SK-PE consomem referências e resultados sem assumir a autoridade documental.</p></section>
+                <section><h3>5. Compartilhamento e integrações</h3><p>Dados podem ser processados por provedores de infraestrutura, identidade, armazenamento e integrações autorizadas, estritamente para viabilizar a Plataforma. Integrações externas, inclusive login Google ou fontes documentais, obedecem às permissões concedidas e aos contratos aplicáveis.</p></section>
+                <section><h3>6. Segurança, retenção e auditoria</h3><p>São adotados controles de autenticação, autorização, segregação por Organização, trilhas de auditoria, versionamento e medidas técnicas compatíveis com o risco. Os dados são mantidos pelo período necessário à finalidade, à relação contratual, à governança histórica e às obrigações legais aplicáveis.</p></section>
+                <section><h3>7. Direitos dos titulares</h3><p>Nos termos da LGPD, titulares podem solicitar confirmação de tratamento, acesso, correção, informação sobre compartilhamento e, quando aplicável, anonimização, bloqueio, eliminação, portabilidade, revisão de decisões automatizadas e revogação de consentimento. A solicitação deve ser dirigida ao canal de privacidade indicado pela SPARKOOP ou pela Organização controladora.</p></section>
+                <section><h3>8. Decisões assistidas e uso de IA</h3><p>Recursos de inteligência podem apoiar classificação, análise, recomendação e síntese. Quando houver decisão institucional relevante, a Plataforma preserva validação humana, contexto, fonte e rastreabilidade, não substituindo automaticamente a autoridade decisória definida pela Organização.</p></section>
+                <section><h3>9. Atualizações</h3><p>Esta política pode ser atualizada para refletir evolução da Plataforma, novos módulos, integrações, requisitos legais ou contratuais. A versão vigente e sua data permanecem identificadas nesta tela.</p></section>
+              </div>
+            </article>
+          </div>
+        ) : null}
       </main>
     )
   }
@@ -2531,16 +2784,15 @@ function App() {
             <section className="page-heading">
               <div>
                 <p className="eyebrow">
-                  Portal da Plataforma
+                  SPARKs
                 </p>
 
                 <h1>
-                  Minhas organizações
+                  Meu Espaço de Trabalho
                 </h1>
 
                 <p className="supporting-text">
-                  Selecione a organização em
-                  que deseja trabalhar.
+                  Acompanhe suas responsabilidades e escolha a organização e o módulo em que deseja atuar.
                 </p>
               </div>
             </section>

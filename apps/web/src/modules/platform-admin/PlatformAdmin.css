@@ -2429,3 +2429,11 @@ label.pa-field-invalid::after {
 .platform-admin .pa-navigation button.active, .platform-admin .pa-primary-button { background:#ff4f0c !important; border-color:#ff4f0c !important; color:#fff !important; }
 .platform-admin .pa-primary-button:hover:not(:disabled) { background:#e84300 !important; border-color:#e84300 !important; }
 .platform-admin .pa-view-toggle button.active { border-color:#ff4f0c; background:#fff1eb; color:#d83f00; }
+
+/* RECOVERY-20260913 PLATFORM ADMIN GRID CONTRACT */
+.platform-admin,.pa-content{width:100%!important;max-width:none!important;min-width:0!important}
+.pa-layout{grid-template-columns:220px minmax(0,1fr)!important;width:100%!important;max-width:none!important}
+.pa-content .sparks-smart-grid-block,.pa-content .sparks-smart-grid{width:100%!important;max-width:none!important}
+.pa-content .sparks-smart-grid{height:calc(100vh - 250px)!important;max-height:none!important;min-height:360px!important}
+.pa-icon-button,.pa-view-toggle button,.pa-card-actions button,.pa-table-card td button,.pa-panel-header button{border-color:transparent!important;background:transparent!important;box-shadow:none!important}
+.pa-icon-button:hover,.pa-view-toggle button:hover,.pa-card-actions button:hover,.pa-table-card td button:hover,.pa-panel-header button:hover{background:rgba(23,107,83,.07)!important}

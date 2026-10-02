@@ -154,6 +154,11 @@ function applyVisualIdentity(identity: EffectiveVisualIdentity) {
   root.style.setProperty('--organization-support-2', colors.support_2)
   root.style.setProperty('--organization-support-3', colors.support_3)
   root.style.setProperty('--organization-on-primary', colors.on_primary)
+  root.style.setProperty('--sparks-accent', colors.secondary)
+  root.style.setProperty('--sparks-accent-strong', colors.primary)
+  root.style.setProperty('--sparks-accent-soft', `color-mix(in srgb, ${colors.secondary} 10%, white)`)
+  root.style.setProperty('--sparks-accent-hover', `color-mix(in srgb, ${colors.secondary} 6%, white)`)
+  root.style.setProperty('--sparks-accent-ring', `color-mix(in srgb, ${colors.secondary} 24%, transparent)`)
 }
 
 async function loadVisualIdentity(organizationId: string) {

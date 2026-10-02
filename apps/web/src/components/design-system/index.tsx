@@ -178,6 +178,7 @@ type WorkspaceTab<T extends string> = {
   disabled?: boolean
   status?: WorkspaceTabStatus
   statusLabel?: string
+  tooltip?: string
 }
 
 type WorkspaceTabsProps<T extends string> = {
@@ -216,7 +217,8 @@ export function WorkspaceTabs<T extends string>({
               ? `${String(tab.label)} — ${tab.statusLabel}`
               : undefined
           }
-          title={tab.statusLabel}
+          title={tab.tooltip ?? tab.statusLabel}
+          data-tooltip={tab.tooltip ?? tab.statusLabel}
           disabled={tab.disabled}
           onClick={() => onChange(tab.id)}
         >

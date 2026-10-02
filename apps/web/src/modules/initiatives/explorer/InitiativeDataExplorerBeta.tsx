@@ -1,11 +1,8 @@
 import { useMemo, useState } from 'react'
-import { SparksGridNavigator } from '../../../components/design-system/SparksGridNavigator'
-import { Filter, X } from 'lucide-react'
-import { Grid, Willow, type IColumnConfig } from '@svar-ui/react-grid'
+import { SparksSmartGrid, type SparksSmartGridColumn } from '../../../components/design-system/SparksSmartGrid'
 
 import type { InitiativePortfolioRow } from '../contracts/initiativePortfolio'
 
-import '@svar-ui/react-grid/all.css'
 import './InitiativeDataExplorerBeta.css'
 
 type InitiativeDataExplorerBetaProps = {
@@ -405,79 +402,6 @@ function buildRows(
   return groupRows(initiatives, [responsible, strategic])
 }
 
-type ColumnFilterId =
-  | 'classLabel'
-  | 'name'
-  | 'strategicTheme'
-  | 'strategicObjective'
-  | 'progressLabel'
-  | 'statusLabel'
-  | 'area'
-  | 'responsible'
-  | 'strategic'
-  | 'priority'
-  | 'criticality'
-  | 'startDate'
-  | 'targetEndDate'
-  | 'health'
-  | 'risk'
-
-const columnFilterIds: ColumnFilterId[] = [
-  'classLabel',
-  'name',
-  'strategicTheme',
-  'strategicObjective',
-  'progressLabel',
-  'statusLabel',
-  'area',
-  'responsible',
-  'strategic',
-  'priority',
-  'criticality',
-  'startDate',
-  'targetEndDate',
-  'health',
-  'risk',
-]
-
-function filterExplorerTree(
-  rows: ExplorerRow[],
-  filters: Partial<Record<ColumnFilterId, string>>,
-): ExplorerRow[] {
-  return rows.flatMap((row) => {
-    const filteredChildren = row.data
-      ? filterExplorerTree(row.data, filters)
-      : undefined
-
-    const selfMatches = columnFilterIds.every((id) => {
-      const filterValue = (filters[id] ?? '').trim().toLocaleLowerCase('pt-BR')
-      if (!filterValue) return true
-      return String(row[id] ?? '')
-        .toLocaleLowerCase('pt-BR')
-        .includes(filterValue)
-    })
-
-    const hasMatchingChildren =
-      filteredChildren !== undefined && filteredChildren.length > 0
-
-    if (!selfMatches && !hasMatchingChildren) {
-      return []
-    }
-
-    return [
-      {
-        ...row,
-        ...(row.data
-          ? {
-              data: selfMatches ? row.data : filteredChildren,
-              open: hasMatchingChildren ? true : row.open,
-            }
-          : {}),
-      },
-    ]
-  })
-}
-
 export function InitiativeDataExplorerBeta({
   initiatives,
   onOpenInitiative,
@@ -485,140 +409,34 @@ export function InitiativeDataExplorerBeta({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [groupMode, setGroupMode] =
     useState<GroupMode>('strategic_theme_objective')
-  const [columnFilters, setColumnFilters] = useState<Partial<Record<ColumnFilterId, string>>>({})
-  const [openColumnFilter, setOpenColumnFilter] = useState<ColumnFilterId | null>(null)
-
   const data = useMemo(
-    () =>
-      filterExplorerTree(
-        buildRows(initiatives, groupMode),
-        columnFilters,
-      ),
-    [columnFilters, groupMode, initiatives],
+    () => buildRows(initiatives, groupMode),
+    [groupMode, initiatives],
   )
 
-  function ExplorerHeaderCell(props: any) {
-    const id = props.column.id as ColumnFilterId
-    const label = props.cell.text as string
-    const value = columnFilters[id] ?? ''
-    const open = openColumnFilter === id
-
-    return (
-      <div className="sparks-data-explorer-header-cell">
-        {open ? (
-          <div
-            className="sparks-data-explorer-header-inline-filter"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <input
-              autoFocus
-              value={value}
-              placeholder={label}
-              aria-label={`Filtrar ${label}`}
-              onChange={(event) =>
-                setColumnFilters((current) => ({
-                  ...current,
-                  [id]: event.target.value,
-                }))
-              }
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                  setOpenColumnFilter(null)
-                }
-              }}
-            />
-            {value ? (
-              <button
-                type="button"
-                className="sparks-data-explorer-header-filter-clear"
-                aria-label={`Limpar filtro de ${label}`}
-                title={`Limpar filtro de ${label}`}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setColumnFilters((current) => ({
-                    ...current,
-                    [id]: '',
-                  }))
-                }}
-              >
-                <X aria-hidden="true" size={14} />
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <span className="sparks-data-explorer-header-label">{label}</span>
-        )}
-
-        <button
-          type="button"
-          className={
-            value
-              ? 'sparks-data-explorer-header-filter-button sparks-data-explorer-header-filter-button--active'
-              : 'sparks-data-explorer-header-filter-button'
-          }
-          aria-label={`${open ? 'Fechar' : 'Abrir'} filtro de ${label}`}
-          title={`${open ? 'Fechar' : 'Filtrar'} ${label}`}
-          onClick={(event) => {
-            event.stopPropagation()
-            setOpenColumnFilter((current) => (current === id ? null : id))
-          }}
-        >
-          <Filter aria-hidden="true" size={14} />
-        </button>
-      </div>
-    )
-  }
-
-  function smartHeader(text: string) {
-    return {
-      text,
-      cell: ExplorerHeaderCell,
-      css: 'sparks-data-explorer-header-main',
-    }
-  }
-
-  const columns: IColumnConfig[] = [
-    { id: 'classLabel', header: smartHeader('Tipo'), width: 175, sort: true, resize: true },
-    { id: 'name', header: smartHeader('Iniciativa / agrupamento'), width: 390, flexgrow: 2, treetoggle: true, sort: true, resize: true },
-    { id: 'strategicTheme', header: smartHeader('Tema Estratégico'), width: 250, sort: true, resize: true },
-    { id: 'strategicObjective', header: smartHeader('Objetivo Estratégico'), width: 285, sort: true, resize: true },
-    { id: 'progressLabel', header: smartHeader('Progresso'), width: 120, sort: true, resize: true },
-    { id: 'statusLabel', header: smartHeader('Situação'), width: 150, sort: true, resize: true },
-    { id: 'area', header: smartHeader('Área'), width: 180, sort: true, resize: true },
-    { id: 'responsible', header: smartHeader('Responsável'), width: 190, sort: true, resize: true },
-    { id: 'strategic', header: smartHeader('Estratégia'), width: 135, sort: true, resize: true },
-    { id: 'priority', header: smartHeader('Prioridade'), width: 115, sort: true, resize: true },
-    { id: 'criticality', header: smartHeader('Criticidade'), width: 115, sort: true, resize: true },
-    { id: 'startDate', header: smartHeader('Início'), width: 110, sort: true, resize: true },
-    { id: 'targetEndDate', header: smartHeader('Término'), width: 110, sort: true, resize: true },
-    { id: 'health', header: smartHeader('Saúde'), width: 120, sort: true, resize: true },
-    { id: 'risk', header: smartHeader('Risco'), width: 110, sort: true, resize: true },
-  ]
+  const columns = useMemo<SparksSmartGridColumn[]>(() => [
+    { id: 'classLabel', label: 'Tipo', minWidth: 175, maxWidth: 220 },
+    { id: 'name', label: 'Iniciativa / agrupamento', minWidth: 390, maxWidth: 620, grow: 2, treeToggle: true, tooltip: true },
+    { id: 'strategicTheme', label: 'Tema Estratégico', minWidth: 250, maxWidth: 420, tooltip: true },
+    { id: 'strategicObjective', label: 'Objetivo Estratégico', minWidth: 285, maxWidth: 460, tooltip: true },
+    { id: 'progressLabel', label: 'Progresso', minWidth: 120, maxWidth: 150, align: 'center' },
+    { id: 'statusLabel', label: 'Situação', minWidth: 150, maxWidth: 190, align: 'center' },
+    { id: 'area', label: 'Área', minWidth: 180, maxWidth: 300, tooltip: true },
+    { id: 'responsible', label: 'Responsável', minWidth: 190, maxWidth: 300, tooltip: true },
+    { id: 'strategic', label: 'Estratégia', minWidth: 135, maxWidth: 170, align: 'center' },
+    { id: 'priority', label: 'Prioridade', minWidth: 115, maxWidth: 150, align: 'center' },
+    { id: 'criticality', label: 'Criticidade', minWidth: 115, maxWidth: 150, align: 'center' },
+    { id: 'startDate', label: 'Início', minWidth: 110, maxWidth: 140, align: 'center' },
+    { id: 'targetEndDate', label: 'Término', minWidth: 110, maxWidth: 140, align: 'center' },
+    { id: 'health', label: 'Saúde', minWidth: 120, maxWidth: 160, align: 'center' },
+    { id: 'risk', label: 'Risco', minWidth: 110, maxWidth: 150, align: 'center' },
+  ], [])
 
   const selectedInitiative =
     initiatives.find(
       (initiative) => initiative.initiative_id === selectedId,
     ) ?? null
 
-  function init(api: {
-    on: (
-      action: string,
-      handler: (event: { id?: string | number }) => void,
-    ) => void
-  }) {
-    api.on('select-row', (event) => {
-      const id =
-        event.id === undefined || event.id === null
-          ? null
-          : String(event.id)
-
-      setSelectedId(
-        id && !id.startsWith('group:')
-          ? id
-          : null,
-      )
-    })
-  }
 
   return (
     <section className="sparks-data-explorer-beta">
@@ -639,85 +457,43 @@ export function InitiativeDataExplorerBeta({
               setGroupMode(event.target.value as GroupMode)
             }
           >
-            <option value="area">
-              Área → Iniciativa
-            </option>
-            <option value="area_objective">
-              Área → Objetivo Estratégico → Iniciativa
-            </option>
-            <option value="area_theme">
-              Área → Tema Estratégico → Iniciativa
-            </option>
-            <option value="area_theme_objective">
-              Área → Tema Estratégico → Objetivo Estratégico → Iniciativa
-            </option>
-            <option value="strategic_theme_objective">
-              Tema Estratégico → Objetivo Estratégico → Iniciativa
-            </option>
-            <option value="strategic_objective">
-              Objetivo Estratégico → Iniciativa
-            </option>
-            <option value="objective_area">
-              Objetivo Estratégico → Área → Iniciativa
-            </option>
-            <option value="strategic_theme">
-              Tema Estratégico → Iniciativa
-            </option>
-            <option value="responsible_objective">
-              Responsável → Objetivo Estratégico → Iniciativa
-            </option>
-            <option value="status_area">
-              Situação → Área → Iniciativa
-            </option>
-            <option value="priority_area">
-              Prioridade → Área → Iniciativa
-            </option>
-            <option value="area_strategic">
-              Área → Estratégico/Não estratégico → Iniciativa
-            </option>
-            <option value="area_responsible_strategic">
-              Área → Responsável → Estratégico/Não estratégico → Iniciativa
-            </option>
-            <option value="responsible_strategic">
-              Responsável → Estratégico/Não estratégico → Iniciativa
-            </option>
-            <option value="initiative_hierarchy">
-              Hierarquia própria das iniciativas
-            </option>
+            <option value="area">Área → Iniciativa</option>
+            <option value="area_objective">Área → Objetivo Estratégico → Iniciativa</option>
+            <option value="area_theme">Área → Tema Estratégico → Iniciativa</option>
+            <option value="area_theme_objective">Área → Tema Estratégico → Objetivo Estratégico → Iniciativa</option>
+            <option value="strategic_theme_objective">Tema Estratégico → Objetivo Estratégico → Iniciativa</option>
+            <option value="strategic_objective">Objetivo Estratégico → Iniciativa</option>
+            <option value="objective_area">Objetivo Estratégico → Área → Iniciativa</option>
+            <option value="strategic_theme">Tema Estratégico → Iniciativa</option>
+            <option value="responsible_objective">Responsável → Objetivo Estratégico → Iniciativa</option>
+            <option value="status_area">Situação → Área → Iniciativa</option>
+            <option value="priority_area">Prioridade → Área → Iniciativa</option>
+            <option value="area_strategic">Área → Estratégico/Não estratégico → Iniciativa</option>
+            <option value="area_responsible_strategic">Área → Responsável → Estratégico/Não estratégico → Iniciativa</option>
+            <option value="responsible_strategic">Responsável → Estratégico/Não estratégico → Iniciativa</option>
+            <option value="initiative_hierarchy">Hierarquia própria das iniciativas</option>
           </select>
         </label>
       </div>
 
-      <div
-        className="sparks-data-explorer-beta__grid" data-sparks-grid-shell
-        role="region"
-        aria-label="Exploração Estratégica do Plano de Ação"
-        tabIndex={0}
-        title="Clique nos cabeçalhos para ordenar. Use os filtros logo abaixo dos títulos. Ctrl/Cmd+clique permite ordenação por múltiplas colunas."
-        onDoubleClick={() => {
-          if (selectedInitiative) {
-            onOpenInitiative(selectedInitiative)
-          }
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && selectedInitiative) {
-            event.preventDefault()
-            onOpenInitiative(selectedInitiative)
-          }
-        }}
-      >
-        <Willow>
-          <Grid
-            tree
-            data={data}
-            columns={columns}
-            init={init}
-            select
-            rowStyle={() => 'sparks-data-explorer-row'}
-          />
-        </Willow>
-        <SparksGridNavigator />
-</div>
+      <div className="sparks-data-explorer-beta__grid">
+        <SparksSmartGrid
+          rows={data}
+          columns={columns}
+          ariaLabel="Exploração Estratégica do Plano de Ação"
+          selectedId={selectedId}
+          tree
+          treeContextActions
+          viewportMode="standard"
+          primaryActionLabel="Abrir ficha da iniciativa"
+          onSelect={(id) => setSelectedId(id)}
+          onDoubleClick={(id) => {
+            if (id.startsWith('group:')) return
+            const initiative = initiatives.find((candidate) => candidate.initiative_id === id)
+            if (initiative) onOpenInitiative(initiative)
+          }}
+        />
+      </div>
 
       <footer>
         <div>

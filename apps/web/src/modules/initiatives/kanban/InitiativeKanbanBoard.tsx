@@ -103,6 +103,32 @@ export function InitiativeKanbanBoard({  initiativeId,
     })
   }
 
+  const scrollBoardHorizontally = (direction: -1 | 1) => {
+    const viewport = boardScrollRef.current
+    if (!viewport) return
+
+    viewport.scrollBy({
+      left: direction * Math.max(280, Math.round(viewport.clientWidth * 0.72)),
+      behavior: 'smooth',
+    })
+  }
+
+  const scrollBoardToEdge = (edge: 'start' | 'end') => {
+    const viewport = boardScrollRef.current
+    if (!viewport) return
+    viewport.scrollTo({
+      left: edge === 'start' ? 0 : viewport.scrollWidth,
+      behavior: 'smooth',
+    })
+  }
+
+  const scrollToClosedActions = () => {
+    document.getElementById('initiative-closed-actions')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }
+
   const allCards = useMemo(
     () => columns.flatMap((column) => column.cards),
     [columns],
@@ -424,6 +450,23 @@ export function InitiativeKanbanBoard({  initiativeId,
         </section>
       ) : (
         <>
+          <div className="initiative-kanban-scroll-controls" aria-label="Navegação horizontal do Kanban">
+            <button type="button" onClick={() => scrollBoardToEdge('start')} aria-label="Ir para o início do Kanban" title="Ir para o início">«</button>
+            <button type="button" onClick={() => scrollBoardHorizontally(-1)} aria-label="Rolar Kanban para a esquerda" title="Rolar para a esquerda">←</button>
+            <span>Arraste a barra ou use as setas para ver todas as etapas</span>
+            <button type="button" onClick={() => scrollBoardHorizontally(1)} aria-label="Rolar Kanban para a direita" title="Rolar para a direita">→</button>
+            <button type="button" onClick={() => scrollBoardToEdge('end')} aria-label="Ir para o fim do Kanban" title="Ir para o fim">»</button>
+            {canManageInitiatives ? (
+              <button
+                type="button"
+                className="initiative-kanban-scroll-controls__closed"
+                onClick={scrollToClosedActions}
+              >
+                Canceladas ↓
+              </button>
+            ) : null}
+          </div>
+
           <div
             className="initiative-kanban-horizontal-scroll-top"
             ref={topScrollRef}

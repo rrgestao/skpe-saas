@@ -17,6 +17,8 @@ type JourneyGanttProps = {
   canManageJourney: boolean
   onCreateEvent: (itemId: string) => void
   eventProjectionRevision: number
+  onEditPlanning?: () => void
+  onOpenResources?: () => void
 }
 
 type JourneyEventRow = {
@@ -336,6 +338,56 @@ function getJourneyRange(row: JourneyTemporalRow, kind: GanttBarKind) {
   return normalizeRange(row.actual_start_date, row.actual_end_date)
 }
 
+function buildSuggestedJourneyRanges(rows: JourneyTemporalRow[]) {
+  const ranges = new Map<string, DateRange>()
+  const activeRows = rows.filter((row) => row.item_status !== 'cancelled')
+  const projectStart = activeRows.find((row) => row.project_start_date)?.project_start_date ?? null
+  const projectEnd = activeRows.find((row) => row.project_target_end_date)?.project_target_end_date ?? null
+  if (!projectStart || !projectEnd) return ranges
+
+  const parentIds = new Set(activeRows.map((row) => row.parent_item_id).filter(Boolean))
+  const leaves = activeRows
+    .filter((row) => !parentIds.has(row.item_id))
+    .sort((a, b) => a.display_order - b.display_order || a.item_code.localeCompare(b.item_code, 'pt-BR'))
+  if (leaves.length === 0) return ranges
+
+  const startMs = parseDateOnly(projectStart)
+  const endMs = parseDateOnly(projectEnd)
+  const totalDays = Math.max(1, daysBetween(startMs, endMs) + 1)
+
+  leaves.forEach((row, index) => {
+    const startOffset = Math.floor((index * totalDays) / leaves.length)
+    const nextOffset = Math.floor(((index + 1) * totalDays) / leaves.length)
+    const endOffset = Math.max(startOffset, Math.min(totalDays - 1, nextOffset - 1))
+    const start = toDateOnly(startMs + startOffset * DAY_MS)
+    const end = toDateOnly(startMs + endOffset * DAY_MS)
+    const milestone = row.item_type === 'gate' || row.item_type === 'deliverable'
+    ranges.set(row.item_id, { start: milestone ? end : start, end })
+  })
+
+  const children = new Map<string, JourneyTemporalRow[]>()
+  activeRows.forEach((row) => {
+    if (!row.parent_item_id) return
+    children.set(row.parent_item_id, [...(children.get(row.parent_item_id) ?? []), row])
+  })
+  for (let pass = 0; pass < activeRows.length; pass += 1) {
+    let changed = false
+    for (const row of [...activeRows].reverse()) {
+      if (ranges.has(row.item_id)) continue
+      const childRanges = (children.get(row.item_id) ?? [])
+        .map((child) => ranges.get(child.item_id))
+        .filter(Boolean) as DateRange[]
+      if (childRanges.length === 0) continue
+      const merged = mergeRanges(childRanges)
+      if (!merged) continue
+      ranges.set(row.item_id, merged)
+      changed = true
+    }
+    if (!changed) break
+  }
+  return ranges
+}
+
 function getInitiativeRange(row: InitiativeTemporalRow, kind: GanttBarKind) {
   if (kind === 'baseline') {
     return normalizeRange(row.baseline_start_date, row.baseline_end_date)
@@ -458,6 +510,11 @@ function buildTimeline(
   referenceDate: string | null,
 ): Timeline | null {
   const dates: number[] = []
+
+  const projectStart = rows.find((row) => row.project_start_date)?.project_start_date ?? null
+  const projectEnd = rows.find((row) => row.project_target_end_date)?.project_target_end_date ?? null
+  if (projectStart) dates.push(parseDateOnly(projectStart))
+  if (projectEnd) dates.push(parseDateOnly(projectEnd))
 
   for (const row of rows) {
     for (const kind of ['baseline', 'plan', 'forecast', 'actual'] as const) {
@@ -648,7 +705,7 @@ function getStatusCounts(rows: ActionBoardRow[]) {
   )
 }
 
-function openGovernedKanban() {
+function openInitiativeWorkspace(tab: 'kanban' | 'economics' = 'kanban', initiativeId?: string | null) {
   const target = new URL(window.location.href)
 
   if (target.pathname.endsWith('/journey')) {
@@ -658,8 +715,11 @@ function openGovernedKanban() {
     target.searchParams.set('section', 'initiatives')
   }
 
+  target.searchParams.set('initiativeTab', tab)
+  if (initiativeId) target.searchParams.set('initiativeId', initiativeId)
   window.location.assign(target.toString())
 }
+
 
 function isMilestone(row: JourneyTemporalRow, range: DateRange) {
   return (
@@ -699,6 +759,8 @@ export function JourneyGantt({
   canManageJourney,
   onCreateEvent,
   eventProjectionRevision,
+  onEditPlanning,
+  onOpenResources,
 }: JourneyGanttProps) {
   const [visibility, setVisibility] = useState<GanttVisibility>('all')
   const [events, setEvents] = useState<JourneyEventRow[]>([])
@@ -797,6 +859,10 @@ export function JourneyGantt({
     () => buildJourneyChildrenMap(rows),
     [rows],
   )
+  const suggestedJourneyRanges = useMemo(
+    () => buildSuggestedJourneyRanges(rows),
+    [rows],
+  )
   const flattenedRows = useMemo(
     () => flattenJourney(rows, expandedJourneyIds),
     [rows, expandedJourneyIds],
@@ -812,6 +878,9 @@ export function JourneyGantt({
     () => flattenInitiative(initiativeTemporal, expandedInitiativeIds),
     [initiativeTemporal, expandedInitiativeIds],
   )
+  const linkedInitiativeId = initiativeTemporal.find((row) => row.entity_type === 'initiative')?.initiative_id ?? null
+  const openGovernedKanban = () => openInitiativeWorkspace('kanban', linkedInitiativeId)
+  const openGovernedEconomics = () => openInitiativeWorkspace('economics', linkedInitiativeId)
 
   const toggleJourneyExpansion = (itemId: string) => {
     setExpandedJourneyIds((current) => {
@@ -885,10 +954,10 @@ export function JourneyGantt({
   if (!timeline) {
     return (
       <section className="skpe-gantt-empty">
-        <h2>Gantt ainda sem programação</h2>
+        <h2>Cronograma aguardando definição da janela do projeto</h2>
         <p>
-          A visão será preenchida quando houver baseline, plano vigente,
-          forecast, execução registrada, iniciativas, ações ou eventos associados.
+          Assim que a Jornada possuir início e término de referência, o sistema
+          apresentará uma sugestão metodológica para validação humana.
         </p>
       </section>
     )
@@ -920,17 +989,14 @@ export function JourneyGantt({
         </div>
 
         <div className="skpe-gantt-header-actions">
-          {canManageJourney && selectedItemId && (
-            <button
-              type="button"
-              className="skpe-gantt-create-event-button"
-              onClick={() => onCreateEvent(selectedItemId)}
-            >
-              Novo evento
-            </button>
-          )}
-
-          <div className="skpe-gantt-filter" role="group" aria-label="Escopo da Jornada no Gantt">
+          <div className="skpe-gantt-filter" role="group" aria-label="Ações do cronograma e escopo da Jornada">
+            {canManageJourney ? (
+              <button type="button" disabled={!selectedItemId} onClick={() => selectedItemId && onCreateEvent(selectedItemId)} title={selectedItemId ? 'Agendar evento para o item selecionado' : 'Selecione um item no Gantt para agendar um evento'}>
+                Agendar evento
+              </button>
+            ) : null}
+            {onEditPlanning ? <button type="button" onClick={onEditPlanning}>Editar cronograma da Jornada</button> : null}
+            <button type="button" className="is-primary-action" onClick={openGovernedKanban}>Abrir Kanban governado</button>
             <button
               type="button"
               className={visibility === 'all' ? 'is-active' : ''}
@@ -952,6 +1018,7 @@ export function JourneyGantt({
       </header>
 
       <div className="skpe-gantt-legend" aria-label="Legenda do Gantt">
+        <span><i className="skpe-gantt-legend-suggested" />Sugestão metodológica</span>
         <span><i className="skpe-gantt-legend-baseline" />Baseline original</span>
         <span><i className="skpe-gantt-legend-plan" />Plano vigente</span>
         <span><i className="skpe-gantt-legend-forecast" />Forecast</span>
@@ -1100,6 +1167,24 @@ export function JourneyGantt({
                     )
                   })}
 
+                  {(() => {
+                    const hasCanonicalRange = kinds.some((kind) => getJourneyRange(row, kind) !== null)
+                    const suggestedRange = suggestedJourneyRanges.get(row.item_id)
+                    if (hasCanonicalRange || !suggestedRange) return null
+                    return (
+                      <span
+                        className={[
+                          'skpe-gantt-bar',
+                          'skpe-gantt-bar-suggested',
+                          isMilestone(row, suggestedRange) ? 'skpe-gantt-bar-milestone' : '',
+                        ].filter(Boolean).join(' ')}
+                        style={getBarStyle(suggestedRange, timeline)}
+                        title={`Sugestão metodológica: ${formatDate(suggestedRange.start)} a ${formatDate(suggestedRange.end)} · pendente de validação`}
+                        aria-label={`Sugestão metodológica: ${formatDate(suggestedRange.start)} a ${formatDate(suggestedRange.end)}`}
+                      />
+                    )
+                  })()}
+
                   {rowEvents.map((event) => {
                     const range = getEventRange(event)
                     if (!range) return null
@@ -1242,16 +1327,15 @@ export function JourneyGantt({
         />
       )}
 
-      <section className="skpe-management-summary" aria-label="Resumo gerencial da execução estratégica">
+      <section className="skpe-execution-zone" aria-label="Execução integrada do Projeto Estratégico">
+        <div className="skpe-execution-zone__separator"><span>EXECUÇÃO INTEGRADA</span></div>
+        <section className="skpe-management-summary" aria-label="Resumo gerencial da execução estratégica">
         <header className="skpe-management-summary-header">
           <div>
-            <p className="skpe-eyebrow">Execução integrada</p>
-            <h3>Prazo, Kanban, econômico e capacidade</h3>
+            <h3>Prazo, Kanban, orçamento e capacidade</h3>
           </div>
-          <div className="skpe-gantt-filter">
-            <button type="button" onClick={openGovernedKanban}>
-              Abrir Kanban governado
-            </button>
+          <div className="skpe-execution-zone__context">
+            <span>Indicadores operacionais do Projeto Estratégico vinculado.</span>
           </div>
           <p>
             Indicadores derivados exclusivamente das projeções governadas. Moedas e
@@ -1266,14 +1350,9 @@ export function JourneyGantt({
             <strong>{actionBoard.length}</strong>
             <small>Ações ativas na projeção do board</small>
             <div className="skpe-management-tags">
-              {statusCounts.length === 0 ? (
-                <span>Sem ações registradas</span>
-              ) : (
-                statusCounts.map(([status, count]) => (
-                  <span key={status}>{status}: {count}</span>
-                ))
-              )}
+              {statusCounts.length === 0 ? <span>Sem ações registradas</span> : statusCounts.map(([status, count]) => <span key={status}>{status}: {count}</span>)}
             </div>
+            <button type="button" className="skpe-management-card-action" onClick={openGovernedKanban}>Abrir Kanban</button>
           </article>
 
           <article className="skpe-management-card">
@@ -1294,6 +1373,7 @@ export function JourneyGantt({
                 </>
               )}
             </div>
+            {onOpenResources ? <button type="button" className="skpe-management-card-action" onClick={onOpenResources}>Revisar recursos</button> : null}
           </article>
 
           <article className="skpe-management-card">
@@ -1314,66 +1394,41 @@ export function JourneyGantt({
                 )}
               </div>
             )}
+            {onEditPlanning ? <button type="button" className="skpe-management-card-action" onClick={onEditPlanning}>Revisar cronograma</button> : null}
           </article>
 
-          <article className="skpe-management-card skpe-management-card-wide">
+          <article className="skpe-management-card">
             <span className="skpe-management-card-kicker">Custos das ações</span>
             {costRows.length === 0 ? (
               <p className="skpe-management-empty">Sem custos quantitativos registrados.</p>
             ) : (
               <div className="skpe-management-table-wrap">
                 <table className="skpe-management-table">
-                  <thead>
-                    <tr>
-                      <th>Moeda</th>
-                      <th>Plano atual</th>
-                      <th>Realizado</th>
-                      <th>Variação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {costRows.map((row) => (
-                      <tr key={row.currencyCode}>
-                        <td>{row.currencyCode}</td>
-                        <td>{formatMoney(row.currentPlannedCost, row.currencyCode)}</td>
-                        <td>{formatMoney(row.actualRealizedCost, row.currencyCode)}</td>
-                        <td>{formatMoney(row.currentPlanVariance, row.currencyCode)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+                  <thead><tr><th>Moeda</th><th>Plano atual</th><th>Realizado</th><th>Variação</th></tr></thead>
+                  <tbody>{costRows.map((row) => (
+                    <tr key={row.currencyCode}><td>{row.currencyCode}</td><td>{formatMoney(row.currentPlannedCost, row.currencyCode)}</td><td>{formatMoney(row.actualRealizedCost, row.currencyCode)}</td><td>{formatMoney(row.currentPlanVariance, row.currencyCode)}</td></tr>
+                  ))}</tbody>
                 </table>
               </div>
             )}
+            <button type="button" className="skpe-management-card-action" onClick={openGovernedEconomics}>Abrir orçamento</button>
           </article>
 
-          <article className="skpe-management-card skpe-management-card-wide">
+          <article className="skpe-management-card">
             <span className="skpe-management-card-kicker">Esforço das ações</span>
             {effortRows.length === 0 ? (
               <p className="skpe-management-empty">Sem esforço quantitativo registrado.</p>
             ) : (
               <div className="skpe-management-table-wrap">
                 <table className="skpe-management-table">
-                  <thead>
-                    <tr>
-                      <th>Unidade</th>
-                      <th>Estimado atual</th>
-                      <th>Realizado</th>
-                      <th>Variação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {effortRows.map((row) => (
-                      <tr key={row.effortUnit}>
-                        <td>{row.effortUnit}</td>
-                        <td>{formatQuantity(row.currentEstimatedEffort)}</td>
-                        <td>{formatQuantity(row.actualRealizedEffort)}</td>
-                        <td>{formatQuantity(row.currentPlanVariance)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+                  <thead><tr><th>Unidade</th><th>Estimado atual</th><th>Realizado</th><th>Variação</th></tr></thead>
+                  <tbody>{effortRows.map((row) => (
+                    <tr key={row.effortUnit}><td>{row.effortUnit}</td><td>{formatQuantity(row.currentEstimatedEffort)}</td><td>{formatQuantity(row.actualRealizedEffort)}</td><td>{formatQuantity(row.currentPlanVariance)}</td></tr>
+                  ))}</tbody>
                 </table>
               </div>
             )}
+            <button type="button" className="skpe-management-card-action" onClick={openGovernedEconomics}>Abrir esforço</button>
           </article>
         </div>
 
@@ -1398,6 +1453,7 @@ export function JourneyGantt({
             ))}
           </div>
         ) : null}
+        </section>
       </section>
     </section>
   )

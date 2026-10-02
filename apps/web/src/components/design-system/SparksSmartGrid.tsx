@@ -8,7 +8,6 @@ import {
 } from '@svar-ui/react-grid'
 
 import '@svar-ui/react-grid/all.css'
-import { SparksGridNavigator } from './SparksGridNavigator'
 import './SparksSmartGrid.css'
 
 export type SparksSmartGridRow = {
@@ -30,6 +29,7 @@ export type SparksSmartGridColumn = {
   resizable?: boolean
   filterable?: boolean
   cell?: any
+  cellStyle?: (row: SparksSmartGridRow) => string
   semanticClass?: string
   filterValue?: (row: SparksSmartGridRow) => unknown
   widthValue?: (row: SparksSmartGridRow) => unknown
@@ -55,6 +55,7 @@ type Props = {
   onSelect?: (id: string) => void
   onDoubleClick?: (id: string) => void
   onActivate?: (id: string) => void
+  primaryActionLabel?: string
   contextMenu?: SparksSmartGridContextAction[]
   onContextAction?: (actionId: string, rowId: string) => void
   tree?: boolean
@@ -153,12 +154,13 @@ export function SparksSmartGrid({
   onSelect,
   onDoubleClick,
   onActivate,
+  primaryActionLabel = 'Abrir manutenção',
   contextMenu,
   onContextAction,
   tree = false,
   treeContextActions = false,
   fillViewport = true,
-  autoRowHeight = true,
+  autoRowHeight = false,
   className = '',
   emptyMessage = 'Nenhum registro disponível.',
   viewportMode = 'standard',
@@ -167,7 +169,28 @@ export function SparksSmartGrid({
   const [openColumnFilter, setOpenColumnFilter] = useState<string | null>(null)
   const [gridApi, setGridApi] = useState<any>(null)
   const contextRowIdRef = useRef<string | null>(null)
+  const lastActivationRef = useRef<{ id: string; at: number } | null>(null)
+  const lastSelectClickRef = useRef<{ id: string; at: number } | null>(null)
+  const selectedRowRef = useRef<string | null>(selectedId ?? null)
   const gridShellRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (rows.length === 0) return
+    const shell = gridShellRef.current
+    if (!shell) return
+    const handleDocumentDoubleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target || !shell.contains(target)) return
+      if (target.closest('input, textarea, select, button, a, [contenteditable="true"], .wx-grip, [role="columnheader"]')) return
+      const selected = selectedRowRef.current
+      if (!selected) return
+      event.preventDefault()
+      event.stopPropagation()
+      activateRow(String(selected))
+    }
+    document.addEventListener('dblclick', handleDocumentDoubleClick, true)
+    return () => document.removeEventListener('dblclick', handleDocumentDoubleClick, true)
+  }, [onActivate, onDoubleClick, rows.length])
   const [gridViewportWidth, setGridViewportWidth] = useState(0)
   const [sortState, setSortState] = useState<{
     columnId: string
@@ -179,6 +202,9 @@ export function SparksSmartGrid({
       : selectedId
         ? [selectedId]
         : []
+  useEffect(() => {
+    selectedRowRef.current = selectedId ?? selectedIds[0] ?? null
+  }, [selectedId, selectedIds])
   useEffect(() => {
     if (!fillViewport) return
     const shell = gridShellRef.current
@@ -339,7 +365,7 @@ export function SparksSmartGrid({
               className="sparks-data-explorer-header-filter-clear"
               title={`Fechar filtro de ${label}`}
               aria-label={`Fechar filtro de ${label}`}
-              onClick={(event) => {
+              onClickCapture={(event) => {
                 event.stopPropagation()
                 setOpenColumnFilter(null)
               }}
@@ -500,7 +526,18 @@ export function SparksSmartGrid({
 
     api.on?.('select-row', (event: any) => {
       const id = resolveGridRowId(event)
-      if (id) onSelect?.(id)
+      if (id) {
+        selectedRowRef.current = id
+        onSelect?.(id)
+        const now = Date.now()
+        const previous = lastSelectClickRef.current
+        if (previous?.id === id && now - previous.at >= 80 && now - previous.at <= 500) {
+          lastSelectClickRef.current = null
+          activateRow(id)
+        } else {
+          lastSelectClickRef.current = { id, at: now }
+        }
+      }
 
       const nextSelection = Array.from(
         api.getState?.()?.selectedRows ?? [],
@@ -509,13 +546,18 @@ export function SparksSmartGrid({
       onSelectionChange?.(nextSelection)
     })
 
-    const openSelected = (event: any) => {
-      const id = resolveGridRowId(event) ?? selectedId
-      if (id) (onActivate ?? onDoubleClick)?.(id)
-    }
+    api.on?.('open-editor', (event: any) => {
+      const id = resolveGridRowId(event) ?? selectedRowRef.current
+      if (id) activateRow(String(id))
+    })
+  }
 
-    api.on?.('dblclick-row', openSelected)
-    api.on?.('double-click-row', openSelected)
+  function activateRow(id: string) {
+    const now = Date.now()
+    const last = lastActivationRef.current
+    if (last?.id === id && now - last.at < 250) return
+    lastActivationRef.current = { id, at: now }
+    ;(onActivate ?? onDoubleClick)?.(id)
   }
 
   function resolveContextMenuRow(id: unknown) {
@@ -552,21 +594,28 @@ export function SparksSmartGrid({
 
   const effectiveContextMenu = useMemo<
     SparksSmartGridContextAction[] | undefined
-  >(
-    () =>
-      tree && treeContextActions
-        ? [
-            { id: 'tree-open', text: 'Expandir este nó' },
-            { id: 'tree-close', text: 'Recolher este nó' },
-            { id: 'tree-open-nested', text: 'Expandir descendentes' },
-            { id: 'tree-close-nested', text: 'Recolher descendentes' },
-            ...(contextMenu?.length
-              ? [{ comp: 'separator' }, ...contextMenu]
-              : []),
-          ]
-        : contextMenu,
-    [contextMenu, tree, treeContextActions],
-  )
+  >(() => {
+    const primary = (onActivate ?? onDoubleClick)
+      ? [{ id: '__primary__', text: primaryActionLabel }]
+      : []
+    const screenActions = contextMenu?.length ? [...contextMenu] : []
+    const treeActions = tree && treeContextActions
+      ? [
+          { id: 'tree-open', text: 'Expandir este nó' },
+          { id: 'tree-close', text: 'Recolher este nó' },
+          { id: 'tree-open-nested', text: 'Expandir descendentes' },
+          { id: 'tree-close-nested', text: 'Recolher descendentes' },
+        ]
+      : []
+    const options = [
+      ...primary,
+      ...(primary.length && (treeActions.length || screenActions.length) ? [{ comp: 'separator' }] : []),
+      ...treeActions,
+      ...(treeActions.length && screenActions.length ? [{ comp: 'separator' }] : []),
+      ...screenActions,
+    ]
+    return options.length ? options : undefined
+  }, [contextMenu, onActivate, onDoubleClick, primaryActionLabel, tree, treeContextActions])
 
   function handleContextMenuAction(event: any) {
     const actionId = String(
@@ -579,6 +628,11 @@ export function SparksSmartGrid({
     if (!actionId || !rowId) return
 
     contextRowIdRef.current = rowId
+
+    if (actionId === '__primary__') {
+      activateRow(rowId)
+      return
+    }
 
     if (tree && gridApi?.exec) {
       if (actionId === 'tree-open') {
@@ -605,6 +659,59 @@ export function SparksSmartGrid({
     onContextAction?.(actionId, rowId)
   }
 
+  const visibleRows = useMemo(() => flattenGridRows(sortedRows), [sortedRows])
+
+  function selectAndRevealRow(id: string) {
+    selectedRowRef.current = id
+    onSelect?.(id)
+    if (gridApi?.exec) gridApi.exec('select-row', { id, mode: true })
+    window.requestAnimationFrame(() => {
+      const shell = gridShellRef.current
+      if (!shell) return
+      const row = Array.from(shell.querySelectorAll<HTMLElement>('[data-id]')).find(
+        (candidate) => candidate.getAttribute('data-id') === id,
+      )
+      row?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    })
+  }
+
+  function moveSelection(step: number) {
+    if (visibleRows.length === 0) return
+    const current = selectedRowRef.current ?? selectedId ?? null
+    const currentIndex = current
+      ? visibleRows.findIndex((row) => String(row.id) === String(current))
+      : -1
+    const start = currentIndex < 0 ? (step > 0 ? -1 : 0) : currentIndex
+    const nextIndex = Math.max(0, Math.min(visibleRows.length - 1, start + step))
+    selectAndRevealRow(String(visibleRows[nextIndex].id))
+  }
+
+  useEffect(() => {
+    if (!selectedId || !gridApi) return
+    window.requestAnimationFrame(() => {
+      const shell = gridShellRef.current
+      if (!shell) return
+      const row = Array.from(shell.querySelectorAll<HTMLElement>('[data-id]')).find(
+        (candidate) => candidate.getAttribute('data-id') === selectedId,
+      )
+      row?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    })
+  }, [gridApi, selectedId, sortedRows])
+
+  function scrollHorizontally(direction: -1 | 1) {
+    const shell = gridShellRef.current
+    if (!shell) return
+    const candidates = [shell, ...Array.from(shell.querySelectorAll<HTMLElement>('*'))]
+    const target = candidates
+      .filter((candidate) => candidate.scrollWidth > candidate.clientWidth + 3)
+      .sort((a, b) => (b.scrollWidth - b.clientWidth) - (a.scrollWidth - a.clientWidth))[0]
+    if (!target) return
+    target.scrollBy({
+      left: direction * Math.max(180, Math.round(target.clientWidth * 0.65)),
+      behavior: 'smooth',
+    })
+  }
+
   const grid = (
     <Grid
       data={sortedRows}
@@ -615,12 +722,22 @@ export function SparksSmartGrid({
       selectedRows={effectiveSelectedIds}
       multiselect={multiselect}
       autoRowHeight={autoRowHeight}
-      cellStyle={(_row, column) => String(column?.css ?? '')}
+      rowStyle={(row) =>
+        effectiveSelectedIds.includes(String((row as SparksSmartGridRow).id))
+          ? 'sparks-smart-grid__row-selected'
+          : ''
+      }
+      cellStyle={(row, column) => {
+        const definition = columns.find((candidate) => candidate.id === String(column?.id ?? ''))
+        return [String(column?.css ?? ''), definition?.cellStyle?.(row as SparksSmartGridRow) ?? '']
+          .filter(Boolean)
+          .join(' ')
+      }}
     />
   )
 
   return (
-    <div className={`sparks-smart-grid-block ${className}`.trim()}>
+    <div className={`sparks-smart-grid-block ${className}`.trim()} data-sparks-grid-shell>
       {activeFilterCount > 0 ? (
         <div className="sparks-smart-grid__filter-summary">
           <span>
@@ -645,19 +762,27 @@ export function SparksSmartGrid({
         <div
           ref={gridShellRef}
           className={`sparks-smart-grid sparks-smart-grid--${viewportMode}`}
-          data-sparks-grid-shell
           role="region"
           aria-label={ariaLabel}
           tabIndex={0}
-          onContextMenu={(event) => {
+          onClickCapture={(event) => {
+            if (!gridApi?.exec) return
+            const target = event.target as HTMLElement
+            if (target.closest('input, textarea, select, button, a, [contenteditable="true"], .wx-grip')) return
+
+            const rowElement = target.closest('[data-id]')
+            const rowId = rowElement?.getAttribute('data-id')
+            if (rowId) selectAndRevealRow(rowId)
+          }}
+          onContextMenuCapture={(event) => {
             if (!gridApi?.exec) return
             const target = event.target as HTMLElement
             const rowElement = target.closest('[data-id]')
             const rowId = rowElement?.getAttribute('data-id')
             if (!rowId) return
-            gridApi.exec('select-row', { id: rowId })
+            selectAndRevealRow(rowId)
           }}
-          onMouseDown={(event) => {
+          onMouseDownCapture={(event) => {
             const target = event.target as HTMLElement
             if (
               target.closest(
@@ -680,38 +805,33 @@ export function SparksSmartGrid({
             }
 
             if (event.key === 'Enter') {
-              const selected =
-                gridApi?.getState?.()?.selectedRows?.[0] ??
-                selectedId ??
-                null
-
-              if (selected !== null && selected !== undefined) {
+              const selected = selectedRowRef.current ?? selectedId ?? null
+              if (selected) {
                 event.preventDefault()
                 event.stopPropagation()
-                ;(onActivate ?? onDoubleClick)?.(String(selected))
+                activateRow(String(selected))
               }
-
               return
             }
-            if (event.key !== 'PageDown' && event.key !== 'PageUp') return
-            if (!gridApi?.exec || !gridApi?.getState) return
-
-            event.preventDefault()
-            event.stopPropagation()
-
-            const state = gridApi.getState()
-            const currentTop = Number(state?.scrollTop ?? 0)
-            const currentLeft = Number(state?.scrollLeft ?? 0)
-            const pageStep = Math.max(
-              160,
-              Math.floor(event.currentTarget.clientHeight * 0.82),
-            )
-            const direction = event.key === 'PageDown' ? 1 : -1
-
-            gridApi.exec('scroll-to', {
-              top: Math.max(0, currentTop + direction * pageStep),
-              left: currentLeft,
-            })
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault()
+              event.stopPropagation()
+              moveSelection(event.key === 'ArrowDown' ? 1 : -1)
+              return
+            }
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+              event.preventDefault()
+              event.stopPropagation()
+              scrollHorizontally(event.key === 'ArrowRight' ? 1 : -1)
+              return
+            }
+            if (event.key === 'PageDown' || event.key === 'PageUp') {
+              event.preventDefault()
+              event.stopPropagation()
+              const rowsPerPage = Math.max(1, Math.floor(event.currentTarget.clientHeight / 34) - 2)
+              moveSelection(event.key === 'PageDown' ? rowsPerPage : -rowsPerPage)
+              return
+            }
           }}
         >
           <Willow>
@@ -729,7 +849,6 @@ export function SparksSmartGrid({
               grid
             )}
           </Willow>
-          <SparksGridNavigator />
         </div>
       )}
     </div>

@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Filter, X } from 'lucide-react'
-import { Grid, Willow, type IColumnConfig } from '@svar-ui/react-grid'
-import '@svar-ui/react-grid/all.css'
+import { SparksSmartGrid, type SparksSmartGridColumn } from '../../../components/design-system/SparksSmartGrid'
 
 import { supabase } from '../../../lib/supabase'
-import { SparksGridNavigator } from '../../../components/design-system/SparksGridNavigator'
 import '../../skpe/components/OrganizationUsersSmartGrid.css'
 
 import './SuggestedInitiativesDraftPanel.css'
@@ -82,71 +80,15 @@ function displayDecision(row: SuggestedInitiativeRow) {
   )
 }
 
-const columns: IColumnConfig[] = [
-  {
-    id: 'code',
-    header: 'Código',
-    width: 110,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
-  {
-    id: 'initiative',
-    header: 'Iniciativa',
-    width: 340,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
-  {
-    id: 'origin',
-    header: 'Origem',
-    width: 220,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
-  {
-    id: 'risks',
-    header: 'Riscos cobertos',
-    width: 180,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
-  {
-    id: 'status',
-    header: 'Status',
-    width: 120,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
-  {
-    id: 'fiveWTwoH',
-    header: '5W2H',
-    width: 130,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
-  {
-    id: 'pending',
-    header: 'Pendências',
-    width: 220,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
-  {
-    id: 'decision',
-    header: 'Decisão',
-    width: 160,
-    sort: true,
-    resize: true,
-    tooltip: true,
-  },
+const columns: SparksSmartGridColumn[] = [
+  { id: 'code', label: 'C?digo', minWidth: 110, maxWidth: 170, tooltip: true },
+  { id: 'initiative', label: 'Iniciativa', minWidth: 340, maxWidth: 560, grow: 2, tooltip: true },
+  { id: 'origin', label: 'Origem', minWidth: 220, maxWidth: 360, tooltip: true },
+  { id: 'risks', label: 'Riscos cobertos', minWidth: 180, maxWidth: 320, tooltip: true },
+  { id: 'status', label: 'Status', minWidth: 120, maxWidth: 180, align: 'center' },
+  { id: 'fiveWTwoH', label: '5W2H', minWidth: 130, maxWidth: 170, align: 'center' },
+  { id: 'pending', label: 'Pend?ncias', minWidth: 220, maxWidth: 420, tooltip: true },
+  { id: 'decision', label: 'Decis?o', minWidth: 160, maxWidth: 220, align: 'center' },
 ]
 
 export function SuggestedInitiativesDraftPanel({
@@ -460,23 +402,23 @@ export function SuggestedInitiativesDraftPanel({
         </div>
       ) : (
         <>
-          <div
-            className="sparks-user-grid sparks-suggestion-grid"
-            data-sparks-grid-shell
-          >
-            <Willow>
-              <Grid
-                data={gridRows}
-                columns={columns}
-                select={true}
-                onSelectRow={(event) => {
-                  setSelectedId(String(event.id))
-                  setReviewOpen(false)
-                }}
-              />
-            </Willow>
-            <SparksGridNavigator />
-          </div>
+          <SparksSmartGrid
+            rows={gridRows}
+            columns={columns}
+            ariaLabel="Iniciativas sugeridas pelo SPARKs"
+            selectedId={selectedId}
+            viewportMode="standard"
+            className="sparks-suggestion-grid"
+            primaryActionLabel="Abrir ficha da iniciativa sugerida"
+            onSelect={(id) => {
+              setSelectedId(id)
+              setReviewOpen(false)
+            }}
+            onDoubleClick={(id) => {
+              setSelectedId(id)
+              onReview(id)
+            }}
+          />
 
           {selectedRow ? (
             <section className="skpe-suggested-initiatives__selection">

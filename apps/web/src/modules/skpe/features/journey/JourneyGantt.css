@@ -704,3 +704,287 @@ button.skpe-gantt-event:focus-visible {
     margin-left: 0;
   }
 }
+/* JOURNEY-GANTT-INSTITUTIONAL-01 — sugestão metodológica antes da baseline */
+.skpe-gantt-legend-suggested {
+  border: 1px dashed #ff4f12;
+  background: #fff1e8;
+}
+
+.skpe-gantt-bar-suggested {
+  top: 19px;
+  height: 8px;
+  border: 1px dashed #ff4f12;
+  background: #fff1e8;
+  box-shadow: none;
+}
+
+.skpe-gantt-bar-suggested.skpe-gantt-bar-milestone {
+  background: #ff4f12;
+  border-color: #ff4f12;
+}
+
+/* JOURNEY UX BOUNDARY - planning vs execution */
+.skpe-execution-zone {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 3px solid #f97316;
+}
+
+.skpe-execution-zone__separator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: #9a3412;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+.skpe-execution-zone__separator::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: #fed7aa;
+}
+
+.skpe-execution-zone .skpe-management-summary {
+  border: 1px solid #fed7aa;
+  background: #fffaf5;
+}
+
+.skpe-execution-zone__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-end;
+}
+
+.skpe-execution-zone__actions button {
+  min-height: 40px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.skpe-execution-zone__actions .is-primary {
+  border: 1px solid #ea580c;
+  background: #f97316;
+  color: #ffffff;
+}
+
+.skpe-execution-zone__actions .is-secondary {
+  border: 1px solid #fdba74;
+  background: #ffffff;
+  color: #9a3412;
+}
+
+/* JOURNEY-GANTT-ACTION-HIERARCHY-02 */
+.skpe-gantt-filter button.is-primary-action {
+  border-color: #ea580c;
+  background: #f97316;
+  color: #ffffff;
+}
+
+.skpe-gantt-filter button.is-primary-action:hover {
+  border-color: #c2410c;
+  background: #ea580c;
+  color: #ffffff;
+}
+
+.skpe-gantt-filter button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+.skpe-execution-zone__context {
+  color: #9a3412;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.skpe-management-card-action {
+  margin-top: 0.8rem;
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #9a3412;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-management-card-action:hover {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+/* GANTT-UX-REFINEMENT-V28 — header e execução integrada */
+.skpe-gantt-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.skpe-gantt-header-actions,
+.skpe-gantt-header-actions .skpe-gantt-filter {
+  width: 100%;
+  max-width: none;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.skpe-gantt-header-actions .skpe-gantt-filter button {
+  white-space: nowrap;
+}
+
+.skpe-management-card-full {
+  grid-column: 1 / -1;
+}
+
+.skpe-management-economic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.skpe-management-economic-title {
+  color: #253e35;
+  font-size: 0.78rem;
+}
+
+.skpe-management-card-action {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .skpe-management-economic-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* EXECUTION-CARDS-COMPACT-02 — medidas centralizadas; ação lateral compacta */
+.skpe-execution-zone .skpe-management-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.skpe-execution-zone .skpe-management-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-auto-rows: min-content;
+  column-gap: 0.8rem;
+  align-content: center;
+  min-height: 132px;
+  padding: 0.85rem 0.9rem;
+}
+
+.skpe-execution-zone .skpe-management-card > :not(.skpe-management-card-action) {
+  grid-column: 1;
+  text-align: center;
+  justify-self: stretch;
+}
+
+.skpe-execution-zone .skpe-management-card > strong {
+  margin-top: 0.2rem;
+}
+
+.skpe-execution-zone .skpe-management-tags {
+  justify-content: center;
+  margin-top: 0.45rem;
+}
+
+.skpe-execution-zone .skpe-management-empty,
+.skpe-execution-zone .skpe-management-warnings {
+  text-align: center;
+}
+
+.skpe-execution-zone .skpe-management-card-action {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  align-self: center;
+  justify-self: end;
+  min-height: 34px;
+  max-width: 145px;
+  padding: 0.42rem 0.62rem;
+  border: 1px solid #f97316;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #c2410c;
+
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.skpe-execution-zone .skpe-management-card-action:hover,
+.skpe-execution-zone .skpe-management-card-action:focus-visible {
+  background: #fff1e8;
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .skpe-execution-zone .skpe-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-execution-zone .skpe-management-card {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-execution-zone .skpe-management-card-action {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: center;
+    margin-top: 0.55rem;
+  }
+}
+
+/* EXECUTION-CARDS-RESPONSIVE-03 — layout adaptativo por espaço disponível */
+.skpe-execution-zone .skpe-management-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.skpe-execution-zone .skpe-management-card,
+.skpe-execution-zone .skpe-management-card-wide,
+.skpe-execution-zone .skpe-management-card-full {
+  grid-column: auto;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+}
+
+.skpe-execution-zone .skpe-management-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.skpe-execution-zone .skpe-management-card-action {
+  position: static;
+  margin-top: auto;
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.skpe-execution-zone .skpe-management-tags,
+.skpe-execution-zone .skpe-management-table-wrap,
+.skpe-execution-zone .skpe-management-warnings {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .skpe-execution-zone .skpe-management-grid {
+    grid-template-columns: 1fr;
+  }
+}

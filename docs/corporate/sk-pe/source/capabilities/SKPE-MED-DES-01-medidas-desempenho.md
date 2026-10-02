@@ -677,3 +677,25 @@ Próximo passo: revisar o modelo documental antes de replicação. Resolver C01/
 [R-UI-MY]: https://github.com/sparkooptech/skpe-saas/blob/d27373cc16740dfc86eb940abf639e322b072cc8/apps/web/src/modules/skpe/workspace/MyIndicatorsPanel.tsx#L135
 [R-UI-OKR]: https://github.com/sparkooptech/skpe-saas/blob/d27373cc16740dfc86eb940abf639e322b072cc8/apps/web/src/modules/skpe/features/strategy/StrategicOkrDecompositionSection.tsx#L290
 [R-UI-SHELL]: https://github.com/sparkooptech/skpe-saas/blob/d27373cc16740dfc86eb940abf639e322b072cc8/apps/web/src/modules/skpe/SkpeCockpit.tsx#L8863
+
+## Product decision delta — 2026-09-16
+
+A condição anterior `TRANSVERSAL_REUSE=INTENDED` é supersedida, para direção de produto, por:
+
+`TRANSVERSAL_PLATFORM_DIRECTION=APPROVED`
+
+Medidas e Desempenho passa a ser capability transversal da Plataforma SPARKs. `SKPE-MED-DES-01` permanece como origem histórica, especialização metodológica e consumidor especializado do SK-PE, sem ser o owner técnico definitivo do mecanismo transversal.
+
+Estratégia aprovada: `Facade -> Convergence -> eventual Storage Evolution`.
+
+As tabelas `skpe_*` atuais, IDs, versões, contratos de leitura/escrita e histórico permanecem válidos. Não há autorização para big-bang rename ou substituição destrutiva.
+
+Foram aprovados como conceitos transversais: `Metric Adoption/Binding`, separado da definição canônica; `Benchmark Comparability Assessment`; e evolução de performance para regras/assessments versionáveis preservando os cálculos atuais.
+
+A importação do pacote KPI/BMK v1.0 fica condicionada à reconciliação semântica do catálogo existente. Runtime confirmado em 16/09/2026: 60 linhas de catálogo, 46 identidades/códigos vigentes e 14 versões históricas.
+
+Os contratos de Medidas, Monitoramento e Iniciativas amadurecidos em 11–13/09/2026 constituem baseline obrigatório de não regressão.
+
+`STRUCTURAL_MIGRATION_AUTHORIZED=NO`
+
+`CATALOG_IMPORT_AUTHORIZED=NO`

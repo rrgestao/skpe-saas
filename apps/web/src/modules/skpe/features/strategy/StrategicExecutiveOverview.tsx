@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
+import { phase2SuggestionGovernanceNotice } from '../../contracts/strategic-suggestion-governance.ts'
 
 import './StrategicExecutiveOverview.css'
 
@@ -256,6 +257,7 @@ export function StrategicExecutiveOverview({ organizationId, projectId }: Props)
       <article className="skpe-executive-overview-hero">
         <small>{'S\u00edntese Executiva Estrat\u00e9gica'}</small>
         <h2>{'A estrat\u00e9gia em uma leitura executiva'}</h2>
+        <p className="skpe-formulation-human-validation-note">{phase2SuggestionGovernanceNotice}</p>
         <p>{synthesis}</p>
         {snapshot.coherenceStatement ? (
           <div className="skpe-executive-overview-coherence">

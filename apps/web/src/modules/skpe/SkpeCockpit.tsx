@@ -4,9 +4,10 @@ import {
   type ReactNode,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 import {
   EmptyState,
@@ -24,7 +25,7 @@ import { supabase } from '../../lib/supabase'
 import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
 
 import './SkpeCockpit.css'
-import type { JourneyRow } from './contracts/journey'
+import type { JourneyRow, JourneyTemporalReadRow } from './contracts/journey'
 import { MethodologyArtifactsSection } from './features/artifacts/MethodologyArtifactsSection'
 import { MonitoringSection } from './features/monitoring/MonitoringSection'
 import { AgendaSection } from './features/agenda/AgendaSection'
@@ -35,10 +36,11 @@ import { StrategicFormulationSection } from './features/strategy/StrategicFormul
 import { StrategicDiagnosisSection } from './features/diagnosis/StrategicDiagnosisSection'
 import { StrategicPositioningSection } from './features/strategy/StrategicPositioningSection'
 import { JourneyEventCreateDialog } from './features/journey/JourneyEventCreateDialog'
-import { MyWorkspacePage } from './workspace/MyWorkspacePage'
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
 import { AdminUserAvatarEditor } from '../platform-admin/AdminUserAvatarEditor'
 import { OrganizationUsersSmartGrid } from './components/OrganizationUsersSmartGrid'
+import { OrganizationParametersPanel } from './components/OrganizationParametersPanel'
+import { SparksSmartGrid, type SparksSmartGridColumn, type SparksSmartGridRow } from '../../components/design-system/SparksSmartGrid'
 import { InitiativeKanbanBoard } from '../initiatives/kanban/InitiativeKanbanBoard'
 import { InitiativeDataExplorerBeta } from '../initiatives/explorer/InitiativeDataExplorerBeta'
 import { InitiativePortfolioSmartGrid } from '../initiatives/components/InitiativePortfolioSmartGrid'
@@ -60,6 +62,35 @@ import {
   type InitiativeLifecycleTarget,
 } from '../initiatives/data/initiativeLifecycleData'
 import { loadInitiativePortfolio } from '../initiatives/data/initiativePortfolioData'
+
+type DashboardInitiativeFilter =
+  | 'all'
+  | 'in_progress'
+  | 'draft'
+  | 'under_analysis'
+  | 'critical'
+  | 'blocked'
+  | 'attention'
+  | 'without_due_date'
+
+type JourneyPerformanceSnapshot = {
+  actualProgress: number | null
+  plannedProgress: number | null
+  variancePoints: number | null
+  overdueItems: number
+  completedItems: number
+  totalItems: number
+  referenceDate: string | null
+  hasApprovedPlan: boolean
+  planningStatus: 'approved' | 'proposed' | 'unavailable'
+  currentMacrophaseCode: string | null
+  currentMacrophaseName: string | null
+  currentMacrophaseStatus: string | null
+  currentMacrophaseTargetDate: string | null
+  nextMilestoneCode: string | null
+  nextMilestoneName: string | null
+  nextMilestoneTargetDate: string | null
+}
 
 export type CockpitSection =
   | 'overview'
@@ -86,10 +117,28 @@ type SkpeCockpitMode =
   | 'module'
   | 'organization-admin'
 
+type WorkspaceOrganizationOption = {
+  id: string
+  code: string
+  name: string
+}
+
+type WorkspaceModuleOption = {
+  code: string
+  name: string
+  description: string | null
+  available: boolean
+}
+
 type SkpeCockpitProps = {
   organizationId: string
   organizationName: string
   organizationCode: string
+  workspaceOrganizations?: WorkspaceOrganizationOption[]
+  workspaceModules?: WorkspaceModuleOption[]
+  activeModuleCode?: string
+  onSwitchOrganization?: (organizationId: string) => void | Promise<void>
+  onSwitchModule?: (moduleCode: string) => void
   userRoleCode: string
   userRoleName: string
   isOrganizationAdmin: boolean
@@ -481,19 +530,6 @@ function StructureIcon() {
   )
 }
 
-function AdministrationIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 00-1.88-.34 1.7 1.7 0 00-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 00-1.03-1.56 1.7 1.7 0 00-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 007 15a1.7 1.7 0 00-1.56-1.03h-.08v-3h.08A1.7 1.7 0 007 9a1.7 1.7 0 00-.34-1.88l-.06-.06 2.12-2.12.06.06A1.7 1.7 0 0010.68 5 1.7 1.7 0 0011.7 3.44v-.08h3v.08A1.7 1.7 0 0015.74 5a1.7 1.7 0 001.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0019.4 9a1.7 1.7 0 001.56 1.03h.08v3h-.08A1.7 1.7 0 0019.4 15z" fill="none" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-
-
-
-
 function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -558,6 +594,8 @@ const publicLabelByCode: Record<string, string> = {
   cancelled: 'Cancelado',
   ended: 'Encerrado',
   validated: 'Validado',
+  validated_with_adjustments: 'Validado com ajustes',
+  pending_validation: 'Pendente de validação',
   under_review: 'Em análise',
   not_required: 'Não exigido',
   read_only: 'Somente leitura',
@@ -945,97 +983,274 @@ function groupCanvasRows(
 }
 
 
+function countBusinessDaysInclusive(startDate: string, endDate: string) {
+  const cursor = new Date(`${startDate}T00:00:00Z`)
+  const end = new Date(`${endDate}T00:00:00Z`)
+  let count = 0
+  while (cursor <= end) {
+    const day = cursor.getUTCDay()
+    if (day !== 0 && day !== 6) count += 1
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+  return Math.max(1, count)
+}
 
+function buildJourneyPerformanceSnapshot(
+  rows: JourneyTemporalReadRow[],
+  hasProposedPlan = false,
+): JourneyPerformanceSnapshot | null {
+  if (!rows.length) return null
 
+  const macrophases = rows.filter((row) => row.item_type === 'macrophase')
+  const roots = rows.filter((row) => !row.parent_item_id)
+  const scope = macrophases.length ? macrophases : roots.length ? roots : rows
+  const clamp = (value: number) => Math.max(0, Math.min(100, value))
+  const actualProgress = scope.length
+    ? scope.reduce((total, row) => total + clamp(Number(row.item_progress) || 0), 0) / scope.length
+    : null
+  const referenceDate = rows[0]?.reference_date ?? null
+  const referenceTime = referenceDate ? Date.parse(`${referenceDate}T00:00:00Z`) : Number.NaN
+  const plannedValues = scope.flatMap((row) => {
+    if (!row.has_approved_plan || !row.current_plan_start_date || !row.current_plan_end_date || !referenceDate || !Number.isFinite(referenceTime)) {
+      return []
+    }
+    const start = Date.parse(`${row.current_plan_start_date}T00:00:00Z`)
+    const end = Date.parse(`${row.current_plan_end_date}T00:00:00Z`)
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return []
+    if (referenceTime < start) return [0]
+    if (referenceTime >= end) return [100]
+    if (end <= start) return [100]
+    const totalBusinessDays = countBusinessDaysInclusive(row.current_plan_start_date, row.current_plan_end_date)
+    const elapsedBusinessDays = countBusinessDaysInclusive(row.current_plan_start_date, referenceDate)
+    return [clamp((elapsedBusinessDays / totalBusinessDays) * 100)]
+  })
+  const approvedPlannedProgress = plannedValues.length
+    ? plannedValues.reduce((total, value) => total + value, 0) / plannedValues.length
+    : null
 
+  const projectStartDate = rows[0]?.project_start_date ?? null
+  const projectTargetEndDate = rows[0]?.project_target_end_date ?? null
+  const proposedPlannedProgress =
+    approvedPlannedProgress == null &&
+    hasProposedPlan &&
+    referenceDate &&
+    projectStartDate &&
+    projectTargetEndDate
+      ? (() => {
+          const reference = Date.parse(`${referenceDate}T00:00:00Z`)
+          const start = Date.parse(`${projectStartDate}T00:00:00Z`)
+          const end = Date.parse(`${projectTargetEndDate}T00:00:00Z`)
+          if (!Number.isFinite(reference) || !Number.isFinite(start) || !Number.isFinite(end)) return null
+          if (reference < start) return 0
+          if (reference >= end) return 100
+          const totalBusinessDays = countBusinessDaysInclusive(projectStartDate, projectTargetEndDate)
+          const elapsedBusinessDays = countBusinessDaysInclusive(projectStartDate, referenceDate)
+          return clamp((elapsedBusinessDays / totalBusinessDays) * 100)
+        })()
+      : null
 
+  const plannedProgress = approvedPlannedProgress ?? proposedPlannedProgress
+  const planningStatus: JourneyPerformanceSnapshot['planningStatus'] =
+    approvedPlannedProgress != null
+      ? 'approved'
+      : proposedPlannedProgress != null
+        ? 'proposed'
+        : 'unavailable'
 
+  const currentMacrophase =
+    macrophases.find((row) => row.is_current) ??
+    macrophases.find((row) => row.item_status === 'in_progress') ??
+    macrophases
+      .filter((row) => row.item_status !== 'completed' && row.item_status !== 'cancelled')
+      .sort((first, second) => first.display_order - second.display_order)[0] ??
+    null
+  const currentMacrophaseStatus =
+    currentMacrophase &&
+    currentMacrophase.item_status === 'not_started' &&
+    currentMacrophase.project_status === 'active'
+      ? 'in_progress'
+      : currentMacrophase?.item_status ?? null
+
+  const rowById = new Map(rows.map((row) => [row.item_id, row]))
+  const belongsToCurrentMacrophase = (row: JourneyTemporalReadRow) => {
+    if (!currentMacrophase || row.item_id === currentMacrophase.item_id) return false
+    let parentId = row.parent_item_id
+    const visited = new Set<string>()
+    while (parentId && !visited.has(parentId)) {
+      if (parentId === currentMacrophase.item_id) return true
+      visited.add(parentId)
+      parentId = rowById.get(parentId)?.parent_item_id ?? null
+    }
+    return false
+  }
+
+  const unfinishedCurrentRows = currentMacrophase
+    ? rows
+        .filter(
+          (row) =>
+            belongsToCurrentMacrophase(row) &&
+            row.item_status !== 'completed' &&
+            row.item_status !== 'cancelled',
+        )
+        .sort((first, second) => first.display_order - second.display_order)
+    : []
+  const nextMilestone =
+    unfinishedCurrentRows.find((row) => row.item_type === 'gate') ??
+    unfinishedCurrentRows[0] ??
+    null
+
+  return {
+    actualProgress,
+    plannedProgress,
+    variancePoints:
+      actualProgress == null || plannedProgress == null
+        ? null
+        : actualProgress - plannedProgress,
+    overdueItems: scope.filter((row) => row.is_start_overdue || row.is_completion_overdue).length,
+    completedItems: scope.filter((row) => row.item_status === 'completed').length,
+    totalItems: scope.length,
+    referenceDate,
+    hasApprovedPlan: approvedPlannedProgress != null,
+    planningStatus,
+    currentMacrophaseCode: currentMacrophase?.item_code ?? null,
+    currentMacrophaseName: currentMacrophase?.item_name ?? null,
+    currentMacrophaseStatus,
+    currentMacrophaseTargetDate:
+      currentMacrophase?.current_plan_end_date ??
+      currentMacrophase?.operational_expected_end_date ??
+      null,
+    nextMilestoneCode: nextMilestone?.item_code ?? null,
+    nextMilestoneName: nextMilestone?.item_name ?? null,
+    nextMilestoneTargetDate:
+      nextMilestone?.current_plan_end_date ??
+      nextMilestone?.operational_expected_end_date ??
+      currentMacrophase?.current_plan_end_date ??
+      currentMacrophase?.operational_expected_end_date ??
+      null,
+  }
+}
 
 function OverviewSection({
   organizationId,
-  organizationName,
-  organizationCode,
   projectContext,
   canManageJourney,
-  canViewOverview,
-  canViewJourney,
-  canViewInitiatives,
-  canViewArtifacts,
-  canViewGovernance,
-  applyPrimaryLanding,
   startingProject,
   onStartProject,
+  canAdjustStrategicMap,
   onNavigate,
-  personalWorkspaceOverlay,
-  onClosePersonalWorkspaceOverlay,
-  onUnreadNotificationCountChange,
+  onInitiativeDrilldown,
 }: {
   organizationId: string
-  organizationName: string
-  organizationCode: string
   projectContext: StrategicProjectContext | null
   canManageJourney: boolean
-  canViewOverview: boolean
-  canViewJourney: boolean
-  canViewInitiatives: boolean
-  canViewArtifacts: boolean
-  canViewGovernance: boolean
-  applyPrimaryLanding: boolean
   startingProject: boolean
   onStartProject: () => void
+  canAdjustStrategicMap: boolean
   onNavigate: (section: CockpitSection) => void
-  personalWorkspaceOverlay: 'favorites' | 'dashboards' | 'notifications' | null
-  onClosePersonalWorkspaceOverlay: () => void
-  onUnreadNotificationCountChange: (count: number) => void
+  onInitiativeDrilldown: (filter: DashboardInitiativeFilter) => void
 }) {
-  return (
-    <MyWorkspacePage
-      organizationId={organizationId}
-      organizationName={organizationName}
-      organizationCode={organizationCode}
-      project={
-        projectContext
-          ? {
-              id: projectContext.project_id,
-              code: projectContext.project_code,
-              name: projectContext.project_name,
-              statusLabel: publicLabel(projectContext.project_status),
-              progress: Number(projectContext.project_progress ?? 0),
-              currentPhaseCode:
-                projectContext.current_phase_code ?? 'A definir',
-              currentPhaseName:
-                projectContext.current_phase_name ?? null,
-              strategicHorizon: formatStrategicHorizon(projectContext),
-              reviewCycle:
-                projectContext.review_cycle ??
-                'Ciclo de revis\u00e3o a definir',
-            }
-          : null
+  const [dashboard, setDashboard] = useState<InitiativePortfolioDashboardRow | null>(null)
+  const [initiatives, setInitiatives] = useState<InitiativePortfolioRow[]>([])
+  const [journeySnapshot, setJourneySnapshot] = useState<JourneyPerformanceSnapshot | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    let active = true
+    if (!projectContext?.project_id) {
+      setJourneySnapshot(null)
+      return () => { active = false }
+    }
+
+    const temporalRead = supabase.rpc('get_skpe_journey_temporal_read_model', {
+      target_organization_id: organizationId,
+      target_project_id: projectContext.project_id,
+    })
+    const proposedBaselineRead = supabase
+      .from('skpe_journey_schedule_versions')
+      .select('id, governance_status')
+      .eq('project_id', projectContext.project_id)
+      .in('schedule_kind', ['baseline', 'rebaseline'])
+      .in('governance_status', ['draft', 'pending_approval'])
+      .order('version_number', { ascending: false })
+      .limit(1)
+
+    Promise.all([temporalRead, proposedBaselineRead]).then(([temporal, proposed]) => {
+      if (!active) return
+      if (temporal.error) {
+        console.warn('Não foi possível carregar a leitura temporal da Jornada para a Visão Geral.', temporal.error)
+        setJourneySnapshot(null)
+        return
       }
-      availableContext={{
-        organization: true,
-        project: Boolean(projectContext),
-        formulation: false,
-        cycle: false,
-        user: true,
-      }}
-      capabilities={{
-        can_view_overview: canViewOverview,
-        can_view_journey: canViewJourney,
-        can_view_initiatives: canViewInitiatives,
-        can_view_artifacts: canViewArtifacts,
-        can_view_governance: canViewGovernance,
-        can_manage_journey: canManageJourney,
-      }}
-      isReadOnly={!canManageJourney}
-      applyPrimaryLanding={applyPrimaryLanding}
-      canStartProject={canManageJourney}
-      startingProject={startingProject}
-      onStartProject={onStartProject}
-      onNavigate={onNavigate}
-      personalWorkspaceOverlay={personalWorkspaceOverlay}
-      onClosePersonalWorkspaceOverlay={onClosePersonalWorkspaceOverlay}
-      onUnreadNotificationCountChange={onUnreadNotificationCountChange}
+      if (proposed.error) {
+        console.warn('Não foi possível verificar a Linha de Base Proposta da Jornada.', proposed.error)
+      }
+      setJourneySnapshot(
+        buildJourneyPerformanceSnapshot(
+          (temporal.data ?? []) as JourneyTemporalReadRow[],
+          !proposed.error && (proposed.data ?? []).length > 0,
+        ),
+      )
+    })
+
+    return () => { active = false }
+  }, [organizationId, projectContext?.project_id])
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setErrorMessage('')
+    loadInitiativePortfolio(organizationId, {})
+      .then((result) => {
+        if (!active) return
+        setDashboard(result.dashboard)
+        setInitiatives(result.initiatives)
+      })
+      .catch((error) => {
+        if (!active) return
+        setErrorMessage(error instanceof Error ? error.message : 'Não foi possível carregar a Visão Geral do SK-PE.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => { active = false }
+  }, [organizationId])
+
+  if (!projectContext) {
+    return (
+      <EmptyState
+        title="Planejamento Estratégico ainda não iniciado"
+        description="A Visão Geral será ativada quando existir um projeto estratégico para esta organização."
+        action={canManageJourney ? (
+          <button type="button" className="skpe-primary-button" disabled={startingProject} onClick={onStartProject}>
+            {startingProject ? 'Iniciando jornada...' : 'Iniciar Jornada Estratégica'}
+          </button>
+        ) : undefined}
+      />
+    )
+  }
+
+  if (loading) {
+    return <section className="skpe-admin-state-card"><p>Carregando Visão Geral do SK-PE...</p></section>
+  }
+
+  if (errorMessage) {
+    return <section className="skpe-admin-state-card"><p>{errorMessage}</p></section>
+  }
+
+  return (
+    <InitiativePerformanceCockpit
+      surface="dashboard"
+      dashboard={dashboard}
+      organizationId={organizationId}
+      projectId={projectContext?.project_id ?? null}
+      initiatives={initiatives}
+      journeySnapshot={journeySnapshot}
+      canAdjustStrategicMap={canAdjustStrategicMap}
+      onJourneyDrilldown={() => onNavigate('journey')}
+      onStatusDrilldown={onInitiativeDrilldown}
+      onObjectiveInitiativesDrilldown={() => onNavigate('initiatives')}
+      onObjectivePerformanceDrilldown={() => onNavigate('indicators')}
     />
   )
 }
@@ -1709,13 +1924,6 @@ function getOrganizationInitials(name: string) {
 }
 
 
-function formatStrategicHorizon(context: StrategicProjectContext | null) {
-  const start = context?.planning_horizon_start_year
-  const end = context?.planning_horizon_end_year
-
-  if (!start || !end) return 'Horizonte a definir'
-  return `${start}–${end}`
-}
 
 type InitiativeFormState = {
   code: string
@@ -1741,6 +1949,8 @@ type InitiativeAreaOption = {
 }
 type InitiativesSectionProps = {
   organizationId: string
+  organizationName: string
+  projectContext: StrategicProjectContext | null
   canManageCanvas: boolean
   canManageInitiatives: boolean
   canAdjustStrategicMap: boolean
@@ -1750,6 +1960,11 @@ type InitiativesSectionProps = {
   } | null
   refreshRequestKey?: number
   analyticsReturnRequestKey?: number
+  dashboardDrilldown?: {
+    filter: DashboardInitiativeFilter
+    requestKey: number
+  } | null
+  onDashboardDrilldownConsumed?: () => void
   JourneyIcon: () => ReactNode
   MonitoringIcon: () => ReactNode
   canViewJourney: boolean
@@ -1775,7 +1990,7 @@ function getInitiativeClassLabel(value: string) {
 
 function getInitiativeStatusLabel(value: string, proposalOrigin?: string | null) {
   if (value === 'proposed' && proposalOrigin === 'sparks_suggestion') {
-    return 'Rascunho'
+    return 'Proposta'
   }
 
   const labels: Record<string, string> = {
@@ -1795,12 +2010,16 @@ function getInitiativeStatusLabel(value: string, proposalOrigin?: string | null)
 
 function InitiativesSection({
   organizationId,
+  organizationName,
+  projectContext,
   canManageCanvas,
   canManageInitiatives,
   canAdjustStrategicMap,
   drilldownTarget,
   refreshRequestKey = 0,
   analyticsReturnRequestKey = 0,
+  dashboardDrilldown = null,
+  onDashboardDrilldownConsumed,
   JourneyIcon,
   MonitoringIcon,
   canViewJourney,
@@ -1810,11 +2029,14 @@ function InitiativesSection({
   onObjectivePerformanceDrilldown,
 }: InitiativesSectionProps) {
   const location = useLocation()
-  const navigate = useNavigate()
   const requestedInitiativeId = useMemo(
     () => new URLSearchParams(location.search).get('initiativeId'),
     [location.search],
   )
+  const requestedInitiativeTab = useMemo(() => {
+    const raw = new URLSearchParams(location.search).get('initiativeTab')
+    return raw === 'economics' || raw === 'schedule' || raw === 'summary' ? raw : 'kanban'
+  }, [location.search])
 
   const [dashboard, setDashboard] = useState<InitiativePortfolioDashboardRow | null>(null)
   const [initiatives, setInitiatives] = useState<InitiativePortfolioRow[]>([])
@@ -1837,13 +2059,52 @@ function InitiativesSection({
     initiativeIds: string[]
   } | null>(null)
   const [initiativeViewMode, setInitiativeViewMode] =
-    useState<'portfolio' | 'explorer' | 'kanban' | 'analytics'>('portfolio')
+    useState<'portfolio' | 'explorer' | 'kanban' | 'analytics'>('analytics')
+
+  const monitoringViewPreferenceKey = `skpe:monitoring:view:${organizationId}`
+  const selectInitiativeViewMode = (
+    mode: 'portfolio' | 'explorer' | 'analytics',
+  ) => {
+    setInitiativeViewMode(mode)
+    window.localStorage.setItem(monitoringViewPreferenceKey, mode)
+  }
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(monitoringViewPreferenceKey)
+    if (saved === 'portfolio' || saved === 'explorer' || saved === 'analytics') {
+      setInitiativeViewMode(saved)
+      return
+    }
+    setInitiativeViewMode('analytics')
+  }, [monitoringViewPreferenceKey])
 
   useEffect(() => {
     if (analyticsReturnRequestKey <= 0) return
     setObjectiveInitiativeFilter(null)
     setInitiativeViewMode('analytics')
   }, [analyticsReturnRequestKey])
+
+  useEffect(() => {
+    if (!dashboardDrilldown) return
+    setObjectiveInitiativeFilter(null)
+    setQuickFilter(dashboardDrilldown.filter)
+    setStatusFilter(
+      dashboardDrilldown.filter === 'in_progress' || dashboardDrilldown.filter === 'blocked'
+        ? dashboardDrilldown.filter
+        : dashboardDrilldown.filter === 'draft'
+          ? 'proposed'
+          : 'all',
+    )
+    setTypeFilter('all')
+    setAreaFilter('all')
+    setSearchTerm('')
+    setInitiativeViewMode('portfolio')
+    requestAnimationFrame(() => {
+      document.getElementById('skpe-initiative-results')?.scrollIntoView({ block: 'start' })
+    })
+    onDashboardDrilldownConsumed?.()
+  }, [dashboardDrilldown?.requestKey, onDashboardDrilldownConsumed])
+
 const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState<string | null>(null)
   const [selectedPortfolioInitiativeId, setSelectedPortfolioInitiativeId] =
@@ -1852,15 +2113,122 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
     useState(false)
   const [initiativeWorkspaceTab, setInitiativeWorkspaceTab] =
     useState<'summary' | 'schedule' | 'kanban' | 'economics'>('summary')
+  const [initiativeReturnViewMode, setInitiativeReturnViewMode] =
+    useState<'portfolio' | 'explorer' | 'analytics'>('portfolio')
   const [eventInitiativeId, setEventInitiativeId] =
     useState<string | null>(null)
   const [economicInitiativeId, setEconomicInitiativeId] =
     useState<string | null>(null)
+  const [draftReview, setDraftReview] = useState<any | null>(null)
+  const [draftReviewLoading, setDraftReviewLoading] = useState(false)
+  const [draftReviewError, setDraftReviewError] = useState('')
+  const [draftEditOpen, setDraftEditOpen] = useState(false)
+  const [draftSaving, setDraftSaving] = useState(false)
+  const [initiativeFiveW2HSource, setInitiativeFiveW2HSource] =
+    useState<'skpe_initiatives' | 'sparks_initiatives' | null>(null)
+  const [initiativeFiveW2HLoadedId, setInitiativeFiveW2HLoadedId] =
+    useState<string | null>(null)
+  const [initiativeFiveW2HDirty, setInitiativeFiveW2HDirty] = useState(false)
+  const initiativeFiveW2HRequestRef = useRef(0)
+  const [draftEdit, setDraftEdit] = useState({
+    name: '', description: '', what_text: '', why_text: '', where_text: '',
+    when_text: '', who_text: '', how_text: '', how_much_text: '',
+    start_date: '', target_end_date: '',
+  })
+
+  const buildSuggestedFiveW2H = (
+    initiative: InitiativePortfolioRow,
+    current: {
+      name?: string | null
+      description?: string | null
+      what_text?: string | null
+      why_text?: string | null
+      where_text?: string | null
+      when_text?: string | null
+      who_text?: string | null
+      how_text?: string | null
+      how_much_text?: string | null
+      start_date?: string | null
+      target_end_date?: string | null
+    },
+  ) => {
+    const isStrategicPlanInitiative =
+      initiative.initiative_code.startsWith('PE-') ||
+      initiative.initiative_name.toLowerCase().includes('planejamento estratégico')
+    const horizon = projectContext?.planning_horizon_start_year && projectContext?.planning_horizon_end_year
+      ? `${projectContext.planning_horizon_start_year}–${projectContext.planning_horizon_end_year}`
+      : 'horizonte estratégico vigente'
+    const projectWindow = projectContext?.valid_from && projectContext?.valid_until
+      ? `${projectContext.valid_from.slice(0, 10).split('-').reverse().join('/')} a ${projectContext.valid_until.slice(0, 10).split('-').reverse().join('/')}`
+      : horizon
+    const themeContext = initiative.strategic_theme_names.length
+      ? `, considerando os temas ${initiative.strategic_theme_names.join(', ')}`
+      : ''
+    const objectiveContext = initiative.strategic_objective_names.length
+      ? ` e os objetivos estratégicos ${initiative.strategic_objective_names.join(', ')}`
+      : ''
+    const responsibleContext = initiative.responsible_name
+      ? initiative.responsible_name
+      : initiative.responsible_area_name
+        ? `a área ${initiative.responsible_area_name}`
+        : `a liderança do Projeto Estratégico e os responsáveis definidos pela governança da ${organizationName}`
+
+    const suggestions = isStrategicPlanInitiative
+      ? {
+          what_text: `Conduzir o Planejamento Estratégico da ${organizationName} no horizonte ${horizon}, integrando diagnóstico, formulação, desdobramento, implementação, monitoramento e revisão da estratégia.`,
+          why_text: `Estabelecer direção estratégica, alinhar prioridades e decisões, transformar evidências em escolhas governadas e criar condições para resultados sustentáveis e prosperidade da ${organizationName}.`,
+          where_text: `Na ${organizationName}, abrangendo a governança, as áreas e os públicos envolvidos no Projeto Estratégico${themeContext}${objectiveContext}.`,
+          when_text: `Executar e acompanhar no período ${projectWindow}, respeitando os marcos da Jornada Estratégica e o ciclo de revisão definido para o projeto.`,
+          who_text: `${responsibleContext}, com participação da equipe SPARKOOP e dos responsáveis organizacionais atribuídos ao longo da Jornada Estratégica.`,
+          how_text: `Por meio da Jornada Estratégica SPARKs PE, estruturando escopo, diagnóstico, escolhas estratégicas, objetivos, indicadores, metas, iniciativas, cronograma, governança, acompanhamento e ciclos de evolução.`,
+          how_much_text: `Dimensionar orçamento, esforço e capacidade a partir do cronograma, das ações, dos recursos e das responsabilidades aprovadas no Projeto Estratégico, mantendo os valores segregados por natureza e unidade.`,
+        }
+      : {
+          what_text: `Executar a iniciativa “${initiative.initiative_name}”${initiative.initiative_description ? `, conforme o escopo: ${initiative.initiative_description}` : ''}.`,
+          why_text: initiative.initiative_description
+            ? `Gerar o resultado estratégico pretendido pela iniciativa, enfrentando a necessidade descrita e contribuindo para os resultados do Plano Estratégico da ${organizationName}.`
+            : `Contribuir para os resultados e objetivos do Plano Estratégico da ${organizationName}, com execução governada e evidências de resultado.`,
+          where_text: `Na ${organizationName}${themeContext}${objectiveContext}, nas áreas, processos e públicos diretamente relacionados ao escopo da iniciativa.`,
+          when_text: initiative.start_date || initiative.target_end_date
+            ? `Executar entre ${initiative.start_date ? initiative.start_date.slice(0, 10).split('-').reverse().join('/') : 'a data de início a definir'} e ${initiative.target_end_date ? initiative.target_end_date.slice(0, 10).split('-').reverse().join('/') : 'o término-alvo a definir'}, com acompanhamento pelos marcos e ações da iniciativa.`
+            : `Planejar e executar dentro do ${horizon}, definindo início, término-alvo e marcos antes da materialização operacional da iniciativa.`,
+          who_text: `${responsibleContext}, com os responsáveis pelas ações e validações definidos na governança da iniciativa.`,
+          how_text: `Desdobrar a iniciativa em ações, responsáveis, prazos, entregas, indicadores e evidências, acompanhando sua execução pelo workspace de iniciativas do SPARKs PE.`,
+          how_much_text: `Dimensionar orçamento, esforço e capacidade conforme as ações e recursos necessários, registrando valores e unidades no controle de Orçamento e esforço da iniciativa.`,
+        }
+
+    return {
+      name: current.name ?? initiative.initiative_name,
+      description: current.description ?? initiative.initiative_description ?? '',
+      what_text: current.what_text?.trim() || suggestions.what_text,
+      why_text: current.why_text?.trim() || suggestions.why_text,
+      where_text: current.where_text?.trim() || suggestions.where_text,
+      when_text: current.when_text?.trim() || suggestions.when_text,
+      who_text: current.who_text?.trim() || suggestions.who_text,
+      how_text: current.how_text?.trim() || suggestions.how_text,
+      how_much_text: current.how_much_text?.trim() || suggestions.how_much_text,
+      start_date: current.start_date?.slice(0, 10) || initiative.start_date?.slice(0, 10) || '',
+      target_end_date: current.target_end_date?.slice(0, 10) || initiative.target_end_date?.slice(0, 10) || '',
+    }
+  }
+
+  useEffect(() => {
+    if (!initiativeDetailFrameOpen) return
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      setInitiativeDetailFrameOpen(false)
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [initiativeDetailFrameOpen])
 
   useEffect(() => {
     if (!drilldownTarget?.initiativeId) return
 
+    setSelectedPortfolioInitiativeId(drilldownTarget.initiativeId)
     setKanbanInitiativeId(drilldownTarget.initiativeId)
+    setInitiativeWorkspaceTab('kanban')
     setInitiativeViewMode('kanban')
   }, [drilldownTarget?.initiativeId, drilldownTarget?.actionId])
 
@@ -1874,10 +2242,11 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
 
     if (!exists) return
 
+    setSelectedPortfolioInitiativeId(requestedInitiativeId)
     setKanbanInitiativeId(requestedInitiativeId)
+    setInitiativeWorkspaceTab(requestedInitiativeTab)
     setInitiativeViewMode('kanban')
-    setInitiativeWorkspaceTab('summary')
-  }, [initiatives, requestedInitiativeId])
+  }, [initiatives, requestedInitiativeId, requestedInitiativeTab])
 
   const [lifecycleInitiativeId, setLifecycleInitiativeId] =
     useState<string | null>(null)
@@ -2077,6 +2446,22 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
             'blocked'
         ) ||
         (
+          quickFilter === 'without_due_date' &&
+          !initiative.target_end_date
+        ) ||
+        (
+          quickFilter === 'attention' &&
+          (
+            (
+              initiative.initiative_status === 'proposed' &&
+              initiative.proposal_origin === 'sparks_suggestion'
+            ) ||
+            initiative.criticality === 'critical' ||
+            initiative.initiative_status === 'blocked' ||
+            !initiative.target_end_date
+          )
+        ) ||
+        (
           quickFilter === 'completed' &&
           initiative.initiative_status ===
             'completed'
@@ -2206,46 +2591,252 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
       setSavingLifecycle(false)
     }
   }
+  const resetInitiativeFiveW2HState = () => {
+    setDraftEdit({
+      name: '', description: '', what_text: '', why_text: '', where_text: '',
+      when_text: '', who_text: '', how_text: '', how_much_text: '',
+      start_date: '', target_end_date: '',
+    })
+    setInitiativeFiveW2HSource(null)
+    setInitiativeFiveW2HLoadedId(null)
+    setInitiativeFiveW2HDirty(false)
+  }
+
+  const loadInitiativeFiveW2H = async (initiative: InitiativePortfolioRow) => {
+    const requestId = initiativeFiveW2HRequestRef.current + 1
+    initiativeFiveW2HRequestRef.current = requestId
+    resetInitiativeFiveW2HState()
+    setDraftReviewLoading(true)
+    setDraftReviewError('')
+
+    const fields = 'id, name, description, what_text, why_text, where_text, when_text, who_text, how_text, how_much_text, start_date, due_date'
+    const [transversalResponse, skpeResponse] = await Promise.all([
+      supabase.rpc('get_sparks_initiative_5w2h', {
+        target_initiative_id: initiative.initiative_id,
+      }),
+      supabase.from('skpe_initiatives').select(fields).eq('id', initiative.initiative_id).maybeSingle(),
+    ])
+
+    if (initiativeFiveW2HRequestRef.current !== requestId) return
+
+    const transversalRecord = Array.isArray(transversalResponse.data)
+      ? transversalResponse.data[0] ?? null
+      : transversalResponse.data
+    const source = transversalRecord
+      ? 'sparks_initiatives'
+      : skpeResponse.data
+        ? 'skpe_initiatives'
+        : null
+    const record = transversalRecord ?? (skpeResponse.data ? { ...skpeResponse.data, target_end_date: skpeResponse.data.due_date } : null)
+    const error = transversalResponse.error ?? skpeResponse.error
+
+    if (error || !source || !record) {
+      setDraftReviewError(error?.message ?? 'Não foi possível carregar o 5W2H desta iniciativa.')
+      setDraftReviewLoading(false)
+      return
+    }
+
+    setDraftEdit(buildSuggestedFiveW2H(initiative, record))
+    setInitiativeFiveW2HSource(source)
+    setInitiativeFiveW2HLoadedId(initiative.initiative_id)
+    setInitiativeFiveW2HDirty(false)
+    setDraftReviewLoading(false)
+  }
+
+  const updateInitiativeFiveW2HField = (
+    field: keyof typeof draftEdit,
+    value: string,
+  ) => {
+    setDraftEdit((current) => ({ ...current, [field]: value }))
+    setInitiativeFiveW2HDirty(true)
+  }
+
+  const openSuggestedDraftReview = async (
+    initiative: InitiativePortfolioRow,
+  ) => {
+    setSelectedPortfolioInitiativeId(initiative.initiative_id)
+    setInitiativeDetailFrameOpen(false)
+    setKanbanInitiativeId(initiative.initiative_id)
+    setInitiativeWorkspaceTab('summary')
+    setInitiativeViewMode('kanban')
+    setDraftReviewLoading(true)
+    setDraftReviewError('')
+    setDraftReview(null)
+    setDraftEditOpen(false)
+    resetInitiativeFiveW2HState()
+
+    const [readinessResponse, initiativeResponse] = await Promise.all([
+      supabase
+        .from('skpe_sparks_suggested_initiative_readiness')
+        .select(
+          'initiative_id, initiative_code, initiative_name, status, validation_status, suggestion_decision, suggestion_curation_notes, ui_status, pending_5w2h_fields, five_w_two_h_complete, source_risk_codes, source_label',
+        )
+        .eq('initiative_id', initiative.initiative_id)
+        .maybeSingle(),
+      supabase
+        .from('skpe_initiatives')
+        .select('id, name, description, what_text, why_text, where_text, when_text, who_text, how_text, how_much_text, start_date, due_date')
+        .eq('id', initiative.initiative_id)
+        .maybeSingle(),
+    ])
+
+    const data = readinessResponse.data
+    const record = initiativeResponse.data
+    const error = readinessResponse.error ?? initiativeResponse.error
+
+    if (error || !data || !record) {
+      setDraftReviewError(
+        error?.message ?? 'Não foi possível carregar a iniciativa para revisão.',
+      )
+      setDraftReviewLoading(false)
+      return
+    }
+
+    setDraftReview(data)
+    setDraftEdit(buildSuggestedFiveW2H(initiative, { ...record, target_end_date: record.due_date }))
+    setInitiativeFiveW2HSource('skpe_initiatives')
+    setInitiativeFiveW2HLoadedId(initiative.initiative_id)
+    setInitiativeFiveW2HDirty(false)
+    setDraftEditOpen(true)
+    setDraftReviewLoading(false)
+  }
+
+  const saveSuggestedDraftReview = async (initiativeId: string) => {
+    if (
+      initiativeFiveW2HLoadedId !== initiativeId ||
+      initiativeFiveW2HSource !== 'skpe_initiatives' ||
+      !initiativeFiveW2HDirty
+    ) return
+    setDraftSaving(true)
+    setDraftReviewError('')
+    const { error } = await supabase
+      .from('skpe_initiatives')
+      .update({
+        name: draftEdit.name,
+        description: draftEdit.description,
+        what_text: draftEdit.what_text,
+        why_text: draftEdit.why_text,
+        where_text: draftEdit.where_text,
+        when_text: draftEdit.when_text,
+        who_text: draftEdit.who_text,
+        how_text: draftEdit.how_text,
+        how_much_text: draftEdit.how_much_text,
+        start_date: draftEdit.start_date || null,
+        due_date: draftEdit.target_end_date || null,
+        validation_status: 'pending_validation',
+      })
+      .eq('id', initiativeId)
+
+    if (error) {
+      setDraftReviewError(error.message)
+      setDraftSaving(false)
+      return
+    }
+
+    await loadInitiatives()
+    setDraftSaving(false)
+    setInitiativeFiveW2HDirty(false)
+    returnToInitiativeMonitoring()
+  }
+
+  const saveInitiativeFiveW2H = async (initiativeId: string) => {
+    if (
+      initiativeFiveW2HLoadedId !== initiativeId ||
+      !initiativeFiveW2HSource ||
+      !initiativeFiveW2HDirty
+    ) return
+    setDraftSaving(true)
+    setDraftReviewError('')
+    const { error } = initiativeFiveW2HSource === 'sparks_initiatives'
+      ? await supabase.rpc('update_sparks_initiative_5w2h', {
+          target_initiative_id: initiativeId,
+          target_what_text: draftEdit.what_text,
+          target_why_text: draftEdit.why_text,
+          target_where_text: draftEdit.where_text,
+          target_when_text: draftEdit.when_text,
+          target_who_text: draftEdit.who_text,
+          target_how_text: draftEdit.how_text,
+          target_how_much_text: draftEdit.how_much_text,
+          target_start_date: draftEdit.start_date || null,
+          target_end_date: draftEdit.target_end_date || null,
+          change_reason: 'Adequação do TAP pelo acompanhamento da iniciativa',
+        })
+      : await supabase
+          .from('skpe_initiatives')
+          .update({
+            what_text: draftEdit.what_text,
+            why_text: draftEdit.why_text,
+            where_text: draftEdit.where_text,
+            when_text: draftEdit.when_text,
+            who_text: draftEdit.who_text,
+            how_text: draftEdit.how_text,
+            how_much_text: draftEdit.how_much_text,
+            start_date: draftEdit.start_date || null,
+            due_date: draftEdit.target_end_date || null,
+          })
+          .eq('id', initiativeId)
+
+    if (error) {
+      setDraftReviewError(error.message)
+      setDraftSaving(false)
+      return
+    }
+
+    await loadInitiatives()
+    setDraftSaving(false)
+    setInitiativeFiveW2HDirty(false)
+    returnToInitiativeMonitoring()
+  }
+
   const openInitiativeKanban = (
     initiative: InitiativePortfolioRow,
   ) => {
-    setKanbanInitiativeId(
-      initiative.initiative_id,
-    )
-    setInitiativeWorkspaceTab('summary')
+    setDraftReview(null)
+    setDraftReviewError('')
+    setSelectedPortfolioInitiativeId(initiative.initiative_id)
+    setInitiativeDetailFrameOpen(false)
+    setKanbanInitiativeId(initiative.initiative_id)
+    setInitiativeWorkspaceTab('kanban')
     setInitiativeViewMode('kanban')
   }
 
-  const closeInitiativeWorkspace = () => {
-    const returnToObjectiveMap = Boolean(objectiveInitiativeFilter)
+  const openInitiativeDestination = (initiative: InitiativePortfolioRow) => {
+    const originMode =
+      initiativeViewMode === 'explorer' || initiativeViewMode === 'analytics'
+        ? initiativeViewMode
+        : 'portfolio'
+    setInitiativeReturnViewMode(originMode)
 
-    setKanbanInitiativeId(null)
-    setInitiativeWorkspaceTab('summary')
+    const isDraft =
+      initiative.initiative_status === 'proposed' &&
+      initiative.proposal_origin === 'sparks_suggestion'
+
+    if (isDraft) {
+      void openSuggestedDraftReview(initiative)
+      return
+    }
+
+    setDraftReview(null)
+    setDraftReviewError('')
+    setDraftEditOpen(false)
+    setSelectedPortfolioInitiativeId(initiative.initiative_id)
     setInitiativeDetailFrameOpen(false)
-    setSelectedPortfolioInitiativeId(null)
+    setKanbanInitiativeId(initiative.initiative_id)
+    setInitiativeWorkspaceTab('summary')
+    setInitiativeViewMode('kanban')
 
-    if (returnToObjectiveMap) {
-      setObjectiveInitiativeFilter(null)
-      setInitiativeViewMode('analytics')
-    } else {
-      setInitiativeViewMode('portfolio')
-    }
-
-    if (requestedInitiativeId) {
-      const params = new URLSearchParams(location.search)
-      params.delete('initiativeId')
-
-      navigate(
-        {
-          pathname: location.pathname,
-          search: params.toString()
-            ? `?${params.toString()}`
-            : '',
-        },
-        { replace: true },
-      )
-    }
+    void loadInitiativeFiveW2H(initiative)
   }
+
+  const returnToInitiativeMonitoring = () => {
+    setInitiativeWorkspaceTab('summary')
+    setKanbanInitiativeId(null)
+    setInitiativeViewMode(initiativeReturnViewMode)
+    requestAnimationFrame(() => {
+      document.getElementById('skpe-initiative-results')?.scrollIntoView({ block: 'start' })
+    })
+  }
+
 
   const applyQuickFilter = (filter: string) => {
     setQuickFilter(filter)
@@ -2558,10 +3149,11 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
         </section>
       )}
 
-            <div
-        id="skpe-initiative-results"
-        className="skpe-initiative-executive-title skpe-initiative-executive-title-with-modes"
-      >
+      {initiativeViewMode !== 'kanban' ? (
+        <div
+          id="skpe-initiative-results"
+          className="skpe-initiative-executive-title skpe-initiative-executive-title-with-modes"
+        >
         <div className="skpe-initiative-executive-title-copy">
           <h2>
             {initiativeViewMode === 'analytics'
@@ -2575,73 +3167,19 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
             <p className="skpe-initiative-executive-description">
               Onde queremos chegar, como estamos performando, o que está sendo executado e onde a gestão precisa agir.
             </p>
-          ) : null}
+          ) : initiativeViewMode === 'explorer' ? (
+            <p className="skpe-initiative-executive-description">
+              Explore os mesmos registros canônicos por hierarquias e agrupamentos estratégicos.
+            </p>
+          ) : (
+            <p className="skpe-initiative-executive-description">
+              Consulte, selecione e acompanhe as iniciativas do Plano Estratégico em uma visão única.
+            </p>
+          )}
         </div>
-
-        <div
-          className="skpe-initiative-title-mode-actions"
-          role="group"
-          aria-label="Alternar modo de visualização"
-        >
-          <button
-            type="button"
-            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'portfolio' ? 'is-active' : ''}`}
-            onClick={() => setInitiativeViewMode('portfolio')}
-            title="Visão executiva"
-            aria-label="Visão executiva"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 7h14" />
-              <path d="M5 12h14" />
-              <path d="M5 17h14" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'explorer' ? 'is-active' : ''}`}
-            onClick={() => setInitiativeViewMode('explorer')}
-            title="Exploração hierárquica"
-            aria-label="Exploração hierárquica"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="5" r="1.8" />
-              <circle cx="6" cy="18" r="1.8" />
-              <circle cx="18" cy="18" r="1.8" />
-              <path d="M12 6.8v5.2" />
-              <path d="M6 16.2v-2.4h12v2.4" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'analytics' ? 'is-active' : ''}`}
-            onClick={() => setInitiativeViewMode('analytics')}
-            title="Painel de desempenho"
-            aria-label="Painel de desempenho"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="7.2" />
-              <path d="M12 12 16.6 8.8" />
-              <path d="M12 4.8v1.7" />
-              <path d="M19.2 12h-1.7" />
-              <path d="M12 19.2v-1.7" />
-              <path d="M4.8 12h1.7" />
-            </svg>
-          </button>
-        </div>
-
-        {quickFilter !== 'all' && initiativeViewMode !== 'kanban' ? (
-          <button
-            type="button"
-            className="skpe-user-details-button skpe-initiative-title-clear-filter"
-            onClick={() => setQuickFilter('all')}
-          >
-            Limpar filtro do cartão
-          </button>
-        ) : null}
       </div>
-<section className={`skpe-initiative-filters ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
+      ) : null}
+<section className={`skpe-initiative-filters ${initiativeViewMode === 'portfolio' ? 'skpe-initiative-filters--portfolio' : ''} ${initiativeViewMode === 'kanban' ? 'skpe-initiatives-panel-hidden' : ''}`}>
         <div className="skpe-admin-search">
           <SearchIcon />
           <input
@@ -2649,11 +3187,13 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
             onChange={(e) =>
               setSearchTerm(e.target.value)
             }
-            placeholder="Buscar no Plano de Ação"
+            /* UX_MONITORAMENTO_CLEANUP_V16 */
+            placeholder="Busca pelo Título da Iniciativa"
           />
-        </div>
 
-        <select
+                    <select
+            className="skpe-monitoring-inline-filter"
+            aria-label="Filtrar por tipo de iniciativa"
           value={typeFilter}
           onChange={(e) =>
             setTypeFilter(e.target.value)
@@ -2671,9 +3211,11 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
           <option value="sprint">Sprints</option>
           <option value="task">Tarefas</option>
           <option value="work">Trabalhos</option>
-        </select>
+          </select>
 
-        <select
+          <select
+            className="skpe-monitoring-inline-filter"
+            aria-label="Filtrar por área"
           value={areaFilter}
           onChange={(e) =>
             setAreaFilter(e.target.value)
@@ -2685,9 +3227,11 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
               {area}
             </option>
           ))}
-        </select>
+          </select>
 
-        <select
+          <select
+            className="skpe-monitoring-inline-filter"
+            aria-label="Filtrar por situação"
           value={statusFilter}
           onChange={(e) =>
             setStatusFilter(e.target.value)
@@ -2696,7 +3240,7 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
           <option value="all">
             Todas as situações
           </option>
-          <option value="proposed">Rascunhos / Propostas</option>
+          <option value="proposed">Propostas</option>
           <option value="under_analysis">
             Em análise
           </option>
@@ -2709,9 +3253,62 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
           <option value="blocked">Bloqueadas</option>
           <option value="completed">Concluídas</option>
           <option value="cancelled">Canceladas</option>
-        </select>
+          </select>
+<div
+          className="skpe-initiative-title-mode-actions skpe-monitoring-search-view-actions"
+          role="group"
+          aria-label="Alternar modo de visualização"
+        >
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'portfolio' ? 'is-active' : ''}`}
+            onClick={() => selectInitiativeViewMode('portfolio')}
+            title="Visão executiva das iniciativas"
+            aria-label="Visão executiva das iniciativas"
+            data-tooltip="Visão executiva das iniciativas"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 7h14" />
+              <path d="M5 12h14" />
+              <path d="M5 17h14" />
+            </svg>
+            <span className="skpe-monitoring-view-tooltip" role="tooltip">Visão executiva das iniciativas</span>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'explorer' ? 'is-active' : ''}`}
+            onClick={() => selectInitiativeViewMode('explorer')}
+            title="Exploração hierárquica"
+            aria-label="Exploração hierárquica"
+            data-tooltip="Exploração hierárquica"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="3" width="6" height="4" rx="1" /><rect x="3" y="17" width="6" height="4" rx="1" /><rect x="15" y="17" width="6" height="4" rx="1" /><path d="M12 7v5" /><path d="M6 12h12" /><path d="M6 12v5" /><path d="M18 12v5" /></svg>
+            <span className="skpe-monitoring-view-tooltip" role="tooltip">Exploração hierárquica</span>
+          </button>
+
+          <button
+            type="button"
+            className={`skpe-initiative-title-mode-button ${initiativeViewMode === 'analytics' ? 'is-active' : ''}`}
+            onClick={() => selectInitiativeViewMode('analytics')}
+            title="Mapa Estratégico"
+            aria-label="Mapa Estratégico"
+            data-tooltip="Mapa Estratégico"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="7.2" />
+              <path d="M12 12 16.6 8.8" />
+              <path d="M12 4.8v1.7" />
+              <path d="M19.2 12h-1.7" />
+              <path d="M12 19.2v-1.7" />
+              <path d="M4.8 12h1.7" />
+            </svg>
+            <span className="skpe-monitoring-view-tooltip" role="tooltip">Mapa Estratégico</span>
+          </button>
+
+</div></div>
       </section>
-      {dashboard && initiativeViewMode === 'portfolio' ? (
+      {dashboard && (initiativeViewMode === 'portfolio' || initiativeViewMode === 'explorer') ? (
         <section
           className="skpe-initiative-kpi-grid skpe-initiative-kpi-grid-recovered"
           aria-label="Indicadores analíticos das iniciativas"
@@ -2813,17 +3410,16 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
         kanbanInitiativeId ? (
           <section className="skpe-initiative-kanban-host skpe-object-workspace-screen">
             <div className="skpe-initiative-workspace-sticky">
-                            <div className="skpe-object-workspace-backbar">
-                <button
-                  type="button"
-                  className="skpe-workspace-back-button"
-                  onClick={closeInitiativeWorkspace}
-                >
-                  <span aria-hidden="true">←</span>
-                  <span>Plano de Ação</span>
-                </button>
-              </div>
-
+            <div className="skpe-object-workspace-backbar">
+              <button
+                type="button"
+                className="skpe-user-details-button skpe-initiative-return-button"
+                disabled={initiativeFiveW2HDirty || draftSaving}
+                onClick={returnToInitiativeMonitoring}
+              >
+                ← Voltar ao Monitoramento
+              </button>
+            </div>
             <ObjectWorkspaceHeader
               title={
                 initiatives.find(
@@ -2832,23 +3428,31 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                 )?.initiative_name ?? 'Iniciativa'
               }
               actions={
-                <div className="skpe-object-workspace-actions">
+                <div className="skpe-object-workspace-actions skpe-object-workspace-actions--borderless">
                   {canViewJourney ? (
-                    <IconActionButton
-                      action="open"
-                      label="Abrir Jornada Estratégica"
+                    <button
+                      type="button"
+                      className="skpe-object-workspace-icon-link"
                       onClick={onOpenJourney}
-                    />
+                      aria-label="Abrir Jornada Estratégica"
+                      title="Jornada Estratégica"
+                      data-tooltip="Jornada Estratégica"
+                    >
+                      <JourneyIcon />
+                    </button>
                   ) : null}
 
                   {canManageInitiatives ? (
-                    <IconActionButton
-                      action="schedule"
-                      label="Agendar evento"
-                      onClick={() =>
-                        setEventInitiativeId(kanbanInitiativeId)
-                      }
-                    />
+                    <button
+                      type="button"
+                      className="skpe-object-workspace-icon-link"
+                      onClick={() => setEventInitiativeId(kanbanInitiativeId)}
+                      aria-label="Abrir Agenda da iniciativa"
+                      title="Agenda"
+                      data-tooltip="Agenda"
+                    >
+                      <CalendarIcon />
+                    </button>
                   ) : null}
                 </div>
               }
@@ -2858,12 +3462,21 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
               ariaLabel="Visões da iniciativa"
               activeId={initiativeWorkspaceTab}
               onChange={setInitiativeWorkspaceTab}
-              tabs={[
-                { id: 'summary', label: 'Resumo' },
-                { id: 'schedule', label: 'Cronograma' },
-                { id: 'kanban', label: 'Kanban' },
-                { id: 'economics', label: 'Custos e esforço' },
-              ]}
+              tabs={(() => {
+                const current = initiatives.find(
+                  (initiative) => initiative.initiative_id === kanbanInitiativeId,
+                )
+                const isDraft =
+                  current?.initiative_status === 'proposed' &&
+                  current?.proposal_origin === 'sparks_suggestion'
+                if (isDraft) return [{ id: 'summary', label: 'Proposta' }]
+                return [
+                  { id: 'summary', label: 'Resumo' },
+                  { id: 'schedule', label: 'Cronograma' },
+                  { id: 'kanban', label: 'Kanban' },
+                  { id: 'economics', label: 'Orçamento e esforço', tooltip: 'Acompanha a execução gerencial da iniciativa. Não substitui contabilidade, orçamento corporativo, contas a pagar/receber nem futura integração financeira.' },
+                ]
+              })()}
             />
             </div>
 
@@ -2883,6 +3496,7 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                     <span>
                       {getInitiativeStatusLabel(
                         selectedInitiative.initiative_status,
+                        selectedInitiative.proposal_origin,
                       )}
                     </span>
                   </header>
@@ -2952,14 +3566,67 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                     </div>
                   ) : null}
 
-                  <div className="skpe-initiative-summary-next">
-                    <strong>Workspace integrado em evolução</strong>
-                    <span>
-                      Canvas, Agenda, Recursos e Evidências serão
-                      incorporados como novas perspectivas deste mesmo objeto,
-                      sem duplicar dados.
-                    </span>
-                  </div>
+                  {!(selectedInitiative.initiative_status === 'proposed' && selectedInitiative.proposal_origin === 'sparks_suggestion') ? (
+                    initiativeFiveW2HLoadedId === selectedInitiative.initiative_id ? (
+                    <section className="skpe-initiative-draft-review skpe-initiative-draft-review--workspace">
+                      <div className="skpe-initiative-draft-review__heading">
+                        <div>
+                          <small>Estrutura mínima da iniciativa</small>
+                          <strong>TAP</strong>
+                        </div>
+                        <span>Base obrigatória para acompanhamento</span>
+                      </div>
+                      {draftReviewError ? <div className="is-error" role="alert">{draftReviewError}</div> : null}
+                      <div className="skpe-initiative-draft-review__form">
+                        {([['what_text','O quê'],['why_text','Por quê'],['where_text','Onde'],['when_text','Quando'],['who_text','Quem'],['how_text','Como'],['how_much_text','Quanto']] as const).map(([field,label]) => (
+                          <label key={field}>
+                            <span>{label}</span>
+                            <textarea
+                              rows={2}
+                              value={draftEdit[field]}
+                              onChange={(event) => updateInitiativeFiveW2HField(field, event.target.value)}
+                            />
+                          </label>
+                        ))}
+                        <div className="skpe-initiative-draft-review__date-grid">
+                          <label>
+                            <span>Data de início</span>
+                            <input type="date" value={draftEdit.start_date} onChange={(event) => updateInitiativeFiveW2HField('start_date', event.target.value)} />
+                          </label>
+                          <label>
+                            <span>Data de término</span>
+                            <input type="date" value={draftEdit.target_end_date} min={draftEdit.start_date || undefined} onChange={(event) => updateInitiativeFiveW2HField('target_end_date', event.target.value)} />
+                          </label>
+                        </div>
+                        <div className="skpe-initiative-draft-review__form-actions">
+                          <button
+                            type="button"
+                            className="skpe-primary-action-button"
+                            disabled={draftSaving || !initiativeFiveW2HDirty}
+                            onClick={() => void saveInitiativeFiveW2H(selectedInitiative.initiative_id)}
+                          >
+                            {draftSaving ? 'Salvando...' : 'Salvar'}
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+                    ) : (
+                      <div className="is-loading">Carregando 5W2H da iniciativa...</div>
+                    )
+                  ) : null}
+
+                  {selectedInitiative.initiative_status === 'proposed' && selectedInitiative.proposal_origin === 'sparks_suggestion' ? (
+                    <section className="skpe-initiative-draft-review skpe-initiative-draft-review--workspace">
+                      <div className="skpe-initiative-draft-review__heading"><div><small>Curadoria da sugestão SPARKs</small><strong>Proposta</strong></div><span>{draftReview?.five_w_two_h_complete ? 'TAP completo' : 'TAP em Revisão'}</span></div>
+                      {draftReviewLoading ? <div className="is-loading">Carregando proposta...</div> : null}
+                      {draftReviewError ? <div className="is-error" role="alert">{draftReviewError}</div> : null}
+                      {draftEditOpen ? <div className="skpe-initiative-draft-review__form"><label><span>Iniciativa</span><input value={draftEdit.name} onChange={(event) => updateInitiativeFiveW2HField('name', event.target.value)} /></label><label><span>Descrição</span><textarea rows={3} value={draftEdit.description} onChange={(event) => updateInitiativeFiveW2HField('description', event.target.value)} /></label>
+                      {([['what_text','O quê'],['why_text','Por quê'],['where_text','Onde'],['when_text','Quando'],['who_text','Quem'],['how_text','Como'],['how_much_text','Quanto']] as const).map(([field,label]) => <label key={field} className={draftReview?.pending_5w2h_fields?.includes(field) ? 'is-pending' : ''}><span>{label}{draftReview?.pending_5w2h_fields?.includes(field) ? ' · pendente' : ''}</span><textarea rows={2} value={draftEdit[field]} onChange={(event) => updateInitiativeFiveW2HField(field, event.target.value)} /></label>)}
+                      <div className="skpe-initiative-draft-review__date-grid"><label><span>Data de início</span><input type="date" value={draftEdit.start_date} onChange={(event) => updateInitiativeFiveW2HField('start_date', event.target.value)} /></label><label><span>Data de término</span><input type="date" value={draftEdit.target_end_date} min={draftEdit.start_date || undefined} onChange={(event) => updateInitiativeFiveW2HField('target_end_date', event.target.value)} /></label></div>
+                      <div className="skpe-initiative-draft-review__form-actions"><button type="button" className="skpe-primary-action-button" disabled={draftSaving || !initiativeFiveW2HDirty} onClick={() => void saveSuggestedDraftReview(selectedInitiative.initiative_id)}>{draftSaving ? 'Salvando...' : 'Salvar'}</button></div></div> : null}
+                    </section>
+                  ) : null}
+
                 </section>
               ) : null
             })() : initiativeWorkspaceTab === 'schedule' ? (() => {
@@ -3007,6 +3674,17 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                 />
               ) : null
             })()}
+            {!initiativeFiveW2HDirty ? (
+              <div className="skpe-initiative-workspace-footer">
+                <button
+                  type="button"
+                  className="skpe-initiative-return-button"
+                  onClick={returnToInitiativeMonitoring}
+                >
+                  ← Voltar ao Monitoramento
+                </button>
+              </div>
+            ) : null}
           </section>
         ) : (
           <EmptyState
@@ -3035,7 +3713,9 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
         />
       ) : initiativeViewMode === 'analytics' ? (
         <InitiativePerformanceCockpit
+          surface="monitoring"
           dashboard={dashboard}
+          organizationId={organizationId}
           initiatives={initiatives}
           canAdjustStrategicMap={canAdjustStrategicMap}
           onStatusDrilldown={(filter) => {
@@ -3058,12 +3738,57 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
           onObjectivePerformanceDrilldown={onObjectivePerformanceDrilldown}
         />
       ) : initiativeViewMode === 'explorer' ? (
-        <InitiativeDataExplorerBeta
-          initiatives={filteredInitiatives}
-          onOpenInitiative={openInitiativeKanban}
-        />
+        <section className="skpe-initiative-operational-layout skpe-initiative-operational-layout--overlay-detail">
+          <div className="skpe-initiative-operational-layout__grid">
+            <InitiativeDataExplorerBeta
+              initiatives={filteredInitiatives}
+              onOpenInitiative={openInitiativeDestination}
+            />
+          </div>
+          {initiativeDetailFrameOpen && selectedPortfolioInitiativeId
+            ? (() => {
+                const initiative = initiatives.find(
+                  (candidate) => candidate.initiative_id === selectedPortfolioInitiativeId,
+                )
+                if (!initiative) return null
+                const isDraft =
+                  initiative.initiative_status === 'proposed' &&
+                  initiative.proposal_origin === 'sparks_suggestion'
+                return (
+                  <aside className="skpe-initiative-detail-frame" aria-label="Detalhes da iniciativa selecionada">
+                    <header className="skpe-initiative-detail-frame__header">
+                      <div>
+                        <small>{initiative.initiative_code}</small>
+                        <h3>{initiative.initiative_name}</h3>
+                      </div>
+                      <button type="button" className="skpe-initiative-detail-frame__close" aria-label="Fechar ficha da iniciativa" onClick={() => setInitiativeDetailFrameOpen(false)}>×</button>
+                    </header>
+                    <div className="skpe-initiative-detail-frame__facts">
+                      <article><small>Situação</small><strong>{getInitiativeStatusLabel(initiative.initiative_status, initiative.proposal_origin)}</strong></article>
+                      <article><small>Classe</small><strong>{getInitiativeClassLabel(initiative.initiative_class)}</strong></article>
+                      <article><small>Área responsável</small><strong>{initiative.responsible_area_name ?? 'Não definida'}</strong></article>
+                      <article><small>Progresso</small><strong>{isDraft ? 'Não iniciado' : `${initiative.progress}%`}</strong></article>
+                    </div>
+                    <div className="skpe-initiative-detail-frame__actions">
+                      <button type="button" className="skpe-primary-action-button" onClick={() => isDraft ? void openSuggestedDraftReview(initiative) : openInitiativeKanban(initiative)}>
+                        {isDraft ? 'Revisar rascunho' : 'Abrir ficha completa'}
+                      </button>
+                    </div>
+                  </aside>
+                )
+              })()
+            : null}
+        </section>
       ) : (
-        <section className="skpe-initiative-operational-layout">
+        <section
+          className="skpe-initiative-operational-layout"
+          onMouseDown={(event) => {
+            if (!initiativeDetailFrameOpen) return
+            const target = event.target as HTMLElement
+            if (target.closest('.skpe-initiative-detail-frame')) return
+            setInitiativeDetailFrameOpen(false)
+          }}
+        >
           {objectiveInitiativeFilter ? (
             <div className="skpe-admin-state-card">
               <p>
@@ -3091,16 +3816,10 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
               selectedInitiativeId={selectedPortfolioInitiativeId}
               onSelectInitiative={(initiative) => {
                 setSelectedPortfolioInitiativeId(initiative.initiative_id)
+                setDraftReview(null)
+                setDraftReviewError('')
               }}
-              onOpenInitiative={(initiative) => {
-                setSelectedPortfolioInitiativeId(initiative.initiative_id)
-                if (objectiveInitiativeFilter) {
-                  setInitiativeDetailFrameOpen(false)
-                  openInitiativeKanban(initiative)
-                  return
-                }
-                setInitiativeDetailFrameOpen(true)
-              }}
+              onOpenInitiative={openInitiativeDestination}
             />
           </div>
 
@@ -3130,17 +3849,12 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                     </div>
                     <button
                       type="button"
-                      className="skpe-user-details-button"
-                      onClick={() => {
-                        setInitiativeDetailFrameOpen(false)
-                        setSelectedPortfolioInitiativeId(null)
-                        if (objectiveInitiativeFilter) {
-                          setObjectiveInitiativeFilter(null)
-                          setInitiativeViewMode('analytics')
-                        }
-                      }}
+                      className="skpe-initiative-detail-frame__close"
+                      aria-label="Fechar ficha da iniciativa"
+                      title="Fechar"
+                      onClick={() => setInitiativeDetailFrameOpen(false)}
                     >
-                      Fechar
+                      ×
                     </button>
                   </header>
 
@@ -3207,11 +3921,124 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                     </div>
                   ) : null}
 
+                  {isSparksDraft && draftReviewLoading ? (
+                    <div className="skpe-initiative-draft-review is-loading">
+                      Carregando revisão do rascunho...
+                    </div>
+                  ) : null}
+
+                  {isSparksDraft && draftReviewError ? (
+                    <div className="skpe-initiative-draft-review is-error" role="alert">
+                      {draftReviewError}
+                    </div>
+                  ) : null}
+
+                  {isSparksDraft &&
+                  draftReview?.initiative_id === initiative.initiative_id ? (
+                    <section className="skpe-initiative-draft-review">
+                      <div className="skpe-initiative-draft-review__heading">
+                        <div>
+                          <small>Curadoria da sugestão SPARKs</small>
+                          <strong>{draftReview.ui_status ?? 'Rascunho'}</strong>
+                        </div>
+                        <span>
+                          {draftReview.five_w_two_h_complete
+                            ? '5W2H completo'
+                            : '5W2H incompleto'}
+                        </span>
+                      </div>
+                      <dl>
+                        <div>
+                          <dt>Origem</dt>
+                          <dd>{draftReview.source_label ?? 'SPARKs'}</dd>
+                        </div>
+                        <div>
+                          <dt>Validação</dt>
+                          <dd>{publicLabel(draftReview.validation_status)}</dd>
+                        </div>
+                        <div>
+                          <dt>Pendências</dt>
+                          <dd>
+                            {Array.isArray(draftReview.pending_5w2h_fields) &&
+                            draftReview.pending_5w2h_fields.length > 0
+                              ? draftReview.pending_5w2h_fields.join(' · ')
+                              : 'Nenhuma'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Riscos de origem</dt>
+                          <dd>
+                            {Array.isArray(draftReview.source_risk_codes) &&
+                            draftReview.source_risk_codes.length > 0
+                              ? draftReview.source_risk_codes.join(' · ')
+                              : 'Nenhum informado'}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      {draftEditOpen ? (
+                        <div className="skpe-initiative-draft-review__form">
+                          <label>
+                            <span>Iniciativa</span>
+                            <input
+                              value={draftEdit.name}
+                              onChange={(event) => updateInitiativeFiveW2HField('name', event.target.value)}
+                            />
+                          </label>
+                          <label>
+                            <span>Descrição</span>
+                            <textarea
+                              rows={3}
+                              value={draftEdit.description}
+                              onChange={(event) => updateInitiativeFiveW2HField('description', event.target.value)}
+                            />
+                          </label>
+                          {([
+                            ['what_text', 'O quê'], ['why_text', 'Por quê'], ['where_text', 'Onde'],
+                            ['when_text', 'Quando'], ['who_text', 'Quem'], ['how_text', 'Como'],
+                            ['how_much_text', 'Quanto'],
+                          ] as const).map(([field, label]) => (
+                            <label key={field} className={draftReview.pending_5w2h_fields?.includes(field) ? 'is-pending' : ''}>
+                              <span>{label}{draftReview.pending_5w2h_fields?.includes(field) ? ' · pendente' : ''}</span>
+                              <textarea
+                                rows={2}
+                                value={draftEdit[field]}
+                                onChange={(event) => updateInitiativeFiveW2HField(field, event.target.value)}
+                              />
+                            </label>
+                          ))}
+                          <div className="skpe-initiative-draft-review__form-actions">
+                            <button
+                              type="button"
+                              className="skpe-primary-action-button"
+                              disabled={draftSaving}
+                              onClick={() => void saveSuggestedDraftReview(initiative.initiative_id)}
+                            >
+                              {draftSaving ? 'Salvando...' : 'Salvar adequações'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <p>
+                        Este registro ainda é um rascunho de curadoria. Kanban,
+                        cronograma e custos só ficam disponíveis após a iniciativa
+                        ser materializada no cadastro operacional.
+                      </p>
+                    </section>
+                  ) : null}
+
                   <div className="skpe-initiative-detail-frame__actions">
                     <button
                       type="button"
                       className="skpe-primary-action-button"
-                      onClick={() => openInitiativeKanban(initiative)}
+                      onClick={() => {
+                        if (isSparksDraft) {
+                          void openSuggestedDraftReview(initiative)
+                          return
+                        }
+                        openInitiativeKanban(initiative)
+                      }}
                     >
                       {isSparksDraft
                         ? 'Revisar rascunho'
@@ -3253,6 +4080,7 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
                           Arquivar iniciativa
                         </button>
                       ) : null}
+
                   </div>
 
                   {lifecycleInitiativeId === initiative.initiative_id &&
@@ -3929,6 +4757,11 @@ function OrganizationSection({
               logoUrl={logoUrl}
             />
 
+            <OrganizationParametersPanel
+              organizationId={organizationId}
+              canManage={canManageOrganization}
+            />
+
             <div className="skpe-organization-form-section">
               <div><p className="skpe-card-code">Identidade institucional</p><h2>Dados oficiais</h2></div>
               <div className="skpe-organization-form-grid">
@@ -4412,6 +5245,17 @@ type DomainValueRow = {
   protected: boolean
 }
 
+
+const relationshipTypeLabel = (value: string | null | undefined) => ({
+  member: 'Membro',
+  employee: 'Empregado',
+  contractor: 'Prestador de serviço',
+  consultant: 'Consultor',
+  partner: 'Parceiro',
+  external: 'Externo',
+  other: 'Outro vínculo',
+} as Record<string, string>)[String(value ?? '').trim().toLowerCase()] ?? publicLabel(String(value ?? ''), 'Outro vínculo')
+
 type GovernanceOperationsSectionProps = {
   organizationId: string
   canManageGovernance: boolean
@@ -4439,17 +5283,8 @@ function GovernanceOperationsSection({
   const [message, setMessage] = useState<ActionMessage | null>(null)
   const [activePanel, setActivePanel] = useState<'people' | 'roles' | 'responsibilities'>('people')
   const [saving, setSaving] = useState(false)
-  const [governanceViewMode, setGovernanceViewMode] = useState<'cards' | 'grid' | 'hierarchy'>('cards')
+  const [governanceViewMode, setGovernanceViewMode] = useState<'cards' | 'grid' | 'hierarchy'>('grid')
   const [governanceSearch, setGovernanceSearch] = useState('')
-  const [governanceGridSort, setGovernanceGridSort] = useState<{
-    panel: 'people' | 'roles' | 'responsibilities'
-    key: string
-    direction: 'asc' | 'desc'
-  }>({ panel: 'people', key: 'name', direction: 'asc' })
-  const [governanceGridFilters, setGovernanceGridFilters] =
-    useState<Record<string, string>>({})
-  const [governanceGridFilterOpen, setGovernanceGridFilterOpen] =
-    useState<string | null>(null)
   const [governanceSortDirection] = useState<'asc' | 'desc'>('asc')
   const [roleForm, setRoleForm] = useState({ id: null as string | null, code: '', name: '', roleType: 'function', description: '', area: '', authorityLevel: 'operational', governance: false, mandate: false, active: true, reason: '' })
   const [rolePanelOpen, setRolePanelOpen] = useState(false)
@@ -4458,6 +5293,8 @@ function GovernanceOperationsSection({
   const [responsibilityForm, setResponsibilityForm] = useState({ objectType: 'strategic_project', objectId: '', personId: '', responsibilityType: 'owner', allocation: '100', authorityLevel: 'operational', validFrom: '', validUntil: '', assignmentReason: '', reason: '' })
   const [responsibilityPanelOpen, setResponsibilityPanelOpen] = useState(false)
   const [selectedResponsibilityId, setSelectedResponsibilityId] = useState<string | null>(null)
+  const [selectedGovernancePersonId, setSelectedGovernancePersonId] = useState<string | null>(null)
+  const [selectedGovernanceRoleId, setSelectedGovernanceRoleId] = useState<string | null>(null)
 
   const normalizedGovernanceSearch = governanceSearch.trim().toLocaleLowerCase('pt-BR')
   const sortByName = <T,>(items: T[], getName: (item: T) => string) =>
@@ -4535,163 +5372,81 @@ function GovernanceOperationsSection({
       publicLabel(value, value)
     )
   }
-  const governanceGridFilterValue = (key: string) =>
-    (governanceGridFilters[key] ?? '')
-      .trim()
-      .toLocaleLowerCase('pt-BR')
+  const governancePeopleGridRows = useMemo<SparksSmartGridRow[]>(() =>
+    visiblePeople.map((person) => ({
+      id: person.organization_person_id,
+      name: person.preferred_name ?? person.full_name,
+      function: person.job_title ?? 'N?o definida',
+      relationship: relationshipTypeLabel(person.relationship_type),
+      area: person.organizational_area ?? '?rea n?o definida',
+      roles: person.active_role_count,
+      responsibilities: person.active_responsibility_count,
+    })), [visiblePeople])
 
-  const governanceGridMatches = (
-    key: string,
-    value: string | number | null | undefined,
-  ) => {
-    const filter = governanceGridFilterValue(key)
-    if (!filter) return true
-    return String(value ?? '')
-      .toLocaleLowerCase('pt-BR')
-      .includes(filter)
-  }
+  const governancePeopleGridColumns = useMemo<SparksSmartGridColumn[]>(() => [
+    { id: 'name', label: 'Pessoa', minWidth: 240, maxWidth: 420, grow: 2, tooltip: true },
+    { id: 'function', label: 'Fun??o', minWidth: 170, maxWidth: 300, tooltip: true },
+    { id: 'relationship', label: 'V?nculo', minWidth: 150, maxWidth: 220, align: 'center' },
+    { id: 'area', label: '?rea', minWidth: 170, maxWidth: 300, tooltip: true },
+    { id: 'roles', label: 'Pap?is', minWidth: 90, maxWidth: 120, align: 'center' },
+    { id: 'responsibilities', label: 'Responsabilidades', minWidth: 140, maxWidth: 180, align: 'center' },
+  ], [])
 
-  const governanceGridSortItems = <T,>(
-    panel: 'people' | 'roles' | 'responsibilities',
-    items: T[],
-    valueFor: (item: T, key: string) => string | number,
-  ) => {
-    if (governanceGridSort.panel !== panel) return items
-    const { key, direction } = governanceGridSort
-    return [...items].sort((first, second) => {
-      const firstValue = valueFor(first, key)
-      const secondValue = valueFor(second, key)
-      const comparison =
-        typeof firstValue === 'number' && typeof secondValue === 'number'
-          ? firstValue - secondValue
-          : String(firstValue).localeCompare(String(secondValue), 'pt-BR')
-      return direction === 'asc' ? comparison : -comparison
-    })
-  }
+  const governanceRolesGridRows = useMemo<SparksSmartGridRow[]>(() =>
+    visibleRoles.map((role) => ({
+      id: role.role_id,
+      name: role.role_name,
+      code: role.role_code,
+      description: role.description ?? 'Sem descri??o',
+      area: role.organizational_area ?? '?rea n?o definida',
+      assignments: role.active_assignment_count,
+      authority: governanceRoleValueLabel(role.authority_level),
+    })), [visibleRoles])
 
-  const governanceGridPeople = governanceGridSortItems(
-    'people',
-    visiblePeople.filter((person) =>
-      governanceGridMatches(
-        'people.name',
-        `${person.preferred_name ?? person.full_name} ${person.full_name}`,
-      ) &&
-      governanceGridMatches(
-        'people.function',
-        person.job_title,
-      ) &&
-      governanceGridMatches(
-        'people.relationship',
-        person.relationship_type,
-      ) &&
-      governanceGridMatches('people.area', person.organizational_area) &&
-      governanceGridMatches('people.roles', person.active_role_count) &&
-      governanceGridMatches(
-        'people.responsibilities',
-        person.active_responsibility_count,
-      ),
-    ),
-    (person, key) => {
-      if (key === 'function') return person.job_title ?? ''
-      if (key === 'relationship') return person.relationship_type
-      if (key === 'area') return person.organizational_area ?? ''
-      if (key === 'roles') return person.active_role_count
-      if (key === 'responsibilities') return person.active_responsibility_count
-      return person.preferred_name ?? person.full_name
-    },
-  )
+  const governanceRolesGridColumns = useMemo<SparksSmartGridColumn[]>(() => [
+    { id: 'name', label: 'Papel', minWidth: 220, maxWidth: 380, grow: 2, tooltip: true },
+    { id: 'code', label: 'C?digo', minWidth: 130, maxWidth: 200 },
+    { id: 'description', label: 'Descri??o', minWidth: 260, maxWidth: 480, grow: 2, tooltip: true },
+    { id: 'area', label: '?rea', minWidth: 170, maxWidth: 280, tooltip: true },
+    { id: 'assignments', label: 'Atribui??es', minWidth: 110, maxWidth: 150, align: 'center' },
+    { id: 'authority', label: 'Autoridade', minWidth: 130, maxWidth: 190, align: 'center' },
+  ], [])
 
-  const governanceGridRoles = governanceGridSortItems(
-    'roles',
-    visibleRoles.filter((role) =>
-      governanceGridMatches('roles.name', role.role_name) &&
-      governanceGridMatches(
-        'roles.code',
-        `${role.role_code} ${role.role_type}`,
-      ) &&
-      governanceGridMatches(
-        'roles.description',
-        `${role.description ?? ''} ${role.organizational_area ?? ''}`,
-      ) &&
-      governanceGridMatches(
-        'roles.assignments',
-        role.active_assignment_count,
-      ) &&
-      governanceGridMatches('roles.authority', role.authority_level),
-    ),
-    (role, key) => {
-      if (key === 'code') return `${role.role_code} ${role.role_type}`
-      if (key === 'description') {
-        return `${role.description ?? ''} ${role.organizational_area ?? ''}`
-      }
-      if (key === 'assignments') return role.active_assignment_count
-      if (key === 'authority') return role.authority_level ?? ''
-      return role.role_name
-    },
-  )
+  const governanceResponsibilitiesGridRows = useMemo<SparksSmartGridRow[]>(() =>
+    visibleResponsibilities.map((assignment) => ({
+      id: assignment.assignment_id,
+      person: assignment.person_name,
+      type: governanceResponsibilityLabel(assignment.responsibility_type),
+      object: governanceObjectLabel(assignment),
+      allocation: assignment.allocation_percentage === null ? '?' : `${assignment.allocation_percentage}%`,
+      status: assignment.status === 'active' ? 'Ativo' : publicLabel(assignment.status, assignment.status),
+    })), [visibleResponsibilities, governanceInitiativeById])
 
-  const governanceGridResponsibilities = governanceGridSortItems(
-    'responsibilities',
-    visibleResponsibilities.filter((assignment) =>
-      governanceGridMatches(
-        'responsibilities.person',
-        assignment.person_name,
-      ) &&
-      governanceGridMatches(
-        'responsibilities.type',
-        assignment.responsibility_type,
-      ) &&
-      governanceGridMatches(
-        'responsibilities.object',
-        `${assignment.object_type} ${assignment.object_id}`,
-      ) &&
-      governanceGridMatches(
-        'responsibilities.allocation',
-        assignment.allocation_percentage,
-      ) &&
-      governanceGridMatches(
-        'responsibilities.status',
-        assignment.status,
-      ) &&
-      governanceGridMatches(
-        'responsibilities.action',
-        'Encerrar',
-      ),
-    ),
-    (assignment, key) => {
-      if (key === 'type') return assignment.responsibility_type
-      if (key === 'object') {
-        return `${assignment.object_type} ${assignment.object_id}`
-      }
-      if (key === 'allocation') return assignment.allocation_percentage ?? 0
-      if (key === 'status') return assignment.status
-      if (key === 'action') return 'Encerrar'
-      return assignment.person_name
-    },
-  )
+  const governanceResponsibilitiesGridColumns = useMemo<SparksSmartGridColumn[]>(() => [
+    { id: 'person', label: 'Pessoa', minWidth: 210, maxWidth: 360, grow: 2, tooltip: true },
+    { id: 'type', label: 'Responsabilidade', minWidth: 170, maxWidth: 260, align: 'center' },
+    { id: 'object', label: 'Objeto estrat?gico', minWidth: 320, maxWidth: 620, grow: 3, tooltip: true },
+    { id: 'allocation', label: 'Aloca??o', minWidth: 110, maxWidth: 140, align: 'center' },
+    { id: 'status', label: 'Situa??o', minWidth: 110, maxWidth: 150, align: 'center' },
+  ], [])
 
-  const toggleGovernanceGridSort = (
-    panel: 'people' | 'roles' | 'responsibilities',
-    key: string,
-  ) => {
-    setGovernanceGridSort((current) => ({
-      panel,
-      key,
-      direction:
-        current.panel === panel &&
-        current.key === key &&
-        current.direction === 'asc'
-          ? 'desc'
-          : 'asc',
-    }))
-  }
-
-  const setGovernanceColumnFilter = (key: string, value: string) => {
-    setGovernanceGridFilters((current) => ({
+  const openResponsibilityMaintenance = (assignment: ResponsibilityAssignmentRow) => {
+    setResponsibilityForm((current) => ({
       ...current,
-      [key]: value,
+      personId: assignment.organization_person_id,
+      objectType: assignment.object_type,
+      objectId: assignment.object_id,
+      responsibilityType: assignment.responsibility_type,
+      allocation: assignment.allocation_percentage === null ? '' : String(assignment.allocation_percentage),
+      authorityLevel: assignment.authority_level ?? 'operational',
+      validFrom: assignment.valid_from ?? '',
+      validUntil: assignment.valid_until ?? '',
+      assignmentReason: assignment.assignment_reason ?? '',
     }))
+    setSelectedResponsibilityId(assignment.assignment_id)
+    setResponsibilityPanelOpen(true)
   }
+
   const loadGovernance = async () => {
     setLoading(true)
     setMessage(null)
@@ -5004,32 +5759,12 @@ function GovernanceOperationsSection({
   }
 
 
-  const scrollGovernanceGrid = (
-    panel: 'people' | 'roles' | 'responsibilities',
-    axis: 'x' | 'y',
-    direction: -1 | 1,
-  ) => {
-    const body = document.querySelector<HTMLElement>(
-      `[data-governance-grid-body="${panel}"]`,
-    )
-    if (!body) return
-
-    const horizontalStep = Math.max(body.clientWidth * 0.72, 220)
-    const verticalStep = Math.max(body.clientHeight * 0.72, 180)
-
-    body.scrollBy({
-      left: axis === 'x' ? direction * horizontalStep : 0,
-      top: axis === 'y' ? direction * verticalStep : 0,
-      behavior: 'smooth',
-    })
-  }
   const domainOptions = (code: string) => domains[code] ?? []
 
   return (
     <>
       <section className="skpe-page-heading skpe-administration-heading">
         <div><p className="skpe-eyebrow">Governança operacional</p><p className="skpe-governance-intro">Defina quem exerce papéis organizacionais e quem responde, aprova, valida, executa ou acompanha cada objeto estratégico.</p></div>
-        <button type="button" className="skpe-refresh-button" onClick={() => void loadGovernance()} disabled={loading}><RefreshIcon />Atualizar governança</button>
       </section>
       {dashboard && (
         <section className="skpe-governance-kpi-grid">
@@ -5118,115 +5853,19 @@ function GovernanceOperationsSection({
             </div>
           </div>
           {governanceViewMode === 'grid' && (
-            <div className="skpe-governance-functional-grid" data-sparks-grid-shell>
-              <div className="skpe-governance-smart-grid-header skpe-governance-smart-grid-header--people" role="row">
-                {[
-                  ['name', 'Pessoa'],
-                  ['function', 'Função'],
-                  ['relationship', 'Vínculo'],
-                  ['area', 'Área'],
-                  ['roles', 'Papéis'],
-                  ['responsibilities', 'Responsabilidades'],
-                ].map(([key, label]) => {
-                  const filterKey = `people.${key}`
-                  return (
-                    <div key={key} className="skpe-governance-header-cell">
-                      <button type="button" className="skpe-governance-header-sort" onClick={() => toggleGovernanceGridSort('people', key)}>
-                        <span>{label}</span>
-                        {governanceGridSort.panel === 'people' && governanceGridSort.key === key && (
-                          <small>{governanceGridSort.direction === 'asc' ? 'ASC' : 'DESC'}</small>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className={`skpe-governance-header-filter ${governanceGridFilterValue(filterKey) ? 'active' : ''}`}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setGovernanceGridFilterOpen((current) => current === filterKey ? null : filterKey)
-                        }}
-                        title={`Filtrar ${label}`}
-                        aria-label={`Filtrar ${label}`}
-                      >
-                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14l-5.2 6.1v4.2L8.2 16v-5.9L3 4Z" fill="currentColor" /></svg>
-                      </button>
-                      {governanceGridFilterOpen === filterKey && (
-                        <div className="skpe-governance-header-filter-popover">
-                          <input
-                            autoFocus
-                            value={governanceGridFilters[filterKey] ?? ''}
-                            onChange={(event) => setGovernanceColumnFilter(filterKey, event.target.value)}
-                            placeholder="Filtrar coluna"
-                          />
-                          <button type="button" onClick={() => {
-                            setGovernanceColumnFilter(filterKey, '')
-                            setGovernanceGridFilterOpen(null)
-                          }}>Limpar</button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="skpe-governance-functional-grid-body skpe-governance-functional-grid-body--people" data-governance-grid-body="people">
-                {governanceGridPeople.map((person) => (
-                  <article
-                    key={person.organization_person_id}
-                    className={`skpe-governance-functional-grid-row ${assignmentForm.personId === person.organization_person_id ? 'selected' : ''}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => selectPersonForAssignment(person)}
-                    onKeyDown={(event) => activateRecordWithKeyboard(event, () => selectPersonForAssignment(person))}
-                  >
-                    <div><strong>{person.preferred_name ?? person.full_name}</strong></div>
-                    <div><span>{person.job_title ?? 'Não definida'}</span></div>
-                    <div><span>{publicLabel(person.relationship_type, person.relationship_type)}</span></div>
-                    <div><span>{person.organizational_area ?? 'Área não definida'}</span></div>
-                    <div><b>{person.active_role_count}</b></div>
-                    <div><b>{person.active_responsibility_count}</b></div>
-                  </article>
-                ))}
-              </div>
-              <div
-                className="skpe-grid-navigator skpe-governance-grid-navigator"
-                aria-label="Navegação direcional do grid"
-              >
-                <button
-                  type="button"
-                  onClick={() => scrollGovernanceGrid('people', 'y', -1)}
-                  aria-label="Rolar grid para cima"
-                  title="Rolar para cima"
-                >
-                  ↑
-                </button>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => scrollGovernanceGrid('people', 'x', -1)}
-                    aria-label="Rolar grid para a esquerda"
-                    title="Rolar para a esquerda"
-                  >
-                    ←
-                  </button>
-                  <span aria-hidden="true">•</span>
-                  <button
-                    type="button"
-                    onClick={() => scrollGovernanceGrid('people', 'x', 1)}
-                    aria-label="Rolar grid para a direita"
-                    title="Rolar para a direita"
-                  >
-                    →
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => scrollGovernanceGrid('people', 'y', 1)}
-                  aria-label="Rolar grid para baixo"
-                  title="Rolar para baixo"
-                >
-                  ↓
-                </button>
-              </div>
-            </div>
+            <SparksSmartGrid
+              rows={governancePeopleGridRows}
+              columns={governancePeopleGridColumns}
+              ariaLabel="Pessoas e v?nculos da organiza??o"
+              selectedId={selectedGovernancePersonId}
+              viewportMode="standard"
+              primaryActionLabel="Atribuir papel ? pessoa"
+              onSelect={setSelectedGovernancePersonId}
+              onDoubleClick={(id) => {
+                const person = visiblePeople.find((item) => item.organization_person_id === id)
+                if (person) selectPersonForAssignment(person)
+              }}
+            />
           )}
           <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visiblePeople.map((person) => <article key={person.organization_person_id} className={`skpe-interactive-record ${assignmentForm.personId === person.organization_person_id ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Selecionar ${person.preferred_name ?? person.full_name} para manutenção`} onClick={() => selectPersonForAssignment(person)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => selectPersonForAssignment(person))}><div><strong>{person.preferred_name ?? person.full_name}</strong><span>{person.job_title ?? 'Não definida'}</span><small>{person.organizational_area ?? 'Área não definida'}</small></div><div className="skpe-governance-counts"><b>{person.active_role_count} papéis</b><b>{person.active_responsibility_count} responsabilidades</b></div></article>)}</div>
           {canManageGovernance && assignmentPanelOpen && assignmentForm.personId && <div id="skpe-role-assignment-form" className="skpe-governance-form skpe-governance-side-panel"><div className="skpe-governance-side-panel-heading">
@@ -5267,90 +5906,21 @@ function GovernanceOperationsSection({
             </div>
           </div>
           {governanceViewMode === 'grid' && (
-            <div className="skpe-governance-functional-grid" data-sparks-grid-shell>
-              <div className="skpe-governance-smart-grid-header skpe-governance-smart-grid-header--roles" role="row">
-                {[
-                  ['name', 'Papel'],
-                  ['description', 'Descrição / área'],
-                  ['assignments', 'Atribuições'],
-                  ['authority', 'Autoridade'],
-                ].map(([key, label]) => {
-                  const filterKey = `roles.${key}`
-                  return (
-                    <div key={key} className="skpe-governance-header-cell">
-                      <button type="button" className="skpe-governance-header-sort" onClick={() => toggleGovernanceGridSort('roles', key)}>
-                        <span>{label}</span>
-                        {governanceGridSort.panel === 'roles' && governanceGridSort.key === key && (
-                          <small>{governanceGridSort.direction === 'asc' ? 'ASC' : 'DESC'}</small>
-                        )}
-                      </button>
-                      <button type="button" className={`skpe-governance-header-filter ${governanceGridFilterValue(filterKey) ? 'active' : ''}`} onClick={(event) => { event.stopPropagation(); setGovernanceGridFilterOpen((current) => current === filterKey ? null : filterKey) }} title={`Filtrar ${label}`} aria-label={`Filtrar ${label}`}>
-                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14l-5.2 6.1v4.2L8.2 16v-5.9L3 4Z" fill="currentColor" /></svg>
-                      </button>
-                      {governanceGridFilterOpen === filterKey && (
-                        <div className="skpe-governance-header-filter-popover">
-                          <input autoFocus value={governanceGridFilters[filterKey] ?? ''} onChange={(event) => setGovernanceColumnFilter(filterKey, event.target.value)} placeholder="Filtrar coluna" />
-                          <button type="button" onClick={() => { setGovernanceColumnFilter(filterKey, ''); setGovernanceGridFilterOpen(null) }}>Limpar</button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="skpe-governance-functional-grid-body skpe-governance-functional-grid-body--roles" data-governance-grid-body="roles">
-                {governanceGridRoles.map((role) => (
-                  <article key={role.role_id} className={`skpe-governance-functional-grid-row ${roleForm.id === role.role_id ? 'selected' : ''}`} role="button" tabIndex={0} onClick={() => openRoleMaintenance(role)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => openRoleMaintenance(role))}>
-                    <div><strong>{role.role_name}</strong></div>
-
-                    <div><span>{role.description ?? 'Sem descrição'}</span><small>{role.organizational_area ?? 'Área não definida'}</small></div>
-                    <div><b>{role.active_assignment_count}</b></div>
-                    <div><span>{governanceRoleValueLabel(role.authority_level)}</span></div>
-                  </article>
-                ))}
-              </div>
-              <div
-                className="skpe-grid-navigator skpe-governance-grid-navigator"
-                aria-label="Navegação direcional do grid"
-              >
-                <button
-                  type="button"
-                  onClick={() => scrollGovernanceGrid('roles', 'y', -1)}
-                  aria-label="Rolar grid para cima"
-                  title="Rolar para cima"
-                >
-                  ↑
-                </button>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => scrollGovernanceGrid('roles', 'x', -1)}
-                    aria-label="Rolar grid para a esquerda"
-                    title="Rolar para a esquerda"
-                  >
-                    ←
-                  </button>
-                  <span aria-hidden="true">•</span>
-                  <button
-                    type="button"
-                    onClick={() => scrollGovernanceGrid('roles', 'x', 1)}
-                    aria-label="Rolar grid para a direita"
-                    title="Rolar para a direita"
-                  >
-                    →
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => scrollGovernanceGrid('roles', 'y', 1)}
-                  aria-label="Rolar grid para baixo"
-                  title="Rolar para baixo"
-                >
-                  ↓
-                </button>
-              </div>
-            </div>
+            <SparksSmartGrid
+              rows={governanceRolesGridRows}
+              columns={governanceRolesGridColumns}
+              ariaLabel="Pap?is organizacionais"
+              selectedId={selectedGovernanceRoleId}
+              viewportMode="standard"
+              primaryActionLabel="Abrir manuten??o do papel"
+              onSelect={setSelectedGovernanceRoleId}
+              onDoubleClick={(id) => {
+                const role = visibleRoles.find((item) => item.role_id === id)
+                if (role) openRoleMaintenance(role)
+              }}
+            />
           )}
-          <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visibleRoles.map((role) => <article key={role.role_id} className={`skpe-interactive-record ${roleForm.id === role.role_id ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Abrir manutenção do papel ${role.role_name}`} onClick={() => openRoleMaintenance(role)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => openRoleMaintenance(role))}><div><strong>{role.role_name}</strong><span>{role.role_code} · {publicLabel(role.role_type)}</span><small>{role.description ?? role.organizational_area ?? 'Sem descrição'}</small></div><div className="skpe-governance-counts"><b>{role.active_assignment_count} atribuições</b><b>{publicLabel(role.authority_level, 'Sem nível')}</b></div></article>)}</div>{canManageGovernance && rolePanelOpen && <div id="skpe-role-maintenance-form" className="skpe-governance-form skpe-governance-side-panel"><div className="skpe-governance-side-panel-heading">
+          <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visibleRoles.map((role) => <article key={role.role_id} className={`skpe-interactive-record ${roleForm.id === role.role_id ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Abrir manutenção do papel ${role.role_name}`} onClick={() => openRoleMaintenance(role)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => openRoleMaintenance(role))}><div><strong>{role.role_name}</strong><span>{role.role_code} · {publicLabel(role.role_type)}</span><small>{role.description ?? role.organizational_area ?? 'Sem descrição'}</small></div><div className="skpe-governance-counts"><b>{role.active_assignment_count} atribuições</b><b>{role.is_governance_role ? 'Governança' : 'Operacional'}</b></div></article>)}</div>{canManageGovernance && rolePanelOpen && <div id="skpe-role-maintenance-form" className="skpe-governance-form skpe-governance-side-panel"><div className="skpe-governance-side-panel-heading">
               <div>
                 <p className="skpe-eyebrow">Papel organizacional</p>
                 <h3>{roleForm.id ? 'Editar papel organizacional' : 'Novo papel organizacional'}</h3>
@@ -5383,116 +5953,25 @@ function GovernanceOperationsSection({
             </div>
           </div>
           {governanceViewMode === 'grid' && (
-            <div className="skpe-governance-functional-grid" data-sparks-grid-shell>
-              <div className="skpe-governance-smart-grid-header skpe-governance-smart-grid-header--responsibilities" role="row">
-                {[
-                  ['person', 'Pessoa'],
-                  ['type', 'Responsabilidade'],
-                  ['object', 'Objeto estratégico'],
-                  ['allocation', 'Alocação'],
-                  ['status', 'Situação'],
-                  ['action', 'Ação'],
-                ].map(([key, label]) => {
-                  const filterKey = `responsibilities.${key}`
-                  return (
-                    <div key={key} className="skpe-governance-header-cell">
-                      <button type="button" className="skpe-governance-header-sort" onClick={() => toggleGovernanceGridSort('responsibilities', key)}>
-                        <span>{label}</span>
-                        {governanceGridSort.panel === 'responsibilities' && governanceGridSort.key === key && (
-                          <small>{governanceGridSort.direction === 'asc' ? 'ASC' : 'DESC'}</small>
-                        )}
-                      </button>
-                      <button type="button" className={`skpe-governance-header-filter ${governanceGridFilterValue(filterKey) ? 'active' : ''}`} onClick={(event) => { event.stopPropagation(); setGovernanceGridFilterOpen((current) => current === filterKey ? null : filterKey) }} title={`Filtrar ${label}`} aria-label={`Filtrar ${label}`}>
-                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14l-5.2 6.1v4.2L8.2 16v-5.9L3 4Z" fill="currentColor" /></svg>
-                      </button>
-                      {governanceGridFilterOpen === filterKey && (
-                        <div className="skpe-governance-header-filter-popover">
-                          <input autoFocus value={governanceGridFilters[filterKey] ?? ''} onChange={(event) => setGovernanceColumnFilter(filterKey, event.target.value)} placeholder="Filtrar coluna" />
-                          <button type="button" onClick={() => { setGovernanceColumnFilter(filterKey, ''); setGovernanceGridFilterOpen(null) }}>Limpar</button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="skpe-governance-functional-grid-body skpe-governance-functional-grid-body--responsibilities" data-governance-grid-body="responsibilities">
-                {governanceGridResponsibilities.map((assignment) => (
-                  <article
-                    key={assignment.assignment_id}
-                    className={`skpe-governance-functional-grid-row ${selectedResponsibilityId === assignment.assignment_id ? 'selected' : ''}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      setResponsibilityForm((current) => ({
-                        ...current,
-                        personId: assignment.organization_person_id,
-                        objectType: assignment.object_type,
-                        objectId: assignment.object_id,
-                        responsibilityType: assignment.responsibility_type,
-                        allocation:
-                          assignment.allocation_percentage === null
-                            ? ''
-                            : String(assignment.allocation_percentage),
-                        authorityLevel:
-                          assignment.authority_level ?? 'operational',
-                        validFrom: assignment.valid_from ?? '',
-                        validUntil: assignment.valid_until ?? '',
-                        assignmentReason:
-                          assignment.assignment_reason ?? '',
-                      }))
-                      setSelectedResponsibilityId(assignment.assignment_id)
-                      setResponsibilityPanelOpen(true)
-                    }}
-                  >
-                    <div><strong>{assignment.person_name}</strong></div>
-                    <div><span>{governanceResponsibilityLabel(assignment.responsibility_type)}</span></div>
-                    <div><span>{governanceObjectLabel(assignment)}</span></div>
-                    <div><b>{assignment.allocation_percentage ?? '—'}{assignment.allocation_percentage === null ? '' : '%'}</b></div>
-                    <div><span>{assignment.status === 'active' ? 'Ativo' : publicLabel(assignment.status, assignment.status)}</span></div><div>{canManageGovernance ? <button type="button" className="skpe-secondary-action-button" onClick={(event) => { event.stopPropagation(); void endResponsibility(assignment) }}>Encerrar</button> : <span>—</span>}</div>
-                  </article>
-                ))}
-              </div>
-              <div
-                className="skpe-grid-navigator skpe-governance-grid-navigator"
-                aria-label="Navegação direcional do grid"
-              >
-                <button
-                  type="button"
-                  onClick={() => scrollGovernanceGrid('responsibilities', 'y', -1)}
-                  aria-label="Rolar grid para cima"
-                  title="Rolar para cima"
-                >
-                  ↑
-                </button>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => scrollGovernanceGrid('responsibilities', 'x', -1)}
-                    aria-label="Rolar grid para a esquerda"
-                    title="Rolar para a esquerda"
-                  >
-                    ←
-                  </button>
-                  <span aria-hidden="true">•</span>
-                  <button
-                    type="button"
-                    onClick={() => scrollGovernanceGrid('responsibilities', 'x', 1)}
-                    aria-label="Rolar grid para a direita"
-                    title="Rolar para a direita"
-                  >
-                    →
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => scrollGovernanceGrid('responsibilities', 'y', 1)}
-                  aria-label="Rolar grid para baixo"
-                  title="Rolar para baixo"
-                >
-                  ↓
-                </button>
-              </div>
-            </div>
+            <SparksSmartGrid
+              rows={governanceResponsibilitiesGridRows}
+              columns={governanceResponsibilitiesGridColumns}
+              ariaLabel="Matriz de responsabilidades"
+              selectedId={selectedResponsibilityId}
+              viewportMode="standard"
+              primaryActionLabel="Abrir manuten??o da responsabilidade"
+              onSelect={setSelectedResponsibilityId}
+              onDoubleClick={(id) => {
+                const assignment = visibleResponsibilities.find((item) => item.assignment_id === id)
+                if (assignment) openResponsibilityMaintenance(assignment)
+              }}
+              contextMenu={canManageGovernance ? [{ id: 'end-responsibility', text: 'Encerrar responsabilidade' }] : undefined}
+              onContextAction={(actionId, id) => {
+                if (actionId !== 'end-responsibility') return
+                const assignment = visibleResponsibilities.find((item) => item.assignment_id === id)
+                if (assignment) void endResponsibility(assignment)
+              }}
+            />
           )}
           <div className={`skpe-governance-card-grid ${governanceViewMode === 'grid' ? 'skpe-governance-row-grid' : ''}`}>{visibleResponsibilities.map((assignment) => <article key={assignment.assignment_id}><div><strong>{assignment.person_name}</strong><span>{domainOptions('RESPONSIBILITY_TYPE').find((item) => item.value_code === assignment.responsibility_type)?.value_name ?? assignment.responsibility_type}</span><small>{domainOptions('STRATEGIC_OBJECT_TYPE').find((item) => item.value_code === assignment.object_type)?.value_name ?? assignment.object_type} · {assignment.object_id}</small></div><div className="skpe-governance-counts"><b>{assignment.allocation_percentage ?? 0}%</b><button type="button" onClick={() => void endResponsibility(assignment)}>Encerrar</button></div></article>)}</div>{canManageGovernance && responsibilityPanelOpen && <div id="skpe-responsibility-assignment-form" className="skpe-governance-form skpe-governance-side-panel"><div className="skpe-governance-side-panel-heading">
               <div>
@@ -5535,20 +6014,17 @@ type OrganizationalAreasSectionProps = {
 }
 
 type AreaViewMode = 'cards' | 'grid' | 'tree'
-type AreaSortKey = 'area_name' | 'area_code' | 'area_type' | 'parent_area_name' | 'active'
-type SortDirection = 'asc' | 'desc'
 
 function OrganizationalAreasSection({ organizationId, canManageAreas }: OrganizationalAreasSectionProps) {
   const [areas, setAreas] = useState<OrganizationalAreaRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<ActionMessage | null>(null)
-  const [viewMode, setViewMode] = useState<AreaViewMode>('cards')
+  const [viewMode, setViewMode] = useState<AreaViewMode>('grid')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [sortKey, setSortKey] = useState<AreaSortKey>('area_name')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null)
   const [selectedArea, setSelectedArea] = useState<OrganizationalAreaRow | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ id: '', code: '', name: '', description: '', areaType: 'management', parentId: '', displayOrder: '100', active: true, reason: '' })
@@ -5575,26 +6051,18 @@ function OrganizationalAreasSection({ organizationId, canManageAreas }: Organiza
       .filter((area) => statusFilter === 'all' || (statusFilter === 'active' ? area.active : !area.active))
       .filter((area) => typeFilter === 'all' || area.area_type === typeFilter)
       .filter((area) => !normalizedSearch || [area.area_name, area.area_code, area.area_description ?? '', area.parent_area_name ?? ''].some((value) => value.toLocaleLowerCase('pt-BR').includes(normalizedSearch)))
-      .sort((left, right) => {
-        const leftValue = String(left[sortKey] ?? '')
-        const rightValue = String(right[sortKey] ?? '')
-        const comparison = leftValue.localeCompare(rightValue, 'pt-BR', { sensitivity: 'base', numeric: true })
-        return sortDirection === 'asc' ? comparison : -comparison
-      })
-  }, [areas, search, statusFilter, typeFilter, sortKey, sortDirection])
-
-  const toggleSort = (key: AreaSortKey) => {
-    if (sortKey === key) setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')
-    else { setSortKey(key); setSortDirection('asc') }
-  }
+      .sort((left, right) => left.area_name.localeCompare(right.area_name, 'pt-BR', { sensitivity: 'base', numeric: true }))
+  }, [areas, search, statusFilter, typeFilter])
 
   const openNew = () => {
+    setSelectedAreaId(null)
     setSelectedArea(null)
     setForm({ id: '', code: '', name: '', description: '', areaType: 'management', parentId: '', displayOrder: String((areas.length + 1) * 10), active: true, reason: '' })
     setShowForm(true)
   }
 
   const openEdit = (area: OrganizationalAreaRow) => {
+    setSelectedAreaId(area.area_id)
     setSelectedArea(area)
     setForm({ id: area.area_id, code: area.area_code, name: area.area_name, description: area.area_description ?? '', areaType: area.area_type ?? 'management', parentId: area.parent_area_id ?? '', displayOrder: String(area.display_order), active: area.active, reason: '' })
     setShowForm(true)
@@ -5653,14 +6121,46 @@ function OrganizationalAreasSection({ organizationId, canManageAreas }: Organiza
     <button type="button" title="Excluir" aria-label="Excluir" className="skpe-record-action-danger" onClick={() => void deleteArea(area)}>⌫</button>
   </div>
 
+  const areaGridRows = useMemo<SparksSmartGridRow[]>(() => visibleAreas.map((area) => ({
+    id: area.area_id,
+    name: area.area_name,
+    code: area.area_code,
+    type: publicLabel(area.area_type, '—'),
+    parent: area.parent_area_name ?? '—',
+    roles: area.linked_role_count,
+    status: area.active ? 'Ativa' : 'Inativa',
+  })), [visibleAreas])
+
+  const areaGridColumns = useMemo<SparksSmartGridColumn[]>(() => [
+    { id: 'name', label: 'Nome', minWidth: 260, maxWidth: 460, grow: 2, tooltip: true },
+    { id: 'code', label: 'Código', minWidth: 190, maxWidth: 300, tooltip: true },
+    { id: 'type', label: 'Tipo', minWidth: 150, maxWidth: 240 },
+    { id: 'parent', label: 'Área superior', minWidth: 220, maxWidth: 360, tooltip: true, grow: 2 },
+    { id: 'roles', label: 'Papéis', minWidth: 90, maxWidth: 120, align: 'center' },
+    { id: 'status', label: 'Situação', minWidth: 110, maxWidth: 150, align: 'center' },
+  ], [])
+
   const roots = visibleAreas.filter((area) => !area.parent_area_id || !visibleAreas.some((candidate) => candidate.area_id === area.parent_area_id))
   const renderTree = (area: OrganizationalAreaRow, level = 0): ReactNode => <div key={area.area_id} className="skpe-area-tree-node skpe-interactive-record" role="button" tabIndex={0} aria-label={`Abrir detalhes de ${area.area_name}`} style={{ marginLeft: `${level * 24}px` }} onClick={() => setSelectedArea(area)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedArea(area))}><div><strong>{area.area_name}</strong><span>{area.area_code} · {publicLabel(area.area_type, 'Sem tipo')}</span></div>{renderActions(area)}{visibleAreas.filter((candidate) => candidate.parent_area_id === area.area_id).map((child) => renderTree(child, level + 1))}</div>
 
   return <>
-    <section className="skpe-page-heading skpe-administration-heading"><div><p className="skpe-eyebrow">Estrutura organizacional</p><h1>Áreas e estrutura organizacional</h1><p>Inclua, edite, organize, filtre e imprima áreas da organização. A ordenação inicial é alfabética crescente (A–Z).</p></div><div className="skpe-heading-actions"><button type="button" className="skpe-refresh-button" onClick={() => void loadAreas()} disabled={loading}><RefreshIcon />Atualizar</button>{canManageAreas && <button type="button" className="skpe-primary-action-button" onClick={openNew}>+ Nova área</button>}</div></section>
+    <section className="skpe-page-heading skpe-administration-heading"><div><p className="skpe-eyebrow">Estrutura organizacional</p><h1>Áreas e estrutura organizacional</h1><p>Inclua, edite, organize, filtre e imprima áreas da organização. A ordenação inicial é alfabética crescente (A–Z).</p></div><div className="skpe-heading-actions">{canManageAreas && <button type="button" className="skpe-primary-action-button" onClick={openNew}>+ Nova área</button>}</div></section>
     {message && <div className={`skpe-action-message skpe-action-message-${message.type}`}>{message.text}</div>}
     <section className="skpe-list-toolbar"><label className="skpe-list-search"><SearchIcon /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar por nome, código, descrição ou área superior" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">Todas as situações</option><option value="active">Ativas</option><option value="inactive">Inativas</option></select><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option>{areaTypes.map((type) => <option key={type} value={type}>{publicLabel(type)}</option>)}</select><div className="skpe-view-switch" aria-label="Modo de visualização"><button type="button" title="Cards" className={viewMode === 'cards' ? 'active' : ''} onClick={() => setViewMode('cards')}><CardsViewIcon /></button><button type="button" title="Grid" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')}><RowsViewIcon /></button><button type="button" title="Hierarquia" className={viewMode === 'tree' ? 'active' : ''} onClick={() => setViewMode('tree')}>⌘</button></div></section>
-    {loading ? <section className="skpe-admin-state-card"><p>Carregando áreas...</p></section> : visibleAreas.length === 0 ? <section className="skpe-admin-state-card"><p>Nenhuma área encontrada para os filtros informados.</p></section> : viewMode === 'cards' ? <section className="skpe-area-card-grid">{visibleAreas.map((area) => <article key={area.area_id} className={`skpe-interactive-record ${!area.active ? 'skpe-record-inactive' : ''}`} role="button" tabIndex={0} aria-label={`Abrir detalhes de ${area.area_name}`} onClick={() => setSelectedArea(area)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedArea(area))}><div className="skpe-area-card-heading"><div><strong>{area.area_name}</strong><span>{area.area_code}</span></div>{renderActions(area)}</div><p>{area.area_description ?? 'Sem descrição complementar.'}</p><div className="skpe-area-card-meta"><b>{publicLabel(area.area_type, 'Sem tipo')}</b><span>{area.parent_area_name ? `Subordinada a ${area.parent_area_name}` : 'Área de primeiro nível'}</span><small>{area.linked_role_count} papéis · {area.child_count} áreas subordinadas</small></div></article>)}</section> : viewMode === 'grid' ? <section className="skpe-data-grid-wrapper"><table className="skpe-data-grid"><thead><tr><th><button type="button" onClick={() => toggleSort('area_name')}>Nome {sortKey === 'area_name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th><button type="button" onClick={() => toggleSort('area_code')}>Código {sortKey === 'area_code' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th><button type="button" onClick={() => toggleSort('area_type')}>Tipo {sortKey === 'area_type' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th><button type="button" onClick={() => toggleSort('parent_area_name')}>Área superior {sortKey === 'parent_area_name' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th>Papéis</th><th><button type="button" onClick={() => toggleSort('active')}>Situação {sortKey === 'active' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</button></th><th>Ações</th></tr></thead><tbody>{visibleAreas.map((area) => <tr key={area.area_id} className={`skpe-interactive-record ${!area.active ? 'skpe-record-inactive' : ''}`} role="button" tabIndex={0} aria-label={`Abrir detalhes de ${area.area_name}`} onClick={() => setSelectedArea(area)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedArea(area))}><td><strong>{area.area_name}</strong></td><td>{area.area_code}</td><td>{publicLabel(area.area_type, '—')}</td><td>{area.parent_area_name ?? '—'}</td><td>{area.linked_role_count}</td><td>{area.active ? 'Ativa' : 'Inativa'}</td><td>{renderActions(area)}</td></tr>)}</tbody></table></section> : <section className="skpe-area-tree">{roots.map((area) => renderTree(area))}</section>}
+    {loading ? <section className="skpe-admin-state-card"><p>Carregando áreas...</p></section> : visibleAreas.length === 0 ? <section className="skpe-admin-state-card"><p>Nenhuma área encontrada para os filtros informados.</p></section> : viewMode === 'cards' ? <section className="skpe-area-card-grid">{visibleAreas.map((area) => <article key={area.area_id} className={`skpe-interactive-record ${!area.active ? 'skpe-record-inactive' : ''}`} role="button" tabIndex={0} aria-label={`Abrir detalhes de ${area.area_name}`} onClick={() => setSelectedArea(area)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedArea(area))}><div className="skpe-area-card-heading"><div><strong>{area.area_name}</strong><span>{area.area_code}</span></div>{renderActions(area)}</div><p>{area.area_description ?? 'Sem descrição complementar.'}</p><div className="skpe-area-card-meta"><b>{publicLabel(area.area_type, 'Sem tipo')}</b><span>{area.parent_area_name ? `Subordinada a ${area.parent_area_name}` : 'Área de primeiro nível'}</span><small>{area.linked_role_count} papéis · {area.child_count} áreas subordinadas</small></div></article>)}</section> : viewMode === 'grid' ? <SparksSmartGrid
+      rows={areaGridRows}
+      columns={areaGridColumns}
+      ariaLabel="Áreas e estrutura organizacional"
+      viewportMode="standard"
+      selectedId={selectedAreaId}
+      onSelect={setSelectedAreaId}
+      onDoubleClick={(id) => {
+        const area = visibleAreas.find((item) => item.area_id === id)
+        if (!area) return
+        setSelectedAreaId(id)
+        setSelectedArea(area)
+      }}
+    /> : <section className="skpe-area-tree">{roots.map((area) => renderTree(area))}</section>}
     {selectedArea && !showForm && <aside className="skpe-record-detail-panel"><button type="button" className="skpe-panel-close" onClick={() => setSelectedArea(null)}>×</button><p className="skpe-eyebrow">Detalhes da área</p><h2>{selectedArea.area_name}</h2><span>{selectedArea.area_code}</span><p>{selectedArea.area_description ?? 'Sem descrição complementar.'}</p><dl><dt>Tipo</dt><dd>{publicLabel(selectedArea.area_type)}</dd><dt>Área superior</dt><dd>{selectedArea.parent_area_name ?? 'Sem área superior'}</dd><dt>Situação</dt><dd>{selectedArea.active ? 'Ativa' : 'Inativa'}</dd><dt>Papéis vinculados</dt><dd>{selectedArea.linked_role_count}</dd></dl>{canManageAreas && <div className="skpe-panel-actions">{renderActions(selectedArea)}</div>}</aside>}
     {showForm && <div className="skpe-modal-backdrop"><section className="skpe-modal-card skpe-area-form-modal"><button type="button" className="skpe-panel-close" onClick={() => setShowForm(false)}>×</button><p className="skpe-eyebrow">{form.id ? 'Editar área' : 'Incluir área'}</p><h2>{form.id ? form.name : 'Nova área organizacional'}</h2><div className="skpe-governance-form"><label><span>Código *</span><input value={form.code} disabled={Boolean(form.id)} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_') }))} /></label><label><span>Nome *</span><input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Tipo</span><select value={form.areaType} onChange={(event) => setForm((current) => ({ ...current, areaType: event.target.value }))}><option value="governance">Governança</option><option value="management">Gestão</option><option value="business">Negócios</option><option value="operations">Operação</option><option value="support">Suporte</option><option value="control">Controle</option><option value="project">Projeto</option><option value="people">Pessoas</option><option value="technology">Tecnologia</option><option value="sustainability">Sustentabilidade</option></select></label><label><span>Área superior</span><select value={form.parentId} onChange={(event) => setForm((current) => ({ ...current, parentId: event.target.value }))}><option value="">Sem área superior</option>{areas.filter((area) => area.area_id !== form.id && area.active).sort((a, b) => a.area_name.localeCompare(b.area_name, 'pt-BR')).map((area) => <option key={area.area_id} value={area.area_id}>{area.area_name}</option>)}</select></label><label><span>Ordem técnica</span><input type="number" value={form.displayOrder} onChange={(event) => setForm((current) => ({ ...current, displayOrder: event.target.value }))} /></label><label className="skpe-governance-check"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} /><span>Área ativa</span></label><label className="skpe-form-field-wide"><span>Descrição</span><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} /></label><label className="skpe-form-field-wide"><span>Justificativa para auditoria *</span><textarea value={form.reason} onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} /></label><div className="skpe-form-field-wide skpe-modal-actions"><button type="button" onClick={() => setShowForm(false)}>Cancelar</button><button type="button" className="skpe-primary-action-button" onClick={() => void saveArea()} disabled={saving}>{saving ? 'Salvando...' : 'Salvar área'}</button></div></div></section></div>}
   </>
@@ -5718,7 +6218,7 @@ function OrganizationHierarchySection({ organizationId, canManage }: { organizat
   const [types, setTypes] = useState<RelationshipTypeOption[]>([])
   const [relationships, setRelationships] = useState<OrganizationRelationshipRow[]>([])
   const [policies, setPolicies] = useState<DescendantPolicyRow[]>([])
-  const [viewMode, setViewMode] = useState<HierarchyViewMode>('cards')
+  const [viewMode, setViewMode] = useState<HierarchyViewMode>('grid')
   const [tab, setTab] = useState<'relationships' | 'policies'>('relationships')
   const [search, setSearch] = useState('')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -5947,6 +6447,9 @@ function AdministrationSection({
     selectedUserId,
     setSelectedUserId,
   ] = useState<string | null>(null)
+  const [maintenanceUserId, setMaintenanceUserId] = useState<string | null>(null)
+
+  const [userDetailOpen, setUserDetailOpen] = useState(false)
 
   const [
     availableRoles,
@@ -6110,9 +6613,9 @@ function AdministrationSection({
     () =>
       users.find(
         (user) =>
-          user.userId === selectedUserId,
+          user.userId === maintenanceUserId,
       ) ?? null,
-    [users, selectedUserId],
+    [users, maintenanceUserId],
   )
 const selectedSkpeAccess =
     selectedUser?.modules.find(
@@ -6261,7 +6764,7 @@ const selectedSkpeAccess =
     setChangeReason('')
     setActionMessage(null)
   }, [
-    selectedUserId,
+    maintenanceUserId,
     selectedSkpeAccess?.roleCode,
   ])
 
@@ -6278,11 +6781,12 @@ const selectedSkpeAccess =
 
   const closeUserPanel = () => {
     if (saving || !confirmUserPanelClose()) return
-    setSelectedUserId(null)
+    setUserDetailOpen(false)
+    setMaintenanceUserId(null)
   }
 
   useEffect(() => {
-    if (!selectedUser) return
+    if (!selectedUser || !userDetailOpen) return
 
     const confirmDiscard = () =>
       !hasUnsavedUserChanges ||
@@ -6308,14 +6812,18 @@ const selectedSkpeAccess =
       }
 
       if (!saving && confirmDiscard()) {
-        setSelectedUserId(null)
+        setUserDetailOpen(false)
+        setMaintenanceUserId(null)
       }
     }
 
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
-      if (!saving && confirmDiscard()) setSelectedUserId(null)
+      if (!saving && confirmDiscard()) {
+        setUserDetailOpen(false)
+        setMaintenanceUserId(null)
+      }
     }
 
     document.addEventListener('pointerdown', handlePointerDown, true)
@@ -6327,6 +6835,7 @@ const selectedSkpeAccess =
     }
   }, [
     selectedUser,
+    userDetailOpen,
     selectedRoleCode,
     selectedSkpeAccess?.roleCode,
     changeReason,
@@ -7212,14 +7721,14 @@ const selectedSkpeAccess =
               </section>
             ) : userViewMode === 'cards' ? (              <div className="skpe-primary-card-grid">
                 {filteredUsers.map((user) => (
-                  <article key={user.userId} className={`skpe-interactive-record ${selectedUserId === user.userId ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Abrir acessos de ${user.displayName ?? user.email}`} onClick={() => setSelectedUserId(user.userId)} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedUserId(user.userId))}>
+                  <article key={user.userId} className={`skpe-interactive-record ${selectedUserId === user.userId ? 'selected' : ''}`} role="button" tabIndex={0} aria-label={`Abrir acessos de ${user.displayName ?? user.email}`} onClick={() => setSelectedUserId(user.userId)} onDoubleClick={() => { setSelectedUserId(user.userId); setMaintenanceUserId(user.userId); setUserDetailOpen(true) }} onKeyDown={(event) => activateRecordWithKeyboard(event, () => setSelectedUserId(user.userId))}>
                     <header><div><strong>{user.displayName ?? user.email}</strong><span>{user.email}</span></div><span className={`skpe-access-status skpe-access-status-${user.membershipStatus}`}>{getMembershipStatusLabel(user.membershipStatus)}</span></header>
                     <p>{user.jobTitle ?? 'Função não informada'}</p>
                     <small>
                       Papel no SK-PE: {getSkpeRoleName(user)} · {user.modules.length} módulo(s)
                       {user.isOrganizationAdmin ? ' · Administrador da organização' : ''}
                     </small>
-                    <footer><button type="button" title="Editar acessos" onClick={(event) => { event.stopPropagation(); setSelectedUserId(user.userId) }}>✎</button><button type="button" title="Imprimir ficha" onClick={(event) => { event.stopPropagation(); window.print() }}>⎙</button></footer>
+                    <footer><button type="button" title="Editar acessos" onClick={(event) => { event.stopPropagation(); setSelectedUserId(user.userId); setMaintenanceUserId(user.userId); setUserDetailOpen(true) }}>✎</button><button type="button" title="Imprimir ficha" onClick={(event) => { event.stopPropagation(); window.print() }}>⎙</button></footer>
                   </article>
                 ))}
               </div>
@@ -7228,12 +7737,17 @@ const selectedSkpeAccess =
               users={filteredUsers}
               selectedUserId={selectedUserId}
               onSelectUser={setSelectedUserId}
+              onOpenUser={(userId) => {
+                setSelectedUserId(userId)
+                setMaintenanceUserId(userId)
+                setUserDetailOpen(true)
+              }}
             />
             )}
           </div>
 
           <aside
-            className={`skpe-user-detail-card ${selectedUser ? 'skpe-user-detail-card-open' : ''}`}
+            className={`skpe-user-detail-card ${selectedUser && userDetailOpen ? 'skpe-user-detail-card-open' : ''}`}
             aria-label="Gestão do usuário selecionado"
           >
             {selectedUser ? (
@@ -7718,12 +8232,16 @@ export function SkpeCockpit({
   organizationId,
   organizationName,
   organizationCode,
+  workspaceOrganizations = [],
+  workspaceModules = [],
+  activeModuleCode = 'SK-PE',
+  onSwitchOrganization,
+  onSwitchModule,
   userRoleCode,
   userRoleName,
   isOrganizationAdmin,
   isPlatformSuperAdmin,
   mode = 'module',
-  applyPrimaryLanding = false,
   initialSection,
   onNavigateSection,
   onReturnToModules,
@@ -7774,6 +8292,30 @@ export function SkpeCockpit({
     initiativeId: string
     actionId: string | null
   } | null>(null)
+  const openRiskInitiativeByCode = async (riskCode: string) => {
+    const { data, error } = await supabase
+      .from('skpe_sparks_suggested_initiative_readiness')
+      .select('initiative_id,source_risk_codes')
+      .eq('organization_id', organizationId)
+      .contains('source_risk_codes', [riskCode])
+      .limit(1)
+
+    if (error || !data?.[0]?.initiative_id) {
+      navigateToSection('initiatives')
+      return
+    }
+
+    setInitiativeDrilldown({
+      initiativeId: String(data[0].initiative_id),
+      actionId: null,
+    })
+    navigateToSection('initiatives')
+  }
+
+  const [dashboardInitiativeDrilldown, setDashboardInitiativeDrilldown] = useState<{
+    filter: DashboardInitiativeFilter
+    requestKey: number
+  } | null>(null)
     const [measureDrilldown, setMeasureDrilldown] = useState<{
     objectiveId: string
     objectiveTitle: string
@@ -7781,14 +8323,14 @@ export function SkpeCockpit({
 const [startingProject, setStartingProject] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [personalWorkspaceOverlay, setPersonalWorkspaceOverlay] =
+  const [, setPersonalWorkspaceOverlay] =
     useState<'favorites' | 'dashboards' | 'notifications' | null>(null)
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
-  const [journeyRefreshRequestKey, setJourneyRefreshRequestKey] = useState(0)
-  const [initiativesRefreshRequestKey, setInitiativesRefreshRequestKey] = useState(0)
+  const [journeyRefreshRequestKey] = useState(0)
+  const [initiativesRefreshRequestKey] = useState(0)
   const [initiativesAnalyticsReturnRequestKey, setInitiativesAnalyticsReturnRequestKey] = useState(0)
-  const [monitoringRefreshRequestKey, setMonitoringRefreshRequestKey] = useState(0)
-  const [agendaRefreshRequestKey, setAgendaRefreshRequestKey] = useState(0)
+  const [monitoringRefreshRequestKey] = useState(0)
+  const [agendaRefreshRequestKey] = useState(0)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('sparks-theme') === 'dark' ? 'dark' : 'light'))
   const [capabilities, setCapabilities] = useState<SkpeCapabilities | null>(null)
   const [capabilitiesLoading, setCapabilitiesLoading] = useState(mode === 'module')
@@ -8143,21 +8685,50 @@ case 'monitoring':
             </div>
 
             <div className="skpe-sidebar-brand-text">
-              <strong>
-                {organizationProfile?.trade_name ?? organizationName}
-              </strong>
+              {mode === 'module' && workspaceOrganizations.length > 1 && onSwitchOrganization ? (
+                <select
+                  className="skpe-workspace-organization-select"
+                  aria-label="Selecionar organização"
+                  value={organizationId}
+                  onChange={(event) => void onSwitchOrganization(event.target.value)}
+                  title="Selecionar organização"
+                >
+                  {workspaceOrganizations.map((organization) => (
+                    <option key={organization.id} value={organization.id}>
+                      {organization.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <strong>
+                  {organizationProfile?.trade_name ?? organizationName}
+                </strong>
+              )}
             </div>
           </div>
 
-          <button
-            type="button"
-            className="skpe-sidebar-icon-button"
-            onClick={() => setSidebarCollapsed((value) => !value)}
-            aria-label={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}
-            title={sidebarCollapsed ? 'Expandir menu' : 'Comprimir menu'}
-          >
-            <SidebarToggleIcon collapsed={sidebarCollapsed} />
-          </button>
+          {mode === 'module' && workspaceModules.length > 0 ? (
+            <div className="skpe-workspace-module-switcher" aria-label="Módulos disponíveis">
+              {workspaceModules.map((module) => {
+                const tooltip = `${module.name}${module.description ? ` — ${module.description}` : ''}`
+                const isActive = module.code === activeModuleCode
+                return (
+                  <button
+                    key={module.code}
+                    type="button"
+                    className={isActive ? 'is-active' : ''}
+                    aria-pressed={isActive}
+                    title={tooltip}
+                    data-tooltip={tooltip}
+                    disabled={!module.available}
+                    onClick={() => module.available && onSwitchModule?.(module.code)}
+                  >
+                    {module.code}
+                  </button>
+                )
+              })}
+            </div>
+          ) : null}
         </div>
 
         <nav
@@ -8186,7 +8757,13 @@ case 'monitoring':
                 Visão Geral
               </button>
                             {canViewJourney ? (
-                <details className="skpe-nav-journey-disclosure">
+                <details
+                  className="skpe-nav-journey-disclosure"
+                  open={
+                    sidebarCollapsed ||
+                    ['journey', 'diagnosis', 'formulations'].includes(activeSection)
+                  }
+                >
                   <summary
                     className={
                       ['journey', 'diagnosis', 'formulations'].includes(
@@ -8213,7 +8790,8 @@ case 'monitoring':
                       }
                       onClick={() => navigateToSection('journey')}
                     >
-                      Jornada
+                      <JourneyIcon />
+                      <span>Jornada</span>
                     </button>
 
                     {canShowDiagnosis ? (
@@ -8226,7 +8804,8 @@ case 'monitoring':
                         }
                         onClick={() => navigateToSection('diagnosis')}
                       >
-                        Diagnóstico Estratégico
+                        <SearchIcon />
+                        <span>Diagnóstico Estratégico</span>
                       </button>
                     ) : null}
 
@@ -8240,7 +8819,8 @@ case 'monitoring':
                         }
                         onClick={() => navigateToSection('formulations')}
                       >
-                        Formulação Estratégica
+                        <StructureIcon />
+                        <span>Formulação Estratégica</span>
                       </button>
                     ) : null}
                   </div>
@@ -8258,23 +8838,6 @@ case 'monitoring':
               >
                 <InitiativesIcon />
                 Monitoramento
-              </button>
-
-
-              <button
-                type="button"
-                className={
-                  activeSection === 'administration'
-                    ? 'skpe-nav-active'
-                    : ''
-                }
-                onClick={() =>
-                  navigateToSection('administration')
-                }
-                title="Administração do SK-PE"
-               hidden={!canOpenAdministration}>
-                <AdministrationIcon />
-                <span>Administração do SK-PE</span>
               </button>
             </>
           ) : (
@@ -8396,14 +8959,23 @@ case 'monitoring':
         </div>
       </aside>
 
-      <main className="skpe-main">
+      <main className={`skpe-main ${mode === 'module' && activeSection === 'initiatives' ? 'skpe-main-initiatives' : ''}`}>
         <header
           className={`skpe-cockpit-header ${
             mode === 'organization-admin'
               ? 'skpe-cockpit-header-compact'
               : ''
-          }`}
+          } ${mode === 'module' && activeSection === 'initiatives' ? 'skpe-cockpit-header-initiatives' : ''}`}
         >
+          <button
+            type="button"
+            className="skpe-cockpit-icon-button skpe-cockpit-sidebar-toggle"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            aria-label={sidebarCollapsed ? 'Expandir menu principal' : 'Recolher menu principal'}
+            title={sidebarCollapsed ? 'Expandir menu principal' : 'Recolher menu principal'}
+          >
+            <SidebarToggleIcon collapsed={sidebarCollapsed} />
+          </button>
 
           <div
             className="skpe-cockpit-context"
@@ -8417,60 +8989,6 @@ case 'monitoring':
           </div>
 
           <div className="skpe-cockpit-actions">
-
-            {mode === 'module' && activeSection === 'journey' && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
-                onClick={() =>
-                  setJourneyRefreshRequestKey((current) => current + 1)
-                }
-                aria-label="Atualizar Jornada Estratégica"
-                title="Atualizar Jornada Estratégica"
-              >
-                <RefreshIcon />
-              </button>
-            )}
-
-            {mode === 'module' && activeSection === 'initiatives' && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
-                onClick={() =>
-                  setInitiativesRefreshRequestKey((current) => current + 1)
-                }
-                aria-label="Atualizar Painel de Iniciativas"
-                title="Atualizar Painel de Iniciativas"
-              >
-                <RefreshIcon />
-              </button>
-            )}
-            {mode === 'module' && activeSection === 'monitoring' && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
-                onClick={() =>
-                  setMonitoringRefreshRequestKey((current) => current + 1)
-                }
-                aria-label="Atualizar Monitoramento"
-                title="Atualizar Monitoramento"
-              >
-                <RefreshIcon />
-              </button>
-            )}
-            {mode === 'module' && activeSection === 'agenda' && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button skpe-cockpit-refresh-button"
-                onClick={() =>
-                  setAgendaRefreshRequestKey((current) => current + 1)
-                }
-                aria-label="Atualizar Agenda"
-                title="Atualizar Agenda"
-              >
-                <RefreshIcon />
-              </button>
-            )}
             {mode === 'module' && canViewAgenda && (
               <button
                 type="button"
@@ -8506,19 +9024,6 @@ case 'monitoring':
                       : unreadNotificationCount}
                   </span>
                 )}
-              </button>
-            )}
-
-
-            {isPlatformSuperAdmin && onOpenPlatformAdmin && (
-              <button
-                type="button"
-                className="skpe-cockpit-icon-button"
-                onClick={onOpenPlatformAdmin}
-                aria-label="Administração da Plataforma"
-                title="Administração da Plataforma"
-              >
-                <AdministrationIcon />
               </button>
             )}
 
@@ -8598,11 +9103,40 @@ case 'monitoring':
                         : 'Aparência: usar modo claro'}
                     </button>
 
+                    {isPlatformSuperAdmin && onOpenPlatformAdmin && (
+                      <>
+                        <div className="skpe-user-menu-section-label">
+                          PLATAFORMA
+                        </div>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            onOpenPlatformAdmin()
+                          }}
+                        >
+                          Administração da Plataforma
+                        </button>
+                      </>
+                    )}
                     {mode === 'module' && (
                       <>
                         <div className="skpe-user-menu-section-label">
                           PLANEJAMENTO ESTRATÉGICO · SK-PE
                         </div>
+                        {canOpenAdministration && (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setUserMenuOpen(false)
+                              navigateToSection('administration')
+                            }}
+                          >
+                            Administração do SK-PE
+                          </button>
+                        )}
 
                         <button
                           type="button"
@@ -8715,28 +9249,23 @@ case 'monitoring':
             </nav>
           )}
 
-        {activeSection ===
-          'overview' && (
+        {activeSection === 'overview' && (
           <OverviewSection
             organizationId={organizationId}
-            organizationName={organizationProfile?.trade_name ?? organizationName}
-            organizationCode={organizationCode}
             projectContext={projectContext}
             canManageJourney={canManageJourney}
-            canViewOverview={canViewOverview}
-            canViewJourney={canViewJourney}
-            canViewInitiatives={canViewInitiatives}
-            canViewArtifacts={canViewArtifacts}
-            canViewGovernance={canViewGovernance}
-            applyPrimaryLanding={applyPrimaryLanding}
             startingProject={startingProject}
             onStartProject={() => void startStrategicProject()}
+            canAdjustStrategicMap={canManageGovernance}
             onNavigate={navigateToSection}
-            personalWorkspaceOverlay={personalWorkspaceOverlay}
-            onClosePersonalWorkspaceOverlay={() =>
-              setPersonalWorkspaceOverlay(null)
-            }
-            onUnreadNotificationCountChange={setUnreadNotificationCount}
+            onInitiativeDrilldown={(filter) => {
+              setInitiativeDrilldown(null)
+              setDashboardInitiativeDrilldown({
+                filter,
+                requestKey: Date.now(),
+              })
+              navigateToSection('initiatives')
+            }}
           />
         )}
 
@@ -8746,6 +9275,9 @@ case 'monitoring':
             <StrategicDiagnosisSection
               organizationId={organizationId}
               projectId={projectContext.project_id}
+              onOpenRiskInitiative={(riskCode) => {
+                void openRiskInitiativeByCode(riskCode)
+              }}
             />
           )}
 
@@ -8835,6 +9367,8 @@ case 'monitoring':
             organizationId={
               organizationId
             }
+            organizationName={organizationName}
+            projectContext={projectContext}
             canManageCanvas={
               canManageCanvas
             }
@@ -8847,6 +9381,8 @@ case 'monitoring':
             drilldownTarget={initiativeDrilldown}
             refreshRequestKey={initiativesRefreshRequestKey}
             analyticsReturnRequestKey={initiativesAnalyticsReturnRequestKey}
+            dashboardDrilldown={dashboardInitiativeDrilldown}
+            onDashboardDrilldownConsumed={() => setDashboardInitiativeDrilldown(null)}
             JourneyIcon={JourneyIcon}
             MonitoringIcon={MonitoringIcon}
             canViewJourney={canViewJourney}

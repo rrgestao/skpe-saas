@@ -581,3 +581,83 @@
 .initiative-kanban-icon-action{width:44px;height:44px;display:inline-grid;place-items:center;border:1px solid #c5d6cf;border-radius:12px;background:#fff;color:#126448;cursor:pointer}
 .initiative-kanban-icon-action:hover{background:#eaf5f0;border-color:#6aa58d}
 .initiative-kanban-icon-action svg{width:23px;height:23px}
+/* UX-KANBAN-04 - explicit horizontal navigation + admin accent */
+.initiative-kanban-scroll-controls {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.35rem;
+}
+
+.initiative-kanban-scroll-controls span {
+  color: #68766f;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.initiative-kanban-scroll-controls button {
+  min-width: 34px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 28%%, white);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 8%%, white);
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+}
+
+.initiative-kanban-scroll-controls button:hover,
+.initiative-kanban-scroll-controls button:focus-visible {
+  background: var(--organization-primary, var(--sparks-accent, #176b53));
+  border-color: var(--organization-primary, var(--sparks-accent, #176b53));
+  color: #fff;
+  outline: none;
+}
+
+.initiative-kanban-horizontal-scroll-top > div {
+  width: 84rem;
+}
+
+.initiative-kanban-workspace-viewport {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.initiative-kanban-card__progress progress {
+  accent-color: var(--organization-accent, var(--organization-primary, var(--sparks-accent, #176b53)));
+}
+
+.initiative-kanban-card__progress progress::-webkit-progress-value {
+  background: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.initiative-kanban-card__progress progress::-moz-progress-bar {
+  background: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.skpe-initiative-kanban-host .initiative-kanban-icon-action {
+  border-color: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 28%%, white);
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.skpe-initiative-kanban-host .initiative-kanban-icon-action:hover {
+  background: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 8%%, white);
+  border-color: var(--organization-primary, var(--sparks-accent, #176b53));
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.initiative-kanban-scroll-controls {
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+}
+
+.initiative-kanban-scroll-controls__closed {
+  width: auto !important;
+  padding: 0 0.65rem;
+  white-space: nowrap;
+}
+
+#initiative-closed-actions {
+  scroll-margin-top: 120px;
+}

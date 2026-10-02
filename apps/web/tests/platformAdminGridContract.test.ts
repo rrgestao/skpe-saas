@@ -47,10 +47,10 @@ test('atalho de voltar ao topo só aparece depois de rolagem real', () => {
   assert.match(platformAdmin, /<path d="M5 15\.5 12 8l7 7\.5"/)
 })
 
-test('grid inicia como padrão e respeita preferência persistida por aba', () => {
+test('telas de manutenção sempre iniciam no grid canônico', () => {
   assert.match(platformAdmin, /useState<ViewMode>\('grid'\)/)
-  assert.match(platformAdmin, /sparks\.platform-admin\.view-mode\.\$\{activeTab\}/)
-  assert.match(platformAdmin, /allowed\.includes\(stored as ViewMode\) \? stored as ViewMode : 'grid'/)
+  assert.match(platformAdmin, /useEffect\(\(\) => \{\s*setViewMode\('grid'\)/)
+  assert.doesNotMatch(platformAdmin, /allowed\.includes\(stored as ViewMode\)/)
 })
 
 test('um clique seleciona e duplo clique abre manutenção', () => {

@@ -82,3 +82,27 @@ FUTURE:
 ## Exceptions
 
 `main` and `preserve/skpe-saas-legitimate-local-work` remain logically protected because they contain unique historical assets. They must not be removed, rewritten, or automatically converged by this gate.
+
+## Supersession note — 2026-09-16
+
+The repository-role decision above remains historical evidence of the 2026-09-07 gate, but is superseded from 2026-09-16 where it conflicts with the current Product/operational authority.
+
+Current authority:
+
+- active development authority: the authorized local worktree;
+- primary remote: `rrgestao/skpe-saas`;
+- secondary reconciliation remote: `sparkooptech/skpe-saas`;
+- legitimate, more advanced work found in the secondary remote must be evaluated and reconciled rather than discarded;
+- no remote automatically overrides newer legitimate local work.
+
+The 11–13/09/2026 interval is a critical reconciliation window because remote/main references were changed during that period. Agents must not use the earlier `sparkooptech-only` rule to erase or override work from this interval.
+
+This supersession does not authorize force-push, destructive reset, automatic merge, database migration, production deployment or branch rewriting.
+
+`REPOSITORY_AUTHORITY_EFFECTIVE_FROM=2026-09-16`
+
+`LOCAL_DEVELOPMENT_AUTHORITY=YES`
+
+`PRIMARY_REMOTE=rrgestao/skpe-saas`
+
+`SECONDARY_RECONCILIATION_REMOTE=sparkooptech/skpe-saas`

@@ -24,11 +24,14 @@ function findScrollableElement(
     : shell.scrollHeight - shell.clientHeight
 
   for (const candidate of candidates) {
+    const style = window.getComputedStyle(candidate)
+    const overflow = horizontal ? style.overflowX : style.overflowY
+    const canScroll = overflow === 'auto' || overflow === 'scroll'
     const range = horizontal
       ? candidate.scrollWidth - candidate.clientWidth
       : candidate.scrollHeight - candidate.clientHeight
 
-    if (range > bestRange + 2) {
+    if (canScroll && range > bestRange + 2) {
       best = candidate
       bestRange = range
     }
@@ -39,7 +42,7 @@ function findScrollableElement(
 
 export function SparksGridNavigator() {
   const rootRef = useRef<HTMLDivElement>(null)
-  const [availability, setAvailability] = useState({
+  const [, setAvailability] = useState({
     up: false,
     down: false,
     left: false,
@@ -58,8 +61,8 @@ export function SparksGridNavigator() {
     const shell = resolveShell()
     if (!shell) return
 
-    const vertical = findScrollableElement(shell, 'down')
     const horizontal = findScrollableElement(shell, 'right')
+    const vertical = findScrollableElement(shell, 'down')
     const epsilon = 3
 
     setAvailability({
@@ -80,29 +83,18 @@ export function SparksGridNavigator() {
       if (!shell) return
 
       const target = findScrollableElement(shell, direction)
-      const horizontal =
-        direction === 'left' || direction === 'right'
+      const horizontal = direction === 'left' || direction === 'right'
       const amount = horizontal
-        ? Math.max(240, Math.round(target.clientWidth * 0.72))
-        : Math.max(160, Math.round(target.clientHeight * 0.58))
+        ? Math.max(180, Math.round(target.clientWidth * 0.65))
+        : Math.max(120, Math.round(target.clientHeight * 0.55))
 
       target.scrollBy({
-        left:
-          direction === 'left'
-            ? -amount
-            : direction === 'right'
-              ? amount
-              : 0,
-        top:
-          direction === 'up'
-            ? -amount
-            : direction === 'down'
-              ? amount
-              : 0,
+        left: horizontal ? (direction === 'right' ? amount : -amount) : 0,
+        top: horizontal ? 0 : (direction === 'down' ? amount : -amount),
         behavior: 'smooth',
       })
 
-      window.setTimeout(refreshAvailability, 220)
+      window.setTimeout(refreshAvailability, 260)
     },
     [refreshAvailability, resolveShell],
   )
@@ -150,7 +142,6 @@ export function SparksGridNavigator() {
         type="button"
         className="sparks-grid-navigator__button sparks-grid-navigator__button--up"
         onClick={() => move('up')}
-        disabled={!availability.up}
         title="Rolar grid para cima"
         aria-label="Rolar grid para cima"
       >
@@ -161,7 +152,6 @@ export function SparksGridNavigator() {
         type="button"
         className="sparks-grid-navigator__button sparks-grid-navigator__button--left"
         onClick={() => move('left')}
-        disabled={!availability.left}
         title="Rolar grid para a esquerda"
         aria-label="Rolar grid para a esquerda"
       >
@@ -177,7 +167,6 @@ export function SparksGridNavigator() {
         type="button"
         className="sparks-grid-navigator__button sparks-grid-navigator__button--right"
         onClick={() => move('right')}
-        disabled={!availability.right}
         title="Rolar grid para a direita"
         aria-label="Rolar grid para a direita"
       >
@@ -188,7 +177,6 @@ export function SparksGridNavigator() {
         type="button"
         className="sparks-grid-navigator__button sparks-grid-navigator__button--down"
         onClick={() => move('down')}
-        disabled={!availability.down}
         title="Rolar grid para baixo"
         aria-label="Rolar grid para baixo"
       >

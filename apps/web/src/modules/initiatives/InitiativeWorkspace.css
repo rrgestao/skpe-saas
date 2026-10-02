@@ -372,3 +372,129 @@
   border-radius: 14px;
   background: #fff;
 }
+
+/* INITIATIVE-WORKSPACE-UX-07 - same accent contract as Platform Admin */
+.skpe-initiative-kanban-host {
+  --sparks-accent: var(--organization-secondary, #176b53);
+  --sparks-accent-soft: color-mix(in srgb, var(--organization-secondary, #176b53) 10%, white);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.skpe-initiative-kanban-host .sparks-workspace-tabs [aria-selected='true'] {
+  color: var(--sparks-accent-strong, var(--organization-primary, #115541));
+}
+
+.skpe-initiative-economic-panel,
+.skpe-initiative-economic-panel-body,
+.skpe-initiative-economic-panel-body > * {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* INITIATIVE-ECONOMICS-UX-08 - cards internos nunca viram drawer global */
+.skpe-initiative-economic-panel-body .skpe-initiative-form-card {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 1px solid #dce5e1 !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  box-shadow: 0 8px 25px rgba(25, 44, 37, 0.05) !important;
+  animation: none !important;
+  padding: 1rem !important;
+}
+
+.skpe-initiative-economic-panel-body .skpe-initiative-form-card > .skpe-card-heading {
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-bottom: 0 !important;
+}
+
+.skpe-initiative-economic-panel-body .skpe-initiative-form-card .skpe-initiative-form-actions {
+  position: static !important;
+  margin: 1rem 0 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+  background: transparent !important;
+}
+
+.skpe-initiative-economic-panel-body .skpe-initiative-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.skpe-initiative-economic-panel-body .skpe-form-field-full {
+  grid-column: 1 / -1 !important;
+}
+
+@media (max-width: 900px) {
+  .skpe-initiative-economic-panel-body .skpe-initiative-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .skpe-initiative-economic-panel-body .skpe-form-field-full {
+    grid-column: auto !important;
+  }
+}
+
+/* INITIATIVE-WORKSPACE ICON CONTRACT */
+.skpe-object-workspace-actions--borderless {
+  gap: 0.35rem;
+}
+
+.skpe-object-workspace-icon-link {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--skpe-primary, #176b53);
+  cursor: pointer;
+}
+
+.skpe-object-workspace-icon-link:hover,
+.skpe-object-workspace-icon-link:focus-visible {
+  background: var(--skpe-soft, #eef6f2);
+  outline: none;
+}
+
+.skpe-object-workspace-icon-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Initiative workspace footer and return action */
+.skpe-initiative-workspace-footer {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0.75rem 0 0.25rem;
+}
+
+.skpe-initiative-return-button {
+  min-height: 36px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--sparks-accent-strong, #2f7f69);
+  border-radius: 10px;
+  background: var(--sparks-accent-soft, #e7f3ee);
+  color: var(--sparks-accent-strong, #2f7f69);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skpe-initiative-return-button:hover,
+.skpe-initiative-return-button:focus-visible {
+  background: var(--sparks-accent-hover, #d8ece4);
+  outline: none;
+}

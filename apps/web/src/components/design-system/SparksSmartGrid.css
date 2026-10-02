@@ -5,8 +5,12 @@
    sticky header, navegação, duplo clique e menu contextual opcional. */
 
 .sparks-smart-grid-block {
+  --sparks-grid-accent: var(--sparks-accent, var(--organization-secondary, #176b53));
+  --sparks-grid-accent-soft: var(--sparks-accent-soft, #eef7f3);
   width: 100%;
   min-width: 0;
+  position: relative;
+  overflow: visible;
 }
 
 .sparks-smart-grid {
@@ -16,7 +20,8 @@
   max-height: min(58vh, 640px);
   min-height: 320px;
   position: relative;
-  overflow: hidden !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
   border: 1px solid var(--skpe-border, #d7e2dd);
   border-radius: 0.8rem;
   background: var(--skpe-surface, #fff);
@@ -76,7 +81,7 @@
   background:
     color-mix(
       in srgb,
-      var(--organization-primary, var(--sparks-accent, #176b53)) 14%,
+      var(--sparks-grid-accent) 10%,
       white
     ) !important;
   color: #18352c !important;
@@ -204,15 +209,12 @@
   background:
     color-mix(
       in srgb,
-      var(--organization-primary, var(--sparks-accent, #176b53)) 13%,
+      var(--sparks-grid-accent) 13%,
       white
     ) !important;
   box-shadow:
     inset 4px 0 0
-      var(
-        --organization-accent,
-        var(--organization-primary, var(--sparks-accent, #176b53))
-      ) !important;
+      var(--sparks-grid-accent) !important;
 }
 
 @media (max-width: 860px) {
@@ -335,3 +337,87 @@
   min-width: 0;
   overflow-x: auto;
 }
+
+/* GRID-CANON-05 - Golden rules: density and horizontal reading.
+   Rows do not grow automatically to fit cell content. Columns stay resizable;
+   overflow is truncated and may be exposed by tooltip where configured. */
+.sparks-smart-grid :where([role="gridcell"], .wx-cell[role="cell"]) {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.sparks-smart-grid :where([role="gridcell"], .wx-cell[role="cell"]) > * {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* GRID-CANON-06 - preserve the official SVAR resize grip. */
+.sparks-smart-grid [role="columnheader"] {
+  overflow: visible !important;
+}
+.sparks-smart-grid .wx-grip {
+  z-index: 120 !important;
+  cursor: col-resize !important;
+}
+
+/* GRID-CANON-07 - seleção visual sob autoridade do SparksSmartGrid. */
+.sparks-smart-grid .sparks-smart-grid__row-selected,
+.sparks-smart-grid .sparks-smart-grid__row-selected > *,
+.sparks-smart-grid .sparks-smart-grid__row-selected [role="gridcell"] {
+  background: color-mix(
+    in srgb,
+    var(--sparks-grid-accent) 10%,
+    white
+  ) !important;
+}
+
+.sparks-smart-grid .sparks-smart-grid__row-selected {
+  box-shadow: inset 4px 0 0
+    var(--organization-accent, var(--organization-primary, var(--sparks-accent, #176b53))) !important;
+}
+
+/* GRID-CANON-08 - impedir seleção de texto sem bloquear interação do GRID. */
+.sparks-smart-grid :where(.wx-table-body, .wx-grid-body, [class*='table-body'], [class*='grid-body']) {
+  user-select: none;
+}
+
+/* GRID-CANON-09 — navigator belongs to the canonical component. */
+.sparks-smart-grid-block .sparks-grid-navigator {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  z-index: 240;
+  width: 62px;
+  height: 62px;
+  display: grid;
+  grid-template-columns: repeat(3, 20px);
+  grid-template-rows: repeat(3, 20px);
+  place-items: center;
+  padding: 1px;
+  border: 1px solid color-mix(in srgb, var(--sparks-grid-accent) 26%, #d7e2dd);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(25, 44, 37, 0.10);
+  backdrop-filter: blur(5px);
+}
+.sparks-smart-grid-block .sparks-grid-navigator__button {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--sparks-grid-accent);
+}
+
+/* GRID-CANON-10 — cruz direcional real. */
+.sparks-smart-grid-block .sparks-grid-navigator__button--up { grid-column: 2; grid-row: 1; }
+.sparks-smart-grid-block .sparks-grid-navigator__button--left { grid-column: 1; grid-row: 2; }
+.sparks-smart-grid-block .sparks-grid-navigator__center { grid-column: 2; grid-row: 2; width: 7px; height: 7px; border-radius: 999px; background: color-mix(in srgb, var(--sparks-grid-accent) 42%, white); }
+.sparks-smart-grid-block .sparks-grid-navigator__button--right { grid-column: 3; grid-row: 2; }
+.sparks-smart-grid-block .sparks-grid-navigator__button--down { grid-column: 2; grid-row: 3; }

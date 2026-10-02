@@ -316,8 +316,13 @@ export function InitiativeEconomicExecutionDialog({
       >
         <div className="skpe-card-heading skpe-initiative-economic-dialog-header">
           <div>
+            {presentation === 'panel' ? (
+              <button type="button" className="skpe-workspace-back-button" onClick={onClose}>
+                ← Voltar ao Kanban
+              </button>
+            ) : null}
             <p className="skpe-card-code">{initiativeCode}</p>
-            <h2 id="skpe-initiative-economic-title">Custos e esforço</h2>
+            <h2 id="skpe-initiative-economic-title">Orçamento e execução da iniciativa</h2>
             <p>{initiativeName}</p>
           </div>
                     {presentation === 'dialog' ? (
@@ -327,15 +332,17 @@ export function InitiativeEconomicExecutionDialog({
               onClick={onClose}
               disabled={saving}
             />
-          ) : null}
-        </div>
-
-        <div className="skpe-admin-state-card">
-          <strong>Fronteira do controle</strong>
-          <p>
-            Esta visão acompanha execução gerencial. Não substitui contabilidade,
-            orçamento corporativo, contas a pagar/receber nem futura integração financeira.
-          </p>
+          ) : (
+            <button
+              type="button"
+              className="skpe-workspace-back-button"
+              onClick={onClose}
+              disabled={saving}
+            >
+              <span aria-hidden="true">←</span>
+              <span>Plano de Ação</span>
+            </button>
+          )}
         </div>
 
         {message && (
@@ -353,8 +360,8 @@ export function InitiativeEconomicExecutionDialog({
             <section className="skpe-initiative-form-card">
               <div className="skpe-card-heading">
                 <div>
-                  <p className="skpe-card-code">Valores diretos da iniciativa</p>
-                  <h3>Planejado × realizado</h3>
+                  <p className="skpe-card-code">Orçamento e execução da iniciativa</p>
+                  <h3>Orçamento da iniciativa × realizado</h3>
                 </div>
               </div>
 
@@ -380,7 +387,10 @@ export function InitiativeEconomicExecutionDialog({
               <div className="skpe-initiative-form-grid">
                 <label><span>Custo planejado</span><input inputMode="decimal" value={plannedCost} onChange={(event) => setPlannedCost(event.target.value)} disabled={!editable} /></label>
                 <label><span>Custo realizado</span><input inputMode="decimal" value={actualCost} onChange={(event) => setActualCost(event.target.value)} disabled={!editable} /></label>
-                <label><span>Moeda</span><input value={currencyCode} maxLength={3} onChange={(event) => setCurrencyCode(event.target.value.toUpperCase())} disabled={!editable} /></label>
+                <label><span>Moeda</span><input value={currencyDisplayLabel(currencyCode)} maxLength={3} onChange={(event) => {
+                  const value = event.target.value.trim().toUpperCase()
+                  setCurrencyCode(value === 'R$' ? 'BRL' : value)
+                }} disabled={!editable} /></label>
                 <label><span>Esforço estimado</span><input inputMode="decimal" value={estimatedEffort} onChange={(event) => setEstimatedEffort(event.target.value)} disabled={!editable} /></label>
                 <label><span>Esforço realizado</span><input inputMode="decimal" value={actualEffort} onChange={(event) => setActualEffort(event.target.value)} disabled={!editable} /></label>
                 <label>

@@ -86,9 +86,10 @@
 .sparks-user-grid__identity {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.55rem;
   min-width: 0;
-  padding: 0.28rem 0;
+  height: 30px;
+  padding: 0;
 }
 
 .sparks-user-grid__avatar {
@@ -123,49 +124,7 @@
   scrollbar-gutter: stable both-edges;
 }
 
-.sparks-user-grid :where(
-  .wx-grid-header,
-  .wx-grid-head,
-  .wx-grid-header-row,
-  .wx-grid-header-cell,
-  .wx-header,
-  .wx-header-row,
-  .wx-header-cell,
-  [class*='grid-header']
-) {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 30 !important;
-  background: var(--skpe-surface, #ffffff) !important;
-}
 
-.sparks-user-grid .sparks-data-explorer-header-main {
-  position: relative;
-  z-index: 31;
-  background:
-    color-mix(
-      in srgb,
-      var(--organization-primary, var(--sparks-accent, #176b53)) 9%,
-      white
-    ) !important;
-}
-
-.sparks-user-grid :where(
-  [aria-selected='true'],
-  [data-selected='true'],
-  .wx-selected,
-  .wx-row-selected
-) {
-  background:
-    color-mix(
-      in srgb,
-      var(--organization-primary, var(--sparks-accent, #176b53)) 13%,
-      white
-    ) !important;
-  box-shadow:
-    inset 4px 0 0
-      var(
-        --organization-accent,
-        var(--organization-primary, var(--sparks-accent, #176b53))
-      ) !important;
-}
+/* GRID-CANON avatar fits compact row without increasing row height */
+.sparks-user-grid__identity { padding: 0 !important; }
+.sparks-user-grid__avatar { width: 24px !important; height: 24px !important; flex-basis: 24px !important; border-radius: 7px !important; }

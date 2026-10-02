@@ -210,7 +210,7 @@
 
 :root[data-sparks-theme='dark'] .wx-row.wx-selected .wx-cell,
 :root[data-sparks-theme='dark'] .wx-cell.wx-selected {
-  background: rgba(111,195,166,0.17) !important;
+  background: rgba(255,90,31,0.18) !important;
 }
 
 /* ---------- conta ---------- */

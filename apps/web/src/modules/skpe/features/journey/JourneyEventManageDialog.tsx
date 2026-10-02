@@ -123,7 +123,7 @@ const lifecycleTargets: Record<EventLifecycle, EventLifecycle[]> = {
 const lifecycleLabels: Record<EventLifecycle, string> = {
   draft: 'Rascunho',
   scheduled: 'Agendado',
-  in_progress: 'Em andamento',
+  in_progress: 'Andamento',
   completed: 'Conclu\u00eddo',
   cancelled: 'Cancelado',
   archived: 'Arquivado',

@@ -379,3 +379,204 @@
 .sparks-initiative-portfolio-grid [role="columnheader"]:nth-child(10) {
   text-align: center !important;
 }
+/* GRID-CANON initiative maintenance frame: desktop side panel */
+.skpe-initiative-operational-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  column-gap: 1rem !important;
+}
+
+.skpe-initiative-operational-layout__grid {
+  grid-column: 1 !important;
+  min-width: 0 !important;
+}
+
+.skpe-initiative-detail-frame {
+  grid-column: 2 !important;
+  position: sticky !important;
+  top: 0.75rem !important;
+  width: clamp(320px, 31vw, 430px) !important;
+  max-height: calc(100vh - 110px) !important;
+  overflow: auto !important;
+  align-self: start !important;
+  border: 1px solid var(--skpe-border, #d7e2dd) !important;
+  border-radius: 14px !important;
+  background: var(--skpe-surface, #fff) !important;
+  box-shadow: 0 12px 28px rgba(25, 44, 37, 0.12) !important;
+  padding: 1rem !important;
+  z-index: 16 !important;
+}
+
+/* Initiative detail frame usability */
+.skpe-initiative-detail-frame__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.skpe-initiative-detail-frame__close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--skpe-border, #d7e2dd);
+  border-radius: 8px;
+  background: #fff;
+  color: #29443a;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.skpe-initiative-detail-frame__facts {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.skpe-initiative-detail-frame__facts article {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.4fr);
+  align-items: baseline;
+  gap: 0.65rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(215, 226, 221, 0.72);
+}
+
+.skpe-initiative-detail-frame__facts small,
+.skpe-initiative-detail-frame__description small {
+  color: var(--skpe-text-muted, #68766f);
+  font-weight: 700;
+}
+
+.skpe-initiative-detail-frame__facts strong {
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.skpe-initiative-draft-review {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--skpe-border, #d7e2dd);
+  border-radius: 10px;
+  background: #f8fbfa;
+}
+
+.skpe-initiative-draft-review.is-loading {
+  color: var(--skpe-text-muted, #68766f);
+}
+
+.skpe-initiative-draft-review.is-error {
+  border-color: #e4aaa5;
+  background: #fff4f2;
+  color: #9d2f27;
+}
+
+.skpe-initiative-draft-review__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skpe-initiative-draft-review__heading > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.skpe-initiative-draft-review__heading > span {
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  background: #e8f3ee;
+  color: #176b53;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.skpe-initiative-draft-review dl {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.skpe-initiative-draft-review dl > div {
+  display: grid;
+  grid-template-columns: minmax(95px, 0.7fr) minmax(0, 1.3fr);
+  gap: 0.65rem;
+}
+
+.skpe-initiative-draft-review dt {
+  color: var(--skpe-text-muted, #68766f);
+  font-size: 0.74rem;
+}
+
+.skpe-initiative-draft-review dd,
+.skpe-initiative-draft-review p {
+  margin: 0;
+}
+
+/* 2026-09-14 - draft review as an editable initiative frame */
+.skpe-initiative-draft-review__form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.skpe-initiative-draft-review__form label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.skpe-initiative-draft-review__form label > span {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--skpe-text-muted, #68766f);
+}
+
+.skpe-initiative-draft-review__form input,
+.skpe-initiative-draft-review__form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--skpe-border, #d8e1dd);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+}
+
+.skpe-initiative-draft-review__form label.is-pending > span {
+  color: #b93818;
+}
+
+.skpe-initiative-draft-review__form label.is-pending textarea {
+  border-color: #ff8a5c;
+  background: #fff8f5;
+}
+
+.skpe-initiative-draft-review__form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+/* GRID-CANON-11 - explorer keeps full grid width; detail opens as overlay drawer. */
+.skpe-initiative-operational-layout--overlay-detail {
+  display: block !important;
+  position: relative !important;
+}
+.skpe-initiative-operational-layout--overlay-detail .skpe-initiative-operational-layout__grid {
+  width: 100% !important;
+}
+.skpe-initiative-operational-layout--overlay-detail .skpe-initiative-detail-frame {
+  position: absolute !important;
+  top: 82px !important;
+  right: 0 !important;
+  bottom: auto !important;
+  width: clamp(320px, 32vw, 430px) !important;
+  max-height: calc(100vh - 190px) !important;
+  z-index: 420 !important;
+}

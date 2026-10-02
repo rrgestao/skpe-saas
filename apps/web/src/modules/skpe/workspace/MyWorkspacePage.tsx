@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import {
-  EmptyState,
-  MetricCard,
-} from '../../../components/design-system'
 import { supabase } from '../../../lib/supabase'
 import { FavoriteButton } from './FavoriteButton'
 import { MyDecisionsPanel } from './MyDecisionsPanel'
@@ -277,14 +273,10 @@ function getFavoriteDashboardIds(
 
 export function MyWorkspacePage({
   organizationId,
-  organizationCode,
   project,
   availableContext,
   capabilities,
   applyPrimaryLanding = false,
-  canStartProject,
-  startingProject,
-  onStartProject,
   onNavigate,
   personalWorkspaceOverlay = null,
   onClosePersonalWorkspaceOverlay,
@@ -747,108 +739,18 @@ export function MyWorkspacePage({
 
   return (
     <>
-      <section className="skpe-page-heading skpe-overview-heading">
-        <div>
-          <p className="skpe-eyebrow">Meu Espaço de Trabalho</p>
-          <h1 className="skpe-overview-title">
-            Planejamento Estratégico
-            {project?.strategicHorizon
-              ? ` ${project.strategicHorizon.replace(/[–-]/g, ' - ')}`
-              : ''}
-          </h1>
-
-        </div>
-
-
-      </section>
-
-
-
-      {project ? (
-        <section
-          className="skpe-kpi-grid"
-          aria-label="Síntese do projeto estratégico"
-        >
-          <MetricCard
-            label="Avanço geral estimado"
-            value={`${project.progress.toLocaleString('pt-BR', {
-              maximumFractionDigits: 1,
-            })}%`}
-            footer={
-              <button
-                type="button"
-                className="skpe-card-link-button"
-                onClick={() => onNavigate('journey')}
-              >
-                Abrir Jornada Estratégica
-              </button>
-            }
-          />
-
-          <MetricCard
-            label="Etapa atual"
-            value={project.currentPhaseName ?? project.currentPhaseCode}
-            helper={
-              project.currentPhaseName
-                ? `${project.currentPhaseCode} · ${project.statusLabel}`
-                : project.statusLabel
-            }
-          />
-
-          <MetricCard
-            label="Horizonte estratégico"
-            value={project.strategicHorizon}
-            footer={
-              <button
-                type="button"
-                className="skpe-card-link-button"
-                onClick={() => onNavigate('governance')}
-              >
-                {project.reviewCycle}
-              </button>
-            }
-          />
-        </section>
-      ) : (
-        <EmptyState
-          title="Jornada ainda não iniciada"
-          description={
-            <>
-              Não existe um projeto estratégico ativo para esta organização.
-              Nenhum dado de outra organização será usado como preenchimento
-              alternativo. Organização: {organizationCode}.
-            </>
-          }
-          action={
-            canStartProject ? (
-              <button
-                type="button"
-                className="skpe-primary-button"
-                disabled={startingProject}
-                onClick={onStartProject}
-              >
-                {startingProject
-                  ? 'Iniciando jornada...'
-                  : 'Iniciar Jornada Estratégica'}
-              </button>
-            ) : undefined
-          }
-        />
-      )}
-
       <section
         className="skpe-personal-responsibilities-master"
         aria-labelledby="personal-responsibilities-title"
       >
         <header className="skpe-personal-responsibilities-master-heading">
           <div>
-            <p className="skpe-card-code">Meu trabalho</p>
             <h2 id="personal-responsibilities-title">
               Responsabilidades Pessoais
             </h2>
             <p>
               Acompanhe o que exige sua atenção, medição, execução ou decisão
-              no contexto estratégico atual.
+              nas organizações e módulos aos quais você possui acesso.
             </p>
           </div>
 

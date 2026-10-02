@@ -422,4 +422,119 @@
   .skpe-project-plan-binding-kpis {
     justify-content: flex-start;
   }
+}.skpe-project-plan-binding-open {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+  max-width: 320px;
 }
+
+.skpe-project-plan-binding-open small {
+  color: #66776f;
+  font-size: 0.66rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.skpe-project-plan-callout.is-guidance {
+  border: 1px solid #d7e5df;
+  border-radius: 12px;
+  background: #f5faf8;
+}
+
+.skpe-project-resource-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.skpe-project-resource-actions button {
+  min-height: 40px;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #176b53;
+  border-radius: 9px;
+  background: #176b53;
+  color: #ffffff;  font-weight: 800;
+  cursor: pointer;
+}
+
+.skpe-project-resource-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 900px) {
+  .skpe-project-plan-binding-open {
+    justify-items: start;
+    max-width: none;
+  }
+
+  .skpe-project-plan-binding-open small {
+    text-align: left;
+  }
+}
+/* SPARKS JOURNEY PROJECT PLAN VISUAL V1 */
+.skpe-project-plan-hero,
+.skpe-project-plan-panel,
+.skpe-project-plan-context-strip,
+.skpe-project-plan-stages {
+  border-color: var(--sparks-border, #dbe6e1);
+  border-radius: var(--sparks-radius-card, 14px);
+  background: var(--sparks-surface, #fff);
+  box-shadow: var(--sparks-shadow-card, 0 5px 18px rgba(25,44,37,.045));
+}
+
+.skpe-project-plan-hero {
+  padding: 1.05rem 1.1rem;
+}
+
+.skpe-project-plan-hero h2,
+.skpe-project-plan-panel h3 {
+  color: var(--sparks-text, #18251f);
+  letter-spacing: -0.02em;
+}
+
+.skpe-project-plan-hero p,
+.skpe-project-plan-panel-heading p {
+  color: var(--sparks-text-muted, #6b7b74);
+}
+
+.skpe-project-plan-window span {
+  border-color: var(--sparks-border, #dbe6e1);
+  border-radius: var(--sparks-radius-control, 10px);
+  background: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 5%, white);
+}
+
+.skpe-project-plan-window strong,
+.skpe-project-plan-kpis strong {
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.skpe-project-plan-stages button.is-active {
+  background: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 9%, white);
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.skpe-project-plan-stages button.is-active > small {
+  border-color: var(--organization-primary, var(--sparks-accent, #176b53));
+  background: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+
+.skpe-project-plan-panel {
+  padding: 1rem 1.1rem;
+}
+
+.skpe-project-scope-list article,
+.skpe-project-team-grid article,
+.skpe-project-resource-grid article,
+.skpe-project-review-grid article {
+  border-color: var(--sparks-border, #dbe6e1);
+  border-radius: var(--sparks-radius-control, 10px);
+  background: var(--sparks-surface-subtle, #f3f7f5);
+  box-shadow: none;
+}
+
+.skpe-project-team-avatar {
+  background: color-mix(in srgb, var(--organization-primary, var(--sparks-accent, #176b53)) 12%, white);
+  color: var(--organization-primary, var(--sparks-accent, #176b53));
+}
+/* SPARKS JOURNEY PROJECT PLAN VISUAL V1 END */

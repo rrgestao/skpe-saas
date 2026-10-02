@@ -1902,11 +1902,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
     return { byId, childrenByParent, roots, visibleIds, matchIds, expandableIds }
   }, [organizations, normalizedSearch])
   useEffect(() => {
-    const stored = window.localStorage.getItem(`sparks.platform-admin.view-mode.${activeTab}`)
-    const allowed: ViewMode[] = activeTab === 'organizations' || activeTab === 'users' || activeTab === 'memberships'
-      ? ['grid', 'cards', 'hierarchy']
-      : ['grid', 'cards']
-    setViewMode(allowed.includes(stored as ViewMode) ? stored as ViewMode : 'grid')
+    setViewMode('grid')
     setSelectedGridRowId(null)
   }, [activeTab])
 
@@ -3360,6 +3356,12 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   viewportMode="standard"
                   selectedId={selectedGridRowId}
                   onSelect={setSelectedGridRowId}
+                  onDoubleClick={async (id) => {
+                    const organization = organizations.find((item) => item.organization_id === id)
+                    if (!organization) return
+                    await openOrganizationEdit(organization)
+                    setOrganizationDetailTab('modules')
+                  }}
                   contextMenu={moduleContextActions}
                   onContextAction={(actionId, rowId) => {
                     if (actionId !== 'toggle-module') return
@@ -3385,6 +3387,12 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                   viewportMode="standard"
                   selectedId={selectedGridRowId}
                   onSelect={setSelectedGridRowId}
+                  onDoubleClick={(id) => {
+                    const user = users.find((item) => item.user_id === id)
+                    if (!user) return
+                    openUserMaintenance(user)
+                    setUserDetailTab('roles')
+                  }}
                   contextMenu={roleContextActions}
                   onContextAction={(actionId, rowId) => {
                     if (actionId !== 'toggle-role') return

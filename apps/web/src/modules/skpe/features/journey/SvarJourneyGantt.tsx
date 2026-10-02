@@ -13,6 +13,7 @@ import './SvarJourneyGantt.css'
 
 type SvarJourneyGanttProps = {
   rows: JourneyTemporalRow[]
+  projectLeadName?: string | null
 }
 
 type SvarBoundaryProps = {
@@ -24,7 +25,7 @@ type SvarBoundaryState = {
   message: string
 }
 
-type TemporalSource = 'actual' | 'plan' | 'forecast' | 'baseline'
+type TemporalSource = 'actual' | 'plan' | 'forecast' | 'baseline' | 'suggested'
 
 type ProjectableRange = {
   start: Date
@@ -51,6 +52,7 @@ const sourceLabels: Record<TemporalSource, string> = {
   plan: 'Plano vigente',
   forecast: 'Previsão operacional',
   baseline: 'Linha de base',
+  suggested: 'Sugestão metodológica',
 }
 
 class SvarRuntimeBoundary extends Component<
@@ -73,14 +75,14 @@ class SvarRuntimeBoundary extends Component<
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo) {
-    console.error('SVAR Gantt Beta runtime error:', error, info)
+    console.error('SVAR Gantt runtime error:', error, info)
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <section className="skpe-svar-gantt-runtime-error" role="alert">
-          <strong>O Gantt interativo Beta não pôde ser renderizado.</strong>
+          <strong>O Gantt interativo não pôde ser renderizado.</strong>
           <p>
             A Jornada continua disponível. O erro foi isolado sem comprometer
             os registros canônicos do cronograma.
@@ -138,6 +140,57 @@ function getProjectableRange(row: JourneyTemporalRow) {
   )
 }
 
+function buildSuggestedRanges(rows: JourneyTemporalRow[]) {
+  const ranges = new Map<string, ProjectableRange>()
+  const activeRows = rows.filter((row) => row.item_status !== 'cancelled')
+  const projectStartValue = activeRows.find((row) => row.project_start_date)?.project_start_date ?? null
+  const projectEndValue = activeRows.find((row) => row.project_target_end_date)?.project_target_end_date ?? null
+  if (!projectStartValue || !projectEndValue) return ranges
+
+  const projectStart = parseDateOnly(projectStartValue)
+  const projectEnd = parseDateOnly(projectEndValue)
+  if (Number.isNaN(projectStart.getTime()) || Number.isNaN(projectEnd.getTime())) return ranges
+
+  const parentIds = new Set(activeRows.map((row) => row.parent_item_id).filter(Boolean))
+  const leaves = activeRows
+    .filter((row) => !parentIds.has(row.item_id))
+    .sort((a, b) => a.display_order - b.display_order || a.item_code.localeCompare(b.item_code, 'pt-BR'))
+  if (leaves.length === 0) return ranges
+
+  const totalDays = Math.max(1, Math.floor((projectEnd.getTime() - projectStart.getTime()) / 86400000) + 1)
+  leaves.forEach((row, index) => {
+    const startOffset = Math.floor((index * totalDays) / leaves.length)
+    const nextOffset = Math.floor(((index + 1) * totalDays) / leaves.length)
+    const endOffset = Math.max(startOffset, Math.min(totalDays - 1, nextOffset - 1))
+    const start = new Date(projectStart)
+    start.setDate(projectStart.getDate() + startOffset)
+    const end = new Date(projectStart)
+    end.setDate(projectStart.getDate() + endOffset)
+    const milestone = row.item_type === 'gate' || row.item_type === 'deliverable'
+    ranges.set(row.item_id, { start: milestone ? end : start, end, source: 'suggested' })
+  })
+
+  const children = new Map<string, JourneyTemporalRow[]>()
+  activeRows.forEach((row) => {
+    if (!row.parent_item_id) return
+    children.set(row.parent_item_id, [...(children.get(row.parent_item_id) ?? []), row])
+  })
+  for (let pass = 0; pass < activeRows.length; pass += 1) {
+    let changed = false
+    for (const row of [...activeRows].reverse()) {
+      if (ranges.has(row.item_id)) continue
+      const childRanges = (children.get(row.item_id) ?? []).map((child) => ranges.get(child.item_id)).filter(Boolean) as ProjectableRange[]
+      if (childRanges.length === 0) continue
+      const start = new Date(Math.min(...childRanges.map((range) => range.start.getTime())))
+      const end = new Date(Math.max(...childRanges.map((range) => range.end.getTime())))
+      ranges.set(row.item_id, { start, end, source: 'suggested' })
+      changed = true
+    }
+    if (!changed) break
+  }
+  return ranges
+}
+
 function clampProgress(value: number) {
   return Math.max(0, Math.min(100, value))
 }
@@ -146,12 +199,15 @@ function formatMonth(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
 }
 
-function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
+function SvarJourneyGanttCore({ rows, projectLeadName = null }: SvarJourneyGanttProps) {
   const projection = useMemo(() => {
     const tasks: SvarTask[] = []
+    const suggestedRanges = buildSuggestedRanges(rows)
+    const resolveRange = (row: JourneyTemporalRow) =>
+      getProjectableRange(row) ?? suggestedRanges.get(row.item_id) ?? null
     const projectableIds = new Set(
       rows
-        .filter((row) => getProjectableRange(row) !== null)
+        .filter((row) => resolveRange(row) !== null)
         .map((row) => row.item_id),
     )
     const currentPath = new Set<string>()
@@ -195,7 +251,7 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
         end: projectEnd,
         progress: clampProgress(rows[0]?.project_progress ?? 0),
         code: 'PE',
-        responsible_name: 'SPARKs PE',
+        responsible_name: projectLeadName ?? 'SPARKs PE',
         temporal_source: 'Janela institucional',
         parent: 0,
         open: true,
@@ -204,12 +260,12 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
     }
 
     for (const row of rows) {
-      const range = getProjectableRange(row)
+      const range = resolveRange(row)
       if (!range) continue
 
       const isActualMilestone =
-        range.source === 'actual' &&
-        range.start.getTime() === range.end.getTime()
+        range.start.getTime() === range.end.getTime() &&
+        (range.source === 'actual' || row.item_type === 'gate' || row.item_type === 'deliverable')
 
       const parent =
         row.parent_item_id && projectableIds.has(row.parent_item_id)
@@ -225,7 +281,7 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
         end: range.end,
         progress: clampProgress(row.item_progress),
         code: row.item_code,
-        responsible_name: row.responsible_name ?? 'Não definido',
+        responsible_name: row.responsible_name ?? 'Pendente de atribuição',
         temporal_source: sourceLabels[range.source],
         parent,
         open: currentPath.has(row.item_id),
@@ -273,7 +329,7 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
       projectStart,
       projectEnd,
     }
-  }, [rows])
+  }, [rows, projectLeadName])
 
   const scales = useMemo(
     () => [
@@ -317,19 +373,19 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
       <section className="skpe-svar-gantt-empty">
         <strong>Gantt interativo ainda sem intervalos projetáveis</strong>
         <p>
-          Nenhuma data canônica de realizado, plano, previsão operacional ou
-          linha de base está disponível para os itens desta Jornada.
+          A Jornada ainda não possui uma janela temporal suficiente para projetar
+          o cronograma sugerido.
         </p>
       </section>
     )
   }
 
   return (
-    <section className="skpe-svar-gantt-beta" aria-label="Gantt interativo Beta">
+    <section className="skpe-svar-gantt-beta" aria-label="Gantt interativo">
       <header className="skpe-svar-gantt-beta-header">
         <div>
           <span className="skpe-svar-gantt-beta-kicker">SVAR Gantt OSS</span>
-          <h2>Gantt interativo · Beta</h2>
+          <h2>Gantt interativo</h2>
           <p>
             Visão mensal da janela institucional da Jornada e das datas
             temporais já materializadas. Registros realizados em um único dia
@@ -344,9 +400,9 @@ function SvarJourneyGanttCore({ rows }: SvarJourneyGanttProps) {
 
       {projection.omittedCount > 0 && (
         <div className="skpe-svar-gantt-notice">
-          {projection.omittedCount} item(ns) ainda não possuem intervalo
-          planejado, previsão operacional, linha de base ou realizado
-          materializado. Nenhuma data de Macrofase foi inferida.
+          {projection.omittedCount} item(ns) ainda não possuem data materializada
+          nem intervalo sugerido. O Gantt distingue sugestões de datas já
+          aprovadas ou realizadas.
         </div>
       )}
 

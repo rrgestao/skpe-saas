@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { supabase } from '../../../../lib/supabase'
 import { statusLabelPtBr, translateBackendMessage } from '../../../../shared/i18n/ptBR'
@@ -18,6 +18,19 @@ import type {
 
 type JourneyItem = JourneyTemporalRow & {
   children: JourneyItem[]
+}
+
+type ProjectGovernance = {
+  leadName: string | null
+  leadEmail: string | null
+  organizationLeadName: string | null
+  organizationLeadEmail: string | null
+  sparkoopLeadName: string | null
+  sparkoopLeadEmail: string | null
+  leadershipStage: string | null
+  startDate: string | null
+  targetEndDate: string | null
+  implementationTargetDate: string | null
 }
 
 function ChevronDownIcon() {
@@ -120,7 +133,7 @@ function methodologyTextPtBr(value: string | null | undefined) {
 function getStatusLabel(status: JourneyStatus) {
   const labels: Record<JourneyStatus, string> = {
     not_started: 'Não iniciada',
-    in_progress: 'Em andamento',
+    in_progress: 'Andamento',
     blocked: 'Bloqueada',
     pending_validation: 'Aguardando validação',
     completed: 'Concluída',
@@ -160,7 +173,7 @@ function getItemTypeLabel(itemType: JourneyRow['item_type']) {
 function getTemporalStateLabel(state: JourneyTemporalState) {
   const labels: Record<JourneyTemporalState, string> = {
     cancelled: 'Cancelado',
-    unscheduled: 'Sem programação institucional',
+    unscheduled: 'Sugestão metodológica pendente de validação',
     completed_without_actual_end: 'Concluído sem data real de término',
     completed_on_time: 'Concluído no prazo',
     completed_late: 'Concluído com atraso',
@@ -171,6 +184,27 @@ function getTemporalStateLabel(state: JourneyTemporalState) {
   }
 
   return labels[state]
+}
+
+function getJourneyDisplayState(item: JourneyTemporalRow) {
+  if (item.item_status === 'completed') {
+    if (item.validation_required && item.validation_status === 'approved') {
+      return 'Concluída e validada'
+    }
+    return 'Concluída'
+  }
+  return getTemporalStateLabel(item.temporal_state)
+}
+
+function getCurrentPlanDisplay(item: JourneyTemporalRow, formatDate: (value: string | null) => string) {
+  if (
+    item.item_status === 'completed' &&
+    !item.current_plan_start_date &&
+    !item.current_plan_end_date
+  ) {
+    return 'Não aplicável ao item já concluído'
+  }
+  return formatPeriod(item.current_plan_start_date, item.current_plan_end_date, formatDate)
 }
 
 function getPlanKindLabel(kind: JourneyTemporalRow['current_plan_kind']) {
@@ -190,7 +224,7 @@ function formatPeriod(
   end: string | null,
   formatDate: (value: string | null) => string,
 ) {
-  if (!start && !end) return 'Não programado'
+  if (!start && !end) return 'Pendente de validação'
   if (start && end) return `${formatDate(start)} a ${formatDate(end)}`
   if (start) return `A partir de ${formatDate(start)}`
   return `Até ${formatDate(end)}`
@@ -235,6 +269,17 @@ function getDefaultJourneyFocus(rows: JourneyTemporalRow[]) {
   const rowMap = new Map(rows.map((row) => [row.item_id, row]))
   const inProgress = rows.filter((row) => row.item_status === 'in_progress')
   const expandedIds = new Set<string>()
+
+  const currentMacrophase =
+    rows.find(
+      (row) =>
+        row.item_type === 'macrophase' &&
+        row.item_status === 'in_progress',
+    ) ?? null
+
+  if (currentMacrophase) {
+    expandedIds.add(currentMacrophase.item_id)
+  }
 
   for (const row of inProgress) {
     let current: JourneyTemporalRow | undefined = row
@@ -373,10 +418,24 @@ export function JourneySection({
   const [errorMessage, setErrorMessage] = useState('')
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  const journeyDetailPanelRef = useRef<HTMLElement | null>(null)
   const [journeyView, setJourneyView] =
     useState<'structure' | 'project-plan' | 'gantt' | 'svar'>('structure')
+  const [projectPlanInitialStage, setProjectPlanInitialStage] = useState<'scope' | 'team' | 'schedule' | 'resources' | 'review' | 'baseline'>('scope')
   const [eventDialogItemId, setEventDialogItemId] = useState<string | null>(null)
   const [eventProjectionRevision, setEventProjectionRevision] = useState(0)
+  const [projectGovernance, setProjectGovernance] = useState<ProjectGovernance>({
+    leadName: null,
+    leadEmail: null,
+    organizationLeadName: null,
+    organizationLeadEmail: null,
+    sparkoopLeadName: null,
+    sparkoopLeadEmail: null,
+    leadershipStage: null,
+    startDate: null,
+    targetEndDate: null,
+    implementationTargetDate: null,
+  })
 
   const journeyTree = useMemo(() => buildJourneyTree(rows), [rows])
   const project = rows[0] ?? null
@@ -445,11 +504,40 @@ export function JourneySection({
       }),
     )
 
+    const resolvedProjectId = journeyRows[0]?.project_id ?? workspace.route.projectId
+    const { data: governanceRows } = await supabase.rpc(
+      'get_skpe_project_leadership_context',
+      {
+        target_organization_id: organizationId,
+        target_project_id: resolvedProjectId,
+      },
+    )
+    const governance = Array.isArray(governanceRows) ? governanceRows[0] ?? null : null
+
+    setProjectGovernance({
+      leadName: governance?.active_lead_name ?? null,
+      leadEmail: governance?.active_lead_email ?? null,
+      organizationLeadName: governance?.organization_lead_name ?? null,
+      organizationLeadEmail: governance?.organization_lead_email ?? null,
+      sparkoopLeadName: governance?.sparkoop_lead_name ?? null,
+      sparkoopLeadEmail: governance?.sparkoop_lead_email ?? null,
+      leadershipStage: governance?.leadership_stage ?? null,
+      startDate: governance?.start_date ?? journeyRows[0]?.project_start_date ?? null,
+      targetEndDate: governance?.target_end_date ?? journeyRows[0]?.project_target_end_date ?? null,
+      implementationTargetDate: governance?.implementation_target_date ?? null,
+    })
+
     setRows(journeyRows)
 
     const defaultFocus = getDefaultJourneyFocus(journeyRows)
-    setExpandedItems(defaultFocus.expandedIds)
-    setSelectedItemId(defaultFocus.selectedItemId)
+    const availableIds = new Set(journeyRows.map((row) => row.item_id))
+    setExpandedItems((current) => {
+      const preserved = new Set([...current].filter((id) => availableIds.has(id)))
+      return preserved.size > 0 ? preserved : defaultFocus.expandedIds
+    })
+    setSelectedItemId((current) =>
+      current && availableIds.has(current) ? current : null,
+    )
 
     setLoading(false)
   }
@@ -457,6 +545,24 @@ export function JourneySection({
   useEffect(() => {
     void loadJourney()
   }, [organizationId, workspace.route.projectId, refreshRequestKey])
+  useEffect(() => {
+    if (!selectedItemId) return
+
+    const handlePointerDownOutsideDetail = (event: PointerEvent) => {
+      const panel = journeyDetailPanelRef.current
+      const target = event.target
+      if (!panel || !(target instanceof Node)) return
+      if (panel.contains(target)) return
+      if (target instanceof Element && target.closest('.skpe-journey-tree-item')) return
+      setSelectedItemId(null)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDownOutsideDetail, true)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDownOutsideDetail, true)
+    }
+  }, [selectedItemId])
+
   useEffect(() => {
     if (!selectedItemId) return
 
@@ -493,6 +599,7 @@ export function JourneySection({
           item.is_current ? 'skpe-phase-current' : '',
           selectedItemId === item.item_id ? 'skpe-journey-item-selected' : '',
           hasChildren ? 'skpe-journey-item-drillable' : '',
+          `skpe-journey-type-${item.item_type}`,
         ]
           .filter(Boolean)
           .join(' ')}
@@ -522,7 +629,7 @@ export function JourneySection({
                 </span>
 
                 <span className="skpe-pill">
-                  {getTemporalStateLabel(item.temporal_state)}
+                  {getJourneyDisplayState(item)}
                 </span>
 
                 {hasChildren && (
@@ -560,18 +667,15 @@ export function JourneySection({
             <div className="skpe-journey-meta">
               {item.responsible_name && (
                 <span>
-                  Responsável: <strong>{item.responsible_name}</strong>
+                  {item.item_type === 'macrophase' ? 'Condução metodológica' : 'Responsável'}:{' '}
+                  <strong>{item.responsible_name}</strong>
                 </span>
               )}
 
               <span>
                 Plano vigente:{' '}
                 <strong>
-                  {formatPeriod(
-                    item.current_plan_start_date,
-                    item.current_plan_end_date,
-                    formatDate,
-                  )}
+                  {getCurrentPlanDisplay(item, formatDate)}
                 </strong>
               </span>
 
@@ -714,11 +818,13 @@ export function JourneySection({
 
   return (
     <>
-      <section className="skpe-page-heading skpe-administration-heading">
+      <section className="skpe-page-heading skpe-administration-heading skpe-journey-page-heading">
         <div>
           <p className="skpe-eyebrow">Metodologia de Planejamento Estratégico</p>
-
-
+          <h2>Jornada Estratégica</h2>
+          <p className="skpe-journey-page-subtitle">
+            Acompanhe a evolução da metodologia, o planejamento temporal e os marcos de execução da estratégia em uma visão única.
+          </p>
         </div>
         <div
           className="skpe-context-icon-actions"
@@ -805,23 +911,42 @@ export function JourneySection({
               <strong>{temporalSummary.unscheduledCount}</strong>
               <small>Estado calculado pelo sistema</small>
             </article>
-          </section>
 
-          <section
-            className="skpe-journey-summary-grid skpe-journey-summary-grid-planning"
-            aria-label="Planejamento temporal da Jornada Estratégica"
-          >
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
+              <span>Liderança da Organização</span>
+              <strong>
+                {projectGovernance.organizationLeadName ??
+                  projectGovernance.leadName ??
+                  'Pendente de definição'}
+              </strong>
+              <small>Responsável pela Cooperativa na Jornada Estratégica</small>
+            </article>
+
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
+              <span>Líder da Consultoria SPARKOOP</span>
+              <strong>
+                {projectGovernance.sparkoopLeadName ?? 'Pendente de definição'}
+              </strong>
+              <small>Responsável pela condução consultiva e metodológica da Jornada</small>
+            </article>
+
+            <article className="skpe-admin-kpi-card skpe-journey-summary-card">
+              <span>Janela do projeto</span>
+              <strong>{formatPeriod(projectGovernance.startDate, projectGovernance.targetEndDate, formatDate)}</strong>
+              <small>Fonte: Projeto Estratégico / importação vigente</small>
+            </article>
+
             <article className="skpe-admin-kpi-card skpe-journey-summary-card">
               <span>Plano institucional</span>
               <strong>
                 {temporalSummary.planRow?.current_plan_version_number
                   ? `v${temporalSummary.planRow.current_plan_version_number}`
-                  : '—'}
+                  : 'Sugerido'}
               </strong>
               <small>
                 {temporalSummary.planRow
                   ? getPlanKindLabel(temporalSummary.planRow.current_plan_kind)
-                  : 'Sem linha de base ou revisão da linha de base aprovada'}
+                  : 'Cronograma sugerido pela metodologia · pendente de validação'}
               </small>
             </article>
 
@@ -830,12 +955,12 @@ export function JourneySection({
               <strong>
                 {temporalSummary.forecastRow?.current_forecast_version_number
                   ? `v${temporalSummary.forecastRow.current_forecast_version_number}`
-                  : '—'}
+                  : 'Após validação'}
               </strong>
               <small>
                 {temporalSummary.forecastRow
                   ? 'Previsão operacional ativa'
-                  : 'Sem previsão operacional ativa'}
+                  : 'Será ativada quando houver revisão operacional validada'}
               </small>
             </article>
           </section>
@@ -861,7 +986,7 @@ export function JourneySection({
               role="tab"
               aria-selected={journeyView === 'project-plan'}
               className={journeyView === 'project-plan' ? 'active' : ''}
-              onClick={() => setJourneyView('project-plan')}
+              onClick={() => { setProjectPlanInitialStage('scope'); setJourneyView('project-plan') }}
             >
               Plano do Projeto
             </button>
@@ -880,7 +1005,7 @@ export function JourneySection({
               className={journeyView === 'svar' ? 'active' : ''}
               onClick={() => setJourneyView('svar')}
             >
-              Gantt interativo Beta
+              Gantt interativo
             </button>
           </div>
         </div>
@@ -908,6 +1033,13 @@ export function JourneySection({
           canManageJourney={canManageJourney}
           formatDate={formatDate}
           onPlanMaterialized={loadJourney}
+          projectLeadName={projectGovernance.leadName}
+          projectLeadEmail={projectGovernance.leadEmail}
+          organizationLeadName={projectGovernance.organizationLeadName}
+          organizationLeadEmail={projectGovernance.organizationLeadEmail}
+          sparkoopLeadName={projectGovernance.sparkoopLeadName}
+          sparkoopLeadEmail={projectGovernance.sparkoopLeadEmail}
+          initialStage={projectPlanInitialStage}
         />
       ) : journeyView === 'gantt' ? (
         <JourneyGantt
@@ -919,9 +1051,14 @@ export function JourneySection({
           canManageJourney={canManageJourney}
           onCreateEvent={(itemId) => setEventDialogItemId(itemId)}
           eventProjectionRevision={eventProjectionRevision}
+          onEditPlanning={() => { setProjectPlanInitialStage('schedule'); setJourneyView('project-plan') }}
+          onOpenResources={() => { setProjectPlanInitialStage('resources'); setJourneyView('project-plan') }}
         />
       ) : journeyView === 'svar' ? (
-        <SvarJourneyGantt rows={rows} />
+        <SvarJourneyGantt
+          rows={rows}
+          projectLeadName={projectGovernance.leadName}
+        />
       ) : (
         <div
           className={[
@@ -936,7 +1073,7 @@ export function JourneySection({
           </section>
 
           {selectedItem && (
-            <aside className="skpe-journey-detail-panel">
+            <aside ref={journeyDetailPanelRef} className="skpe-journey-detail-panel">
               <button
                 type="button"
                 className="skpe-journey-detail-close"
@@ -972,16 +1109,16 @@ export function JourneySection({
                     <dd>{getStatusLabel(selectedItem.item_status)}</dd>
                   </div>
                   <div>
-                    <dt>Estado temporal</dt>
-                    <dd>{getTemporalStateLabel(selectedItem.temporal_state)}</dd>
+                    <dt>Estado da Jornada</dt>
+                    <dd>{getJourneyDisplayState(selectedItem)}</dd>
                   </div>
                   <div>
                     <dt>Progresso</dt>
                     <dd>{selectedItem.item_progress}%</dd>
                   </div>
                   <div>
-                    <dt>Responsável</dt>
-                    <dd>{selectedItem.responsible_name ?? 'Não definido'}</dd>
+                    <dt>{selectedItem.item_type === 'macrophase' ? 'Condução metodológica' : 'Responsável'}</dt>
+                    <dd>{selectedItem.responsible_name ?? (projectGovernance.organizationLeadName || projectGovernance.sparkoopLeadName ? `Pendente de atribuição específica · Cooperativa: ${projectGovernance.organizationLeadName ?? 'Pendente'} · SPARKOOP: ${projectGovernance.sparkoopLeadName ?? 'Pendente'}` : 'Pendente de atribuição')}</dd>
                   </div>
                   <div>
                     <dt>Linha de base original</dt>
@@ -1002,11 +1139,7 @@ export function JourneySection({
                       {selectedItem.current_plan_version_number
                         ? `v${selectedItem.current_plan_version_number} · ${getPlanKindLabel(selectedItem.current_plan_kind)} · `
                         : ''}
-                      {formatPeriod(
-                        selectedItem.current_plan_start_date,
-                        selectedItem.current_plan_end_date,
-                        formatDate,
-                      )}
+                      {getCurrentPlanDisplay(selectedItem, formatDate)}
                     </dd>
                   </div>
                   <div>

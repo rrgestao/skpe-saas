@@ -505,3 +505,38 @@ Foi concluída a preparação estática dos artefatos técnicos. Até o momento 
 - nenhum merge foi realizado.
 
 A validação técnica definitiva depende da execução integral no SQL Editor do projeto `skpe-saas-dev` e da obtenção de evidência objetiva do script de verificação.
+
+## Delta metodológico — 2026-09-16 — Benchmarking transversal SPARKs
+
+O contrato histórico FE-05 permanece válido para o uso especializado do SK-PE. A direção aprovada em `ADR-PLAT-MEAS-001` promove Medidas, Benchmarks e Desempenho para capability transversal SPARKs.
+
+A partir deste delta, uma referência encontrada em catálogo/pesquisa não deve ser tratada automaticamente como `Benchmark Observation`.
+
+Distinguir conceitualmente:
+
+- `Benchmark Source/Reference Candidate`: fonte, pista de pesquisa ou referência ainda não qualificada;
+- `Benchmark Definition`: definição do comparável e de sua metodologia;
+- `Benchmark Observation`: valor publicado com período, população, contexto e fonte identificados;
+- `Benchmark Comparability Assessment`: avaliação contextual da adequação daquela observação a uma organização/KPI.
+
+Estados de comparabilidade aprovados conceitualmente:
+
+`DIRECTLY_COMPARABLE`, `COMPARABLE_WITH_CAVEATS`, `ADJACENT_REFERENCE`, `CONTEXT_ONLY`, `NOT_COMPARABLE`, `NOT_ASSESSED`.
+
+Benchmark comparável continua distinto de meta. A série histórica própria da organização tem primazia para análise de evolução e definição de metas quando metodologicamente suficiente.
+
+### Aplicação ao pacote KPI/BMK v1.0
+
+A análise do pacote em 16/09/2026 encontrou 92 linhas de benchmark:
+
+- 40 `A PESQUISAR` e sem valor de referência;
+- 30 `NÍVEL 2 — QUALIFICADO`;
+- 22 `NÍVEL 2 — BASE`;
+- 92 sem período explícito;
+- parte dos valores é texto de orientação ou referência adjacente, não observação normalizada.
+
+Consequência: as 92 linhas não podem ser carregadas indistintamente como observações ativas. A ingestão deverá primeiro classificar cada linha como fonte candidata, diretriz/referência ou observação qualificável e somente promover uma observação quando período, população, fórmula/unidade, contexto, metodologia e fonte permitirem avaliação de comparabilidade.
+
+Para KPIs consolidados por alias/SAME, relações KPI × benchmark deverão ser remapeadas para a identidade sobrevivente sem perder o `benchmark_id` e a referência de origem.
+
+Exemplo já seguro: `KPI-CONSUMO-002 — Margem bruta` converge para `FIN-MB-01`; sua referência `BMK_0059` permanece candidata `A PESQUISAR`, não benchmark ativo.

@@ -948,3 +948,15 @@ Funções afetadas estão no índice inverso e na [capability](../capabilities/S
 [R-UI-MY]: https://github.com/sparkooptech/skpe-saas/blob/d27373cc16740dfc86eb940abf639e322b072cc8/apps/web/src/modules/skpe/workspace/MyIndicatorsPanel.tsx#L135
 [R-UI-OKR]: https://github.com/sparkooptech/skpe-saas/blob/d27373cc16740dfc86eb940abf639e322b072cc8/apps/web/src/modules/skpe/features/strategy/StrategicOkrDecompositionSection.tsx#L290
 [R-VIEWS]: https://github.com/sparkooptech/skpe-saas/blob/d27373cc16740dfc86eb940abf639e322b072cc8/supabase/migrations/20260904233009_establish_transversal_measures_performance_facade.sql#L98
+
+## Product acceptance delta — 2026-09-16
+
+A decisão explícita de Produto registrada em `ADR-PLAT-MEAS-001` altera a situação de algumas pendências históricas sem apagar o inventário de 12/09/2026.
+
+- BR-SKPE-MED-003 — `Meta e benchmark distintos`: princípio explicitamente ratificado; considerar `PRODUCT_ACCEPTED` no próximo rebaseline do catálogo de regras.
+- BR-SKPE-MED-038 — `Autorização da ampliação pendente`: a direção de ampliação/transversalização foi aprovada em nível de Produto. Perfis, permissões e operações específicas continuam sujeitos aos contratos de autorização existentes e gates técnicos.
+- BR-SKPE-MED-044 — `Reuso externo permanece intenção`: supersedido em direção de Produto por `TRANSVERSAL_PLATFORM_DIRECTION=APPROVED`; integração efetiva por outros produtos continua não comprovada até implementação/uso real.
+
+Não são resolvidas automaticamente por esta decisão as regras de oficialidade de medição, seleção por intenção, universo de agregação, override, autorização operacional específica ou qualquer conflito técnico que exija evidência própria.
+
+Este delta deve ser incorporado formalmente ao índice de autoridade quando o catálogo de regras for rebaselined; não reescrever retroativamente a evidência histórica de 12/09/2026.

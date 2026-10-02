@@ -104,7 +104,10 @@ export function InitiativeClosedActionsPanel({
   }
 
   return (
-    <section className="initiative-action-drawer__section">
+    <section
+      id="initiative-closed-actions"
+      className="initiative-action-drawer__section"
+    >
       <h3>Ações encerradas</h3>
 
       <p>

@@ -194,6 +194,7 @@ Medidas e Desempenho define a medida. Painel, Visão Executiva e Exploração Hi
 | --- | --- | --- | --- | --- |
 | Maturidade analítica do SK-PE | Medidas governadas sustentam indicadores, metas, benchmarks, evidências, cockpit e visão executiva. | FUTURE | PRODUCT | SKPE-MED-DES-01 e SKPE-MON-ANL-01 |
 | Exploração hierárquica e portfólio | Pessoas, capacidade, portfólio, cronograma e kanban evoluem conforme lacunas reais de uso. | FUTURE | PRODUCT | Validação de produto e evidências de uso |
+| Orçamento das Iniciativas e curvas físico-financeiras | Evoluir Custos e esforço para orçamento governado da iniciativa, integrado ao Plano do Projeto, Gantt e acompanhamento físico-financeiro, preservando moedas/unidades e sem substituir a contabilidade corporativa. | FUTURE / APPROVED_SCOPE | PRODUCT | Cronograma institucional, execução econômica governada e validação Product/Corporate |
 | Consolidação de gaps funcionais | O eixo `UNKNOWN` e eixos `PARTIAL` são tratados por gates próprios antes de virar nova prioridade. | FUTURE | PRODUCT | Evidência funcional e ROADMAP_CHANGE_CANDIDATE quando aplicável |
 
 ### H4 — Escala futura
@@ -225,3 +226,98 @@ Documento operacional: `docs/ROADMAP_SKPE_SAAS.md`.
 O roadmap operacional é complementar e subordinado a este documento em termos de prioridade, capability, outcome e escopo de produto. Ele define como executar, em que ordem técnica, com quais gates, validações, releases e blockers.
 
 Este roadmap mestre não replica microtarefas técnicas do roadmap operacional.
+
+## Roadmap delta — 2026-09-16 — Fundação transversal de Medidas e Desempenho
+
+A prioridade `SKPE-MED-DES-01` permanece válida como origem e especialização do SK-PE, porém a direção aprovada promove o mecanismo técnico de Medidas e Desempenho para capability transversal SPARKs.
+
+Sequência aprovada: formalização canônica -> reconciliação das 46 identidades vigentes com os 78 candidatos KPI/BMK v1.0 -> definição de comparabilidade/binding/performance versionada -> testes de não regressão -> somente então persistência/migrations e carga governada.
+
+Estratégia de transição: `Facade -> Convergence -> eventual Storage Evolution`.
+
+Não há autorização, neste estágio, para rename das tabelas `skpe_*`, migration estrutural, importação do catálogo ou criação de motor paralelo por produto.
+
+Referência decisória: `ADR-PLAT-MEAS-001`.
+
+A linha já aprovada sobre Orçamento das Iniciativas e curvas físico-financeiras permanece preservada e deverá consumir a capability transversal quando houver métricas formais pertinentes, sem transformar todo check-in gerencial em KPI.
+
+
+## Roadmap delta — 2026-10-02 — Foco de estabilização e retorno ao roadmap
+
+### Prioridade imediata preservada
+
+Antes de retomar evolução funcional ampla, concluir somente os regressivos críticos do SK-PE em validação e retornar ao roadmap operacional.
+
+Sequência acordada:
+
+1. estabilizar Jornada, Diagnóstico, Riscos e integração com Evidências;
+2. validar humanamente o bloco;
+3. sincronizar o mesmo SHA validado primeiro em `rrgestao` e depois em `sparkooptech`;
+4. retomar importação/carga governada dos dados de **COOTAQUARA**, **QUERUBIM** e **COOPERCOMPANY**;
+5. somente depois retomar frentes de evolução que não sejam bloqueadoras.
+
+### Capability transversal — Gestão de Evidências
+
+A Gestão de Evidências é capability transversal da Plataforma SPARKs e **não é autoridade do SK-PE**.
+
+O SK-PE:
+- identifica necessidades de evidência;
+- referencia evidências canônicas;
+- avalia suficiência e uso no contexto estratégico;
+- consome conclusões de módulos especialistas.
+
+A superfície operacional de Gestão de Evidências deve existir em nível de Plataforma/Organização, organizada por requisitos, grandes eixos de governança e gestão, critérios/práticas, documentos/evidências, versões, validade, suficiência, downloads e vínculos de uso.
+
+O SK-PE deve acessar essa capability por referência/atalho contextual, sem criar repositório ou autoridade documental paralela.
+
+### BACKLOG explícito — Experiência de entrada da Plataforma SPARKs
+
+**STATUS: DEFERRED / APÓS RETORNO AO ROADMAP**
+
+Não executar durante o atual bloco de estabilização.
+
+Escopo a preservar para execução posterior:
+
+- restaurar/evoluir a tela **Boas-vindas** como entrada padrão do usuário autorizado;
+- consolidar nessa tela tudo que o usuário precisa saber e fazer considerando todas as Organizações e todos os módulos aos quais possui acesso;
+- incluir contexto corporativo transversal, incluindo Agenda Institucional e demais compromissos relevantes;
+- atualizar **Meu Espaço de Trabalho / seleção de Organizações** para o Design Language SPARKs vigente;
+- atualizar a **tela da Organização selecionada** para o mesmo padrão;
+- preservar autorização, hierarquia organizacional, rede, módulos, responsabilidades e atalhos existentes;
+- nenhuma dessas atualizações pode remover funcionalidade já implementada.
+
+Essas superfícies são reconhecidas como visualmente defasadas em relação ao padrão atualmente aplicado ao SK-PE, porém sua revisão fica conscientemente postergada para evitar desvio do foco atual.
+
+### Autoridade transversal de documentos, evidências e conhecimento — decisão 2026-10-02
+
+`DECISAO`
+
+Evidências e documentos **nunca pertencem ao domínio do SK-PE**.
+
+Autoridades:
+
+- **SK-DOC** governa documentos, evidências, versões, validade, proveniência, integridade e vínculos documentais.
+- **SK-KM** governa conhecimento, classificação, contexto, recuperação e uso da base documental/conhecimento.
+- **SK-PE** governa somente a necessidade da evidência, a suficiência para uma decisão estratégica, o uso no contexto da Jornada e a rastreabilidade entre evidência e decisão.
+
+A superfície `EvidenceManagementWorkspace` deve evoluir como capability transversal da Plataforma SPARKs, mesmo quando acessada contextualmente pelo SK-PE.
+
+### ROADMAP_CHANGE_CANDIDATE — Ingestão inteligente de evidências por diretório/conector
+
+**STATUS: CANDIDATE / NÃO EXECUTAR NO BLOCO ATUAL**
+
+Outcome desejado: permitir que usuário autorizado indique uma origem documental — por exemplo, pasta SharePoint — e a Plataforma:
+
+1. descubra e ingira os documentos sem duplicação;
+2. registre-os e versione-os sob autoridade do SK-DOC;
+3. indexe e contextualize o conteúdo sob autoridade do SK-KM;
+4. classifique cada evidência por eixo, critério/prática, processo e requisito aplicável;
+5. estime aderência, suficiência, atualidade, confiabilidade e lacunas;
+6. apresente a avaliação para validação humana antes de produzir efeitos governados;
+7. reutilize evidências já existentes antes de solicitar novos documentos;
+8. preserve origem, caminho, data, versão, hash e lineage;
+9. alimente SK-DA, SK-PE e demais módulos somente por referências canônicas.
+
+Exemplo prioritário de origem: **SharePoint / biblioteca ou diretório autorizado da Organização**.
+
+Essa capability não autoriza o SK-PE a armazenar ou governar documentos.

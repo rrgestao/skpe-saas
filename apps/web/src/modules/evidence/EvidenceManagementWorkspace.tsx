@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { SparksGridNavigator } from '../../../../components/design-system/SparksGridNavigator'
-import { Filter, X } from 'lucide-react'
-import { Grid, type IColumnConfig } from '@svar-ui/react-grid'
-import '@svar-ui/react-grid/all.css'
+import { SparksSmartGrid, type SparksSmartGridColumn } from '../../components/design-system/SparksSmartGrid'
 
-import { MetricCard } from '../../../../components/design-system'
-import { supabase } from '../../../../lib/supabase'
+import { MetricCard } from '../../components/design-system'
+import { supabase } from '../../lib/supabase'
 
-import './StrategicEvidenceSection.css'
+import './EvidenceManagementWorkspace.css'
 
-type StrategicEvidenceSectionProps = {
+type EvidenceManagementWorkspaceProps = {
   organizationId: string
+  projectId: string
 }
 
 type EvidenceRow = {
@@ -47,8 +45,21 @@ type ExpectedChecklistItem = {
   code: string
   item_type: string
   name: string
+  description: string | null
+  request_reason: string | null
+  possible_evidences: unknown
+  best_practice_criteria: unknown
+  absence_impact: string | null
   is_required: boolean
   display_order: number
+}
+
+type EvidenceVersionDownload = {
+  evidence_asset_id: string
+  storage_bucket: string | null
+  storage_path: string | null
+  file_name: string | null
+  version_number: number | null
 }
 
 type EvidenceGridRow = {
@@ -74,19 +85,6 @@ type CardFilter =
   | 'used'
   | 'insufficient'
   | null
-
-type ColumnFilterId =
-  | 'eixo'
-  | 'categoria'
-  | 'evidencia'
-  | 'situacao'
-  | 'origem'
-  | 'disponibilizada_em'
-  | 'disponibilizada_por'
-  | 'periodo_vigencia'
-  | 'qualidade'
-  | 'suficiencia'
-  | 'utilizada'
 
 const categoryLabels: Record<string, string> = {
   document: 'Documento',
@@ -128,20 +126,6 @@ const sufficiencyLabels: Record<string, string> = {
   not_assessed: 'Não avaliada',
   not_applicable_without_use: 'Não aplicável sem uso',
 }
-
-const columnFilterIds: ColumnFilterId[] = [
-  'eixo',
-  'categoria',
-  'evidencia',
-  'situacao',
-  'origem',
-  'disponibilizada_em',
-  'disponibilizada_por',
-  'periodo_vigencia',
-  'qualidade',
-  'suficiencia',
-  'utilizada',
-]
 
 function categoryLabel(value: string | null) {
   if (!value) return 'Não classificada'
@@ -251,23 +235,24 @@ function deduplicateEvidence(rows: EvidenceRow[]) {
   return Array.from(byAsset.values())
 }
 
-export function StrategicEvidenceSection({
+export function EvidenceManagementWorkspace({
   organizationId,
-}: StrategicEvidenceSectionProps) {
+  projectId,
+}: EvidenceManagementWorkspaceProps) {
   const [rows, setRows] = useState<EvidenceRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeFilter, setActiveFilter] = useState<CardFilter>(null)
+  const [showChecklistWorkspace, setShowChecklistWorkspace] = useState(false)
+  const [downloadVersions, setDownloadVersions] = useState<EvidenceVersionDownload[]>([])
+  const [selectedEvidenceAssetId, setSelectedEvidenceAssetId] = useState<string | null>(null)
 
   const [expectedItems, setExpectedItems] = useState<ExpectedChecklistItem[]>([])
   const [expectedLoading, setExpectedLoading] = useState(true)
   const [expectedError, setExpectedError] = useState('')
 
-  const [columnFilters, setColumnFilters] = useState<
-    Partial<Record<ColumnFilterId, string>>
-  >({})
-  const [openColumnFilter, setOpenColumnFilter] =
-    useState<ColumnFilterId | null>(null)
+  const [operationalChecklistItems, setOperationalChecklistItems] = useState<number | null>(null)
+  const [operationalChecklistError, setOperationalChecklistError] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -331,6 +316,22 @@ export function StrategicEvidenceSection({
 
   useEffect(() => {
     let cancelled = false
+    async function loadOperationalChecklist() {
+      setOperationalChecklistError('')
+      const { data, error: queryError } = await supabase.rpc('get_skpe_evidence_checklist', {
+        target_organization_id: organizationId,
+        target_project_id: projectId,
+      })
+      if (cancelled) return
+      if (queryError) { setOperationalChecklistItems(null); setOperationalChecklistError(queryError.message); return }
+      setOperationalChecklistItems((data ?? []).length)
+    }
+    void loadOperationalChecklist()
+    return () => { cancelled = true }
+  }, [organizationId, projectId])
+
+  useEffect(() => {
+    let cancelled = false
 
     async function loadExpectedEvidenceChecklist() {
       setExpectedLoading(true)
@@ -358,7 +359,9 @@ export function StrategicEvidenceSection({
         .from('sparks_checklist_template_versions')
         .select('id')
         .eq('template_id', template.id)
-        .eq('version_code', '2026.2')
+        .eq('status', 'published')
+        .order('version_code', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
       if (cancelled) return
@@ -366,7 +369,7 @@ export function StrategicEvidenceSection({
       if (versionError || !version) {
         setExpectedItems([])
         setExpectedError(
-          versionError?.message ?? 'Versão 2026.2 do PEM-00 não localizada.',
+          versionError?.message ?? 'Nenhuma versão publicada do PEM-00 foi localizada.',
         )
         setExpectedLoading(false)
         return
@@ -375,7 +378,7 @@ export function StrategicEvidenceSection({
       const { data: items, error: itemsError } = await supabase
         .from('sparks_checklist_template_items')
         .select(
-          'id,parent_item_id,code,item_type,name,is_required,display_order',
+          'id,parent_item_id,code,item_type,name,description,request_reason,possible_evidences,best_practice_criteria,absence_impact,is_required,display_order',
         )
         .eq('template_version_id', version.id)
         .order('display_order', { ascending: true })
@@ -401,6 +404,67 @@ export function StrategicEvidenceSection({
   }, [])
 
   const assets = useMemo(() => deduplicateEvidence(rows), [rows])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadDownloadVersions() {
+      const assetIds = assets.map((row) => row.evidence_asset_id)
+      if (assetIds.length === 0) {
+        setDownloadVersions([])
+        return
+      }
+
+      const { data, error: versionError } = await supabase
+        .from('sparks_evidence_versions')
+        .select('evidence_asset_id,storage_bucket,storage_path,file_name,version_number')
+        .in('evidence_asset_id', assetIds)
+        .order('version_number', { ascending: false })
+
+      if (cancelled) return
+      if (versionError) {
+        setDownloadVersions([])
+        return
+      }
+
+      const latestByAsset = new Map<string, EvidenceVersionDownload>()
+      for (const row of (data ?? []) as EvidenceVersionDownload[]) {
+        if (!latestByAsset.has(row.evidence_asset_id)) {
+          latestByAsset.set(row.evidence_asset_id, row)
+        }
+      }
+      setDownloadVersions(Array.from(latestByAsset.values()))
+    }
+
+    void loadDownloadVersions()
+    return () => {
+      cancelled = true
+    }
+  }, [assets])
+
+  const selectedEvidenceAsset = useMemo(
+    () => assets.find((asset) => asset.evidence_asset_id === selectedEvidenceAssetId) ?? null,
+    [assets, selectedEvidenceAssetId],
+  )
+
+  const checklistAxes = useMemo(() => {
+    const requirementsByAxis = new Map<string, ExpectedChecklistItem[]>()
+    for (const item of expectedItems) {
+      if (item.item_type !== 'requirement' || !item.parent_item_id) continue
+      const current = requirementsByAxis.get(item.parent_item_id) ?? []
+      current.push(item)
+      requirementsByAxis.set(item.parent_item_id, current)
+    }
+
+    return expectedItems
+      .filter((item) => item.item_type === 'axis')
+      .map((axis) => ({
+        axis,
+        requirements: (requirementsByAxis.get(axis.id) ?? []).sort(
+          (first, second) => first.display_order - second.display_order,
+        ),
+      }))
+  }, [expectedItems])
 
   const counts = useMemo(
     () => ({
@@ -488,7 +552,7 @@ export function StrategicEvidenceSection({
         categoria: 'Evidência prevista',
         evidencia: item.name,
         situacao: 'Prevista no checklist',
-        origem: 'PEM-00 2026.2 - Checklist Padrão de Evidências',
+        origem: 'PEM-00 - Checklist Padrão de Evidências',
         disponibilizada_em: 'Ainda não aplicável',
         disponibilizada_por: 'Ainda não aplicável',
         periodo_vigencia: 'Preparação do Diagnóstico Estratégico',
@@ -501,221 +565,57 @@ export function StrategicEvidenceSection({
   const selectedGridData =
     activeFilter === 'expected' ? expectedGridData : assetGridData
 
-  const displayedGridData = useMemo(
-    () =>
-      selectedGridData.filter((row) =>
-        columnFilterIds.every((id) => {
-          const filterValue = (columnFilters[id] ?? '')
-            .trim()
-            .toLocaleLowerCase('pt-BR')
-
-          if (!filterValue) return true
-
-          const cellValue = row[id].toLocaleLowerCase('pt-BR')
-          return cellValue.includes(filterValue)
-        }),
-      ),
-    [columnFilters, selectedGridData],
-  )
-
-  function EvidenceHeaderCell(props: any) {
-    const id = props.column.id as ColumnFilterId
-    const label = props.cell.text as string
-    const value = columnFilters[id] ?? ''
-    const open = openColumnFilter === id
-
-    return (
-      <div className="skpe-evidence-header-cell">
-        {open ? (
-          <div
-            className="skpe-evidence-header-inline-filter"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <input
-              autoFocus
-              value={value}
-              placeholder={label}
-              aria-label={`Filtrar ${label}`}
-              onChange={(event) =>
-                setColumnFilters((current) => ({
-                  ...current,
-                  [id]: event.target.value,
-                }))
-              }
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                  setOpenColumnFilter(null)
-                }
-              }}
-            />
-            {value ? (
-              <button
-                type="button"
-                className="skpe-evidence-header-filter-clear"
-                aria-label={`Limpar filtro de ${label}`}
-                title={`Limpar filtro de ${label}`}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setColumnFilters((current) => ({
-                    ...current,
-                    [id]: '',
-                  }))
-                }}
-              >
-                <X aria-hidden="true" size={14} />
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <span className="skpe-evidence-header-label">{label}</span>
-        )}
-
-        <button
-          type="button"
-          className={
-            value
-              ? 'skpe-evidence-header-filter-button skpe-evidence-header-filter-button--active'
-              : 'skpe-evidence-header-filter-button'
-          }
-          aria-label={`${open ? 'Fechar' : 'Abrir'} filtro de ${label}`}
-          title={`${open ? 'Fechar' : 'Filtrar'} ${label}`}
-          onClick={(event) => {
-            event.stopPropagation()
-            setOpenColumnFilter((current) => (current === id ? null : id))
-          }}
-        >
-          <Filter aria-hidden="true" size={14} />
-        </button>
-      </div>
-    )
-  }
-
-  const columns: IColumnConfig[] = [
-    {
-      id: 'eixo',
-      header: {
-        text: 'Eixo',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 160,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'categoria',
-      header: {
-        text: 'Categoria',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 190,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'evidencia',
-      header: {
-        text: 'Evidência',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 340,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'situacao',
-      header: {
-        text: 'Situação',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 175,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'origem',
-      header: {
-        text: 'Origem',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 320,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'disponibilizada_em',
-      header: {
-        text: 'Disponibilizada em',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 190,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'disponibilizada_por',
-      header: {
-        text: 'Disponibilizada por',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 260,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'periodo_vigencia',
-      header: {
-        text: 'Período / Vigência',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 285,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'qualidade',
-      header: {
-        text: 'Qualidade',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 170,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'suficiencia',
-      header: {
-        text: 'Suficiência',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 220,
-      sort: true,
-      resize: true,
-    },
-    {
-      id: 'utilizada',
-      header: {
-        text: 'Utilizada na análise',
-        cell: EvidenceHeaderCell,
-        css: 'skpe-evidence-header-main',
-      },
-      width: 210,
-      sort: true,
-      resize: true,
-    },
+  const columns: SparksSmartGridColumn[] = [
+    { id: 'eixo', label: 'Eixo', minWidth: 160, maxWidth: 260, tooltip: true },
+    { id: 'categoria', label: 'Categoria', minWidth: 170, maxWidth: 260, tooltip: true },
+    { id: 'evidencia', label: 'Evidência', minWidth: 340, maxWidth: 620, tooltip: true, grow: 2 },
+    { id: 'situacao', label: 'Situação', minWidth: 175, maxWidth: 280, tooltip: true },
+    { id: 'origem', label: 'Origem', minWidth: 280, maxWidth: 520, tooltip: true, grow: 2 },
+    { id: 'disponibilizada_em', label: 'Disponibilizada em', minWidth: 180, maxWidth: 240 },
+    { id: 'disponibilizada_por', label: 'Disponibilizada por', minWidth: 220, maxWidth: 360, tooltip: true },
+    { id: 'periodo_vigencia', label: 'Período / Vigência', minWidth: 260, maxWidth: 420, tooltip: true },
+    { id: 'qualidade', label: 'Qualidade', minWidth: 150, maxWidth: 220 },
+    { id: 'suficiencia', label: 'Suficiência', minWidth: 190, maxWidth: 280, tooltip: true },
+    { id: 'utilizada', label: 'Utilizada na análise', minWidth: 180, maxWidth: 240 },
   ]
 
   function toggleFilter(filter: CardFilter) {
     setActiveFilter((current) => (current === filter ? null : filter))
+  }
+
+  function checklistDetail(value: unknown) {
+    if (Array.isArray(value)) {
+      return value.map((item) => String(item)).filter(Boolean).join(' · ')
+    }
+    if (value && typeof value === 'object') {
+      return Object.values(value as Record<string, unknown>)
+        .flatMap((item) => (Array.isArray(item) ? item : [item]))
+        .map((item) => String(item))
+        .filter(Boolean)
+        .join(' · ')
+    }
+    return value ? String(value) : ''
+  }
+
+  async function downloadEvidence(asset: EvidenceRow) {
+    const version = downloadVersions.find(
+      (item) => item.evidence_asset_id === asset.evidence_asset_id,
+    )
+    if (!version?.storage_bucket || !version.storage_path) return
+
+    const { data, error: downloadError } = await supabase.storage
+      .from(version.storage_bucket)
+      .download(version.storage_path)
+
+    if (downloadError || !data) return
+    const url = URL.createObjectURL(data)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = version.file_name ?? asset.title ?? 'evidencia'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -724,22 +624,45 @@ export function StrategicEvidenceSection({
         <span className="skpe-evidence-section__eyebrow">
           Evidências da organização
         </span>
-        <h2>Base transversal para diagnóstico e decisões</h2>
+        <div className="skpe-evidence-intro-heading-row">
+          <h2>Base transversal para diagnóstico e decisões</h2>
+          <button
+            type="button"
+            className="skpe-evidence-checklist-button"
+            onClick={() => setShowChecklistWorkspace(true)}
+          >
+            Checklist de evidências e downloads
+          </button>
+        </div>
         <p>
-          A evidência pertence à organização. Estar disponível não significa
-          estar utilizada; suficiência e confiança são avaliadas no contexto de
-          um uso explícito.
+          Decisões estratégicas confiáveis precisam nascer de fatos e dados, não de achismos.
+          Esta base reúne as evidências governadas pela Plataforma para sustentar diagnóstico,
+          maturidade, riscos, escolhas e acompanhamento com rastreabilidade.
         </p>
+        <p className="skpe-evidence-authority-note">
+          SK-DOC governa documentos, evidências e versões. SK-KM sustenta conhecimento,
+          classificação e contexto. O SK-PE apenas consome essas evidências e avalia sua
+          suficiência e uso no contexto estratégico.
+        </p>
+        <div className="skpe-evidence-operational-state">
+          {operationalChecklistError ? (
+            <span>Não foi possível consultar o checklist do projeto neste momento.</span>
+          ) : operationalChecklistItems === 0 ? (
+            <span>O checklist do projeto ainda não foi materializado. Os requisitos previstos abaixo vêm do padrão metodológico publicado e devem ser reconciliados com evidências já disponíveis na organização antes de novas solicitações.</span>
+          ) : operationalChecklistItems !== null ? (
+            <span>Checklist do projeto disponível com {operationalChecklistItems} itens para coleta, vínculo e avaliação de evidências.</span>
+          ) : null}
+        </div>
       </header>
 
       <div className="skpe-evidence-metrics">
         <MetricCard
           label="Evidências previstas"
-          value={expectedLoading ? '…' : expectedGridData.length}
+          value={expectedLoading ? '…' : expectedError ? '—' : expectedGridData.length}
           helper={
             expectedError
               ? 'Checklist indisponível no momento'
-              : 'requisitos previstos pelo checklist PEM-00 2026.2'
+              : 'requisitos previstos pela versão publicada do checklist PEM-00'
           }
           active={activeFilter === 'expected'}
           onClick={
@@ -848,7 +771,7 @@ export function StrategicEvidenceSection({
               className="skpe-evidence-clear-filter"
               onClick={() => setActiveFilter(null)}
             >
-              Limpar filtro dos Cards
+              Limpar filtro
             </button>
           ) : null}
         </div>
@@ -861,18 +784,16 @@ export function StrategicEvidenceSection({
           </p>
         ) : (
           <>
-            <div className="skpe-evidence-smart-grid" data-sparks-grid-shell>
-              <Grid
-                data={displayedGridData}
-                columns={columns}
-                header
-                autoRowHeight
-              />
-              <SparksGridNavigator />
-</div>
+            <SparksSmartGrid
+              rows={selectedGridData}
+              columns={columns}
+              ariaLabel={activeFilter === 'expected' ? 'Evidências previstas' : 'Evidências disponíveis'}
+              fillViewport
+              autoRowHeight={false}
+            />
 
             <p className="skpe-evidence-grid-card__footer">
-              {displayedGridData.length} de{' '}
+              {selectedGridData.length} de{' '}
               {activeFilter === 'expected'
                 ? expectedGridData.length
                 : filteredAssets.length}{' '}
@@ -881,6 +802,188 @@ export function StrategicEvidenceSection({
           </>
         )}
       </section>
+
+      {showChecklistWorkspace ? (
+        <aside className="skpe-evidence-checklist-workspace" aria-label="Checklist de evidências e downloads">
+          <button
+            type="button"
+            className="skpe-evidence-checklist-backdrop"
+            aria-label="Fechar checklist de evidências"
+            onClick={() => setShowChecklistWorkspace(false)}
+          />
+          <div className="skpe-evidence-checklist-panel">
+            <header className="skpe-evidence-checklist-panel__header">
+              <div>
+                <span className="skpe-evidence-section__eyebrow">Checklist metodológico PEM-00</span>
+                <h2>Evidências para diagnóstico, governança e maturidade</h2>
+                <p>
+                  Organizado pelos grandes eixos de governança e gestão e, dentro deles,
+                  pelos requisitos/práticas que orientam a análise do ambiente interno e da maturidade organizacional.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="skpe-evidence-checklist-close"
+                onClick={() => setShowChecklistWorkspace(false)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </header>
+
+            {operationalChecklistItems === 0 ? (
+              <div className="skpe-evidence-checklist-notice">
+                <strong>Checklist operacional ainda não materializado para este projeto.</strong>
+                <span>
+                  A estrutura abaixo é a versão metodológica publicada. Evidências da organização não serão atribuídas automaticamente a um requisito sem vínculo governado.
+                </span>
+              </div>
+            ) : null}
+
+            <div className="skpe-evidence-checklist-layout">
+              <section className="skpe-evidence-checklist-axes">
+                {checklistAxes.map(({ axis, requirements }) => (
+                  <article key={axis.id} className="skpe-evidence-axis-card">
+                    <header>
+                      <span>{axis.code}</span>
+                      <h3>{axis.name}</h3>
+                      {axis.description ? <p>{axis.description}</p> : null}
+                    </header>
+                    <div className="skpe-evidence-axis-requirements">
+                      {requirements.map((requirement) => {
+                        const criteria = checklistDetail(requirement.best_practice_criteria)
+                        const possible = checklistDetail(requirement.possible_evidences)
+                        return (
+                          <section key={requirement.id} className="skpe-evidence-requirement-card">
+                            <div className="skpe-evidence-requirement-heading">
+                              <span>{requirement.code}</span>
+                              <strong>{requirement.name}</strong>
+                            </div>
+                            {requirement.description ? <p>{requirement.description}</p> : null}
+                            {criteria ? (
+                              <div>
+                                <small>Critérios / práticas de referência</small>
+                                <p>{criteria}</p>
+                              </div>
+                            ) : null}
+                            {possible ? (
+                              <div>
+                                <small>Evidências possíveis</small>
+                                <p>{possible}</p>
+                              </div>
+                            ) : null}
+                            {requirement.absence_impact ? (
+                              <div>
+                                <small>Impacto da ausência</small>
+                                <p>{requirement.absence_impact}</p>
+                              </div>
+                            ) : null}
+                          </section>
+                        )
+                      })}
+                    </div>
+                  </article>
+                ))}
+              </section>
+
+              <aside className="skpe-evidence-downloads-panel">
+                <div>
+                  <span className="skpe-evidence-section__eyebrow">Arquivos da organização</span>
+                  <h3>Downloads disponíveis</h3>
+                  <p>
+                    Somente arquivos efetivamente materializados no repositório canônico podem ser baixados.
+                  </p>
+                </div>
+                <div className="skpe-evidence-download-list">
+                  {assets.map((asset) => {
+                    const version = downloadVersions.find(
+                      (item) => item.evidence_asset_id === asset.evidence_asset_id,
+                    )
+                    const downloadable = Boolean(version?.storage_bucket && version.storage_path)
+                    return (
+                      <article key={asset.evidence_asset_id}>
+                        <div>
+                          <strong>{asset.title ?? 'Evidência sem título'}</strong>
+                          <span>{originLabel(asset)}</span>
+                        </div>
+                        <div className="skpe-evidence-download-actions">
+                          <button
+                            type="button"
+                            className="skpe-evidence-analysis-button"
+                            onClick={() => setSelectedEvidenceAssetId(asset.evidence_asset_id)}
+                          >
+                            Analisar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!downloadable}
+                            onClick={() => void downloadEvidence(asset)}
+                            title={
+                              downloadable
+                                ? 'Baixar versão materializada'
+                                : 'Arquivo ainda não materializado no repositório canônico'
+                            }
+                          >
+                            {downloadable ? 'Baixar' : 'Sem arquivo'}
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+
+                {selectedEvidenceAsset ? (
+                  <section className="skpe-evidence-analysis-card">
+                    <div className="skpe-evidence-analysis-card__heading">
+                      <div>
+                        <span className="skpe-evidence-section__eyebrow">Análise da evidência</span>
+                        <h4>{selectedEvidenceAsset.title ?? 'Evidência sem título'}</h4>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Fechar análise da evidência"
+                        onClick={() => setSelectedEvidenceAssetId(null)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <dl>
+                      <div>
+                        <dt>Origem</dt>
+                        <dd>{originLabel(selectedEvidenceAsset)}</dd>
+                      </div>
+                      <div>
+                        <dt>Qualidade</dt>
+                        <dd>{qualityLabels[selectedEvidenceAsset.reliability_level ?? 'not_assessed'] ?? selectedEvidenceAsset.reliability_level ?? 'Não avaliada'}</dd>
+                      </div>
+                      <div>
+                        <dt>Suficiência</dt>
+                        <dd>{sufficiencyLabels[selectedEvidenceAsset.sufficiency_status ?? 'not_assessed'] ?? selectedEvidenceAsset.sufficiency_status ?? 'Não avaliada'}</dd>
+                      </div>
+                      <div>
+                        <dt>Validação</dt>
+                        <dd>{selectedEvidenceAsset.validation_status ?? 'Não avaliada'}</dd>
+                      </div>
+                      <div>
+                        <dt>Vigência</dt>
+                        <dd>{periodLabel(selectedEvidenceAsset)}</dd>
+                      </div>
+                      <div>
+                        <dt>Uso no SK-PE</dt>
+                        <dd>{selectedEvidenceAsset.is_currently_used ? 'Em uso no contexto estratégico' : 'Ainda não vinculada a um uso estratégico governado'}</dd>
+                      </div>
+                    </dl>
+                    <p>
+                      A consulta e análise permanecem disponíveis mesmo sem arquivo materializado.
+                      O download só é liberado quando existir uma versão física governada pelo SK-DOC.
+                    </p>
+                  </section>
+                ) : null}
+              </aside>
+            </div>
+          </div>
+        </aside>
+      ) : null}
     </section>
   )
 }

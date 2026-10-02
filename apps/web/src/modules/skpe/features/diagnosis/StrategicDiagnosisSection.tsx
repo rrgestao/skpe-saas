@@ -11,7 +11,7 @@ import {
 } from './strategicDiagnosisImportLoader.ts'
 import { StrategicRisksSmartGrid } from './StrategicRisksSmartGrid.tsx'
 
-import { StrategicEvidenceSection } from './StrategicEvidenceSection'
+import { EvidenceManagementWorkspace } from '../../../evidence/EvidenceManagementWorkspace'
 
 import './StrategicDiagnosisSection.css'
 
@@ -20,6 +20,7 @@ type DiagnosisTab = 'overview' | 'evidence' | 'pestel' | 'swot' | 'tows' | 'risk
 type Props = {
   organizationId: string
   projectId: string
+  onOpenRiskInitiative?: (riskCode: string) => void
 }
 
 const phaseByTab: Record<Exclude<DiagnosisTab, 'overview' | 'evidence'>, string> = {
@@ -655,7 +656,13 @@ function TowsMatrix({ records }: { records: ImportedDiagnosisRecord[] }) {
 }
 
 
-function StrategicRiskMatrix({ records }: { records: ImportedDiagnosisRecord[] }) {
+function StrategicRiskMatrix({
+  records,
+  onOpenRiskInitiative,
+}: {
+  records: ImportedDiagnosisRecord[]
+  onOpenRiskInitiative?: (riskCode: string) => void
+}) {
   type RiskCardFilter =
     | 'all'
     | 'inProgress'
@@ -1041,7 +1048,10 @@ function StrategicRiskMatrix({ records }: { records: ImportedDiagnosisRecord[] }
           </span>
         </div>
 
-        <StrategicRisksSmartGrid records={filteredRecords} />
+        <StrategicRisksSmartGrid
+          records={filteredRecords}
+          onOpenAssociatedInitiative={onOpenRiskInitiative}
+        />
       </div>
 
       <p className="skpe-strategic-diagnosis-risk-scale-note">
@@ -1055,9 +1065,11 @@ function StrategicRiskMatrix({ records }: { records: ImportedDiagnosisRecord[] }
 function ArtifactRecords({
   kind,
   records,
+  onOpenRiskInitiative,
 }: {
   kind: DiagnosisArtifactKind
   records: ImportedDiagnosisRecord[]
+  onOpenRiskInitiative?: (riskCode: string) => void
 }) {
   if (records.length === 0) {
     return (
@@ -1071,7 +1083,12 @@ function ArtifactRecords({
     <>
       {kind === 'swot' ? <SwotMatrix records={records} /> : null}
       {kind === 'tows' ? <TowsMatrix records={records} /> : null}
-      {kind === 'risks' ? <StrategicRiskMatrix records={records} /> : null}
+      {kind === 'risks' ? (
+        <StrategicRiskMatrix
+          records={records}
+          onOpenRiskInitiative={onOpenRiskInitiative}
+        />
+      ) : null}
 
       {kind === 'swot' ? (
             <section
@@ -1231,6 +1248,7 @@ function ArtifactRecords({
 export function StrategicDiagnosisSection({
   organizationId,
   projectId,
+  onOpenRiskInitiative,
 }: Props) {
   const [activeTab, setActiveTab] = useState<DiagnosisTab>('overview')
   const [rows, setRows] = useState<JourneyTemporalReadRow[]>([])
@@ -1345,23 +1363,6 @@ export function StrategicDiagnosisSection({
 
   return (
     <section className="skpe-strategic-diagnosis">
-      <header className="skpe-strategic-diagnosis-header">
-        <div>
-          <p className="skpe-eyebrow">Diagnóstico Estratégico</p>
-          <h2>Leitura integrada do contexto estratégico</h2>
-          <p>
-            PESTEL, SWOT, TOWS e Riscos preservam o conteúdo importado da
-            planilha e a rastreabilidade com a Jornada.
-          </p>
-        </div>
-
-        {diagnosisMacrophase ? (
-          <span className="skpe-status-chip">
-            {validationLabel(diagnosisMacrophase.validation_status)}
-          </span>
-        ) : null}
-      </header>
-
       <WorkspaceTabs
         ariaLabel={'Perspectivas do Diagn\u00f3stico Estrat\u00e9gico'}
         activeId={activeTab}
@@ -1436,7 +1437,7 @@ export function StrategicDiagnosisSection({
             <small>Progresso</small>
             <strong>{diagnosisMacrophase?.item_progress ?? 0}%</strong>
           </article>
-          <article>
+          <article className="skpe-strategic-diagnosis-validation-card">
             <small>Validação</small>
             <strong>
               {diagnosisMacrophase
@@ -1456,7 +1457,7 @@ export function StrategicDiagnosisSection({
           </div>
 </section>
       ) : activeTab === 'evidence' ? (
-        <StrategicEvidenceSection organizationId={organizationId} />
+        <EvidenceManagementWorkspace organizationId={organizationId} projectId={projectId} />
       ) : (
         <section className="skpe-strategic-diagnosis-artifact">
           <header>
@@ -1563,6 +1564,7 @@ export function StrategicDiagnosisSection({
             <ArtifactRecords
               kind={selectedKind}
               records={artifactRecords[selectedKind] ?? []}
+              onOpenRiskInitiative={onOpenRiskInitiative}
             />
           ) : null}
         </section>

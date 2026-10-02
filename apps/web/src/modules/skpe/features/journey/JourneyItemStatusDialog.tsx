@@ -26,7 +26,7 @@ type JourneyItemStatusDialogProps = {
 function getStatusLabel(status: JourneyStatus) {
   const labels: Record<JourneyStatus, string> = {
     not_started: 'Não iniciado',
-    in_progress: 'Em andamento',
+    in_progress: 'Andamento',
     blocked: 'Bloqueado',
     pending_validation: 'Aguardando validação',
     completed: 'Concluído',
