@@ -699,19 +699,19 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     if (!batchId) return
 
     const confirmed = window.confirm(
-      'A Gestão da COOTAQUARA já aprovou os elementos deste Diagnóstico. Esta ação confirmará somente as correspondências integrais entre o histórico e o SPARKs, sem repetir a aprovação de negócio e sem incorporar conteúdo. Deseja continuar?',
+      'A Gestão da COOTAQUARA já aprovou integralmente os elementos deste Diagnóstico, inclusive os Riscos Estratégicos e as propostas de mitigação. Esta ação homologará as correspondências do histórico com o SPARKs; vínculos técnicos ainda não estruturados serão preservados como ressalvas de implementação, sem repetir a aprovação de negócio e sem incorporar conteúdo. Deseja continuar?',
     )
     if (!confirmed) return
 
     const reason = window.prompt(
       'Registre a justificativa da conferência em lote:',
-      'Correspondência integral entre histórico aprovado pela Gestão da COOTAQUARA e registro atual do SPARKs; aprovação de negócio preexistente preservada.',
+      'Diagnóstico aprovado integralmente pela Gestão da COOTAQUARA; homologação da migração com preservação das aprovações de negócio e dos vínculos técnicos a estruturar posteriormente.',
     )?.trim()
     if (!reason) return
 
     setConfirmingIntegralMatches(true)
     setIncorporationReview(null)
-    setMessage('Conferindo correspondências integrais do Diagnóstico...')
+    setMessage('Homologando o Diagnóstico já aprovado e separando apenas pendências técnicas de estruturação...')
     setMessageType('info')
 
     try {
@@ -726,8 +726,10 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
 
       const result = (data ?? {}) as {
         integralMatches?: number
+        approvedWithTechnicalReservations?: number
         requestsConfirmed?: number
         itemsConfirmed?: number
+        itemsConfirmedWithReservations?: number
         alreadyConfirmed?: number
         differences?: number
         unresolved?: number
@@ -736,11 +738,13 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       }
 
       setMessage(
-        `${result.requestsConfirmed ?? 0} registro(s) com correspondência integral foram confirmados em lote`
+        `${result.requestsConfirmed ?? 0} registro(s) do Diagnóstico foram homologados nesta execução`
         + ` (${result.itemsConfirmed ?? 0} campo(s)).`
-        + ` ${result.alreadyConfirmed ?? 0} já estavam confirmados.`
-        + ` ${result.differences ?? 0} registro(s) com diferença e ${result.unresolved ?? 0} sem resolução integral permanecem para análise individual.`
-        + ' A aprovação de negócio anterior foi preservada e nenhuma incorporação foi executada.',
+        + ` ${result.approvedWithTechnicalReservations ?? 0} registro(s) foram homologados com ressalvas apenas de estruturação técnica`
+        + ` (${result.itemsConfirmedWithReservations ?? 0} campo(s)).`
+        + ` ${result.alreadyConfirmed ?? 0} já estavam homologados.`
+        + ` ${result.differences ?? 0} registro(s) possuem diferença substantiva e ${result.unresolved ?? 0} permanecem sem resolução.`
+        + ' As aprovações de negócio foram preservadas e nenhuma incorporação definitiva foi executada.',
       )
       setMessageType('success')
       await loadIncorporationCandidates(batchId, mappingCoverage)
@@ -1245,15 +1249,15 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
 
               {incorporationCandidates.length > 0 && (
                 <details className="canonical-incorporation-review-queue" open>
-                  <summary>Dados históricos do Diagnóstico — revisão humana ({incorporationCandidates.length})</summary>
-                  <p>Estes elementos do Diagnóstico já foram aprovados pela Gestão da COOTAQUARA. Nesta etapa, o SPARKs confirma apenas se o histórico corresponde ao registro atual. Correspondências integrais podem ser homologadas em lote; somente diferenças reais permanecem para análise individual.</p>
+                  <summary>Dados históricos do Diagnóstico — homologação da migração ({incorporationCandidates.length})</summary>
+                  <p>O Diagnóstico já foi aprovado integralmente pela Gestão da COOTAQUARA, inclusive os Riscos Estratégicos e suas propostas de mitigação. Nesta etapa, o SPARKs apenas homologa a migração. Vínculos ainda não estruturados — como evidências de monitoramento ou associações futuras a Objetivos — são preservados como ressalvas técnicas, sem reabrir a decisão de negócio.</p>
                   <div className="canonical-staging-actions canonical-diagnostic-batch-actions">
                     <button
                       type="button"
                       onClick={() => void confirmIntegralMatchesInBatch()}
                       disabled={confirmingIntegralMatches || preparingIncorporationBatch || Boolean(preparingIncorporationId)}
                     >
-                      {confirmingIntegralMatches ? 'Confirmando correspondências...' : 'Confirmar correspondências integrais em lote'}
+                      {confirmingIntegralMatches ? 'Homologando diagnóstico...' : 'Homologar Diagnóstico aprovado em lote'}
                     </button>
                     <button
                       type="button"

@@ -290,8 +290,10 @@ Deno.serve(async (request) => {
     if (requestsError) return jsonResponse({ error: compactError(requestsError) }, 500)
 
     let integralMatches = 0
+    let approvedWithTechnicalReservations = 0
     let requestsConfirmed = 0
     let itemsConfirmed = 0
+    let itemsConfirmedWithReservations = 0
     let differences = 0
     let unresolved = 0
     let alreadyConfirmed = 0
@@ -365,18 +367,28 @@ Deno.serve(async (request) => {
         ))
         .map((item) => String(item.target_field_name ?? item.id))
 
-      if (mismatchedFields.length > 0) {
+      const deferredRiskFields = new Set(['monitoring_evidence', 'related_objective_codes'])
+      const isRisk = String(record?.entity_code ?? '') === 'risk'
+      const nonDeferrableMismatches = mismatchedFields.filter(
+        (field) => !isRisk || !deferredRiskFields.has(field),
+      )
+      const deferredTechnicalFields = isRisk
+        ? mismatchedFields.filter((field) => deferredRiskFields.has(field))
+        : []
+
+      if (nonDeferrableMismatches.length > 0) {
         differences += 1
         exceptions.push({
           requestId: requestRow.id,
           externalKey: record?.external_key ?? null,
-          reason: 'Diferença entre histórico e SPARKs.',
-          fields: mismatchedFields,
+          reason: 'Diferença substantiva entre histórico e SPARKs.',
+          fields: nonDeferrableMismatches,
         })
         continue
       }
 
-      integralMatches += 1
+      if (deferredTechnicalFields.length > 0) approvedWithTechnicalReservations += 1
+      else integralMatches += 1
       const pendingItems = items.filter(
         (item) => !['validated', 'validated_with_reservations'].includes(String(item.validation_state ?? '')),
       )
@@ -387,13 +399,25 @@ Deno.serve(async (request) => {
       }
 
       for (const item of pendingItems) {
+        const fieldName = String(item.target_field_name ?? '')
+        const isDeferredTechnicalField = deferredTechnicalFields.includes(fieldName)
+        const reservation = isDeferredTechnicalField
+          ? [{
+              code: 'DEFERRED_STRUCTURED_LINKAGE',
+              field: fieldName,
+              message: fieldName === 'monitoring_evidence'
+                ? 'Evidência aprovada no Diagnóstico; vínculo estruturado será concluído na evolução do modelo.'
+                : 'Relação com Objetivos aprovada como futura; vínculo será estruturado quando os Objetivos do PE estiverem consolidados.',
+            }]
+          : []
+
         const { error: reviewError } = await adminClient.rpc('skpe_review_import_incorporation_item', {
           p_incorporation_item_id: item.id,
-          p_review_outcome: 'validated',
+          p_review_outcome: isDeferredTechnicalField ? 'validated_with_reservations' : 'validated',
           p_review_reason: reason,
           p_reviewer_actor_type: actorType,
           p_reviewer_user_id: actorUserId,
-          p_reservations: [],
+          p_reservations: reservation,
           p_metadata: {
             source: 'skpe-import-incorporation-edge',
             action: 'review_batch_integral_matches',
@@ -402,6 +426,12 @@ Deno.serve(async (request) => {
             validation_scope: 'migration_correspondence_only',
             historical_business_approval_preserved: true,
             business_decision_repeated: false,
+            diagnostic_business_approval_preserved: true,
+            risk_business_approval_preserved: isRisk,
+            mitigation_business_approval_preserved: isRisk,
+            approved_mitigation_input: isRisk && fieldName === 'treatment_plan',
+            mitigation_development_stage: isRisk ? 'strategic_initiatives' : null,
+            deferred_structured_linkage: isDeferredTechnicalField,
             semantic_inference: false,
             materialization_requested: false,
           },
@@ -409,6 +439,7 @@ Deno.serve(async (request) => {
 
         if (reviewError) return jsonResponse({ error: compactError(reviewError) }, 400)
         itemsConfirmed += 1
+        if (isDeferredTechnicalField) itemsConfirmedWithReservations += 1
       }
 
       const { error: evaluateError } = await adminClient.rpc('skpe_evaluate_import_incorporation_request', {
@@ -431,8 +462,10 @@ Deno.serve(async (request) => {
       validationScope: 'migration_correspondence_only',
       totalDiagnosticRequests: (requests ?? []).length,
       integralMatches,
+      approvedWithTechnicalReservations,
       requestsConfirmed,
       itemsConfirmed,
+      itemsConfirmedWithReservations,
       alreadyConfirmed,
       differences,
       unresolved,
