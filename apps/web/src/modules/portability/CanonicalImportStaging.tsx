@@ -97,6 +97,28 @@ type MappingCoverage = {
   entities?: MappingCoverageEntity[]
 }
 
+type IncorporationCandidate = {
+  id: string
+  entity_code: string
+  external_key: string
+  source_sheet?: string | null
+  source_row?: number | null
+  reviewed?: boolean
+  review_decision?: string | null
+}
+
+type IncorporationReviewPackage = {
+  success?: boolean
+  materializationExecuted?: boolean
+  request?: Record<string, unknown>
+  importRecord?: Record<string, unknown>
+  items?: Array<Record<string, unknown>>
+  targetResolution?: Record<string, unknown> | null
+  decisions?: Array<Record<string, unknown>>
+}
+
+const DIAGNOSTIC_INCORPORATION_TYPES = ['pestel', 'swot', 'tows', 'risk'] as const
+
 
 type BlockedReview = {
   batchId?: string
@@ -213,6 +235,9 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [assessingReadiness, setAssessingReadiness] = useState(false)
   const [readiness, setReadiness] = useState<ReadinessAssessment | null>(null)
   const [mappingCoverage, setMappingCoverage] = useState<MappingCoverage | null>(null)
+  const [incorporationCandidates, setIncorporationCandidates] = useState<IncorporationCandidate[]>([])
+  const [incorporationReview, setIncorporationReview] = useState<IncorporationReviewPackage | null>(null)
+  const [preparingIncorporationId, setPreparingIncorporationId] = useState('')
   const [blockedReview, setBlockedReview] = useState<BlockedReview | null>(null)
   const [correctedValuesText, setCorrectedValuesText] = useState('')
   const [reviewNotes, setReviewNotes] = useState('')
@@ -238,6 +263,8 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     setSummary(null)
     setReadiness(null)
     setMappingCoverage(null)
+    setIncorporationCandidates([])
+    setIncorporationReview(null)
     setExistingBatches([])
     if (!organizationId) return
 
@@ -294,6 +321,8 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     setSummary(null)
     setReadiness(null)
     setMappingCoverage(null)
+    setIncorporationCandidates([])
+    setIncorporationReview(null)
     setExistingBatches([])
     if (organizationId && projectId) void loadExistingBatches()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -440,6 +469,61 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     return coverage
   }
 
+  const loadIncorporationCandidates = async (id: string, coverage: MappingCoverage | null) => {
+    const coveredTypes = new Set(
+      (coverage?.entities ?? [])
+        .filter((item) => item.mappingStatus === 'covered')
+        .map((item) => item.entityCode),
+    )
+    const diagnosticTypes = DIAGNOSTIC_INCORPORATION_TYPES.filter((type) => coveredTypes.has(type))
+
+    if (diagnosticTypes.length === 0) {
+      setIncorporationCandidates([])
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('skpe_import_records')
+      .select('id, entity_code, external_key, source_sheet, source_row, reviewed, review_decision')
+      .eq('batch_id', id)
+      .in('entity_code', diagnosticTypes)
+      .order('entity_code', { ascending: true })
+      .order('external_key', { ascending: true })
+
+    if (error) throw error
+    setIncorporationCandidates((data ?? []) as IncorporationCandidate[])
+  }
+
+  const prepareIncorporationReview = async (candidate: IncorporationCandidate) => {
+    setPreparingIncorporationId(candidate.id)
+    setIncorporationReview(null)
+    setMessage('Preparando pacote governado para revisão humana...')
+    setMessageType('info')
+
+    try {
+      const { data, error } = await supabase.functions.invoke('skpe-import-incorporation', {
+        body: {
+          action: 'prepare_review',
+          importRecordId: candidate.id,
+          reason: `Preparação governada para revisão de ${candidate.external_key}.`,
+        },
+      })
+      if (error) throw error
+      const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
+      if (!reviewPackage?.request) throw new Error('A preparação não retornou Request de incorporação.')
+      setIncorporationReview(reviewPackage)
+      setMessage('Pacote preparado. Revise a origem, o destino e os campos. Nenhuma entidade estratégica foi criada.')
+      setMessageType('success')
+    } catch (error) {
+      setMessage(error instanceof Error
+        ? `Não foi possível preparar a revisão: ${error.message}`
+        : 'Não foi possível preparar a revisão.')
+      setMessageType('error')
+    } finally {
+      setPreparingIncorporationId('')
+    }
+  }
+
   const openExistingBatch = async (id: string) => {
     setOpeningBatchId(id)
     setPayload(null)
@@ -452,7 +536,9 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       )
       if (readinessError) throw readinessError
       const assessment = (readinessData ?? null) as ReadinessAssessment | null
-      await loadMappingCoverage(id)
+      const coverage = await loadMappingCoverage(id)
+      await loadIncorporationCandidates(id, coverage)
+      setIncorporationReview(null)
       setBatchId(id)
       setReadiness(assessment)
       window.localStorage.setItem(`skpe.import.batch.${organizationId}.${projectId}`, id)
@@ -464,6 +550,8 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       setBatchId('')
       setReadiness(null)
       setMappingCoverage(null)
+      setIncorporationCandidates([])
+      setIncorporationReview(null)
       setMessage(error instanceof Error
         ? `Não foi possível retomar e avaliar o lote: ${error.message}`
         : 'Não foi possível retomar e avaliar o lote.')
@@ -786,6 +874,72 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   </table>
                 </div>
               </details>
+
+              {incorporationCandidates.length > 0 && (
+                <details className="canonical-incorporation-review-queue" open>
+                  <summary>Primeiro pacote de Diagnóstico — revisão humana ({incorporationCandidates.length})</summary>
+                  <p>Estes registros possuem contrato de incorporação governado. Preparar revisão cria somente o pacote de trabalho auditável; não aprova e não materializa o conteúdo estratégico.</p>
+                  <div className="canonical-batch-table-wrap">
+                    <table>
+                      <thead><tr><th>Tipo</th><th>Chave</th><th>Origem</th><th>Revisão da origem</th><th>Ação</th></tr></thead>
+                      <tbody>{incorporationCandidates.map((candidate) => (
+                        <tr key={candidate.id}>
+                          <td>{localizedLabel(candidate.entity_code, ENTITY_LABELS)}</td>
+                          <td><strong>{candidate.external_key}</strong></td>
+                          <td>{candidate.source_sheet ?? '—'}{candidate.source_row ? ` · linha ${candidate.source_row}` : ''}</td>
+                          <td>{candidate.reviewed ? localizedLabel(candidate.review_decision, STATUS_LABELS) : 'Pendente'}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="review-blocked"
+                              onClick={() => void prepareIncorporationReview(candidate)}
+                              disabled={Boolean(preparingIncorporationId)}
+                            >
+                              {preparingIncorporationId === candidate.id ? 'Preparando...' : 'Preparar revisão'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
+
+              {incorporationReview && (
+                <div className="canonical-incorporation-review-package">
+                  <div className="canonical-readiness-heading">
+                    <div>
+                      <small>Pacote governado de revisão</small>
+                      <h4>{String(incorporationReview.importRecord?.external_key ?? 'Registro histórico')}</h4>
+                    </div>
+                    <span>{String(incorporationReview.request?.request_status ?? 'under_review')}</span>
+                  </div>
+                  <div className="canonical-incorporation-review-summary">
+                    <span><strong>Tipo:</strong> {localizedLabel(incorporationReview.importRecord?.entity_code, ENTITY_LABELS)}</span>
+                    <span><strong>Destino:</strong> {String(incorporationReview.targetResolution?.target_entity_type ?? '—')}</span>
+                    <span><strong>Resolução:</strong> {String(incorporationReview.targetResolution?.resolution_mode ?? '—')}</span>
+                    <span><strong>Elegibilidade:</strong> {String(incorporationReview.request?.eligibility_status ?? '—')}</span>
+                  </div>
+                  <div className="canonical-batch-table-wrap">
+                    <table>
+                      <thead><tr><th>Campo de origem</th><th>Campo canônico</th><th>Valor recebido</th><th>Validação</th></tr></thead>
+                      <tbody>{(incorporationReview.items ?? []).map((item, index) => (
+                        <tr key={String(item.id ?? index)}>
+                          <td>{String(item.source_field_name ?? '—')}</td>
+                          <td>{String(item.target_field_name ?? '—')}</td>
+                          <td><code>{JSON.stringify(item.original_value ?? null)}</code></td>
+                          <td>{String(item.validation_state ?? 'pending')}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                  <div className="canonical-staging-actions secondary">
+                    <button type="button" className="neutral" onClick={() => setIncorporationReview(null)}>Fechar pacote</button>
+                  </div>
+                  <p className="canonical-readiness-note">Este corte é somente de preparação e leitura. Revisão, decisão e materialização permanecem bloqueadas até os próximos gates humanos.</p>
+                </div>
+              )}
+
               <p className="canonical-readiness-note">A cobertura indica existência de contrato ativo. Ela não significa que o destino já foi resolvido nem que a entidade foi materializada.</p>
             </div>
           )}

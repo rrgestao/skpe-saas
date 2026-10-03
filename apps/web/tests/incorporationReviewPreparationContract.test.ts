@@ -10,6 +10,10 @@ const edge = readFileSync(
   new URL('../../../supabase/functions/skpe-import-incorporation/index.ts', import.meta.url),
   'utf8',
 )
+const staging = readFileSync(
+  new URL('../src/modules/portability/CanonicalImportStaging.tsx', import.meta.url),
+  'utf8',
+)
 
 test('review preparation orchestrates governed runtime without strategic materialization', () => {
   assert.match(migration, /skpe_prepare_import_incorporation_review/)
@@ -53,4 +57,15 @@ test('edge function exposes preparation and read-only review package only', () =
   assert.doesNotMatch(edge, /skpe_execute_governed_import_materialization/)
   assert.doesNotMatch(edge, /skpe_record_import_incorporation_decision/)
   assert.doesNotMatch(edge, /skpe_review_import_incorporation_item/)
+})
+
+test('staging exposes preparation UX without approval or materialization CTA', () => {
+  assert.match(staging, /Primeiro pacote de Diagnóstico — revisão humana/)
+  assert.match(staging, /Preparar revisão/)
+  assert.match(staging, /supabase\.functions\.invoke\('skpe-import-incorporation'/)
+  assert.match(staging, /action: 'prepare_review'/)
+  assert.match(staging, /Nenhuma entidade estratégica foi criada/)
+  assert.match(staging, /Revisão, decisão e materialização permanecem bloqueadas/)
+  assert.doesNotMatch(staging, />Materializar</)
+  assert.doesNotMatch(staging, />Aprovar incorporação</)
 })
