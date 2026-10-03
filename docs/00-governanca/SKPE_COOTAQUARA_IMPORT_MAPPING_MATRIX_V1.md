@@ -28,10 +28,11 @@ Nenhuma linha CANDIDATO, REVISÃO ou SEM DESTINO autoriza escrita estratégica.
 | pestel | 6 | ATIVO/GOVERNADO | pestel_to_pestel_item | skpe_pestel_items |
 | swot | 12 | ATIVO/GOVERNADO | swot_to_swot_item | skpe_swot_items |
 | tows | 7 | ATIVO/GOVERNADO | tows_to_tows_item | skpe_tows_items |
+| risk | 10 | ATIVO/GOVERNADO | risk_to_strategic_risk_item | skpe_strategic_risk_items |
 
-**Cobertura atual:** 48/281 registros (17,08%) e 8/38 tipos (21,05%).
+**Cobertura atual:** 58/281 registros (20,64%) e 9/38 tipos (23,68%).
 
-Todos os oito mappings ativos exigem revisão humana e não permitem inferência semântica.
+Todos os nove mappings ativos exigem revisão humana e não permitem inferência semântica.
 
 ## Matriz completa
 
@@ -64,7 +65,7 @@ Todos os oito mappings ativos exigem revisão humana e não permitem inferência
 | process_maturity | 4 | SEM DESTINO CONFIRMADO | — | Não foi identificada tabela canônica específica de maturidade do processo |
 | project | 20 | REVISÃO/COMPOSTO | skpe_projects | Registros são chave/valor do mesmo projeto; agregar e reconciliar, não inserir 20 projetos |
 | project_portfolio | 5 | REVISÃO/COMPOSTO | sparks_initiatives | Deduplicar contra initiative; confirmar se são projetos/iniciativas distintos |
-| risk | 10 | CANDIDATO TÉCNICO FORTE | skpe_strategic_risk_items | Correspondência direta; não confundir com riscos operacionais de iniciativa |
+| risk | 10 | ATIVO/GOVERNADO | skpe_strategic_risk_items | Mapping ativo `risk_to_strategic_risk_item`; risco estratégico do Diagnóstico, separado de risco operacional de iniciativa |
 | strategic_association | 12 | REVISÃO/COMPOSTO | links OE/KR/indicador | Materializar relações após entidades-base existirem |
 | strategic_identity | 9 | CANDIDATO TÉCNICO | skpe_strategic_identity / items | Resolver elemento, versão/proposta e formulação vigente |
 | strategic_meeting | 1 | SEM DESTINO CONFIRMADO | possível strategy review | Amostra é template vazio; não materializar sem conteúdo factual |
@@ -76,21 +77,13 @@ Todos os oito mappings ativos exigem revisão humana e não permitem inferência
 | traceability | 5 | REVISÃO/COMPOSTO | múltiplos links canônicos | Não existe entidade única: OE, risco, indicador, iniciativa, decisão e evidência |
 | version_control | 5 | SEM DESTINO ESTRATÉGICO | auditoria/proveniência | Preservar histórico do arquivo; não converter em entidade estratégica |
 
-## Próxima expansão recomendada pela matriz
+## Primeiro pacote de Diagnóstico — CONTRATOS CONCLUÍDOS
 
-Primeiro conjunto para novo mapping governado:
+A sequência governada `PESTEL -> SWOT -> TOWS -> RISK` está completa no nível de **contrato de incorporação**.
 
-1. `risk -> skpe_strategic_risk_items` — 10 registros.
+Cobertura atual: **58/281 registros (20,64%) e 9/38 tipos (23,68%)**.
 
-Esse tipo restante soma **10 registros** e possuem:
-
-- tabelas canônicas específicas;
-- unicidade por organização/projeto/código;
-- campos de origem `source_import_record_id`, `source_external_key`, `source_sheet`, `source_row`, `source_payload`;
-- semântica explicitamente destinada ao Diagnóstico Estratégico;
-- separação clara entre risco estratégico e risco operacional de iniciativa.
-
-Com PESTEL, SWOT e TOWS já ativos, a cobertura atual é **48/281 registros e 8/38 tipos**. Se RISK for ativado com materializador e proveniência, a cobertura potencial sobe para **58 registros e 9 tipos**, sem recorrer a inferência semântica.
+Isso não significa materialização: nenhum dos 35 registros PESTEL/SWOT/TOWS/RISK foi promovido automaticamente. O próximo avanço deve ocorrer pelo runtime governado `incorporation request -> target resolution -> item review -> governed decision -> materializer -> provenance`.
 
 ## Ordem de dependência sugerida
 
