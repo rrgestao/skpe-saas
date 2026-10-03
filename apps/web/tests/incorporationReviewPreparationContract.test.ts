@@ -49,7 +49,7 @@ test('edge function authenticates and authorizes before privileged orchestration
 })
 
 test('edge function exposes governed human review and decision without materialization', () => {
-  assert.match(edge, /'prepare_review' \| 'get_review' \| 'review_item' \| 'review_request_items' \| 'review_batch_integral_matches' \| 'decide_request'/)
+  assert.match(edge, /'prepare_review' \| 'get_review' \| 'get_batch_review_queue' \| 'review_item' \| 'review_request_items' \| 'review_batch_integral_matches' \| 'decide_request'/)
   assert.match(edge, /human_bulk_review: true/)
   assert.match(edge, /human_batch_confirmation: true/)
   assert.match(edge, /validation_scope: 'migration_correspondence_only'/)
@@ -88,6 +88,9 @@ test('staging exposes preparation UX without approval or materialization CTA', (
   assert.match(staging, /Confirmar informações/)
   assert.match(staging, /Confirmar correspondências integrais em lote/)
   assert.match(staging, /review_batch_integral_matches/)
+  assert.match(staging, /get_batch_review_queue/)
+  assert.doesNotMatch(staging, /\.from\('skpe_import_incorporation_requests'\)/)
+  assert.doesNotMatch(staging, /\.from\('skpe_import_incorporation_items'\)/)
   assert.match(staging, /aprovação de negócio preexistente preservada/)
   assert.match(staging, /Recebido do histórico/)
   assert.match(staging, /Atual no SPARKs/)

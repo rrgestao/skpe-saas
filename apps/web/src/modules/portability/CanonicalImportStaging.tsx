@@ -594,46 +594,19 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       return
     }
 
-    const { data: requestRows, error: requestError } = await supabase
-      .from('skpe_import_incorporation_requests')
-      .select('id, import_record_id')
-      .in('import_record_id', candidates.map((candidate) => candidate.id))
-      .eq('request_status', 'under_review')
-
-    if (requestError) throw requestError
-    const requestIds = (requestRows ?? []).map((request) => String(request.id))
-    if (requestIds.length === 0) {
-      setIncorporationCandidates(candidates)
-      return
-    }
-
-    const { data: itemRows, error: itemError } = await supabase
-      .from('skpe_import_incorporation_items')
-      .select('incorporation_request_id, validation_state')
-      .in('incorporation_request_id', requestIds)
-
-    if (itemError) throw itemError
-
-    const requestByRecord = new Map(
-      (requestRows ?? []).map((request) => [String(request.import_record_id), String(request.id)]),
-    )
-    const itemStatesByRequest = new Map<string, string[]>()
-    for (const item of itemRows ?? []) {
-      const requestId = String(item.incorporation_request_id)
-      const states = itemStatesByRequest.get(requestId) ?? []
-      states.push(String(item.validation_state ?? ''))
-      itemStatesByRequest.set(requestId, states)
-    }
-
-    const pendingCandidates = candidates.filter((candidate) => {
-      const requestId = requestByRecord.get(candidate.id)
-      if (!requestId) return true
-      const states = itemStatesByRequest.get(requestId) ?? []
-      if (states.length === 0) return true
-      return !states.every((state) => ['validated', 'validated_with_reservations'].includes(state))
+    const { data: queueData, error: queueError } = await supabase.functions.invoke('skpe-import-incorporation', {
+      body: {
+        action: 'get_batch_review_queue',
+        batchId: id,
+      },
     })
+    if (queueError) throw queueError
 
-    setIncorporationCandidates(pendingCandidates)
+    const queue = (queueData ?? {}) as {
+      pendingImportRecordIds?: string[]
+    }
+    const pendingIds = new Set(queue.pendingImportRecordIds ?? candidates.map((candidate) => candidate.id))
+    setIncorporationCandidates(candidates.filter((candidate) => pendingIds.has(candidate.id)))
   }
 
   const prepareIncorporationReview = async (candidate: IncorporationCandidate) => {

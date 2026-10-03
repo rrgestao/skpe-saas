@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 type RequestPayload = {
-  action?: 'prepare_review' | 'get_review' | 'review_item' | 'review_request_items' | 'review_batch_integral_matches' | 'decide_request'
+  action?: 'prepare_review' | 'get_review' | 'get_batch_review_queue' | 'review_item' | 'review_request_items' | 'review_batch_integral_matches' | 'decide_request'
   importRecordId?: string
   batchId?: string
   requestId?: string
@@ -92,7 +92,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'Conteúdo da requisição inválido.' }, 400)
   }
 
-  const supportedActions = ['prepare_review', 'get_review', 'review_item', 'review_request_items', 'review_batch_integral_matches', 'decide_request']
+  const supportedActions = ['prepare_review', 'get_review', 'get_batch_review_queue', 'review_item', 'review_request_items', 'review_batch_integral_matches', 'decide_request']
   if (!payload.action || !supportedActions.includes(payload.action)) {
     return jsonResponse({ error: 'Ação inválida.' }, 400)
   }
@@ -119,7 +119,7 @@ Deno.serve(async (request) => {
     if (recordError) return jsonResponse({ error: 'Não foi possível consultar o ImportRecord.' }, 500)
     if (!record) return jsonResponse({ error: 'ImportRecord não encontrado.' }, 404)
     organizationId = String(record.organization_id)
-  } else if (payload.action === 'review_batch_integral_matches') {
+  } else if (payload.action === 'review_batch_integral_matches' || payload.action === 'get_batch_review_queue') {
     if (!batchId) return jsonResponse({ error: 'Lote de importação é obrigatório.' }, 400)
 
     const { data: batchRow, error: batchError } = await adminClient
@@ -146,7 +146,7 @@ Deno.serve(async (request) => {
     requestId = String(item.incorporation_request_id)
   }
 
-  if (payload.action !== 'prepare_review' && payload.action !== 'review_batch_integral_matches') {
+  if (payload.action !== 'prepare_review' && payload.action !== 'review_batch_integral_matches' && payload.action !== 'get_batch_review_queue') {
     if (!requestId) return jsonResponse({ error: 'Request de incorporação é obrigatório.' }, 400)
 
     const { data: requestRow, error: requestLookupError } = await adminClient
@@ -180,6 +180,89 @@ Deno.serve(async (request) => {
   const actorType = isSuperAdmin === true ? 'sparks_consultancy' : 'organization'
   const actorUserId = requesterData.user.id
   const reservations = Array.isArray(payload.reservations) ? payload.reservations : []
+
+  if (payload.action === 'get_batch_review_queue') {
+    if (!batchId) return jsonResponse({ error: 'Lote de importação é obrigatório.' }, 400)
+
+    const { data: batchRecords, error: batchRecordsError } = await adminClient
+      .from('skpe_import_records')
+      .select('id, entity_code, external_key')
+      .eq('batch_id', batchId)
+      .in('entity_code', ['pestel', 'swot', 'tows', 'risk'])
+
+    if (batchRecordsError) return jsonResponse({ error: compactError(batchRecordsError) }, 500)
+    const recordIds = (batchRecords ?? []).map((record) => String(record.id))
+    if (recordIds.length === 0) {
+      return jsonResponse({
+        success: true,
+        action: payload.action,
+        batchId,
+        totalDiagnosticRecords: 0,
+        pendingImportRecordIds: [],
+        confirmedImportRecordIds: [],
+      })
+    }
+
+    const { data: requests, error: requestsError } = await adminClient
+      .from('skpe_import_incorporation_requests')
+      .select('id, import_record_id, request_status')
+      .in('import_record_id', recordIds)
+      .eq('request_status', 'under_review')
+
+    if (requestsError) return jsonResponse({ error: compactError(requestsError) }, 500)
+
+    const requestIds = (requests ?? []).map((request) => String(request.id))
+    const { data: items, error: itemsError } = requestIds.length > 0
+      ? await adminClient
+          .from('skpe_import_incorporation_items')
+          .select('incorporation_request_id, validation_state')
+          .in('incorporation_request_id', requestIds)
+      : { data: [], error: null }
+
+    if (itemsError) return jsonResponse({ error: compactError(itemsError) }, 500)
+
+    const requestByRecord = new Map(
+      (requests ?? []).map((request) => [String(request.import_record_id), String(request.id)]),
+    )
+    const itemStatesByRequest = new Map<string, string[]>()
+
+    for (const item of items ?? []) {
+      const itemRequestId = String(item.incorporation_request_id)
+      const states = itemStatesByRequest.get(itemRequestId) ?? []
+      states.push(String(item.validation_state ?? ''))
+      itemStatesByRequest.set(itemRequestId, states)
+    }
+
+    const pendingImportRecordIds: string[] = []
+    const confirmedImportRecordIds: string[] = []
+
+    for (const record of batchRecords ?? []) {
+      const recordId = String(record.id)
+      const itemRequestId = requestByRecord.get(recordId)
+      if (!itemRequestId) {
+        pendingImportRecordIds.push(recordId)
+        continue
+      }
+
+      const states = itemStatesByRequest.get(itemRequestId) ?? []
+      const fullyConfirmed = states.length > 0
+        && states.every((state) => ['validated', 'validated_with_reservations'].includes(state))
+
+      if (fullyConfirmed) confirmedImportRecordIds.push(recordId)
+      else pendingImportRecordIds.push(recordId)
+    }
+
+    return jsonResponse({
+      success: true,
+      action: payload.action,
+      batchId,
+      totalDiagnosticRecords: recordIds.length,
+      pendingCount: pendingImportRecordIds.length,
+      confirmedCount: confirmedImportRecordIds.length,
+      pendingImportRecordIds,
+      confirmedImportRecordIds,
+    })
+  }
 
   if (payload.action === 'review_batch_integral_matches') {
     if (!batchId) return jsonResponse({ error: 'Lote de importação é obrigatório.' }, 400)
