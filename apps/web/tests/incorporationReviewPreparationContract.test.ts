@@ -71,7 +71,7 @@ test('edge function exposes governed human review and decision without materiali
 
 test('staging exposes preparation UX without approval or materialization CTA', () => {
   assert.match(staging, /Dados históricos do Diagnóstico — revisão humana/)
-  assert.match(staging, /Preparar revisão/)
+  assert.match(staging, /Abrir revisão/)
   assert.match(staging, /Preparar dados históricos para revisão/)
   assert.match(staging, /prepareAllIncorporationReviews/)
   assert.match(staging, /for \(const candidate of incorporationCandidates\)/)

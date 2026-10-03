@@ -1099,7 +1099,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                               onClick={() => void prepareIncorporationReview(candidate)}
                               disabled={preparingIncorporationBatch || Boolean(preparingIncorporationId)}
                             >
-                              {preparingIncorporationId === candidate.id ? 'Preparando...' : 'Preparar revisão'}
+                              {preparingIncorporationId === candidate.id ? 'Abrindo...' : 'Abrir revisão'}
                             </button>
                           </td>
                         </tr>
