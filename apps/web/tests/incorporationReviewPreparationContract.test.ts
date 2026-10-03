@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import test from 'node:test'
+
+const migration = readFileSync(
+  new URL('../../../supabase/migrations/20261003143000_prepare_import_incorporation_review.sql', import.meta.url),
+  'utf8',
+)
+const edge = readFileSync(
+  new URL('../../../supabase/functions/skpe-import-incorporation/index.ts', import.meta.url),
+  'utf8',
+)
+
+test('review preparation orchestrates governed runtime without strategic materialization', () => {
+  assert.match(migration, /skpe_prepare_import_incorporation_review/)
+  assert.match(migration, /skpe_create_import_incorporation_request/)
+  assert.match(migration, /skpe_resolve_import_target/)
+  assert.match(migration, /skpe_add_import_incorporation_item/)
+  assert.match(migration, /skpe_evaluate_import_incorporation_request/)
+  assert.match(migration, /mapping_definition -> 'field_map'/)
+  assert.match(migration, /'structured_mapping'/)
+  assert.match(migration, /'semanticInference',false/)
+  assert.match(migration, /'materializationExecuted',false/)
+  assert.doesNotMatch(migration, /skpe_execute_governed_import_materialization\(/)
+})
+
+test('review preparation is retry-safe and service-role only', () => {
+  assert.match(migration, /request_status not in \('rejected','cancelled','superseded','applied'\)/)
+  assert.match(migration, /v_reused_request := true/)
+  assert.match(migration, /incorporation_request_id=v_request_id/)
+  assert.match(migration, /source_field_name=v_source_field/)
+  assert.match(migration, /target_field_name=v_target_field/)
+  assert.match(migration, /revoke all on function public\.skpe_prepare_import_incorporation_review[\s\S]*from authenticated/)
+  assert.match(migration, /grant execute on function public\.skpe_prepare_import_incorporation_review[\s\S]*to service_role/)
+})
+
+test('edge function authenticates and authorizes before privileged orchestration', () => {
+  assert.match(edge, /verify|Authorization/)
+  assert.match(edge, /userClient\.auth\.getUser\(\)/)
+  assert.match(edge, /can_manage_skpe_journey/)
+  assert.match(edge, /is_platform_super_admin/)
+  assert.match(edge, /Sem permissão para preparar incorporação/)
+  assert.match(edge, /SUPABASE_SERVICE_ROLE_KEY/)
+  assert.match(edge, /skpe_prepare_import_incorporation_review/)
+})
+
+test('edge function exposes preparation and read-only review package only', () => {
+  assert.match(edge, /'prepare_review' \| 'get_review'/)
+  assert.match(edge, /materializationExecuted: false/)
+  assert.match(edge, /skpe_import_incorporation_items/)
+  assert.match(edge, /skpe_import_target_resolution_events/)
+  assert.match(edge, /skpe_import_incorporation_decisions/)
+  assert.doesNotMatch(edge, /skpe_execute_governed_import_materialization/)
+  assert.doesNotMatch(edge, /skpe_record_import_incorporation_decision/)
+  assert.doesNotMatch(edge, /skpe_review_import_incorporation_item/)
+})
