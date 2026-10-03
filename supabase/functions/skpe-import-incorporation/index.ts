@@ -6,10 +6,14 @@ const corsHeaders = {
 }
 
 type RequestPayload = {
-  action?: 'prepare_review' | 'get_review'
+  action?: 'prepare_review' | 'get_review' | 'review_item' | 'decide_request'
   importRecordId?: string
   requestId?: string
+  itemId?: string
   reason?: string | null
+  reviewOutcome?: 'validated' | 'validated_with_reservations' | 'requires_adjustment' | 'rejected'
+  decisionOutcome?: 'approved' | 'approved_with_reservations' | 'rejected' | 'deferred' | 'returned_for_adjustment'
+  reservations?: unknown[]
 }
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -57,7 +61,8 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'Conteúdo da requisição inválido.' }, 400)
   }
 
-  if (!payload.action || !['prepare_review', 'get_review'].includes(payload.action)) {
+  const supportedActions = ['prepare_review', 'get_review', 'review_item', 'decide_request']
+  if (!payload.action || !supportedActions.includes(payload.action)) {
     return jsonResponse({ error: 'Ação inválida.' }, 400)
   }
 
@@ -68,6 +73,7 @@ Deno.serve(async (request) => {
   let organizationId: string | null = null
   let importRecordId: string | null = payload.importRecordId?.trim() || null
   let requestId: string | null = payload.requestId?.trim() || null
+  let itemId: string | null = payload.itemId?.trim() || null
 
   if (payload.action === 'prepare_review') {
     if (!importRecordId) return jsonResponse({ error: 'ImportRecord é obrigatório.' }, 400)
@@ -80,54 +86,28 @@ Deno.serve(async (request) => {
 
     if (recordError) return jsonResponse({ error: 'Não foi possível consultar o ImportRecord.' }, 500)
     if (!record) return jsonResponse({ error: 'ImportRecord não encontrado.' }, 404)
-
     organizationId = String(record.organization_id)
+  } else if (payload.action === 'review_item') {
+    if (!itemId) return jsonResponse({ error: 'Item de incorporação é obrigatório.' }, 400)
 
-    const [{ data: canManage, error: manageError }, { data: isSuperAdmin, error: superError }] =
-      await Promise.all([
-        userClient.rpc('can_manage_skpe_journey', { target_organization_id: organizationId }),
-        userClient.rpc('is_platform_super_admin'),
-      ])
+    const { data: item, error: itemError } = await adminClient
+      .from('skpe_import_incorporation_items')
+      .select('id, incorporation_request_id')
+      .eq('id', itemId)
+      .maybeSingle()
 
-    if (manageError || superError) {
-      return jsonResponse({ error: 'Não foi possível validar a autorização.' }, 500)
-    }
-    if (canManage !== true && isSuperAdmin !== true) {
-      return jsonResponse({ error: 'Sem permissão para preparar incorporação nesta organização.' }, 403)
-    }
+    if (itemError) return jsonResponse({ error: 'Não foi possível consultar o item de incorporação.' }, 500)
+    if (!item) return jsonResponse({ error: 'Item de incorporação não encontrado.' }, 404)
 
-    const actorType = isSuperAdmin === true ? 'sparks_consultancy' : 'organization'
-    const { data: prepared, error: prepareError } = await adminClient.rpc(
-      'skpe_prepare_import_incorporation_review',
-      {
-        p_import_record_id: importRecordId,
-        p_requested_by_actor_type: actorType,
-        p_requested_by_user_id: requesterData.user.id,
-        p_request_reason: payload.reason?.trim() || 'Preparação para revisão humana de incorporação histórica.',
-        p_metadata: {
-          source: 'skpe-import-incorporation-edge',
-          action: 'prepare_review',
-          authenticated_actor_user_id: requesterData.user.id,
-          semantic_inference: false,
-          materialization_requested: false,
-        },
-      },
-    )
+    requestId = String(item.incorporation_request_id)
+  }
 
-    if (prepareError) return jsonResponse({ error: compactError(prepareError) }, 400)
-
-    const preparedObject = prepared && typeof prepared === 'object'
-      ? prepared as Record<string, unknown>
-      : {}
-
-    requestId = String(preparedObject.requestId ?? '')
-    if (!requestId) return jsonResponse({ error: 'Preparação não retornou Request válido.' }, 500)
-  } else {
+  if (payload.action !== 'prepare_review') {
     if (!requestId) return jsonResponse({ error: 'Request de incorporação é obrigatório.' }, 400)
 
     const { data: requestRow, error: requestLookupError } = await adminClient
       .from('skpe_import_incorporation_requests')
-      .select('id, organization_id, import_record_id')
+      .select('id, organization_id, import_record_id, eligibility_status, request_status')
       .eq('id', requestId)
       .maybeSingle()
 
@@ -136,19 +116,140 @@ Deno.serve(async (request) => {
 
     organizationId = String(requestRow.organization_id)
     importRecordId = String(requestRow.import_record_id)
+  }
 
-    const [{ data: canManage, error: manageError }, { data: isSuperAdmin, error: superError }] =
-      await Promise.all([
-        userClient.rpc('can_manage_skpe_journey', { target_organization_id: organizationId }),
-        userClient.rpc('is_platform_super_admin'),
-      ])
+  if (!organizationId) return jsonResponse({ error: 'Organização não determinada.' }, 500)
 
-    if (manageError || superError) {
-      return jsonResponse({ error: 'Não foi possível validar a autorização.' }, 500)
+  const [{ data: canManage, error: manageError }, { data: isSuperAdmin, error: superError }] =
+    await Promise.all([
+      userClient.rpc('can_manage_skpe_journey', { target_organization_id: organizationId }),
+      userClient.rpc('is_platform_super_admin'),
+    ])
+
+  if (manageError || superError) {
+    return jsonResponse({ error: 'Não foi possível validar a autorização.' }, 500)
+  }
+  if (canManage !== true && isSuperAdmin !== true) {
+    return jsonResponse({ error: 'Sem permissão para operar esta incorporação.' }, 403)
+  }
+
+  const actorType = isSuperAdmin === true ? 'sparks_consultancy' : 'organization'
+  const actorUserId = requesterData.user.id
+  const reservations = Array.isArray(payload.reservations) ? payload.reservations : []
+
+  if (payload.action === 'prepare_review') {
+    const { data: prepared, error: prepareError } = await adminClient.rpc(
+      'skpe_prepare_import_incorporation_review',
+      {
+        p_import_record_id: importRecordId,
+        p_requested_by_actor_type: actorType,
+        p_requested_by_user_id: actorUserId,
+        p_request_reason: payload.reason?.trim() || 'Preparação para revisão humana de incorporação histórica.',
+        p_metadata: {
+          source: 'skpe-import-incorporation-edge',
+          action: 'prepare_review',
+          authenticated_actor_user_id: actorUserId,
+          semantic_inference: false,
+          materialization_requested: false,
+        },
+      },
+    )
+
+    if (prepareError) return jsonResponse({ error: compactError(prepareError) }, 400)
+    const preparedObject = prepared && typeof prepared === 'object'
+      ? prepared as Record<string, unknown>
+      : {}
+    requestId = String(preparedObject.requestId ?? '')
+    if (!requestId) return jsonResponse({ error: 'Preparação não retornou Request válido.' }, 500)
+  }
+
+  if (payload.action === 'review_item') {
+    if (!itemId || !payload.reviewOutcome) {
+      return jsonResponse({ error: 'Item e resultado da revisão são obrigatórios.' }, 400)
     }
-    if (canManage !== true && isSuperAdmin !== true) {
-      return jsonResponse({ error: 'Sem permissão para consultar esta incorporação.' }, 403)
+    const reason = payload.reason?.trim()
+    if (!reason) return jsonResponse({ error: 'Justificativa da revisão é obrigatória.' }, 400)
+    if (payload.reviewOutcome === 'validated_with_reservations' && reservations.length === 0) {
+      return jsonResponse({ error: 'Validação com ressalvas exige ao menos uma ressalva.' }, 400)
     }
+
+    const { error: reviewError } = await adminClient.rpc('skpe_review_import_incorporation_item', {
+      p_incorporation_item_id: itemId,
+      p_review_outcome: payload.reviewOutcome,
+      p_review_reason: reason,
+      p_reviewer_actor_type: actorType,
+      p_reviewer_user_id: actorUserId,
+      p_reservations: reservations,
+      p_metadata: {
+        source: 'skpe-import-incorporation-edge',
+        action: 'review_item',
+        authenticated_actor_user_id: actorUserId,
+        semantic_inference: false,
+        materialization_requested: false,
+      },
+    })
+
+    if (reviewError) return jsonResponse({ error: compactError(reviewError) }, 400)
+
+    const { error: evaluateError } = await adminClient.rpc('skpe_evaluate_import_incorporation_request', {
+      p_request_id: requestId,
+      p_evaluated_by_actor_type: actorType,
+      p_evaluated_by_user_id: actorUserId,
+    })
+    if (evaluateError) return jsonResponse({ error: compactError(evaluateError) }, 400)
+  }
+
+  if (payload.action === 'decide_request') {
+    if (!payload.decisionOutcome) return jsonResponse({ error: 'Resultado da decisão é obrigatório.' }, 400)
+    const reason = payload.reason?.trim()
+    if (!reason) return jsonResponse({ error: 'Justificativa da decisão é obrigatória.' }, 400)
+    if (payload.decisionOutcome === 'approved_with_reservations' && reservations.length === 0) {
+      return jsonResponse({ error: 'Aprovação com ressalvas exige ao menos uma ressalva.' }, 400)
+    }
+
+    const { data: eligibility, error: evaluateError } = await adminClient.rpc(
+      'skpe_evaluate_import_incorporation_request',
+      {
+        p_request_id: requestId,
+        p_evaluated_by_actor_type: actorType,
+        p_evaluated_by_user_id: actorUserId,
+      },
+    )
+    if (evaluateError) return jsonResponse({ error: compactError(evaluateError) }, 400)
+
+    if (
+      ['approved', 'approved_with_reservations'].includes(payload.decisionOutcome)
+      && !['eligible', 'eligible_with_reservations'].includes(String(eligibility))
+    ) {
+      return jsonResponse({
+        error: `Request ainda não está apto para aprovação. Elegibilidade atual: ${String(eligibility)}.`,
+      }, 409)
+    }
+
+    const { error: decisionError } = await adminClient.rpc('skpe_record_import_incorporation_decision', {
+      p_request_id: requestId,
+      p_decision_outcome: payload.decisionOutcome,
+      p_decision_reason: reason,
+      p_decided_by_actor_type: actorType,
+      p_decided_by_user_id: actorUserId,
+      p_reservations: reservations,
+      p_decision_evidence: {
+        source: 'authenticated_human_review',
+        edge_function: 'skpe-import-incorporation',
+      },
+      p_metadata: {
+        source: 'skpe-import-incorporation-edge',
+        action: 'decide_request',
+        authenticated_actor_user_id: actorUserId,
+        materialization_requested: false,
+      },
+    })
+
+    if (decisionError) return jsonResponse({ error: compactError(decisionError) }, 400)
+  }
+
+  if (!requestId || !importRecordId) {
+    return jsonResponse({ error: 'Contexto da incorporação incompleto.' }, 500)
   }
 
   const [requestResponse, recordResponse, itemsResponse, resolutionResponse, decisionsResponse] =

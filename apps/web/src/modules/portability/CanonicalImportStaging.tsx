@@ -239,6 +239,8 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [incorporationReview, setIncorporationReview] = useState<IncorporationReviewPackage | null>(null)
   const [preparingIncorporationId, setPreparingIncorporationId] = useState('')
   const [preparingIncorporationBatch, setPreparingIncorporationBatch] = useState(false)
+  const [reviewingIncorporationItemId, setReviewingIncorporationItemId] = useState('')
+  const [decidingIncorporationRequest, setDecidingIncorporationRequest] = useState(false)
   const [blockedReview, setBlockedReview] = useState<BlockedReview | null>(null)
   const [correctedValuesText, setCorrectedValuesText] = useState('')
   const [reviewNotes, setReviewNotes] = useState('')
@@ -574,6 +576,97 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     } finally {
       setPreparingIncorporationId('')
       setPreparingIncorporationBatch(false)
+    }
+  }
+
+  const reviewIncorporationItem = async (
+    item: Record<string, unknown>,
+    reviewOutcome: 'validated' | 'requires_adjustment' | 'rejected',
+  ) => {
+    const itemId = String(item.id ?? '')
+    const requestId = String(incorporationReview?.request?.id ?? '')
+    if (!itemId || !requestId) return
+
+    const reason = window.prompt(
+      reviewOutcome === 'validated'
+        ? 'Registre a justificativa para validar este campo:'
+        : reviewOutcome === 'requires_adjustment'
+          ? 'Descreva o ajuste necessário:'
+          : 'Registre a justificativa para rejeitar este campo:',
+    )?.trim()
+    if (!reason) return
+
+    setReviewingIncorporationItemId(itemId)
+    setMessage('Registrando revisão humana do campo...')
+    setMessageType('info')
+
+    try {
+      const { data, error } = await supabase.functions.invoke('skpe-import-incorporation', {
+        body: {
+          action: 'review_item',
+          requestId,
+          itemId,
+          reviewOutcome,
+          reason,
+        },
+      })
+      if (error) throw error
+      const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
+      if (!reviewPackage?.request) throw new Error('Revisão não retornou o pacote atualizado.')
+      setIncorporationReview(reviewPackage)
+      setMessage('Revisão registrada e elegibilidade reavaliada. Nenhuma materialização foi executada.')
+      setMessageType('success')
+    } catch (error) {
+      setMessage(error instanceof Error
+        ? `Não foi possível registrar a revisão: ${error.message}`
+        : 'Não foi possível registrar a revisão.')
+      setMessageType('error')
+    } finally {
+      setReviewingIncorporationItemId('')
+    }
+  }
+
+  const decideIncorporationRequest = async (
+    decisionOutcome: 'approved' | 'returned_for_adjustment' | 'rejected',
+  ) => {
+    const requestId = String(incorporationReview?.request?.id ?? '')
+    if (!requestId) return
+
+    const reason = window.prompt(
+      decisionOutcome === 'approved'
+        ? 'Registre a justificativa da aprovação para incorporação:'
+        : decisionOutcome === 'returned_for_adjustment'
+          ? 'Descreva por que o pacote deve voltar para ajuste:'
+          : 'Registre a justificativa da rejeição da incorporação:',
+    )?.trim()
+    if (!reason) return
+
+    setDecidingIncorporationRequest(true)
+    setMessage('Registrando decisão governada de incorporação...')
+    setMessageType('info')
+
+    try {
+      const { data, error } = await supabase.functions.invoke('skpe-import-incorporation', {
+        body: {
+          action: 'decide_request',
+          requestId,
+          decisionOutcome,
+          reason,
+        },
+      })
+      if (error) throw error
+      const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
+      if (!reviewPackage?.request) throw new Error('Decisão não retornou o pacote atualizado.')
+      setIncorporationReview(reviewPackage)
+      setMessage('Decisão registrada. Nenhuma entidade estratégica foi materializada.')
+      setMessageType('success')
+    } catch (error) {
+      setMessage(error instanceof Error
+        ? `Não foi possível registrar a decisão: ${error.message}`
+        : 'Não foi possível registrar a decisão.')
+      setMessageType('error')
+    } finally {
+      setDecidingIncorporationRequest(false)
     }
   }
 
@@ -984,21 +1077,91 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   </div>
                   <div className="canonical-batch-table-wrap">
                     <table>
-                      <thead><tr><th>Campo de origem</th><th>Campo canônico</th><th>Valor recebido</th><th>Validação</th></tr></thead>
-                      <tbody>{(incorporationReview.items ?? []).map((item, index) => (
-                        <tr key={String(item.id ?? index)}>
-                          <td>{String(item.source_field_name ?? '—')}</td>
-                          <td>{String(item.target_field_name ?? '—')}</td>
-                          <td><code>{JSON.stringify(item.original_value ?? null)}</code></td>
-                          <td>{String(item.validation_state ?? 'pending')}</td>
-                        </tr>
-                      ))}</tbody>
+                      <thead><tr><th>Campo de origem</th><th>Campo canônico</th><th>Valor recebido</th><th>Validação</th><th>Revisão humana</th></tr></thead>
+                      <tbody>{(incorporationReview.items ?? []).map((item, index) => {
+                        const itemId = String(item.id ?? index)
+                        const validationState = String(item.validation_state ?? 'pending')
+                        const busy = reviewingIncorporationItemId === itemId
+                        return (
+                          <tr key={itemId}>
+                            <td>{String(item.source_field_name ?? '—')}</td>
+                            <td>{String(item.target_field_name ?? '—')}</td>
+                            <td><code>{JSON.stringify(item.original_value ?? null)}</code></td>
+                            <td>{validationState}</td>
+                            <td>
+                              <div className="canonical-inline-review-actions">
+                                <button
+                                  type="button"
+                                  onClick={() => void reviewIncorporationItem(item, 'validated')}
+                                  disabled={busy || decidingIncorporationRequest}
+                                >
+                                  {busy ? 'Registrando...' : 'Validar'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="neutral"
+                                  onClick={() => void reviewIncorporationItem(item, 'requires_adjustment')}
+                                  disabled={busy || decidingIncorporationRequest}
+                                >
+                                  Ajustar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="neutral"
+                                  onClick={() => void reviewIncorporationItem(item, 'rejected')}
+                                  disabled={busy || decidingIncorporationRequest}
+                                >
+                                  Rejeitar
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}</tbody>
                     </table>
                   </div>
-                  <div className="canonical-staging-actions secondary">
-                    <button type="button" className="neutral" onClick={() => setIncorporationReview(null)}>Fechar pacote</button>
+                  <div className="canonical-incorporation-decision">
+                    <strong>Decisão governada do pacote</strong>
+                    <p>
+                      A aprovação somente é aceita quando a elegibilidade estiver em <code>eligible</code> ou
+                      <code> eligible_with_reservations</code>. Registrar a decisão não materializa o conteúdo.
+                    </p>
+                    <div className="canonical-staging-actions secondary">
+                      <button
+                        type="button"
+                        className="readiness"
+                        onClick={() => void decideIncorporationRequest('approved')}
+                        disabled={
+                          decidingIncorporationRequest
+                          || !['eligible', 'eligible_with_reservations'].includes(
+                            String(incorporationReview.request?.eligibility_status ?? ''),
+                          )
+                        }
+                      >
+                        {decidingIncorporationRequest ? 'Registrando...' : 'Registrar decisão: aprovar'}
+                      </button>
+                      <button
+                        type="button"
+                        className="neutral"
+                        onClick={() => void decideIncorporationRequest('returned_for_adjustment')}
+                        disabled={decidingIncorporationRequest}
+                      >
+                        Devolver para ajuste
+                      </button>
+                      <button
+                        type="button"
+                        className="neutral"
+                        onClick={() => void decideIncorporationRequest('rejected')}
+                        disabled={decidingIncorporationRequest}
+                      >
+                        Rejeitar incorporação
+                      </button>
+                      <button type="button" className="neutral" onClick={() => setIncorporationReview(null)}>
+                        Fechar pacote
+                      </button>
+                    </div>
                   </div>
-                  <p className="canonical-readiness-note">Este corte é somente de preparação e leitura. Revisão, decisão e materialização permanecem bloqueadas até os próximos gates humanos.</p>
+                  <p className="canonical-readiness-note">Revisão e decisão são registradas de forma auditável. A materialização permanece bloqueada e não é executada por esta tela.</p>
                 </div>
               )}
 
