@@ -217,6 +217,72 @@ function validationMessagesLabel(messages: unknown[] | undefined): string {
   }).join(' · ')
 }
 
+const REVIEW_FIELD_LABELS: Record<string, string> = {
+  code: 'Código',
+  dimension: 'Dimensão',
+  effect: 'Efeito',
+  external_factor: 'Fator externo',
+  evidence_references: 'Evidências relacionadas',
+  horizon: 'Horizonte',
+  impact_label: 'Impacto',
+  strategic_implication: 'Implicação estratégica',
+  nature: 'Natureza',
+  probability_label: 'Probabilidade',
+  preliminary_response: 'Resposta preliminar',
+  related_risk_codes: 'Riscos relacionados',
+  related_swot_codes: 'SWOT relacionada',
+  factor: 'Fator',
+  quadrant: 'Quadrante',
+  priority: 'Prioridade',
+  owner_label: 'Responsável',
+  evidence_description: 'Descrição da evidência',
+  origin_pestel_codes: 'PESTEL de origem',
+  tows_type: 'Tipo TOWS',
+  decision_theme: 'Tema decisório',
+  gate_condition: 'Condição para avanço',
+  strategy_statement: 'Estratégia formulada',
+  internal_factor_codes: 'Fatores internos',
+  external_factor_codes: 'Fatores externos',
+  risk_event: 'Evento de risco',
+  cause: 'Causa',
+  category: 'Categoria',
+  consequence: 'Consequência',
+  due_horizon: 'Prazo',
+  response_type: 'Resposta',
+  treatment_plan: 'Plano de tratamento',
+  existing_controls: 'Controles existentes',
+  risk_acceptance: 'Aceite do risco',
+  acceptance_evidence: 'Evidência do aceite',
+  implementation_cycle: 'Ciclo de implementação',
+  portfolio_destination: 'Destino no portfólio',
+  management_recognition: 'Reconhecimento pela gestão',
+  completion_percent: 'Conclusão',
+  inherent_score: 'Nível inerente',
+  residual_score: 'Risco residual',
+}
+
+function reviewFieldLabel(value: unknown): string {
+  const key = String(value ?? '')
+  return REVIEW_FIELD_LABELS[key] ?? key.replaceAll('_', ' ').replace(/^./, (char) => char.toUpperCase())
+}
+
+function reviewValueLabel(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—'
+  if (Array.isArray(value)) return value.length ? value.map((item) => String(item)).join(', ') : '—'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
+function reviewBusinessTitle(review: IncorporationReviewPackage): string {
+  const type = String(review.importRecord?.entity_code ?? '')
+  const snapshot = review.targetSnapshot ?? {}
+  if (type === 'pestel') return `Fator PESTEL — ${String(snapshot.dimension ?? 'Diagnóstico externo')}`
+  if (type === 'swot') return `Item SWOT — ${String(snapshot.quadrant ?? 'Diagnóstico estratégico')}`
+  if (type === 'tows') return `Estratégia TOWS — ${String(snapshot.tows_type ?? 'Cruzamento estratégico')}`
+  if (type === 'risk') return `Risco Estratégico — ${String(snapshot.risk_event ?? 'Registro de risco')}`
+  return localizedLabel(type, ENTITY_LABELS)
+}
+
 export function CanonicalImportStaging({ organizations, onBackToPortal }: Props) {
   const [organizationId, setOrganizationId] = useState('')
   const [projectId, setProjectId] = useState('')
@@ -253,6 +319,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info')
   const blockedReviewRef = useRef<HTMLDivElement | null>(null)
+  const incorporationReviewRef = useRef<HTMLDivElement | null>(null)
 
   const selectedOrganization = useMemo(
     () => organizations.find((item) => item.id === organizationId),
@@ -517,7 +584,11 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
       if (!reviewPackage?.request) throw new Error('A preparação não retornou Request de incorporação.')
       setIncorporationReview(reviewPackage)
-      setMessage('Informações preparadas para revisão. Confira a origem, o destino e os campos. Nada foi incorporado ao planejamento atual.')
+      window.setTimeout(() => {
+        incorporationReviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        incorporationReviewRef.current?.focus({ preventScroll: true })
+      }, 0)
+      setMessage('Revisão aberta. Confira as informações recebidas e o que já está registrado no SPARKs.')
       setMessageType('success')
     } catch (error) {
       setMessage(error instanceof Error
@@ -636,12 +707,12 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     if (!requestId || pendingItems.length === 0) return
 
     const confirmed = window.confirm(
-      `Você revisou o conteúdo deste registro e deseja validar os ${pendingItems.length} campos ainda pendentes? Cada campo receberá um evento de revisão individual.`,
+      `Você conferiu as informações recebidas e o que já está registrado no SPARKs? Ao confirmar, os ${pendingItems.length} itens ainda pendentes serão marcados como conferidos.`,
     )
     if (!confirmed) return
 
     const reason = window.prompt(
-      'Registre a justificativa para validar todos os campos deste registro:',
+      'Registre uma justificativa curta para esta conferência:',
     )?.trim()
     if (!reason) return
 
@@ -1110,20 +1181,27 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
               )}
 
               {incorporationReview && (
-                <div className="canonical-incorporation-review-package">
+                <div ref={incorporationReviewRef} tabIndex={-1} className="canonical-incorporation-review-package">
                   <div className="canonical-readiness-heading">
                     <div>
-                      <small>Pacote governado de revisão</small>
-                      <h4>{String(incorporationReview.importRecord?.external_key ?? 'Registro histórico')}</h4>
+                      <small>Conferência de informação histórica</small>
+                      <h4>{reviewBusinessTitle(incorporationReview)}</h4>
                     </div>
-                    <span>{String(incorporationReview.request?.request_status ?? 'under_review')}</span>
+                    <span>{String(incorporationReview.request?.request_status ?? '') === 'under_review' ? 'EM REVISÃO' : localizedLabel(incorporationReview.request?.request_status, STATUS_LABELS)}</span>
                   </div>
-                  <div className="canonical-incorporation-review-summary">
-                    <span><strong>Tipo:</strong> {localizedLabel(incorporationReview.importRecord?.entity_code, ENTITY_LABELS)}</span>
-                    <span><strong>Destino:</strong> {String(incorporationReview.targetResolution?.target_entity_type ?? '—')}</span>
-                    <span><strong>Resolução:</strong> {String(incorporationReview.targetResolution?.resolution_mode ?? '—')}</span>
-                    <span><strong>Elegibilidade:</strong> {String(incorporationReview.request?.eligibility_status ?? '—')}</span>
+                  <div className="canonical-incorporation-review-intro">
+                    <strong>O que você está conferindo</strong>
+                    <p>Compare a informação recebida do histórico da COOTAQUARA com o que já está registrado no SPARKs. Este registro já existe no planejamento atual; esta etapa serve para conferir e homologar a correspondência.</p>
                   </div>
+                  <details className="canonical-incorporation-technical-details">
+                    <summary>Detalhes da importação</summary>
+                    <div className="canonical-incorporation-review-summary">
+                      <span><strong>Tipo:</strong> {localizedLabel(incorporationReview.importRecord?.entity_code, ENTITY_LABELS)}</span>
+                      <span><strong>Chave de origem:</strong> {String(incorporationReview.importRecord?.external_key ?? '—')}</span>
+                      <span><strong>Tratamento:</strong> {String(incorporationReview.targetResolution?.resolution_mode ?? '') === 'existing_entity' ? 'Registro existente identificado' : 'Conferência necessária'}</span>
+                      <span><strong>Situação:</strong> {String(incorporationReview.request?.eligibility_status ?? '') === 'requires_review' ? 'Aguardando conferência' : localizedLabel(incorporationReview.request?.eligibility_status, STATUS_LABELS)}</span>
+                    </div>
+                  </details>
                   <div className="canonical-staging-actions secondary">
                     <button
                       type="button"
@@ -1141,8 +1219,8 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                       }
                     >
                       {reviewingIncorporationRequest
-                        ? 'Validando campos do registro...'
-                        : `Validar todos os campos deste registro (${(incorporationReview.items ?? []).filter(
+                        ? 'Confirmando informações...'
+                        : `Confirmar informações (${(incorporationReview.items ?? []).filter(
                             (item) => !['validated', 'validated_with_reservations'].includes(
                               String(item.validation_state ?? ''),
                             ),
@@ -1151,19 +1229,18 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   </div>
                   <div className="canonical-batch-table-wrap">
                     <table>
-                      <thead><tr><th>Campo de origem</th><th>Campo canônico</th><th>Valor recebido</th><th>Valor atual no SPARKs</th><th>Validação</th><th>Revisão humana</th></tr></thead>
+                      <thead><tr><th>Informação</th><th>Recebido do histórico</th><th>Atual no SPARKs</th><th>Conferência</th></tr></thead>
                       <tbody>{(incorporationReview.items ?? []).map((item, index) => {
                         const itemId = String(item.id ?? index)
                         const validationState = String(item.validation_state ?? 'pending')
                         const busy = reviewingIncorporationItemId === itemId
                         return (
                           <tr key={itemId}>
-                            <td>{String(item.source_field_name ?? '—')}</td>
-                            <td>{String(item.target_field_name ?? '—')}</td>
-                            <td><code>{JSON.stringify(item.original_value ?? null)}</code></td>
-                            <td><code>{JSON.stringify(incorporationReview.targetSnapshot?.[String(item.target_field_name ?? '')] ?? null)}</code></td>
-                            <td>{validationState}</td>
+                            <td><strong>{reviewFieldLabel(item.target_field_name ?? item.source_field_name)}</strong></td>
+                            <td>{reviewValueLabel(item.original_value)}</td>
+                            <td>{reviewValueLabel(incorporationReview.targetSnapshot?.[String(item.target_field_name ?? '')])}</td>
                             <td>
+                              <div className="canonical-review-state">{['validated', 'validated_with_reservations'].includes(validationState) ? 'Conferido' : 'Pendente'}</div>
                               <div className="canonical-inline-review-actions">
                                 <button
                                   type="button"
@@ -1196,10 +1273,9 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                     </table>
                   </div>
                   <div className="canonical-incorporation-decision">
-                    <strong>Decisão governada do pacote</strong>
+                    <strong>Decisão sobre esta informação</strong>
                     <p>
-                      A aprovação somente é aceita quando a elegibilidade estiver em <code>eligible</code> ou
-                      <code> eligible_with_reservations</code>. Registrar a decisão não materializa o conteúdo.
+                      Depois da conferência dos campos, você poderá aprovar, devolver para ajuste ou rejeitar esta informação. Esta decisão ainda não executa a incorporação definitiva ao planejamento.
                     </p>
                     <div className="canonical-staging-actions secondary">
                       <button
@@ -1214,7 +1290,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                           )
                         }
                       >
-                        {decidingIncorporationRequest ? 'Registrando...' : 'Registrar decisão: aprovar'}
+                        {decidingIncorporationRequest ? 'Registrando...' : 'Aprovar informação'}
                       </button>
                       <button
                         type="button"
@@ -1230,10 +1306,10 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                         onClick={() => void decideIncorporationRequest('rejected')}
                         disabled={decidingIncorporationRequest}
                       >
-                        Rejeitar incorporação
+                        Rejeitar informação
                       </button>
                       <button type="button" className="neutral" onClick={() => setIncorporationReview(null)}>
-                        Fechar pacote
+                        Fechar revisão
                       </button>
                     </div>
                   </div>

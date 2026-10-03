@@ -432,3 +432,74 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Human-friendly historical review */
+.canonical-incorporation-review-package:focus {
+  outline: 3px solid rgba(20, 112, 82, 0.16);
+  outline-offset: 4px;
+}
+
+.canonical-incorporation-review-intro {
+  margin: 0.85rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #dbe8e3;
+}
+
+.canonical-incorporation-review-intro strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #173d31;
+}
+
+.canonical-incorporation-review-intro p {
+  margin: 0;
+  color: #52665f;
+  line-height: 1.45;
+}
+
+.canonical-incorporation-technical-details {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #dbe8e3;
+  border-radius: 10px;
+  background: rgba(255,255,255,.7);
+}
+
+.canonical-incorporation-technical-details > summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #50635d;
+}
+
+.canonical-incorporation-review-package .canonical-batch-table-wrap table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(1) { width: 18%; }
+.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(2),
+.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(3) { width: 31%; }
+.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(4) { width: 20%; }
+
+.canonical-incorporation-review-package .canonical-batch-table-wrap td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.canonical-review-state {
+  margin-bottom: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #60716b;
+}
+
+@media (max-width: 900px) {
+  .canonical-incorporation-review-package .canonical-batch-table-wrap table {
+    min-width: 820px;
+  }
+}
