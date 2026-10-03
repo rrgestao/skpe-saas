@@ -259,7 +259,6 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
           <h2>Parâmetros da Organização · SK-PE</h2>
           <p>O SPARKs fornece o padrão; a Organização pode adaptar o módulo sem perder rastreabilidade nem a possibilidade de retornar ao default.</p>
         </div>
-        <span className="skpe-organization-parameter-badge">SPARKs → Organização → Projeto</span>
       </div>
 
       {message ? <div className={`skpe-admin-message skpe-admin-message-${message.type}`}>{message.text}</div> : null}
