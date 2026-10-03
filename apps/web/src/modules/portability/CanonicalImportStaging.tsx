@@ -273,6 +273,29 @@ function reviewValueLabel(value: unknown): string {
   return String(value)
 }
 
+function normalizeReviewValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return ''
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => String(item).split(/[;,/]/))
+      .map((item) => item.trim().toLocaleLowerCase('pt-BR'))
+      .filter(Boolean)
+      .sort()
+      .join('|')
+  }
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+    .split(/[;,/]/)
+    .map((item) => item.trim().toLocaleLowerCase('pt-BR'))
+    .filter(Boolean)
+    .sort()
+    .join('|')
+}
+
+function reviewValuesEqual(received: unknown, current: unknown): boolean {
+  return normalizeReviewValue(received) === normalizeReviewValue(current)
+}
+
 function reviewBusinessTitle(review: IncorporationReviewPackage): string {
   const type = String(review.importRecord?.entity_code ?? '')
   const snapshot = review.targetSnapshot ?? {}
@@ -1234,12 +1257,17 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                         const itemId = String(item.id ?? index)
                         const validationState = String(item.validation_state ?? 'pending')
                         const busy = reviewingIncorporationItemId === itemId
+                        const currentValue = incorporationReview.targetSnapshot?.[String(item.target_field_name ?? '')]
+                        const valuesMatch = reviewValuesEqual(item.original_value, currentValue)
                         return (
-                          <tr key={itemId}>
+                          <tr key={itemId} className={valuesMatch ? 'review-match' : 'review-difference'}>
                             <td><strong>{reviewFieldLabel(item.target_field_name ?? item.source_field_name)}</strong></td>
                             <td>{reviewValueLabel(item.original_value)}</td>
-                            <td>{reviewValueLabel(incorporationReview.targetSnapshot?.[String(item.target_field_name ?? '')])}</td>
+                            <td>{reviewValueLabel(currentValue)}</td>
                             <td>
+                              <div className={`canonical-review-comparison ${valuesMatch ? 'match' : 'difference'}`}>
+                                {valuesMatch ? 'Igual' : 'Diferença'}
+                              </div>
                               <div className="canonical-review-state">{['validated', 'validated_with_reservations'].includes(validationState) ? 'Conferido' : 'Pendente'}</div>
                               <div className="canonical-inline-review-actions">
                                 <button
