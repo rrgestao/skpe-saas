@@ -408,7 +408,7 @@ begin
     set current_version=2,
         allows_create_new=true,
         allows_existing_entity=true,
-        resolution_strategy='canonical_entity_by_code_or_create',
+        resolution_strategy='hybrid',
         metadata=coalesce(metadata,'{}'::jsonb) || jsonb_build_object(
           'existing_target_reconciliation',true,
           'existing_target_match','exact_code_same_project',
