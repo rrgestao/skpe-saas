@@ -26,10 +26,11 @@ Nenhuma linha CANDIDATO, REVISÃO ou SEM DESTINO autoriza escrita estratégica.
 | okr | 4 | ATIVO/GOVERNADO | okr_to_okr | skpe_okrs |
 | strategic_objective | 5 | ATIVO/GOVERNADO | strategic_objective_to_strategic_objective | skpe_strategic_objectives |
 | pestel | 6 | ATIVO/GOVERNADO | pestel_to_pestel_item | skpe_pestel_items |
+| swot | 12 | ATIVO/GOVERNADO | swot_to_swot_item | skpe_swot_items |
 
-**Cobertura atual:** 29/281 registros (10,32%) e 6/38 tipos (15,79%).
+**Cobertura atual:** 41/281 registros (14,59%) e 7/38 tipos (18,42%).
 
-Todos os seis mappings ativos exigem revisão humana e não permitem inferência semântica.
+Todos os sete mappings ativos exigem revisão humana e não permitem inferência semântica.
 
 ## Matriz completa
 
@@ -69,7 +70,7 @@ Todos os seis mappings ativos exigem revisão humana e não permitem inferência
 | strategic_objective | 5 | ATIVO/GOVERNADO | skpe_strategic_objectives | Mapping ativo existente |
 | strategic_review | 1 | CANDIDATO CONDICIONAL | skpe_strategy_reviews | Amostra é template vazio; só promover revisão factual |
 | strategy_map | 5 | REVISÃO/COMPOSTO | strategic map versions + objective relations | Conteúdo duplica OE e acrescenta causalidade/narrativa |
-| swot | 12 | CANDIDATO TÉCNICO FORTE | skpe_swot_items | Correspondência direta; tabela possui proveniência de importação |
+| swot | 12 | ATIVO/GOVERNADO | skpe_swot_items | Mapping ativo `swot_to_swot_item`; revisão humana obrigatória; sem inferência semântica |
 | tows | 7 | CANDIDATO TÉCNICO FORTE | skpe_tows_items | Correspondência direta; preservar códigos dos fatores |
 | traceability | 5 | REVISÃO/COMPOSTO | múltiplos links canônicos | Não existe entidade única: OE, risco, indicador, iniciativa, decisão e evidência |
 | version_control | 5 | SEM DESTINO ESTRATÉGICO | auditoria/proveniência | Preservar histórico do arquivo; não converter em entidade estratégica |
@@ -78,11 +79,10 @@ Todos os seis mappings ativos exigem revisão humana e não permitem inferência
 
 Primeiro conjunto para novo mapping governado:
 
-1. `swot -> skpe_swot_items` — 12 registros;
-2. `tows -> skpe_tows_items` — 7 registros;
-3. `risk -> skpe_strategic_risk_items` — 10 registros.
+1. `tows -> skpe_tows_items` — 7 registros;
+2. `risk -> skpe_strategic_risk_items` — 10 registros.
 
-Esses três tipos restantes somam **29 registros** e possuem:
+Esses dois tipos restantes somam **17 registros** e possuem:
 
 - tabelas canônicas específicas;
 - unicidade por organização/projeto/código;
@@ -90,7 +90,7 @@ Esses três tipos restantes somam **29 registros** e possuem:
 - semântica explicitamente destinada ao Diagnóstico Estratégico;
 - separação clara entre risco estratégico e risco operacional de iniciativa.
 
-Com PESTEL já ativo, a cobertura atual é **29/281 registros e 6/38 tipos**. Se SWOT, TOWS e RISK forem ativados com materializadores e proveniência, a cobertura potencial sobe para **58 registros e 9 tipos**, sem recorrer a inferência semântica.
+Com PESTEL e SWOT já ativos, a cobertura atual é **41/281 registros e 7/38 tipos**. Se TOWS e RISK forem ativados com materializadores e proveniência, a cobertura potencial sobe para **58 registros e 9 tipos**, sem recorrer a inferência semântica.
 
 ## Ordem de dependência sugerida
 
