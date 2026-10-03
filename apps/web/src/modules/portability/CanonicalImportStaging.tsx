@@ -52,7 +52,8 @@ type ImportBatchListItem = {
 }
 
 type ReadinessGate = { code: string; label: string; passed: boolean; actual?: unknown; required?: unknown; total?: number }
-type ReadinessBlockedRecord = { id?: string; entityCode?: string; externalKey?: string; simulationStatus?: string; proposedAction?: string; sourceSheet?: string; sourceRow?: string; validationMessages?: unknown[] }
+type ReadinessBlockedRecord = { id?: string; entityCode?: string; externalKey?: string; simulationStatus?: string; proposedAction?: string; targetTable?: string; sourceSheet?: string; sourceRow?: string; validationMessages?: unknown[] }
+type ReadinessUnmappedEntity = { entity_code: string; records: number }
 type ReadinessAssessment = {
   batchId?: string
   assessedAt?: string
@@ -60,6 +61,7 @@ type ReadinessAssessment = {
   readyForDefinitiveLoad?: boolean
   gates?: ReadinessGate[]
   counts?: Record<string, number>
+  unmappedEntities?: ReadinessUnmappedEntity[]
   blockedRecords?: ReadinessBlockedRecord[]
   conflicts?: Array<Record<string, unknown>>
   protections?: Record<string, unknown>
@@ -109,6 +111,7 @@ const READINESS_STATE_LABELS: Record<string, string> = {
 const READINESS_GATE_LABELS: Record<string, string> = {
   BATCH_REVIEWED: 'Lote revisado',
   NO_PENDING_MAPPING: 'Nenhum mapeamento pendente',
+  TARGET_MAPPING_COMPLETE: 'Destinos canônicos definidos',
   NO_BLOCKED_RECORDS: 'Nenhum registro bloqueado',
   NO_INVALID_RECORDS: 'Nenhum registro inválido',
   CONFLICTS_RESOLVED: 'Conflitos formalmente tratados',
@@ -720,6 +723,24 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   </article>
                 ))}
               </div>
+              {(readiness.unmappedEntities ?? []).length > 0 && (
+                <details className="canonical-mapping-gap" open>
+                  <summary>Mapeamento para o modelo atual pendente ({readiness.counts?.unmapped ?? 0} registros)</summary>
+                  <p>O conteúdo foi validado no staging, mas ainda não possui destino canônico definido no modelo atual do SK-PE. A carga definitiva permanece bloqueada até que cada tipo de informação tenha regra de transformação e destino auditável.</p>
+                  <div className="canonical-batch-table-wrap">
+                    <table>
+                      <thead><tr><th>Tipo de informação</th><th>Registros sem destino</th></tr></thead>
+                      <tbody>{(readiness.unmappedEntities ?? []).map((item) => (
+                        <tr key={item.entity_code}>
+                          <td>{localizedLabel(item.entity_code, ENTITY_LABELS)}</td>
+                          <td><strong>{item.records}</strong></td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
+
               {(readiness.blockedRecords ?? []).length > 0 && (
                 <details open>
                   <summary>Registros que impedem a prontidão</summary>
