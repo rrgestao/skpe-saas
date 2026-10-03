@@ -1293,7 +1293,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                                   </button>
                                 </div>
                               )}
-                              <div className="canonical-review-state">{['validated', 'validated_with_reservations'].includes(validationState) ? 'Conferido' : 'Pendente'}</div>
+                              <div className="canonical-review-state">{['validated', 'validated_with_reservations'].includes(validationState) ? 'Confirmação registrada' : valuesMatch ? 'Aguardando sua confirmação' : 'Requer sua decisão'}</div>
                             </td>
                             <td>{reviewValueLabel(item.original_value)}</td>
                             <td>{reviewValueLabel(currentValue)}</td>
