@@ -25,10 +25,11 @@ Nenhuma linha CANDIDATO, REVISÃO ou SEM DESTINO autoriza escrita estratégica.
 | key_result | 4 | ATIVO/GOVERNADO | key_result_to_key_result | skpe_key_results |
 | okr | 4 | ATIVO/GOVERNADO | okr_to_okr | skpe_okrs |
 | strategic_objective | 5 | ATIVO/GOVERNADO | strategic_objective_to_strategic_objective | skpe_strategic_objectives |
+| pestel | 6 | ATIVO/GOVERNADO | pestel_to_pestel_item | skpe_pestel_items |
 
-**Cobertura atual:** 23/281 registros (8,19%) e 5/38 tipos (13,16%).
+**Cobertura atual:** 29/281 registros (10,32%) e 6/38 tipos (15,79%).
 
-Todos os cinco mappings ativos exigem revisão humana e não permitem inferência semântica.
+Todos os seis mappings ativos exigem revisão humana e não permitem inferência semântica.
 
 ## Matriz completa
 
@@ -55,7 +56,7 @@ Todos os cinco mappings ativos exigem revisão humana e não permitem inferênci
 | methodology_artifact | 9 | CANDIDATO TÉCNICO | sparks_methodology_artifacts | Resolver tipo/versão/evidência e evitar criar artefato sem arquivo/autoridade |
 | okr | 4 | ATIVO/GOVERNADO | skpe_okrs | Mapping ativo existente |
 | pending_item | 11 | REVISÃO/COMPOSTO | governance decision / ação / pendência | Classificar natureza de cada pendência antes de escolher autoridade |
-| pestel | 6 | CANDIDATO TÉCNICO FORTE | skpe_pestel_items | Correspondência direta; tabela possui source_import_record_id/source_external_key |
+| pestel | 6 | ATIVO/GOVERNADO | skpe_pestel_items | Mapping ativo `pestel_to_pestel_item`; revisão humana obrigatória; sem inferência semântica |
 | pmvv_institutionalization | 7 | REVISÃO/COMPOSTO | identidade + ação + gate | Não confundir plano de institucionalização com identidade aprovada |
 | pmvv_validation | 3 | REVISÃO/COMPOSTO | skpe_strategic_identity/items + decisão | Preservar proposta e decisão separadas |
 | process_maturity | 4 | SEM DESTINO CONFIRMADO | — | Não foi identificada tabela canônica específica de maturidade do processo |
@@ -77,12 +78,11 @@ Todos os cinco mappings ativos exigem revisão humana e não permitem inferênci
 
 Primeiro conjunto para novo mapping governado:
 
-1. `pestel -> skpe_pestel_items` — 6 registros;
-2. `swot -> skpe_swot_items` — 12 registros;
-3. `tows -> skpe_tows_items` — 7 registros;
-4. `risk -> skpe_strategic_risk_items` — 10 registros.
+1. `swot -> skpe_swot_items` — 12 registros;
+2. `tows -> skpe_tows_items` — 7 registros;
+3. `risk -> skpe_strategic_risk_items` — 10 registros.
 
-Esses quatro tipos somam **35 registros** e possuem:
+Esses três tipos restantes somam **29 registros** e possuem:
 
 - tabelas canônicas específicas;
 - unicidade por organização/projeto/código;
@@ -90,7 +90,7 @@ Esses quatro tipos somam **35 registros** e possuem:
 - semântica explicitamente destinada ao Diagnóstico Estratégico;
 - separação clara entre risco estratégico e risco operacional de iniciativa.
 
-Se os quatro mappings forem ativados com materializadores e proveniência, a cobertura potencial sobe de **23 para 58 registros** e de **5 para 9 tipos**, sem recorrer a inferência semântica.
+Com PESTEL já ativo, a cobertura atual é **29/281 registros e 6/38 tipos**. Se SWOT, TOWS e RISK forem ativados com materializadores e proveniência, a cobertura potencial sobe para **58 registros e 9 tipos**, sem recorrer a inferência semântica.
 
 ## Ordem de dependência sugerida
 
