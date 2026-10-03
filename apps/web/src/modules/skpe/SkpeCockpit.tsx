@@ -4193,14 +4193,17 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
 type OrganizationSectionProps = {
   organizationId: string
   canManageOrganization: boolean
+  canManageParameters: boolean
   onProfileUpdated: (profile: OrganizationProfileRow, logoUrl: string | null) => void
 }
 
 function OrganizationSection({
   organizationId,
   canManageOrganization,
+  canManageParameters,
   onProfileUpdated,
 }: OrganizationSectionProps) {
+  const [activeInstitutionalTab, setActiveInstitutionalTab] = useState<'institutional' | 'parameters'>('institutional')
   const [profile, setProfile] = useState<OrganizationProfileRow | null>(null)
   const [form, setForm] = useState<OrganizationFormState>({
     legalName: '', tradeName: '', cnpj: '', institutionalEmail: '', phone: '', website: '',
@@ -4715,7 +4718,32 @@ function OrganizationSection({
         </div>
       </section>
 
-      {loading ? (
+      <nav className="skpe-institutional-tabs" aria-label="Cadastro institucional">
+        <button
+          type="button"
+          className={activeInstitutionalTab === 'institutional' ? 'active' : ''}
+          onClick={() => setActiveInstitutionalTab('institutional')}
+        >
+          Informações institucionais
+        </button>
+        <button
+          type="button"
+          className={activeInstitutionalTab === 'parameters' ? 'active' : ''}
+          onClick={() => setActiveInstitutionalTab('parameters')}
+        >
+          Parâmetros do SK-PE
+        </button>
+      </nav>
+
+      {activeInstitutionalTab === 'parameters' ? (
+        <section className="skpe-organization-parameters-tab">
+          <OrganizationParametersPanel
+            organizationId={organizationId}
+            canManage={canManageParameters}
+            scopeType="organization_module"
+          />
+        </section>
+      ) : loading ? (
         <section className="skpe-admin-state-card"><p>Carregando cadastro institucional...</p></section>
       ) : (
         <section className="skpe-organization-profile-layout">
@@ -4752,11 +4780,6 @@ function OrganizationSection({
               organizationId={organizationId}
               canManage={canManageOrganization}
               logoUrl={logoUrl}
-            />
-
-            <OrganizationParametersPanel
-              organizationId={organizationId}
-              canManage={canManageOrganization}
             />
 
             <div className="skpe-organization-form-section">
@@ -9543,6 +9566,7 @@ case 'monitoring':
           <OrganizationSection
             organizationId={organizationId}
             canManageOrganization={canManageOrganization}
+            canManageParameters={canManageGovernance}
             onProfileUpdated={(profile, logoUrl) => {
               setOrganizationProfile(profile)
               setOrganizationLogoUrl(logoUrl)

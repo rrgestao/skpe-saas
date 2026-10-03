@@ -9,6 +9,7 @@ import { SparksSmartGrid, type SparksSmartGridColumn, type SparksSmartGridContex
 import { statusLabelPtBr, translateBackendMessage } from '../../shared/i18n/ptBR'
 
 import { PortabilityAdmin } from '../portability/PortabilityAdmin'
+import { OrganizationParametersPanel } from '../skpe/components/OrganizationParametersPanel'
 
 import './PlatformAdmin.css'
 
@@ -24,6 +25,7 @@ type AdminTab =
   | 'modules'
   | 'roles'
   | 'measure-catalog'
+  | 'skpe-parameters'
   | 'invitations'
   | 'portability'
 
@@ -517,6 +519,7 @@ const TAB_LABELS: Record<AdminTab, string> = {
   modules: 'Módulos',
   roles: 'Perfis globais',
   'measure-catalog': 'Medidas e Desempenho',
+  'skpe-parameters': 'Parâmetros do SK-PE',
   invitations: 'Convites',
   portability: 'Importação, exportação e portabilidade',
 }
@@ -3192,6 +3195,7 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
                 <button type="button" onClick={() => openAdminTab('modules')}><strong>Habilitar módulos</strong><span>Defina os módulos disponíveis por organização.</span></button>
                 <button type="button" onClick={() => openAdminTab('roles')}><strong>Perfis globais</strong><span>Gerencie atribuições de SUPER-ADMIN e outros perfis globais.</span></button>
                 <button type="button" onClick={() => openAdminTab('measure-catalog')}><strong>Medidas e Desempenho</strong><span>Mantenha o Catálogo GERAL de indicadores, versões e benchmarks transversais.</span></button>
+                <button type="button" onClick={() => openAdminTab('skpe-parameters')}><strong>Parâmetros do SK-PE</strong><span>Defina o padrão SPARKs do módulo que será herdado pelas organizações.</span></button>
                 <button type="button" onClick={() => openAdminTab('portability')}><strong>Importação e exportação</strong><span>Gerencie planilhas, portais HTML e pacotes estratégicos portáveis.</span></button>
               </section>
 
@@ -3408,6 +3412,16 @@ export function PlatformAdmin({ onBack }: PlatformAdminProps) {
             </>
           ) : activeTab === 'measure-catalog' ? (
             <PlatformMeasureCatalog />
+          ) : activeTab === 'skpe-parameters' ? (
+            <>
+              <div className="pa-section-heading">
+                <div>
+                  <h2>Parâmetros do SK-PE</h2>
+                  <p>Defina o padrão SPARKs do módulo. As organizações herdam estes valores e podem registrar adaptações governadas no próprio escopo.</p>
+                </div>
+              </div>
+              <OrganizationParametersPanel canManage scopeType="module" />
+            </>
           ) : activeTab === 'invitations' ? (
             <>
               <div className="pa-section-heading"><div><h2>Convites</h2><p>Crie novos usuários por meio de convite seguro e auditável.</p></div></div>

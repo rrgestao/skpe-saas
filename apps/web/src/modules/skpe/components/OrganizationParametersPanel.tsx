@@ -14,8 +14,9 @@ type EffectiveParameter = {
 }
 
 type Props = {
-  organizationId: string
+  organizationId?: string | null
   canManage: boolean
+  scopeType?: 'module' | 'organization_module'
 }
 
 const PARAMETER_KEYS = [
@@ -63,7 +64,16 @@ function parameterValueToDraft(value: EffectiveParameter['value']) {
   return JSON.stringify(value)
 }
 
-export function OrganizationParametersPanel({ organizationId, canManage }: Props) {
+export function OrganizationParametersPanel({ organizationId = null, canManage, scopeType = 'organization_module' }: Props) {
+  const isModuleDefault = scopeType === 'module'
+  const panelTitle = isModuleDefault ? 'Padrão SPARKs · SK-PE' : 'Parâmetros da Organização · SK-PE'
+  const panelDescription = isModuleDefault
+    ? 'Defina o padrão do SK-PE disponibilizado pelo SPARKs. Organizações podem herdar este padrão ou registrar suas próprias adaptações.'
+    : 'O SPARKs fornece o padrão do SK-PE; a Organização pode adaptá-lo sem perder rastreabilidade nem a possibilidade de retornar ao padrão herdado.'
+  const successLabel = isModuleDefault
+    ? 'Padrão do SK-PE salvo com rastreabilidade.'
+    : 'Parâmetro da Organização salvo com rastreabilidade.'
+  const restoreLabel = isModuleDefault ? 'Restaurar padrão SPARKs' : 'Restaurar padrão do SK-PE'
   const [parameters, setParameters] = useState<EffectiveParameter[]>([])
   const [draft, setDraft] = useState<DraftState>(INITIAL_DRAFT)
   const [reason, setReason] = useState('')
@@ -80,7 +90,7 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
     setLoading(true)
     setMessage(null)
     const { data, error } = await supabase.rpc('list_sparks_effective_parameters', {
-      p_organization_id: organizationId,
+      p_organization_id: isModuleDefault ? null : organizationId,
       p_module_code: 'SK-PE',
       p_project_id: null,
     })
@@ -110,7 +120,7 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
 
   useEffect(() => {
     void loadParameters()
-  }, [organizationId])
+  }, [organizationId, scopeType])
 
   async function saveParameter(key: ParameterKey) {
     if (!canManage || saving) return
@@ -145,9 +155,9 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
     setMessage(null)
     const { error } = await supabase.rpc('set_sparks_parameter_value', {
       p_parameter_key: key,
-      p_scope_type: 'organization_module',
+      p_scope_type: scopeType,
       p_parameter_value: parameterValue,
-      p_organization_id: organizationId,
+      p_organization_id: isModuleDefault ? null : organizationId,
       p_module_code: 'SK-PE',
       p_project_id: null,
       p_effective_from: null,
@@ -162,7 +172,7 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
     }
 
     await loadParameters()
-    setMessage({ type: 'success', text: 'Parâmetro da Organização salvo com rastreabilidade.' })
+    setMessage({ type: 'success', text: successLabel })
     setSaving(false)
   }
 
@@ -177,8 +187,8 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
     setMessage(null)
     const { error } = await supabase.rpc('clear_sparks_parameter_value', {
       p_parameter_key: key,
-      p_scope_type: 'organization_module',
-      p_organization_id: organizationId,
+      p_scope_type: scopeType,
+      p_organization_id: isModuleDefault ? null : organizationId,
       p_module_code: 'SK-PE',
       p_project_id: null,
       p_change_reason: reason.trim(),
@@ -191,13 +201,13 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
     }
 
     await loadParameters()
-    setMessage({ type: 'success', text: 'Herança restaurada para o padrão SPARKs disponível.' })
+    setMessage({ type: 'success', text: isModuleDefault ? 'Padrão do módulo restaurado para o default SPARKs.' : 'Herança restaurada para o padrão do SK-PE disponível.' })
     setSaving(false)
   }
 
   function renderParameter(key: ParameterKey, label: string, help: string) {
     const parameter = parameterByKey.get(key)
-    const isOrganizationOverride = parameter?.source_scope === 'organization_module'
+    const isCurrentScopeOverride = parameter?.source_scope === scopeType
     return (
       <div className="skpe-organization-parameter-row" key={key}>
         <div className="skpe-organization-parameter-copy">
@@ -235,9 +245,9 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
             type="button"
             className="skpe-secondary-button"
             onClick={() => void resetParameter(key)}
-            disabled={!canManage || saving || !isOrganizationOverride}
+            disabled={!canManage || saving || !isCurrentScopeOverride}
           >
-            Restaurar padrão SPARKs
+            {restoreLabel}
           </button>
         </div>
       </div>
@@ -256,8 +266,8 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
       <div className="skpe-organization-parameters-heading">
         <div>
           <p className="skpe-eyebrow">Configuração herdável</p>
-          <h2>Parâmetros da Organização · SK-PE</h2>
-          <p>O SPARKs fornece o padrão; a Organização pode adaptar o módulo sem perder rastreabilidade nem a possibilidade de retornar ao default.</p>
+          <h2>{panelTitle}</h2>
+          <p>{panelDescription}</p>
         </div>
       </div>
 
@@ -311,7 +321,7 @@ export function OrganizationParametersPanel({ organizationId, canManage }: Props
           rows={2}
           value={reason}
           onChange={(event) => setReason(event.target.value)}
-          placeholder="Explique por que a Organização está alterando ou restaurando este parâmetro."
+          placeholder={isModuleDefault ? 'Explique por que o padrão SPARKs do SK-PE está sendo alterado ou restaurado.' : 'Explique por que a Organização está alterando ou restaurando este parâmetro.'}
           disabled={!canManage || saving}
         />
       </label>
