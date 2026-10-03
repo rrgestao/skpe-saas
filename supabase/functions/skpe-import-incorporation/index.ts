@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 type RequestPayload = {
-  action?: 'prepare_review' | 'get_review' | 'review_item' | 'decide_request'
+  action?: 'prepare_review' | 'get_review' | 'review_item' | 'review_request_items' | 'decide_request'
   importRecordId?: string
   requestId?: string
   itemId?: string
@@ -61,7 +61,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'Conteúdo da requisição inválido.' }, 400)
   }
 
-  const supportedActions = ['prepare_review', 'get_review', 'review_item', 'decide_request']
+  const supportedActions = ['prepare_review', 'get_review', 'review_item', 'review_request_items', 'decide_request']
   if (!payload.action || !supportedActions.includes(payload.action)) {
     return jsonResponse({ error: 'Ação inválida.' }, 400)
   }
@@ -190,6 +190,61 @@ Deno.serve(async (request) => {
     })
 
     if (reviewError) return jsonResponse({ error: compactError(reviewError) }, 400)
+
+    const { error: evaluateError } = await adminClient.rpc('skpe_evaluate_import_incorporation_request', {
+      p_request_id: requestId,
+      p_evaluated_by_actor_type: actorType,
+      p_evaluated_by_user_id: actorUserId,
+    })
+    if (evaluateError) return jsonResponse({ error: compactError(evaluateError) }, 400)
+  }
+
+  if (payload.action === 'review_request_items') {
+    const reason = payload.reason?.trim()
+    if (!reason) return jsonResponse({ error: 'Justificativa da revisão do registro é obrigatória.' }, 400)
+
+    const { data: itemsToReview, error: itemsLookupError } = await adminClient
+      .from('skpe_import_incorporation_items')
+      .select('id, information_state, validation_state')
+      .eq('incorporation_request_id', requestId)
+      .order('item_sequence')
+
+    if (itemsLookupError) return jsonResponse({ error: compactError(itemsLookupError) }, 500)
+    if (!itemsToReview || itemsToReview.length === 0) {
+      return jsonResponse({ error: 'Request não possui campos preparados para revisão.' }, 409)
+    }
+
+    const nonProvided = itemsToReview.filter((item) => item.information_state !== 'provided')
+    if (nonProvided.length > 0) {
+      return jsonResponse({
+        error: 'Este registro possui campos ausentes ou não fornecidos. A revisão deve ser feita campo a campo.',
+      }, 409)
+    }
+
+    const pendingItems = itemsToReview.filter(
+      (item) => !['validated', 'validated_with_reservations'].includes(String(item.validation_state ?? '')),
+    )
+
+    for (const item of pendingItems) {
+      const { error: reviewError } = await adminClient.rpc('skpe_review_import_incorporation_item', {
+        p_incorporation_item_id: item.id,
+        p_review_outcome: 'validated',
+        p_review_reason: reason,
+        p_reviewer_actor_type: actorType,
+        p_reviewer_user_id: actorUserId,
+        p_reservations: [],
+        p_metadata: {
+          source: 'skpe-import-incorporation-edge',
+          action: 'review_request_items',
+          authenticated_actor_user_id: actorUserId,
+          human_bulk_review: true,
+          semantic_inference: false,
+          materialization_requested: false,
+        },
+      })
+
+      if (reviewError) return jsonResponse({ error: compactError(reviewError) }, 400)
+    }
 
     const { error: evaluateError } = await adminClient.rpc('skpe_evaluate_import_incorporation_request', {
       p_request_id: requestId,

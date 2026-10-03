@@ -49,7 +49,9 @@ test('edge function authenticates and authorizes before privileged orchestration
 })
 
 test('edge function exposes governed human review and decision without materialization', () => {
-  assert.match(edge, /'prepare_review' \| 'get_review' \| 'review_item' \| 'decide_request'/)
+  assert.match(edge, /'prepare_review' \| 'get_review' \| 'review_item' \| 'review_request_items' \| 'decide_request'/)
+  assert.match(edge, /human_bulk_review: true/)
+  assert.match(edge, /A revisão deve ser feita campo a campo/)
   assert.match(edge, /materializationExecuted: false/)
   assert.match(edge, /skpe_import_incorporation_items/)
   assert.match(edge, /skpe_import_target_resolution_events/)
@@ -72,6 +74,9 @@ test('staging exposes preparation UX without approval or materialization CTA', (
   assert.match(staging, /action: 'prepare_review'/)
   assert.match(staging, /Nada foi incorporado ao planejamento atual/)
   assert.match(staging, /reviewIncorporationItem/)
+  assert.match(staging, /validateAllIncorporationItems/)
+  assert.match(staging, /Validar todos os campos deste registro/)
+  assert.match(staging, /action: 'review_request_items'/)
   assert.match(staging, /decideIncorporationRequest/)
   assert.match(staging, /Registrar decisão: aprovar/)
   assert.match(staging, /A incorporação definitiva ao planejamento permanece bloqueada/)

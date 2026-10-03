@@ -240,6 +240,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [preparingIncorporationId, setPreparingIncorporationId] = useState('')
   const [preparingIncorporationBatch, setPreparingIncorporationBatch] = useState(false)
   const [reviewingIncorporationItemId, setReviewingIncorporationItemId] = useState('')
+  const [reviewingIncorporationRequest, setReviewingIncorporationRequest] = useState(false)
   const [decidingIncorporationRequest, setDecidingIncorporationRequest] = useState(false)
   const [blockedReview, setBlockedReview] = useState<BlockedReview | null>(null)
   const [correctedValuesText, setCorrectedValuesText] = useState('')
@@ -623,6 +624,53 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       setMessageType('error')
     } finally {
       setReviewingIncorporationItemId('')
+    }
+  }
+
+  const validateAllIncorporationItems = async () => {
+    const requestId = String(incorporationReview?.request?.id ?? '')
+    const pendingItems = (incorporationReview?.items ?? []).filter(
+      (item) => !['validated', 'validated_with_reservations'].includes(String(item.validation_state ?? '')),
+    )
+    if (!requestId || pendingItems.length === 0) return
+
+    const confirmed = window.confirm(
+      `Você revisou o conteúdo deste registro e deseja validar os ${pendingItems.length} campos ainda pendentes? Cada campo receberá um evento de revisão individual.`,
+    )
+    if (!confirmed) return
+
+    const reason = window.prompt(
+      'Registre a justificativa para validar todos os campos deste registro:',
+    )?.trim()
+    if (!reason) return
+
+    setReviewingIncorporationRequest(true)
+    setMessage(`Registrando revisão humana de ${pendingItems.length} campos...`)
+    setMessageType('info')
+
+    try {
+      const { data, error } = await supabase.functions.invoke('skpe-import-incorporation', {
+        body: {
+          action: 'review_request_items',
+          requestId,
+          reason,
+        },
+      })
+      if (error) throw error
+      const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
+      if (!reviewPackage?.request) throw new Error('Revisão não retornou o pacote atualizado.')
+      setIncorporationReview(reviewPackage)
+      setMessage(
+        `${pendingItems.length} campos validados com eventos individuais de auditoria. A elegibilidade do registro foi reavaliada.`,
+      )
+      setMessageType('success')
+    } catch (error) {
+      setMessage(error instanceof Error
+        ? `Não foi possível validar o registro: ${error.message}`
+        : 'Não foi possível validar o registro.')
+      setMessageType('error')
+    } finally {
+      setReviewingIncorporationRequest(false)
     }
   }
 
@@ -1075,6 +1123,31 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                     <span><strong>Resolução:</strong> {String(incorporationReview.targetResolution?.resolution_mode ?? '—')}</span>
                     <span><strong>Elegibilidade:</strong> {String(incorporationReview.request?.eligibility_status ?? '—')}</span>
                   </div>
+                  <div className="canonical-staging-actions secondary">
+                    <button
+                      type="button"
+                      className="readiness"
+                      onClick={() => void validateAllIncorporationItems()}
+                      disabled={
+                        reviewingIncorporationRequest
+                        || decidingIncorporationRequest
+                        || Boolean(reviewingIncorporationItemId)
+                        || (incorporationReview.items ?? []).every(
+                          (item) => ['validated', 'validated_with_reservations'].includes(
+                            String(item.validation_state ?? ''),
+                          ),
+                        )
+                      }
+                    >
+                      {reviewingIncorporationRequest
+                        ? 'Validando campos do registro...'
+                        : `Validar todos os campos deste registro (${(incorporationReview.items ?? []).filter(
+                            (item) => !['validated', 'validated_with_reservations'].includes(
+                              String(item.validation_state ?? ''),
+                            ),
+                          ).length})`}
+                    </button>
+                  </div>
                   <div className="canonical-batch-table-wrap">
                     <table>
                       <thead><tr><th>Campo de origem</th><th>Campo canônico</th><th>Valor recebido</th><th>Validação</th><th>Revisão humana</th></tr></thead>
@@ -1093,7 +1166,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                                 <button
                                   type="button"
                                   onClick={() => void reviewIncorporationItem(item, 'validated')}
-                                  disabled={busy || decidingIncorporationRequest}
+                                  disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
                                 >
                                   {busy ? 'Registrando...' : 'Validar'}
                                 </button>
@@ -1101,7 +1174,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                                   type="button"
                                   className="neutral"
                                   onClick={() => void reviewIncorporationItem(item, 'requires_adjustment')}
-                                  disabled={busy || decidingIncorporationRequest}
+                                  disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
                                 >
                                   Ajustar
                                 </button>
@@ -1109,7 +1182,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                                   type="button"
                                   className="neutral"
                                   onClick={() => void reviewIncorporationItem(item, 'rejected')}
-                                  disabled={busy || decidingIncorporationRequest}
+                                  disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
                                 >
                                   Rejeitar
                                 </button>
@@ -1133,6 +1206,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                         onClick={() => void decideIncorporationRequest('approved')}
                         disabled={
                           decidingIncorporationRequest
+                          || reviewingIncorporationRequest
                           || !['eligible', 'eligible_with_reservations'].includes(
                             String(incorporationReview.request?.eligibility_status ?? ''),
                           )
