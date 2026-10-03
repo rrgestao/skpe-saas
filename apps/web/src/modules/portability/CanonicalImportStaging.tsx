@@ -114,6 +114,7 @@ type IncorporationReviewPackage = {
   importRecord?: Record<string, unknown>
   items?: Array<Record<string, unknown>>
   targetResolution?: Record<string, unknown> | null
+  targetSnapshot?: Record<string, unknown> | null
   decisions?: Array<Record<string, unknown>>
 }
 
@@ -1150,7 +1151,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   </div>
                   <div className="canonical-batch-table-wrap">
                     <table>
-                      <thead><tr><th>Campo de origem</th><th>Campo canônico</th><th>Valor recebido</th><th>Validação</th><th>Revisão humana</th></tr></thead>
+                      <thead><tr><th>Campo de origem</th><th>Campo canônico</th><th>Valor recebido</th><th>Valor atual no SPARKs</th><th>Validação</th><th>Revisão humana</th></tr></thead>
                       <tbody>{(incorporationReview.items ?? []).map((item, index) => {
                         const itemId = String(item.id ?? index)
                         const validationState = String(item.validation_state ?? 'pending')
@@ -1160,6 +1161,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                             <td>{String(item.source_field_name ?? '—')}</td>
                             <td>{String(item.target_field_name ?? '—')}</td>
                             <td><code>{JSON.stringify(item.original_value ?? null)}</code></td>
+                            <td><code>{JSON.stringify(incorporationReview.targetSnapshot?.[String(item.target_field_name ?? '')] ?? null)}</code></td>
                             <td>{validationState}</td>
                             <td>
                               <div className="canonical-inline-review-actions">

@@ -324,6 +324,7 @@ Deno.serve(async (request) => {
         .from('skpe_import_target_resolution_events')
         .select('id, mapping_version_id, resolution_sequence, resolution_status, resolution_mode, source_entity_code, target_entity_type, target_entity_id, target_external_key, warnings, blockers, resolved_at, metadata')
         .eq('import_record_id', importRecordId)
+        .order('resolved_at', { ascending: false })
         .order('resolution_sequence', { ascending: false })
         .limit(1),
       adminClient
@@ -342,6 +343,33 @@ Deno.serve(async (request) => {
 
   if (firstError) return jsonResponse({ error: compactError(firstError) }, 500)
 
+  const targetResolution = resolutionResponse.data?.[0] ?? null
+  let targetSnapshot: Record<string, unknown> | null = null
+
+  if (
+    targetResolution?.resolution_mode === 'existing_entity'
+    && targetResolution?.target_entity_id
+  ) {
+    const targetTableByType: Record<string, string> = {
+      pestel_item: 'skpe_pestel_items',
+      swot_item: 'skpe_swot_items',
+      tows_item: 'skpe_tows_items',
+      strategic_risk_item: 'skpe_strategic_risk_items',
+    }
+    const targetTable = targetTableByType[String(targetResolution.target_entity_type ?? '')]
+
+    if (targetTable) {
+      const { data: targetRow, error: targetError } = await adminClient
+        .from(targetTable)
+        .select('*')
+        .eq('id', String(targetResolution.target_entity_id))
+        .maybeSingle()
+
+      if (targetError) return jsonResponse({ error: compactError(targetError) }, 500)
+      targetSnapshot = (targetRow ?? null) as Record<string, unknown> | null
+    }
+  }
+
   return jsonResponse({
     success: true,
     action: payload.action,
@@ -349,7 +377,8 @@ Deno.serve(async (request) => {
     request: requestResponse.data,
     importRecord: recordResponse.data,
     items: itemsResponse.data ?? [],
-    targetResolution: resolutionResponse.data?.[0] ?? null,
+    targetResolution,
+    targetSnapshot,
     decisions: decisionsResponse.data ?? [],
   })
 })
