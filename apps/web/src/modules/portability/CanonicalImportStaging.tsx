@@ -515,7 +515,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
       if (!reviewPackage?.request) throw new Error('A preparação não retornou Request de incorporação.')
       setIncorporationReview(reviewPackage)
-      setMessage('Pacote preparado. Revise a origem, o destino e os campos. Nenhuma entidade estratégica foi criada.')
+      setMessage('Informações preparadas para revisão. Confira a origem, o destino e os campos. Nada foi incorporado ao planejamento atual.')
       setMessageType('success')
     } catch (error) {
       setMessage(error instanceof Error
@@ -532,7 +532,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
 
     setPreparingIncorporationBatch(true)
     setIncorporationReview(null)
-    setMessage(`Preparando pacote governado completo: 0 de ${incorporationCandidates.length} registros...`)
+    setMessage(`Preparando dados históricos para revisão: 0 de ${incorporationCandidates.length} informações...`)
     setMessageType('info')
 
     let prepared = 0
@@ -554,7 +554,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
           if (!reviewPackage?.request) throw new Error('Request de incorporação não retornado.')
           prepared += 1
           setIncorporationReview(reviewPackage)
-          setMessage(`Preparando pacote governado completo: ${prepared} de ${incorporationCandidates.length} registros...`)
+          setMessage(`Preparando dados históricos para revisão: ${prepared} de ${incorporationCandidates.length} informações...`)
         } catch (error) {
           failures.push(
             `${candidate.external_key}: ${error instanceof Error ? error.message : 'falha não identificada'}`,
@@ -564,12 +564,12 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
 
       if (failures.length === 0) {
         setMessage(
-          `Pacote governado preparado para ${prepared} registros. Nenhuma aprovação ou materialização foi executada.`,
+          `${prepared} informações históricas foram preparadas para revisão. Nenhuma aprovação ou incorporação foi executada.`,
         )
         setMessageType('success')
       } else {
         setMessage(
-          `Preparação concluída com ${prepared} sucesso(s) e ${failures.length} falha(s). Nenhuma entidade estratégica foi materializada. Falhas: ${failures.join(' | ')}`,
+          `Preparação concluída com ${prepared} sucesso(s) e ${failures.length} falha(s). Nenhuma informação foi incorporada ao planejamento atual. Falhas: ${failures.join(' | ')}`,
         )
         setMessageType('error')
       }
@@ -1023,15 +1023,15 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
 
               {incorporationCandidates.length > 0 && (
                 <details className="canonical-incorporation-review-queue" open>
-                  <summary>Primeiro pacote de Diagnóstico — revisão humana ({incorporationCandidates.length})</summary>
-                  <p>Estes registros possuem contrato de incorporação governado. Preparar revisão cria somente o pacote de trabalho auditável; não aprova e não materializa o conteúdo estratégico.</p>
+                  <summary>Dados históricos do Diagnóstico — revisão humana ({incorporationCandidates.length})</summary>
+                  <p>Estas informações históricas foram reconhecidas no Diagnóstico Estratégico. Prepará-las para revisão apenas organiza o trabalho de conferência antes de qualquer incorporação ao planejamento atual.</p>
                   <div className="canonical-staging-actions">
                     <button
                       type="button"
                       onClick={() => void prepareAllIncorporationReviews()}
                       disabled={preparingIncorporationBatch || Boolean(preparingIncorporationId)}
                     >
-                      {preparingIncorporationBatch ? 'Preparando pacote completo...' : `Preparar pacote completo (${incorporationCandidates.length})`}
+                      {preparingIncorporationBatch ? 'Preparando dados para revisão...' : `Preparar dados históricos para revisão (${incorporationCandidates.length})`}
                     </button>
                   </div>
                   <div className="canonical-batch-table-wrap">
@@ -1161,11 +1161,11 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                       </button>
                     </div>
                   </div>
-                  <p className="canonical-readiness-note">Revisão e decisão são registradas de forma auditável. A materialização permanece bloqueada e não é executada por esta tela.</p>
+                  <p className="canonical-readiness-note">Revisão e decisão ficam registradas para auditoria. A incorporação definitiva ao planejamento permanece bloqueada e não é executada por esta tela.</p>
                 </div>
               )}
 
-              <p className="canonical-readiness-note">A cobertura indica existência de contrato ativo. Ela não significa que o destino já foi resolvido nem que a entidade foi materializada.</p>
+              <p className="canonical-readiness-note">A cobertura indica que o sistema já sabe como tratar esse tipo de informação. Isso ainda não significa que ela foi incorporada ao planejamento atual.</p>
             </div>
           )}
 

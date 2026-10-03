@@ -6402,7 +6402,7 @@ function AdministrationSection({
   canManageUserAvatar,
   canManagePortability,
 }: AdministrationSectionProps) {
-  const [activeArea] = useState<AdministrationArea>(
+  const [activeArea, setActiveArea] = useState<AdministrationArea>(
     canManageUsers ? 'users' : 'portability',
   )
 
@@ -7212,16 +7212,39 @@ const selectedSkpeAccess =
     setSaving(false)
   }
 
+  const administrationTabs = canManageUsers && canManagePortability ? (
+    <div className="skpe-administration-tabs" role="tablist" aria-label="Áreas administrativas">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeArea === 'users'}
+        className={activeArea === 'users' ? 'active' : ''}
+        onClick={() => setActiveArea('users')}
+      >
+        Usuários e Acessos
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeArea === 'portability'}
+        className={activeArea === 'portability' ? 'active' : ''}
+        onClick={() => setActiveArea('portability')}
+      >
+        Importação e Exportação
+      </button>
+    </div>
+  ) : null
+
   if (activeArea === 'portability') {
     return (
       <>
+        {administrationTabs}
         <section className="skpe-page-heading skpe-administration-heading">
           <div>
             <p className="skpe-eyebrow">Administração do módulo</p>
-            <h1>Portabilidade e Importação</h1>
+            <h1>Importação e Exportação</h1>
             <p>
-              Importe, valide e exporte artefatos estratégicos da organização
-              com rastreabilidade e controles de governança.
+              Traga dados históricos do planejamento para revisão controlada e exporte informações da própria organização com rastreabilidade e governança.
             </p>
           </div>
         </section>
@@ -7255,6 +7278,7 @@ const selectedSkpeAccess =
   if (!canManageUsers) {
     return (
       <>
+        {administrationTabs}
         <section className="skpe-page-heading">
           <div>
             <p className="skpe-eyebrow">
@@ -7293,6 +7317,7 @@ const selectedSkpeAccess =
 
   return (
     <>
+      {administrationTabs}
       <section className="skpe-page-heading skpe-administration-heading">
         <div>
           <p className="skpe-eyebrow">
@@ -9518,9 +9543,7 @@ case 'monitoring':
             canManageUserAvatar={
               isPlatformSuperAdmin || isOrganizationAdmin
             }
-            canManagePortability={
-              mode === 'module' && canManageGovernance
-            }
+            canManagePortability={canManageGovernance}
           />
         )}
       </main>

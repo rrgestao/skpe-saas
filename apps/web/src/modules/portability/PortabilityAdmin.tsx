@@ -446,9 +446,11 @@ export function PortabilityAdmin({ organizations, fixedOrganizationId }: Props) 
     <section className="portability-admin">
       <div className="portability-heading">
         <div>
-          <p className="portability-eyebrow">Gestão Estratégica Portátil</p>
-          <h2>Importação, Exportação e Portabilidade</h2>
-          <p>Administre a convivência controlada entre a Plataforma SaaS, a Planilha Canônica, o Portal HTML e os pacotes estruturados.</p>
+          <p className="portability-eyebrow">{fixedOrganizationId ? 'Dados da organização' : 'Gestão Estratégica Portátil'}</p>
+          <h2>{fixedOrganizationId ? 'Importação e Exportação' : 'Importação, Exportação e Portabilidade'}</h2>
+          <p>{fixedOrganizationId
+            ? 'Importe dados históricos para revisão controlada e exporte informações desta organização sem ultrapassar seu escopo de acesso.'
+            : 'Administre a convivência controlada entre a Plataforma SaaS, a Planilha Canônica, o Portal HTML e os pacotes estruturados.'}</p>
         </div>
       </div>
 
