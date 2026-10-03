@@ -2385,7 +2385,7 @@
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 1.2rem;
   align-items: start;
-  margin-top: 1.5rem;
+  margin-top: 0;
 }
 .skpe-organization-brand-card,
 .skpe-organization-form-card {

@@ -11,10 +11,19 @@ const migration = readFileSync(
 )
 
 test('organization admin can navigate to organization-scoped import and export', () => {
-  assert.match(cockpit, /setActiveArea\('portability'\)/)
+  assert.match(cockpit, /\| 'portability'/)
+  assert.match(cockpit, /navigateToSection\('portability'\)/)
+  assert.match(cockpit, /activeSection === 'portability'/)
   assert.match(cockpit, /Importação e Exportação/)
-  assert.match(cockpit, /canManagePortability=\{canManageGovernance\}/)
   assert.match(cockpit, /fixedOrganizationId=\{organizationId\}/)
+})
+
+test('institutional registration keeps shared identity in header without duplicate eyebrow or refresh action', () => {
+  assert.match(cockpit, /return 'Cadastro institucional compartilhado'/)
+  assert.match(cockpit, /<h1>Organização<\/h1>/)
+  assert.match(cockpit, /Dados oficiais, endereço, contatos, caracterização cooperativista e identidade visual reutilizados por toda a Plataforma SPARKs\./)
+  assert.doesNotMatch(cockpit, /<p className="skpe-eyebrow">Cadastro institucional compartilhado<\/p>/)
+  assert.doesNotMatch(cockpit, /Atualizar cadastro/)
 })
 
 test('layout catalog is available to authenticated users while organization writes stay governed elsewhere', () => {

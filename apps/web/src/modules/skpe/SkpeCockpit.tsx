@@ -112,6 +112,7 @@ export type CockpitSection =
   | 'organizational-areas'
   | 'organization-hierarchy'
   | 'domains'
+  | 'portability'
 
 type SkpeCockpitMode =
   | 'module'
@@ -4707,15 +4708,11 @@ function OrganizationSection({
 
   return (
     <>
-      <section className="skpe-page-heading skpe-administration-heading">
-        <div>
-          <p className="skpe-eyebrow">Cadastro institucional compartilhado</p>
+      <section className="skpe-page-heading skpe-administration-heading skpe-institutional-heading">
+        <div style={{ width: '100%', minWidth: 0 }}>
           <h1>Organização</h1>
-          <p>Dados oficiais, endereço, contatos, caracterização cooperativista e identidade visual reutilizados por toda a Plataforma SPARKs.</p>
+          <p style={{ maxWidth: 'none' }}>Dados oficiais, endereço, contatos, caracterização cooperativista e identidade visual reutilizados por toda a Plataforma SPARKs.</p>
         </div>
-        <button type="button" className="skpe-refresh-button" onClick={() => void loadProfile()} disabled={loading || saving}>
-          <RefreshIcon /> Atualizar cadastro
-        </button>
       </section>
 
       {loading ? (
@@ -8670,7 +8667,9 @@ case 'monitoring':
           ? 'Usuários'
           : 'Administração do SK-PE'
       case 'organization':
-        return 'Cadastro institucional'
+        return 'Cadastro institucional compartilhado'
+      case 'portability':
+        return 'Importação e Exportação'
       case 'organizational-areas':
       case 'organization-hierarchy':
       case 'domains':
@@ -8915,6 +8914,21 @@ case 'monitoring':
                 <span>Medidas e Desempenho</span>
               </button>
 
+
+              <button
+                type="button"
+                className={
+                  activeSection === 'portability'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() => navigateToSection('portability')}
+                title="Importação e Exportação"
+                hidden={!canManageGovernance}
+              >
+                <ArtifactsIcon />
+                <span>Importação e Exportação</span>
+              </button>
 
               <button
                 type="button"
@@ -9512,6 +9526,17 @@ case 'monitoring':
 
         {activeSection === 'domains' && (
           <DomainTablesSection organizationId={organizationId} canManageDomains={canManageGovernance} />
+        )}
+
+        {activeSection === 'portability' && canManageGovernance && (
+          <PortabilityAdmin
+            fixedOrganizationId={organizationId}
+            organizations={[{
+              id: organizationId,
+              code: organizationCode,
+              name: organizationName,
+            }]}
+          />
         )}
 
         {activeSection === 'organization' && (
