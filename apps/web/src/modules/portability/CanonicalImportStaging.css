@@ -483,10 +483,9 @@
   overflow: visible;
 }
 
-.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(1) { width: 18%; }
+.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(1) { width: 24%; }
 .canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(2),
-.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(3) { width: 29%; }
-.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(4) { width: 24%; }
+.canonical-incorporation-review-package .canonical-batch-table-wrap th:nth-child(3) { width: 38%; }
 
 .canonical-incorporation-review-package .canonical-batch-table-wrap td {
   white-space: normal;

@@ -1252,7 +1252,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   </div>
                   <div className="canonical-batch-table-wrap">
                     <table>
-                      <thead><tr><th>Informação</th><th>Recebido do histórico</th><th>Atual no SPARKs</th><th>Conferência</th></tr></thead>
+                      <thead><tr><th>Informação</th><th>Recebido do histórico</th><th>Atual no SPARKs</th></tr></thead>
                       <tbody>{(incorporationReview.items ?? []).map((item, index) => {
                         const itemId = String(item.id ?? index)
                         const validationState = String(item.validation_state ?? 'pending')
@@ -1261,40 +1261,42 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                         const valuesMatch = reviewValuesEqual(item.original_value, currentValue)
                         return (
                           <tr key={itemId} className={valuesMatch ? 'review-match' : 'review-difference'}>
-                            <td><strong>{reviewFieldLabel(item.target_field_name ?? item.source_field_name)}</strong></td>
-                            <td>{reviewValueLabel(item.original_value)}</td>
-                            <td>{reviewValueLabel(currentValue)}</td>
                             <td>
+                              <strong>{reviewFieldLabel(item.target_field_name ?? item.source_field_name)}</strong>
                               <div className={`canonical-review-comparison ${valuesMatch ? 'match' : 'difference'}`}>
                                 {valuesMatch ? 'Igual' : 'Diferença'}
                               </div>
+                              {!valuesMatch && (
+                                <div className="canonical-inline-review-actions">
+                                  <button
+                                    type="button"
+                                    onClick={() => void reviewIncorporationItem(item, 'validated')}
+                                    disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
+                                  >
+                                    {busy ? 'Registrando...' : 'Validar'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="neutral"
+                                    onClick={() => void reviewIncorporationItem(item, 'requires_adjustment')}
+                                    disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
+                                  >
+                                    Ajustar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="neutral"
+                                    onClick={() => void reviewIncorporationItem(item, 'rejected')}
+                                    disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
+                                  >
+                                    Rejeitar
+                                  </button>
+                                </div>
+                              )}
                               <div className="canonical-review-state">{['validated', 'validated_with_reservations'].includes(validationState) ? 'Conferido' : 'Pendente'}</div>
-                              <div className="canonical-inline-review-actions">
-                                <button
-                                  type="button"
-                                  onClick={() => void reviewIncorporationItem(item, 'validated')}
-                                  disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
-                                >
-                                  {busy ? 'Registrando...' : 'Validar'}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="neutral"
-                                  onClick={() => void reviewIncorporationItem(item, 'requires_adjustment')}
-                                  disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
-                                >
-                                  Ajustar
-                                </button>
-                                <button
-                                  type="button"
-                                  className="neutral"
-                                  onClick={() => void reviewIncorporationItem(item, 'rejected')}
-                                  disabled={busy || reviewingIncorporationRequest || decidingIncorporationRequest}
-                                >
-                                  Rejeitar
-                                </button>
-                              </div>
                             </td>
+                            <td>{reviewValueLabel(item.original_value)}</td>
+                            <td>{reviewValueLabel(currentValue)}</td>
                           </tr>
                         )
                       })}</tbody>
