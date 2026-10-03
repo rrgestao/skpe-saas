@@ -238,6 +238,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [incorporationCandidates, setIncorporationCandidates] = useState<IncorporationCandidate[]>([])
   const [incorporationReview, setIncorporationReview] = useState<IncorporationReviewPackage | null>(null)
   const [preparingIncorporationId, setPreparingIncorporationId] = useState('')
+  const [preparingIncorporationBatch, setPreparingIncorporationBatch] = useState(false)
   const [blockedReview, setBlockedReview] = useState<BlockedReview | null>(null)
   const [correctedValuesText, setCorrectedValuesText] = useState('')
   const [reviewNotes, setReviewNotes] = useState('')
@@ -521,6 +522,58 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       setMessageType('error')
     } finally {
       setPreparingIncorporationId('')
+    }
+  }
+
+  const prepareAllIncorporationReviews = async () => {
+    if (incorporationCandidates.length === 0) return
+
+    setPreparingIncorporationBatch(true)
+    setIncorporationReview(null)
+    setMessage(`Preparando pacote governado completo: 0 de ${incorporationCandidates.length} registros...`)
+    setMessageType('info')
+
+    let prepared = 0
+    const failures: string[] = []
+
+    try {
+      for (const candidate of incorporationCandidates) {
+        setPreparingIncorporationId(candidate.id)
+        try {
+          const { data, error } = await supabase.functions.invoke('skpe-import-incorporation', {
+            body: {
+              action: 'prepare_review',
+              importRecordId: candidate.id,
+              reason: `Preparação governada do primeiro pacote de Diagnóstico: ${candidate.external_key}.`,
+            },
+          })
+          if (error) throw error
+          const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
+          if (!reviewPackage?.request) throw new Error('Request de incorporação não retornado.')
+          prepared += 1
+          setIncorporationReview(reviewPackage)
+          setMessage(`Preparando pacote governado completo: ${prepared} de ${incorporationCandidates.length} registros...`)
+        } catch (error) {
+          failures.push(
+            `${candidate.external_key}: ${error instanceof Error ? error.message : 'falha não identificada'}`,
+          )
+        }
+      }
+
+      if (failures.length === 0) {
+        setMessage(
+          `Pacote governado preparado para ${prepared} registros. Nenhuma aprovação ou materialização foi executada.`,
+        )
+        setMessageType('success')
+      } else {
+        setMessage(
+          `Preparação concluída com ${prepared} sucesso(s) e ${failures.length} falha(s). Nenhuma entidade estratégica foi materializada. Falhas: ${failures.join(' | ')}`,
+        )
+        setMessageType('error')
+      }
+    } finally {
+      setPreparingIncorporationId('')
+      setPreparingIncorporationBatch(false)
     }
   }
 
@@ -879,6 +932,15 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                 <details className="canonical-incorporation-review-queue" open>
                   <summary>Primeiro pacote de Diagnóstico — revisão humana ({incorporationCandidates.length})</summary>
                   <p>Estes registros possuem contrato de incorporação governado. Preparar revisão cria somente o pacote de trabalho auditável; não aprova e não materializa o conteúdo estratégico.</p>
+                  <div className="canonical-staging-actions">
+                    <button
+                      type="button"
+                      onClick={() => void prepareAllIncorporationReviews()}
+                      disabled={preparingIncorporationBatch || Boolean(preparingIncorporationId)}
+                    >
+                      {preparingIncorporationBatch ? 'Preparando pacote completo...' : `Preparar pacote completo (${incorporationCandidates.length})`}
+                    </button>
+                  </div>
                   <div className="canonical-batch-table-wrap">
                     <table>
                       <thead><tr><th>Tipo</th><th>Chave</th><th>Origem</th><th>Revisão da origem</th><th>Ação</th></tr></thead>
@@ -893,7 +955,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                               type="button"
                               className="review-blocked"
                               onClick={() => void prepareIncorporationReview(candidate)}
-                              disabled={Boolean(preparingIncorporationId)}
+                              disabled={preparingIncorporationBatch || Boolean(preparingIncorporationId)}
                             >
                               {preparingIncorporationId === candidate.id ? 'Preparando...' : 'Preparar revisão'}
                             </button>

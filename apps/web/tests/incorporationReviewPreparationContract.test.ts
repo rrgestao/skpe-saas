@@ -62,6 +62,10 @@ test('edge function exposes preparation and read-only review package only', () =
 test('staging exposes preparation UX without approval or materialization CTA', () => {
   assert.match(staging, /Primeiro pacote de Diagnóstico — revisão humana/)
   assert.match(staging, /Preparar revisão/)
+  assert.match(staging, /Preparar pacote completo/)
+  assert.match(staging, /prepareAllIncorporationReviews/)
+  assert.match(staging, /for \(const candidate of incorporationCandidates\)/)
+  assert.match(staging, /Nenhuma aprovação ou materialização foi executada/)
   assert.match(staging, /supabase\.functions\.invoke\('skpe-import-incorporation'/)
   assert.match(staging, /action: 'prepare_review'/)
   assert.match(staging, /Nenhuma entidade estratégica foi criada/)
