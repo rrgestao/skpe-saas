@@ -67,6 +67,36 @@ type ReadinessAssessment = {
   protections?: Record<string, unknown>
 }
 
+type MappingCoverageEntity = {
+  entityCode: string
+  records: number
+  coveredRecords: number
+  mappingStatus: 'covered' | 'partial' | 'unmapped'
+  mappingCode?: string | null
+  mappingName?: string | null
+  targetEntityType?: string | null
+  targetTable?: string | null
+  mappingVersionId?: string | null
+  mappingVersionNumber?: number | null
+  materializerFunctionName?: string | null
+  resolverFunctionName?: string | null
+  requiresHumanReview?: boolean
+  allowsSemanticInference?: boolean
+}
+
+type MappingCoverage = {
+  batchId?: string
+  totalRecords: number
+  coveredRecords: number
+  uncoveredRecords: number
+  recordCoveragePercent: number
+  totalEntityTypes: number
+  coveredEntityTypes: number
+  uncoveredEntityTypes: number
+  entityCoveragePercent: number
+  entities?: MappingCoverageEntity[]
+}
+
 
 type BlockedReview = {
   batchId?: string
@@ -182,6 +212,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [simulating, setSimulating] = useState(false)
   const [assessingReadiness, setAssessingReadiness] = useState(false)
   const [readiness, setReadiness] = useState<ReadinessAssessment | null>(null)
+  const [mappingCoverage, setMappingCoverage] = useState<MappingCoverage | null>(null)
   const [blockedReview, setBlockedReview] = useState<BlockedReview | null>(null)
   const [correctedValuesText, setCorrectedValuesText] = useState('')
   const [reviewNotes, setReviewNotes] = useState('')
@@ -206,6 +237,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     setBatchId('')
     setSummary(null)
     setReadiness(null)
+    setMappingCoverage(null)
     setExistingBatches([])
     if (!organizationId) return
 
@@ -261,6 +293,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     setBatchId('')
     setSummary(null)
     setReadiness(null)
+    setMappingCoverage(null)
     setExistingBatches([])
     if (organizationId && projectId) void loadExistingBatches()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -318,6 +351,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       const { data: readinessData, error: readinessError } = await supabase.rpc('skpe_assess_import_batch_readiness', { p_batch_id: batchId })
       if (readinessError) throw readinessError
       setReadiness((readinessData ?? null) as ReadinessAssessment | null)
+      await loadMappingCoverage(batchId)
       setMessage('Correção aprovada. O lote foi reavaliado sem executar carga definitiva.')
       setMessageType('success')
     } catch (error) {
@@ -368,6 +402,8 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       setFileName(file.name)
       setBatchId('')
       setSummary(null)
+      setReadiness(null)
+      setMappingCoverage(null)
       setMessage('Payload validado localmente. Nenhuma gravação foi realizada.')
       setMessageType('success')
     } catch (error) {
@@ -396,6 +432,14 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     }
   }
 
+  const loadMappingCoverage = async (id: string) => {
+    const { data, error } = await supabase.rpc('skpe_get_import_mapping_coverage', { p_batch_id: id })
+    if (error) throw error
+    const coverage = (data ?? null) as MappingCoverage | null
+    setMappingCoverage(coverage)
+    return coverage
+  }
+
   const openExistingBatch = async (id: string) => {
     setOpeningBatchId(id)
     setPayload(null)
@@ -408,6 +452,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       )
       if (readinessError) throw readinessError
       const assessment = (readinessData ?? null) as ReadinessAssessment | null
+      await loadMappingCoverage(id)
       setBatchId(id)
       setReadiness(assessment)
       window.localStorage.setItem(`skpe.import.batch.${organizationId}.${projectId}`, id)
@@ -418,6 +463,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     } catch (error) {
       setBatchId('')
       setReadiness(null)
+      setMappingCoverage(null)
       setMessage(error instanceof Error
         ? `Não foi possível retomar e avaliar o lote: ${error.message}`
         : 'Não foi possível retomar e avaliar o lote.')
@@ -446,6 +492,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     } else {
       setSummary((data ?? null) as BatchSummary | null)
       setReadiness(null)
+      setMappingCoverage(null)
       await loadExistingBatches()
       setMessage('Simulação concluída. Nenhuma tabela estratégica definitiva foi alterada.')
       setMessageType('success')
@@ -466,6 +513,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     } else {
       const assessment = (data ?? null) as ReadinessAssessment | null
       setReadiness(assessment)
+      await loadMappingCoverage(batchId)
       setMessage(assessment?.readyForDefinitiveLoad
         ? 'Avaliação concluída: lote tecnicamente apto para a próxima decisão de governança.'
         : 'Avaliação concluída: a carga definitiva permanece bloqueada até o tratamento dos impedimentos.')
@@ -703,6 +751,42 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
               <article><small>Atualizações</small><strong>{summary.bySimulationStatus.update ?? 0}</strong></article>
               <article><small>Sem alteração</small><strong>{summary.bySimulationStatus.unchanged ?? 0}</strong></article>
               <article><small>Pendentes</small><strong>{summary.bySimulationStatus.pending_mapping ?? 0}</strong></article>
+            </div>
+          )}
+
+          {mappingCoverage && (
+            <div className="canonical-mapping-coverage">
+              <div className="canonical-readiness-heading">
+                <div>
+                  <small>Cobertura do contrato de incorporação</small>
+                  <h4>{mappingCoverage.coveredRecords} de {mappingCoverage.totalRecords} registros já possuem mapping governado</h4>
+                </div>
+                <span>{mappingCoverage.recordCoveragePercent.toFixed(1)}%</span>
+              </div>
+              <div className="canonical-simulation-kpis">
+                <article><small>Registros cobertos</small><strong>{mappingCoverage.coveredRecords}</strong></article>
+                <article><small>Registros sem contrato</small><strong>{mappingCoverage.uncoveredRecords}</strong></article>
+                <article><small>Tipos cobertos</small><strong>{mappingCoverage.coveredEntityTypes}/{mappingCoverage.totalEntityTypes}</strong></article>
+                <article><small>Tipos pendentes</small><strong>{mappingCoverage.uncoveredEntityTypes}</strong></article>
+              </div>
+              <details>
+                <summary>Matriz de cobertura por tipo de informação</summary>
+                <div className="canonical-batch-table-wrap">
+                  <table>
+                    <thead><tr><th>Tipo</th><th>Registros</th><th>Cobertura</th><th>Destino canônico</th><th>Revisão humana</th></tr></thead>
+                    <tbody>{(mappingCoverage.entities ?? []).map((item) => (
+                      <tr key={item.entityCode}>
+                        <td>{localizedLabel(item.entityCode, ENTITY_LABELS)}</td>
+                        <td>{item.coveredRecords}/{item.records}</td>
+                        <td>{item.mappingStatus === 'covered' ? 'Coberto' : item.mappingStatus === 'partial' ? 'Parcial' : 'Sem mapping'}</td>
+                        <td>{item.targetTable ?? '—'}</td>
+                        <td>{item.requiresHumanReview ? 'Obrigatória' : item.mappingStatus === 'covered' ? 'Conforme contrato' : '—'}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </details>
+              <p className="canonical-readiness-note">A cobertura indica existência de contrato ativo. Ela não significa que o destino já foi resolvido nem que a entidade foi materializada.</p>
             </div>
           )}
 
