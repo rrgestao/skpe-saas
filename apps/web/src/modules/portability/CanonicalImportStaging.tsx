@@ -141,7 +141,7 @@ const READINESS_STATE_LABELS: Record<string, string> = {
 const READINESS_GATE_LABELS: Record<string, string> = {
   BATCH_REVIEWED: 'Lote revisado',
   NO_PENDING_MAPPING: 'Nenhum mapeamento pendente',
-  TARGET_MAPPING_COMPLETE: 'Destinos canônicos definidos',
+  TARGET_MAPPING_COMPLETE: 'Contratos de incorporação definidos',
   NO_BLOCKED_RECORDS: 'Nenhum registro bloqueado',
   NO_INVALID_RECORDS: 'Nenhum registro inválido',
   CONFLICTS_RESOLVED: 'Conflitos formalmente tratados',
