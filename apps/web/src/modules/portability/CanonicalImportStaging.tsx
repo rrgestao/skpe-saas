@@ -587,7 +587,53 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       .order('external_key', { ascending: true })
 
     if (error) throw error
-    setIncorporationCandidates((data ?? []) as IncorporationCandidate[])
+
+    const candidates = (data ?? []) as IncorporationCandidate[]
+    if (candidates.length === 0) {
+      setIncorporationCandidates([])
+      return
+    }
+
+    const { data: requestRows, error: requestError } = await supabase
+      .from('skpe_import_incorporation_requests')
+      .select('id, import_record_id')
+      .in('import_record_id', candidates.map((candidate) => candidate.id))
+      .eq('request_status', 'under_review')
+
+    if (requestError) throw requestError
+    const requestIds = (requestRows ?? []).map((request) => String(request.id))
+    if (requestIds.length === 0) {
+      setIncorporationCandidates(candidates)
+      return
+    }
+
+    const { data: itemRows, error: itemError } = await supabase
+      .from('skpe_import_incorporation_items')
+      .select('incorporation_request_id, validation_state')
+      .in('incorporation_request_id', requestIds)
+
+    if (itemError) throw itemError
+
+    const requestByRecord = new Map(
+      (requestRows ?? []).map((request) => [String(request.import_record_id), String(request.id)]),
+    )
+    const itemStatesByRequest = new Map<string, string[]>()
+    for (const item of itemRows ?? []) {
+      const requestId = String(item.incorporation_request_id)
+      const states = itemStatesByRequest.get(requestId) ?? []
+      states.push(String(item.validation_state ?? ''))
+      itemStatesByRequest.set(requestId, states)
+    }
+
+    const pendingCandidates = candidates.filter((candidate) => {
+      const requestId = requestByRecord.get(candidate.id)
+      if (!requestId) return true
+      const states = itemStatesByRequest.get(requestId) ?? []
+      if (states.length === 0) return true
+      return !states.every((state) => ['validated', 'validated_with_reservations'].includes(state))
+    })
+
+    setIncorporationCandidates(pendingCandidates)
   }
 
   const prepareIncorporationReview = async (candidate: IncorporationCandidate) => {
@@ -724,6 +770,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
         + ' A aprovação de negócio anterior foi preservada e nenhuma incorporação foi executada.',
       )
       setMessageType('success')
+      await loadIncorporationCandidates(batchId, mappingCoverage)
     } catch (error) {
       setMessage(error instanceof Error
         ? `Não foi possível confirmar as correspondências integrais: ${error.message}`
