@@ -474,9 +474,22 @@
   color: #50635d;
 }
 
+.canonical-incorporation-review-package {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .canonical-incorporation-review-package .canonical-batch-table-wrap table {
   table-layout: fixed;
   width: 100%;
+  max-width: 100%;
+}
+
+.canonical-incorporation-review-package .canonical-batch-table-wrap th,
+.canonical-incorporation-review-package .canonical-batch-table-wrap td {
+  box-sizing: border-box;
 }
 
 .canonical-incorporation-review-package .canonical-batch-table-wrap {

@@ -331,6 +331,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [preparingIncorporationBatch, setPreparingIncorporationBatch] = useState(false)
   const [reviewingIncorporationItemId, setReviewingIncorporationItemId] = useState('')
   const [reviewingIncorporationRequest, setReviewingIncorporationRequest] = useState(false)
+  const [confirmingIntegralMatches, setConfirmingIntegralMatches] = useState(false)
   const [decidingIncorporationRequest, setDecidingIncorporationRequest] = useState(false)
   const [blockedReview, setBlockedReview] = useState<BlockedReview | null>(null)
   const [correctedValuesText, setCorrectedValuesText] = useState('')
@@ -672,6 +673,64 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     } finally {
       setPreparingIncorporationId('')
       setPreparingIncorporationBatch(false)
+    }
+  }
+
+  const confirmIntegralMatchesInBatch = async () => {
+    if (!batchId) return
+
+    const confirmed = window.confirm(
+      'A Gestão da COOTAQUARA já aprovou os elementos deste Diagnóstico. Esta ação confirmará somente as correspondências integrais entre o histórico e o SPARKs, sem repetir a aprovação de negócio e sem incorporar conteúdo. Deseja continuar?',
+    )
+    if (!confirmed) return
+
+    const reason = window.prompt(
+      'Registre a justificativa da conferência em lote:',
+      'Correspondência integral entre histórico aprovado pela Gestão da COOTAQUARA e registro atual do SPARKs; aprovação de negócio preexistente preservada.',
+    )?.trim()
+    if (!reason) return
+
+    setConfirmingIntegralMatches(true)
+    setIncorporationReview(null)
+    setMessage('Conferindo correspondências integrais do Diagnóstico...')
+    setMessageType('info')
+
+    try {
+      const { data, error } = await supabase.functions.invoke('skpe-import-incorporation', {
+        body: {
+          action: 'review_batch_integral_matches',
+          batchId,
+          reason,
+        },
+      })
+      if (error) throw error
+
+      const result = (data ?? {}) as {
+        integralMatches?: number
+        requestsConfirmed?: number
+        itemsConfirmed?: number
+        alreadyConfirmed?: number
+        differences?: number
+        unresolved?: number
+        businessDecisionRepeated?: boolean
+        materializationExecuted?: boolean
+      }
+
+      setMessage(
+        `${result.requestsConfirmed ?? 0} registro(s) com correspondência integral foram confirmados em lote`
+        + ` (${result.itemsConfirmed ?? 0} campo(s)).`
+        + ` ${result.alreadyConfirmed ?? 0} já estavam confirmados.`
+        + ` ${result.differences ?? 0} registro(s) com diferença e ${result.unresolved ?? 0} sem resolução integral permanecem para análise individual.`
+        + ' A aprovação de negócio anterior foi preservada e nenhuma incorporação foi executada.',
+      )
+      setMessageType('success')
+    } catch (error) {
+      setMessage(error instanceof Error
+        ? `Não foi possível confirmar as correspondências integrais: ${error.message}`
+        : 'Não foi possível confirmar as correspondências integrais.')
+      setMessageType('error')
+    } finally {
+      setConfirmingIntegralMatches(false)
     }
   }
 
@@ -1167,14 +1226,22 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
               {incorporationCandidates.length > 0 && (
                 <details className="canonical-incorporation-review-queue" open>
                   <summary>Dados históricos do Diagnóstico — revisão humana ({incorporationCandidates.length})</summary>
-                  <p>Estas informações históricas foram reconhecidas no Diagnóstico Estratégico. Prepará-las para revisão apenas organiza o trabalho de conferência antes de qualquer incorporação ao planejamento atual.</p>
-                  <div className="canonical-staging-actions">
+                  <p>Estes elementos do Diagnóstico já foram aprovados pela Gestão da COOTAQUARA. Nesta etapa, o SPARKs confirma apenas se o histórico corresponde ao registro atual. Correspondências integrais podem ser homologadas em lote; somente diferenças reais permanecem para análise individual.</p>
+                  <div className="canonical-staging-actions canonical-diagnostic-batch-actions">
                     <button
                       type="button"
-                      onClick={() => void prepareAllIncorporationReviews()}
-                      disabled={preparingIncorporationBatch || Boolean(preparingIncorporationId)}
+                      onClick={() => void confirmIntegralMatchesInBatch()}
+                      disabled={confirmingIntegralMatches || preparingIncorporationBatch || Boolean(preparingIncorporationId)}
                     >
-                      {preparingIncorporationBatch ? 'Preparando dados para revisão...' : `Preparar dados históricos para revisão (${incorporationCandidates.length})`}
+                      {confirmingIntegralMatches ? 'Confirmando correspondências...' : 'Confirmar correspondências integrais em lote'}
+                    </button>
+                    <button
+                      type="button"
+                      className="neutral"
+                      onClick={() => void prepareAllIncorporationReviews()}
+                      disabled={confirmingIntegralMatches || preparingIncorporationBatch || Boolean(preparingIncorporationId)}
+                    >
+                      {preparingIncorporationBatch ? 'Atualizando revisão...' : 'Atualizar dados para revisão'}
                     </button>
                   </div>
                   <div className="canonical-batch-table-wrap">
@@ -1293,7 +1360,6 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                                   </button>
                                 </div>
                               )}
-                              <div className="canonical-review-state">{['validated', 'validated_with_reservations'].includes(validationState) ? 'Confirmação registrada' : valuesMatch ? 'Aguardando sua confirmação' : 'Requer sua decisão'}</div>
                             </td>
                             <td>{reviewValueLabel(item.original_value)}</td>
                             <td>{reviewValueLabel(currentValue)}</td>

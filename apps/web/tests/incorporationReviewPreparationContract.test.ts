@@ -49,8 +49,12 @@ test('edge function authenticates and authorizes before privileged orchestration
 })
 
 test('edge function exposes governed human review and decision without materialization', () => {
-  assert.match(edge, /'prepare_review' \| 'get_review' \| 'review_item' \| 'review_request_items' \| 'decide_request'/)
+  assert.match(edge, /'prepare_review' \| 'get_review' \| 'review_item' \| 'review_request_items' \| 'review_batch_integral_matches' \| 'decide_request'/)
   assert.match(edge, /human_bulk_review: true/)
+  assert.match(edge, /human_batch_confirmation: true/)
+  assert.match(edge, /validation_scope: 'migration_correspondence_only'/)
+  assert.match(edge, /historical_business_approval_preserved: true/)
+  assert.match(edge, /business_decision_repeated: false/)
   assert.match(edge, /A revisão deve ser feita campo a campo/)
   assert.match(edge, /materializationExecuted: false/)
   assert.match(edge, /skpe_import_incorporation_items/)
@@ -72,7 +76,7 @@ test('edge function exposes governed human review and decision without materiali
 test('staging exposes preparation UX without approval or materialization CTA', () => {
   assert.match(staging, /Dados históricos do Diagnóstico — revisão humana/)
   assert.match(staging, /Abrir revisão/)
-  assert.match(staging, /Preparar dados históricos para revisão/)
+  assert.match(staging, /Atualizar dados para revisão/)
   assert.match(staging, /prepareAllIncorporationReviews/)
   assert.match(staging, /for \(const candidate of incorporationCandidates\)/)
   assert.match(staging, /Nenhuma aprovação ou incorporação foi executada/)
@@ -82,6 +86,9 @@ test('staging exposes preparation UX without approval or materialization CTA', (
   assert.match(staging, /reviewIncorporationItem/)
   assert.match(staging, /validateAllIncorporationItems/)
   assert.match(staging, /Confirmar informações/)
+  assert.match(staging, /Confirmar correspondências integrais em lote/)
+  assert.match(staging, /review_batch_integral_matches/)
+  assert.match(staging, /aprovação de negócio preexistente preservada/)
   assert.match(staging, /Recebido do histórico/)
   assert.match(staging, /Atual no SPARKs/)
   assert.match(staging, /reviewValuesEqual/)

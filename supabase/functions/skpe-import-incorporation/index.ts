@@ -6,8 +6,9 @@ const corsHeaders = {
 }
 
 type RequestPayload = {
-  action?: 'prepare_review' | 'get_review' | 'review_item' | 'review_request_items' | 'decide_request'
+  action?: 'prepare_review' | 'get_review' | 'review_item' | 'review_request_items' | 'review_batch_integral_matches' | 'decide_request'
   importRecordId?: string
+  batchId?: string
   requestId?: string
   itemId?: string
   reason?: string | null
@@ -28,6 +29,36 @@ function compactError(error: unknown) {
     return String((error as { message?: unknown }).message ?? 'Erro desconhecido.')
   }
   return String(error ?? 'Erro desconhecido.')
+}
+
+function normalizeComparableValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return ''
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => String(item).split(/[;,/]/))
+      .map((item) => item.trim().toLocaleLowerCase('pt-BR'))
+      .filter(Boolean)
+      .sort()
+      .join('|')
+  }
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+    .split(/[;,/]/)
+    .map((item) => item.trim().toLocaleLowerCase('pt-BR'))
+    .filter(Boolean)
+    .sort()
+    .join('|')
+}
+
+function comparableValuesEqual(received: unknown, current: unknown): boolean {
+  return normalizeComparableValue(received) === normalizeComparableValue(current)
+}
+
+const targetTableByType: Record<string, string> = {
+  pestel_item: 'skpe_pestel_items',
+  swot_item: 'skpe_swot_items',
+  tows_item: 'skpe_tows_items',
+  strategic_risk_item: 'skpe_strategic_risk_items',
 }
 
 Deno.serve(async (request) => {
@@ -61,7 +92,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'Conteúdo da requisição inválido.' }, 400)
   }
 
-  const supportedActions = ['prepare_review', 'get_review', 'review_item', 'review_request_items', 'decide_request']
+  const supportedActions = ['prepare_review', 'get_review', 'review_item', 'review_request_items', 'review_batch_integral_matches', 'decide_request']
   if (!payload.action || !supportedActions.includes(payload.action)) {
     return jsonResponse({ error: 'Ação inválida.' }, 400)
   }
@@ -71,6 +102,7 @@ Deno.serve(async (request) => {
   })
 
   let organizationId: string | null = null
+  const batchId = payload.batchId?.trim() || null
   let importRecordId: string | null = payload.importRecordId?.trim() || null
   let requestId: string | null = payload.requestId?.trim() || null
   let itemId: string | null = payload.itemId?.trim() || null
@@ -87,6 +119,18 @@ Deno.serve(async (request) => {
     if (recordError) return jsonResponse({ error: 'Não foi possível consultar o ImportRecord.' }, 500)
     if (!record) return jsonResponse({ error: 'ImportRecord não encontrado.' }, 404)
     organizationId = String(record.organization_id)
+  } else if (payload.action === 'review_batch_integral_matches') {
+    if (!batchId) return jsonResponse({ error: 'Lote de importação é obrigatório.' }, 400)
+
+    const { data: batchRow, error: batchError } = await adminClient
+      .from('skpe_import_batches')
+      .select('id, organization_id, project_id, source_file')
+      .eq('id', batchId)
+      .maybeSingle()
+
+    if (batchError) return jsonResponse({ error: 'Não foi possível consultar o lote de importação.' }, 500)
+    if (!batchRow) return jsonResponse({ error: 'Lote de importação não encontrado.' }, 404)
+    organizationId = String(batchRow.organization_id)
   } else if (payload.action === 'review_item') {
     if (!itemId) return jsonResponse({ error: 'Item de incorporação é obrigatório.' }, 400)
 
@@ -102,7 +146,7 @@ Deno.serve(async (request) => {
     requestId = String(item.incorporation_request_id)
   }
 
-  if (payload.action !== 'prepare_review') {
+  if (payload.action !== 'prepare_review' && payload.action !== 'review_batch_integral_matches') {
     if (!requestId) return jsonResponse({ error: 'Request de incorporação é obrigatório.' }, 400)
 
     const { data: requestRow, error: requestLookupError } = await adminClient
@@ -136,6 +180,182 @@ Deno.serve(async (request) => {
   const actorType = isSuperAdmin === true ? 'sparks_consultancy' : 'organization'
   const actorUserId = requesterData.user.id
   const reservations = Array.isArray(payload.reservations) ? payload.reservations : []
+
+  if (payload.action === 'review_batch_integral_matches') {
+    if (!batchId) return jsonResponse({ error: 'Lote de importação é obrigatório.' }, 400)
+    const reason = payload.reason?.trim()
+    if (!reason) return jsonResponse({ error: 'Justificativa da conferência em lote é obrigatória.' }, 400)
+
+    const { data: batchRecords, error: batchRecordsError } = await adminClient
+      .from('skpe_import_records')
+      .select('id, entity_code, external_key')
+      .eq('batch_id', batchId)
+      .in('entity_code', ['pestel', 'swot', 'tows', 'risk'])
+
+    if (batchRecordsError) return jsonResponse({ error: compactError(batchRecordsError) }, 500)
+    const recordIds = (batchRecords ?? []).map((record) => String(record.id))
+    if (recordIds.length === 0) {
+      return jsonResponse({ error: 'O lote não possui registros do Diagnóstico preparados para conferência.' }, 409)
+    }
+
+    const { data: requests, error: requestsError } = await adminClient
+      .from('skpe_import_incorporation_requests')
+      .select('id, import_record_id, request_status, eligibility_status')
+      .in('import_record_id', recordIds)
+      .eq('request_status', 'under_review')
+
+    if (requestsError) return jsonResponse({ error: compactError(requestsError) }, 500)
+
+    let integralMatches = 0
+    let requestsConfirmed = 0
+    let itemsConfirmed = 0
+    let differences = 0
+    let unresolved = 0
+    let alreadyConfirmed = 0
+    const exceptions: Array<Record<string, unknown>> = []
+
+    for (const requestRow of requests ?? []) {
+      const record = (batchRecords ?? []).find(
+        (candidate) => String(candidate.id) === String(requestRow.import_record_id),
+      )
+      const { data: items, error: itemsError } = await adminClient
+        .from('skpe_import_incorporation_items')
+        .select('id, target_entity_type, target_entity_id, target_field_name, original_value, information_state, validation_state')
+        .eq('incorporation_request_id', String(requestRow.id))
+        .order('item_sequence')
+
+      if (itemsError) return jsonResponse({ error: compactError(itemsError) }, 500)
+      if (!items || items.length === 0 || items.some((item) => item.information_state !== 'provided')) {
+        unresolved += 1
+        exceptions.push({
+          requestId: requestRow.id,
+          externalKey: record?.external_key ?? null,
+          reason: 'Campos ausentes ou não fornecidos.',
+        })
+        continue
+      }
+
+      const targetEntityTypes = [...new Set(items.map((item) => String(item.target_entity_type ?? '')).filter(Boolean))]
+      const targetEntityIds = [...new Set(items.map((item) => String(item.target_entity_id ?? '')).filter(Boolean))]
+      if (targetEntityTypes.length !== 1 || targetEntityIds.length !== 1) {
+        unresolved += 1
+        exceptions.push({
+          requestId: requestRow.id,
+          externalKey: record?.external_key ?? null,
+          reason: 'Destino canônico não é único ou não foi resolvido.',
+        })
+        continue
+      }
+
+      const targetTable = targetTableByType[targetEntityTypes[0]]
+      if (!targetTable) {
+        unresolved += 1
+        exceptions.push({
+          requestId: requestRow.id,
+          externalKey: record?.external_key ?? null,
+          reason: 'Tipo de destino não suportado pela confirmação assistida.',
+        })
+        continue
+      }
+
+      const { data: targetRow, error: targetError } = await adminClient
+        .from(targetTable)
+        .select('*')
+        .eq('id', targetEntityIds[0])
+        .maybeSingle()
+
+      if (targetError) return jsonResponse({ error: compactError(targetError) }, 500)
+      if (!targetRow) {
+        unresolved += 1
+        exceptions.push({
+          requestId: requestRow.id,
+          externalKey: record?.external_key ?? null,
+          reason: 'Registro atual do SPARKs não foi localizado.',
+        })
+        continue
+      }
+
+      const mismatchedFields = items
+        .filter((item) => !comparableValuesEqual(
+          item.original_value,
+          (targetRow as Record<string, unknown>)[String(item.target_field_name ?? '')],
+        ))
+        .map((item) => String(item.target_field_name ?? item.id))
+
+      if (mismatchedFields.length > 0) {
+        differences += 1
+        exceptions.push({
+          requestId: requestRow.id,
+          externalKey: record?.external_key ?? null,
+          reason: 'Diferença entre histórico e SPARKs.',
+          fields: mismatchedFields,
+        })
+        continue
+      }
+
+      integralMatches += 1
+      const pendingItems = items.filter(
+        (item) => !['validated', 'validated_with_reservations'].includes(String(item.validation_state ?? '')),
+      )
+
+      if (pendingItems.length === 0) {
+        alreadyConfirmed += 1
+        continue
+      }
+
+      for (const item of pendingItems) {
+        const { error: reviewError } = await adminClient.rpc('skpe_review_import_incorporation_item', {
+          p_incorporation_item_id: item.id,
+          p_review_outcome: 'validated',
+          p_review_reason: reason,
+          p_reviewer_actor_type: actorType,
+          p_reviewer_user_id: actorUserId,
+          p_reservations: [],
+          p_metadata: {
+            source: 'skpe-import-incorporation-edge',
+            action: 'review_batch_integral_matches',
+            authenticated_actor_user_id: actorUserId,
+            human_batch_confirmation: true,
+            validation_scope: 'migration_correspondence_only',
+            historical_business_approval_preserved: true,
+            business_decision_repeated: false,
+            semantic_inference: false,
+            materialization_requested: false,
+          },
+        })
+
+        if (reviewError) return jsonResponse({ error: compactError(reviewError) }, 400)
+        itemsConfirmed += 1
+      }
+
+      const { error: evaluateError } = await adminClient.rpc('skpe_evaluate_import_incorporation_request', {
+        p_request_id: String(requestRow.id),
+        p_evaluated_by_actor_type: actorType,
+        p_evaluated_by_user_id: actorUserId,
+      })
+      if (evaluateError) return jsonResponse({ error: compactError(evaluateError) }, 400)
+
+      requestsConfirmed += 1
+    }
+
+    return jsonResponse({
+      success: true,
+      action: payload.action,
+      batchId,
+      materializationExecuted: false,
+      businessDecisionRepeated: false,
+      historicalBusinessApprovalPreserved: true,
+      validationScope: 'migration_correspondence_only',
+      totalDiagnosticRequests: (requests ?? []).length,
+      integralMatches,
+      requestsConfirmed,
+      itemsConfirmed,
+      alreadyConfirmed,
+      differences,
+      unresolved,
+      exceptions,
+    })
+  }
 
   if (payload.action === 'prepare_review') {
     const { data: prepared, error: prepareError } = await adminClient.rpc(
