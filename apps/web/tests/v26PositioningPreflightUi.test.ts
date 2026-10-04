@@ -7,8 +7,8 @@ const staging = readFileSync(
   'utf8',
 )
 
-test('v26 staging exposes PEM-02.03 structured validation preflight before staging', () => {
-  assert.match(staging, /Preflight PEM-02\.03 \/ v26/)
+test('versioned counterproof staging exposes PEM-02.03 structured validation preflight before staging', () => {
+  assert.match(staging, /Preflight PEM-02\.03 \/ contraprova versionada/)
   assert.match(staging, /Validação estruturada reportada como aprovada sem adequações/)
   assert.match(staging, /Temas/)
   assert.match(staging, /Perspectivas/)

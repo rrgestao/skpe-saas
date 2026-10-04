@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const migration = readFileSync(
-  new URL('../../../supabase/migrations/20261004234500_govern_pem0203_positioning_readiness.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261004235000_generalize_pem0203_counterproof.sql', import.meta.url),
   'utf8',
 )
 const panel = readFileSync(
@@ -22,8 +22,8 @@ test('PEM-02.03 readiness requires a human decision for every Theme and Perspect
   assert.match(migration, /humanDecisionRequiredForEveryPerspective',true/)
 })
 
-test('PEM-02.03 readiness requires reconciled v26 counterproof', () => {
-  assert.match(migration, /PEM0203_V26_COUNTERPROOF_PENDING/)
+test('PEM-02.03 readiness requires reconciled versioned counterproof', () => {
+  assert.match(migration, /PEM0203_COUNTERPROOF_PENDING/)
   assert.match(migration, /documentary_counterproof/)
   assert.match(migration, /counterproofRequiredBeforeCompletion',true/)
   assert.match(migration, /reportedAttestationIsNotEnough',true/)
@@ -47,7 +47,7 @@ test('Positioning UI exposes canonical PEM-02.03 readiness', () => {
   assert.match(panel, /Prontidão de PEM-02\.03/)
   assert.match(panel, /Temas decididos/)
   assert.match(panel, /Perspectivas decididas/)
-  assert.match(panel, /Contraprova v26/)
-  assert.match(panel, /planilha \+ HTML v26/)
+  assert.match(panel, /Contraprova documental/)
+  assert.match(panel, /planilha \+ HTML da contraprova documental/)
   assert.match(section, /<StrategicPositioningReadinessPanel/)
 })

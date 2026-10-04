@@ -1241,7 +1241,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
           {payload.positioningValidation ? (
             <div className="canonical-positioning-preflight">
               <div>
-                <small>Preflight PEM-02.03 / v26</small>
+                <small>Preflight PEM-02.03 / contraprova versionada</small>
                 <h4>
                   {payload.positioningValidation.approvedWithoutChanges
                     ? 'Validação estruturada reportada como aprovada sem adequações'
@@ -1454,7 +1454,6 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                       <thead><tr><th>Informação</th><th>Recebido do histórico</th><th>Atual no SPARKs</th></tr></thead>
                       <tbody>{(incorporationReview.items ?? []).map((item, index) => {
                         const itemId = String(item.id ?? index)
-                        const validationState = String(item.validation_state ?? 'pending')
                         const busy = reviewingIncorporationItemId === itemId
                         const currentValue = incorporationReview.targetSnapshot?.[String(item.target_field_name ?? '')]
                         const valuesMatch = reviewValuesEqual(item.original_value, currentValue)

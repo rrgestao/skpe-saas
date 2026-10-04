@@ -94,7 +94,7 @@ export function StrategicPositioningReadinessPanel({ formulationId }: Props) {
           <p>
             O relato de validação não substitui a decisão humana individual nem
             a contraprova estruturada. A etapa só pode ser concluída após a
-            reconciliação da planilha + HTML v26.
+            reconciliação da planilha + HTML da contraprova documental.
           </p>
         </div>
         <span className={readiness.readyForCompletion ? 'is-ready' : 'is-blocked'}>
@@ -126,11 +126,11 @@ export function StrategicPositioningReadinessPanel({ formulationId }: Props) {
           value={readiness.counts?.unresolvedCanonicalMutations ?? 0}
         />
         <MetricCard
-          label="Contraprova v26"
+          label="Contraprova documental"
           value={readiness.counterproof?.confirmed ? 'Reconciliada' : 'Pendente'}
           helper={
             readiness.counterproof?.expectedArtifacts?.join(' + ') ??
-            'Planilha + HTML v26'
+            'Planilha + HTML da contraprova'
           }
         />
       </div>
