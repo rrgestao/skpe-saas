@@ -562,6 +562,39 @@
   line-height: 1.1;
 }
 
+.canonical-positioning-preflight {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #d9b36c;
+  border-radius: 14px;
+  background: #fff8e8;
+  color: #5f471c;
+}
+
+.canonical-positioning-preflight h4 {
+  margin: .15rem 0 .35rem;
+  color: #5f471c;
+}
+
+.canonical-positioning-preflight p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.canonical-positioning-preflight ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: .25rem;
+}
+
+.canonical-preflight-ok {
+  font-weight: 750;
+  color: #14694e;
+}
+
 @media (max-width: 900px) {
   .canonical-incorporation-review-package .canonical-batch-table-wrap {
     overflow-x: auto;

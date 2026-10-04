@@ -62,6 +62,25 @@ export type CanonicalEntityPayload = {
   records: CanonicalSourceRecord[]
 }
 
+export type PositioningValidationPreflight = {
+  themesExpected: number
+  themesDecided: number
+  perspectivesExpected: number
+  perspectivesDecided: number
+  objectivesExpected: number
+  objectivesDecided: number
+  totalExpected: number
+  totalDecided: number
+  complete: boolean
+  approvedWithoutChanges: boolean
+  reconciliationState:
+    | 'not_submitted'
+    | 'incomplete'
+    | 'reported_approved_without_changes'
+    | 'requires_manual_review'
+  blockers: string[]
+}
+
 export type CanonicalImportPreview = {
   schema: 'SPARKS_PE_CANONICAL_IMPORT_PREVIEW'
   schemaVersion: '2.0.1'
@@ -87,6 +106,7 @@ export type CanonicalImportPreview = {
     issues: QualityIssue[]
   }
   conflicts: ReconciliationConflict[]
+  positioningValidation: PositioningValidationPreflight
   generatedAt: string
   databaseWrites: false
 }
@@ -134,6 +154,8 @@ const ENTITY_BY_SHEET: Record<string, { code: string; name: string }> = {
   '46_Fichas_Indicadores': { code: 'indicator_sheet', name: 'Fichas de indicadores' },
   '47_Associacao_Estrategica': { code: 'strategic_association', name: 'Associações estratégicas' },
   '48_Benchmarks_Referencias': { code: 'benchmark_reference', name: 'Benchmarks e referências' },
+  '50_Temas_Perspectivas': { code: 'strategic_positioning_reference', name: 'Temas e perspectivas' },
+  '51_Validacao_PEM0204': { code: 'positioning_validation', name: 'Validação de Temas, Perspectivas e Objetivos' },
 }
 
 type Matrix = string[][]
@@ -241,6 +263,8 @@ const IDENTITY_FIELDS_BY_ENTITY: Record<string, string[]> = {
   living_value: ['valor'],
   okr: ['ano', 'oe_relacionado', 'objetivo_anual'],
   strategy_map: ['perspectiva', 'objetivo'],
+  strategic_positioning_reference: ['codigo', 'tipo', 'elemento'],
+  positioning_validation: ['codigo', 'tipo', 'elemento'],
   project: ['campo'],
 }
 
@@ -445,7 +469,123 @@ function recordValue(rows: Matrix, key: string, expected: string, field: string)
   return normalize(record?.[field])
 }
 
-function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number): ReconciliationConflict[] {
+
+function classifyPositioningType(value: string): 'theme' | 'perspective' | 'objective' | null {
+  const normalized = slug(value)
+  if (normalized.includes('perspectiva')) return 'perspective'
+  if (normalized.includes('tema')) return 'theme'
+  if (normalized.includes('objetivo')) return 'objective'
+  return null
+}
+
+function isApprovalDecision(value: string): boolean {
+  const normalized = slug(value)
+  if (!normalized) return false
+  return (
+    normalized === 'manter'
+    || normalized.includes('aprovado')
+    || normalized.includes('aprovada')
+    || normalized.includes('aprovacao')
+  )
+}
+
+function isApprovalWithoutChanges(value: string): boolean {
+  const normalized = slug(value)
+  if (!isApprovalDecision(value)) return false
+  const hasAdjustmentSignal = [
+    'ajust',
+    'alter',
+    'substit',
+    'remov',
+    'reserv',
+    'ressalv',
+    'parcial',
+  ].some((token) => normalized.includes(token))
+  if (hasAdjustmentSignal) return false
+  return (
+    normalized === 'manter'
+    || normalized.includes('integral')
+    || normalized.includes('sem_ajuste')
+    || normalized.includes('sem_alter')
+    || normalized === 'aprovado'
+    || normalized === 'aprovada'
+  )
+}
+
+function positioningValidationPreflight(workbook: ExcelJS.Workbook): PositioningValidationPreflight {
+  const referenceRows = tableRecords(sheetMatrix(workbook.getWorksheet('50_Temas_Perspectivas')))
+  const validationRows = tableRecords(sheetMatrix(workbook.getWorksheet('51_Validacao_PEM0204')))
+  const objectiveRows = tableRecords(sheetMatrix(workbook.getWorksheet('09_Objetivos_Estrategicos')))
+
+  const expectedThemes = referenceRows.filter((item) => classifyPositioningType(item.tipo ?? item.tipo_elemento ?? '') === 'theme')
+  const expectedPerspectives = referenceRows.filter((item) => classifyPositioningType(item.tipo ?? item.tipo_elemento ?? '') === 'perspective')
+
+  const validationByType = {
+    theme: validationRows.filter((item) => classifyPositioningType(item.tipo ?? item.tipo_elemento ?? '') === 'theme'),
+    perspective: validationRows.filter((item) => classifyPositioningType(item.tipo ?? item.tipo_elemento ?? '') === 'perspective'),
+    objective: validationRows.filter((item) => classifyPositioningType(item.tipo ?? item.tipo_elemento ?? '') === 'objective'),
+  }
+
+  const themesExpected = expectedThemes.length || validationByType.theme.length
+  const perspectivesExpected = expectedPerspectives.length || validationByType.perspective.length
+  const objectivesExpected = objectiveRows.length || validationByType.objective.length
+
+  const rowsWithDecision = (rows: Record<string, string>[]) =>
+    rows.filter((item) => normalize(item.decisao) !== '')
+
+  const themeDecisions = rowsWithDecision(validationByType.theme)
+  const perspectiveDecisions = rowsWithDecision(validationByType.perspective)
+  const objectiveDecisions = rowsWithDecision(validationByType.objective)
+
+  const themesDecided = themeDecisions.length
+  const perspectivesDecided = perspectiveDecisions.length
+  const objectivesDecided = objectiveDecisions.length
+  const totalExpected = themesExpected + perspectivesExpected + objectivesExpected
+  const totalDecided = themesDecided + perspectivesDecided + objectivesDecided
+
+  const complete = totalExpected > 0
+    && themesDecided === themesExpected
+    && perspectivesDecided === perspectivesExpected
+    && objectivesDecided === objectivesExpected
+
+  const decidedRows = [...themeDecisions, ...perspectiveDecisions, ...objectiveDecisions]
+  const allApproved = complete && decidedRows.every((item) => isApprovalDecision(item.decisao))
+  const approvedWithoutChanges = allApproved
+    && decidedRows.every((item) => isApprovalWithoutChanges(item.decisao))
+
+  const blockers: string[] = []
+  if (!validationRows.length) blockers.push('A aba 51_Validacao_PEM0204 não contém decisões estruturadas.')
+  if (themesExpected === 0) blockers.push('Nenhum Tema Estratégico foi identificado para reconciliação.')
+  if (perspectivesExpected === 0) blockers.push('Nenhuma Perspectiva Estratégica foi identificada para reconciliação.')
+  if (objectivesExpected === 0) blockers.push('Nenhum Objetivo Estratégico foi identificado para reconciliação.')
+  if (themesDecided < themesExpected) blockers.push(`Temas com decisão: ${themesDecided}/${themesExpected}.`)
+  if (perspectivesDecided < perspectivesExpected) blockers.push(`Perspectivas com decisão: ${perspectivesDecided}/${perspectivesExpected}.`)
+  if (objectivesDecided < objectivesExpected) blockers.push(`Objetivos com decisão: ${objectivesDecided}/${objectivesExpected}.`)
+  if (complete && !allApproved) blockers.push('Há decisões diferentes de aprovação/manutenção e a reconciliação exige revisão humana.')
+  if (allApproved && !approvedWithoutChanges) blockers.push('A aprovação contém sinal de ajuste, ressalva ou alteração.')
+
+  let reconciliationState: PositioningValidationPreflight['reconciliationState'] = 'not_submitted'
+  if (validationRows.length && !complete) reconciliationState = 'incomplete'
+  if (complete && approvedWithoutChanges) reconciliationState = 'reported_approved_without_changes'
+  if (complete && !approvedWithoutChanges) reconciliationState = 'requires_manual_review'
+
+  return {
+    themesExpected,
+    themesDecided,
+    perspectivesExpected,
+    perspectivesDecided,
+    objectivesExpected,
+    objectivesDecided,
+    totalExpected,
+    totalDecided,
+    complete,
+    approvedWithoutChanges,
+    reconciliationState,
+    blockers,
+  }
+}
+
+function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number, positioningValidation: PositioningValidationPreflight): ReconciliationConflict[] {
   const decisionRows = sheetMatrix(workbook.getWorksheet('18_Decisoes'))
   const pmvvRows = sheetMatrix(workbook.getWorksheet('34_PMVV_Validacao'))
   const gateRows = sheetMatrix(workbook.getWorksheet('31_Gate_Deliberativo'))
@@ -485,8 +625,10 @@ function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number): Re
       id: 'REC-004', severity: 'critical', topic: 'PEM-02.04',
       sourceA: '51_Validacao_PEM0204', valueA: pem0204State,
       sourceB: '50_Temas_Perspectivas / 09_Objetivos_Estrategicos', valueB: 'Conteúdos preparados para validação',
-      canonicalValue: 'PEM-02.04 em pré-validação; Temas, Perspectivas e Objetivos Estratégicos — OKRs permanecem como propostas não deliberadas.',
-      rule: 'Conteúdo preparado não equivale a conteúdo deliberado ou aprovado.', decision: 'accept_canonical',
+      canonicalValue: positioningValidation.approvedWithoutChanges
+        ? 'Validação estruturada informada na v26: Temas, Perspectivas e Objetivos aprovados sem adequações; promoção canônica ainda depende da reconciliação governada com o atestado recebido.'
+        : 'PEM-02.04 permanece bloqueado; a validação estruturada de Temas, Perspectivas e Objetivos ainda está incompleta ou exige revisão.',
+      rule: 'Decisões da aba 51 devem ser completas e coerentes com as referências das abas 50/09; mesmo quando aprovadas, a importação permanece sem promoção automática até reconciliação governada.', decision: 'accept_canonical',
     },
   ]
 }
@@ -541,7 +683,8 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
   })
 
   const valuesCount = entities.find((entity) => entity.entityCode === 'living_value')?.records.length ?? 0
-  const conflicts = canonicalConflicts(workbook, valuesCount)
+  const positioningValidation = positioningValidationPreflight(workbook)
+  const conflicts = canonicalConflicts(workbook, valuesCount, positioningValidation)
   const phaseRows = sheetMatrix(workbook.getWorksheet('02_Fases'))
   const mf1Status = recordValue(phaseRows, 'codigo', 'MF1', 'status') || 'Não informado'
   const mf2Status = recordValue(phaseRows, 'codigo', 'MF2', 'status') || 'Não informado'
@@ -568,8 +711,12 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
     journey: {
       MF1: mf1Status,
       MF2: mf2Status,
-      currentStage: 'PEM-02.04 — Pré-validação',
-      nextStage: 'Deliberação de Temas, Perspectivas e Objetivos Estratégicos — OKRs',
+      currentStage: positioningValidation.approvedWithoutChanges
+        ? 'PEM-02.03 — validação informada; reconciliação canônica pendente'
+        : 'PEM-02.03 — validação/reconciliação pendente',
+      nextStage: positioningValidation.approvedWithoutChanges
+        ? 'Reconciliar v26 com o atestado recebido antes de liberar PEM-02.04'
+        : 'Completar a validação estruturada de Temas, Perspectivas e Objetivos',
     },
     sheets,
     entities,
@@ -583,6 +730,7 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
       issues,
     },
     conflicts,
+    positioningValidation,
     generatedAt: new Date().toISOString(),
     databaseWrites: false,
   }

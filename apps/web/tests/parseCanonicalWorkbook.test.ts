@@ -22,7 +22,7 @@ function setTable(sheet: ExcelJS.Worksheet, headers: string[], rows: Array<Array
   rows.forEach((values, index) => { sheet.getRow(index + 5).values = [null, ...values] })
 }
 
-async function representativeV26(options: { prefixedOoxml?: boolean; valuesSheet?: string } = {}): Promise<Uint8Array> {
+async function representativeV26(options: { prefixedOoxml?: boolean; valuesSheet?: string; approvedPositioning?: boolean } = {}): Promise<Uint8Array> {
   const workbook = new ExcelJS.Workbook()
   V26_SHEETS.forEach((name) => workbook.addWorksheet(name === '35_Valores' ? (options.valuesSheet ?? name) : name))
   setTable(workbook.getWorksheet('01_Projeto')!, ['Campo', 'Informação'], [
@@ -45,10 +45,19 @@ async function representativeV26(options: { prefixedOoxml?: boolean; valuesSheet
   setTable(valuesSheet, ['Valor', 'Decisão', 'Maturidade'], Array.from({ length: 7 }, (_, index) => [
     `Valor ${index + 1}`, 'Aprovado integralmente', 'Aprovado — institucionalização em andamento',
   ]))
-  setTable(workbook.getWorksheet('51_Validacao_PEM0204')!, ['Código', 'Elemento', 'Tipo', 'Decisão'], [
-    ['TE-01', 'Tema 1', 'Tema', ''], ['PE-01', 'Perspectiva 1', 'Perspectiva', ''],
-    ['OE-01', 'Objetivo 1', 'Objetivo Estratégico — OKR', ''],
+  const themes = Array.from({ length: 4 }, (_, index) => [`TE-0${index + 1}`, `Tema ${index + 1}`, 'Tema'])
+  const perspectives = Array.from({ length: 5 }, (_, index) => [`PE-0${index + 1}`, `Perspectiva ${index + 1}`, 'Perspectiva'])
+  const objectives = Array.from({ length: 10 }, (_, index) => [`OE-${String(index + 1).padStart(2, '0')}`, `Objetivo ${index + 1}`, 'Objetivo Estratégico — OKR'])
+  setTable(workbook.getWorksheet('50_Temas_Perspectivas')!, ['Código', 'Elemento', 'Tipo'], [
+    ...themes,
+    ...perspectives,
   ])
+  setTable(workbook.getWorksheet('09_Objetivos_Estrategicos')!, ['Código', 'Nome', 'Status'], objectives.map(([code, name]) => [code, name, 'Draft']))
+  setTable(workbook.getWorksheet('51_Validacao_PEM0204')!, ['Código', 'Elemento', 'Tipo', 'Decisão'], [
+    ...themes,
+    ...perspectives,
+    ...objectives,
+  ].map(([code, element, type]) => [code, element, type, options.approvedPositioning ? 'Aprovado integralmente' : '']))
   setTable(workbook.getWorksheet('12_KRs')!, ['Código', 'Título'], [
     ['KR-01', 'Resultado duplicado A'], ['KR-01', 'Resultado duplicado B'],
   ])
@@ -87,8 +96,30 @@ describe('parseCanonicalWorkbook', () => {
     assert.ok(preview.quarantinedRecords > 0)
     assert.equal(preview.quarantine[0]?.entityCode, 'methodology_artifact')
     assert.match(preview.conflicts.find((item) => item.topic === 'PMVV')?.canonicalValue ?? '', /aprovado/)
-    assert.match(preview.conflicts.find((item) => item.topic === 'PEM-02.04')?.canonicalValue ?? '', /pré-validação/)
-    assert.equal(preview.journey.currentStage, 'PEM-02.04 — Pré-validação')
+    assert.match(preview.conflicts.find((item) => item.topic === 'PEM-02.04')?.canonicalValue ?? '', /permanece bloqueado/)
+    assert.equal(preview.positioningValidation.themesExpected, 4)
+    assert.equal(preview.positioningValidation.perspectivesExpected, 5)
+    assert.equal(preview.positioningValidation.objectivesExpected, 10)
+    assert.equal(preview.positioningValidation.totalDecided, 0)
+    assert.equal(preview.positioningValidation.complete, false)
+    assert.equal(preview.positioningValidation.reconciliationState, 'incomplete')
+    assert.equal(preview.journey.currentStage, 'PEM-02.03 — validação/reconciliação pendente')
+  })
+
+  it('reconhece uma v26 com 4 Temas, 5 Perspectivas e 10 OEs aprovados integralmente sem promover o canônico', async () => {
+    const preview = await parseCanonicalWorkbook(asFile(await representativeV26({ approvedPositioning: true })))
+    assert.equal(preview.databaseWrites, false)
+    assert.equal(preview.entities.find((entity) => entity.entityCode === 'strategic_positioning_reference')?.records.length, 9)
+    assert.equal(preview.entities.find((entity) => entity.entityCode === 'positioning_validation')?.records.length, 19)
+    assert.equal(preview.positioningValidation.totalExpected, 19)
+    assert.equal(preview.positioningValidation.totalDecided, 19)
+    assert.equal(preview.positioningValidation.complete, true)
+    assert.equal(preview.positioningValidation.approvedWithoutChanges, true)
+    assert.equal(preview.positioningValidation.reconciliationState, 'reported_approved_without_changes')
+    assert.equal(preview.positioningValidation.blockers.length, 0)
+    assert.match(preview.conflicts.find((item) => item.topic === 'PEM-02.04')?.canonicalValue ?? '', /aprovados sem adequações/)
+    assert.equal(preview.journey.currentStage, 'PEM-02.03 — validação informada; reconciliação canônica pendente')
+    assert.match(preview.journey.nextStage, /Reconciliar v26 com o atestado recebido/)
   })
 
   it('mantém compatibilidade com o alias legado 35_Valores_Vivos', async () => {

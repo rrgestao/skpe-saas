@@ -31,6 +31,20 @@ type CanonicalPayload = {
   entities?: Array<{ entityCode?: string; entityName?: string; records?: PayloadRecord[] }>
   conflicts?: unknown[]
   journey?: Record<string, unknown>
+  positioningValidation?: {
+    themesExpected?: number
+    themesDecided?: number
+    perspectivesExpected?: number
+    perspectivesDecided?: number
+    objectivesExpected?: number
+    objectivesDecided?: number
+    totalExpected?: number
+    totalDecided?: number
+    complete?: boolean
+    approvedWithoutChanges?: boolean
+    reconciliationState?: string
+    blockers?: string[]
+  }
   databaseWrites?: boolean
   generatedAt?: string
 }
@@ -1224,6 +1238,38 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
             <article><small>Quarentena</small><strong>{payload.quarantinedRecords ?? 0}</strong></article>
             <article><small>Conflitos</small><strong>{payload.conflicts?.length ?? 0}</strong></article>
           </div>
+          {payload.positioningValidation ? (
+            <div className="canonical-positioning-preflight">
+              <div>
+                <small>Preflight PEM-02.03 / v26</small>
+                <h4>
+                  {payload.positioningValidation.approvedWithoutChanges
+                    ? 'Validação estruturada reportada como aprovada sem adequações'
+                    : 'Validação estruturada ainda incompleta ou divergente'}
+                </h4>
+                <p>
+                  Este preflight apenas lê a planilha. Mesmo com 19/19 decisões aprovadas,
+                  nenhum estado canônico é promovido antes da reconciliação governada com
+                  o atestado humano já registrado.
+                </p>
+              </div>
+              <div className="canonical-staging-kpis compact">
+                <article><small>Temas</small><strong>{payload.positioningValidation.themesDecided ?? 0}/{payload.positioningValidation.themesExpected ?? 0}</strong></article>
+                <article><small>Perspectivas</small><strong>{payload.positioningValidation.perspectivesDecided ?? 0}/{payload.positioningValidation.perspectivesExpected ?? 0}</strong></article>
+                <article><small>Objetivos</small><strong>{payload.positioningValidation.objectivesDecided ?? 0}/{payload.positioningValidation.objectivesExpected ?? 0}</strong></article>
+                <article><small>Estado</small><strong>{payload.positioningValidation.reconciliationState ?? '—'}</strong></article>
+              </div>
+              {(payload.positioningValidation.blockers?.length ?? 0) > 0 ? (
+                <ul>
+                  {payload.positioningValidation.blockers?.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                </ul>
+              ) : (
+                <p className="canonical-preflight-ok">
+                  Sem bloqueadores estruturais no conteúdo de validação. Reconciliação canônica continua pendente.
+                </p>
+              )}
+            </div>
+          ) : null}
           <div className="canonical-staging-actions">
             <button type="button" onClick={() => void stagePayload()} disabled={!canStage || staging}>
               {staging ? 'Preparando lote...' : 'Criar lote em staging'}
