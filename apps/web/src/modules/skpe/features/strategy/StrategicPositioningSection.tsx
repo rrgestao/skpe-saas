@@ -66,6 +66,41 @@ type PositioningValidationDecision = {
   decided_at: string
 }
 
+type PositioningEvidenceAttestation = {
+  id: string
+  title: string
+  description: string | null
+  status: string
+  reliability_level: string
+  received_at: string | null
+  metadata: {
+    attestation_key?: string
+    reporter?: {
+      name?: string
+      email?: string
+      role?: string
+      organization?: string
+    }
+    reported_facts?: {
+      validation_meeting_completed?: boolean
+      meeting_outcome?: string
+      perspectives_approved_without_changes?: boolean
+      themes_approved_without_changes?: boolean
+      strategic_objectives_approved_without_changes?: boolean
+    }
+    documentary_counterproof?: {
+      status?: string
+      expected_artifacts?: string[]
+      generated_after_validation?: boolean
+    }
+    canonical_effect?: {
+      approval_state_changed?: boolean
+      journey_status_changed?: boolean
+      pem02_04_unlocked?: boolean
+    }
+  } | null
+}
+
 type Props = {
   organizationId: string
   projectId?: string | null
@@ -280,6 +315,9 @@ export function StrategicPositioningSection({
   const [latestDecisions, setLatestDecisions] = useState<
     Record<string, PositioningValidationDecision>
   >({})
+  const [evidenceAttestation, setEvidenceAttestation] = useState<
+    PositioningEvidenceAttestation | null
+  >(null)
   const [error, setError] = useState('')
 
   async function refreshValidationState() {
@@ -395,6 +433,45 @@ export function StrategicPositioningSection({
     void refreshValidationState()
   }, [organizationId, formulationId])
 
+  useEffect(() => {
+    let active = true
+
+    if (!effectiveProjectId) {
+      setEvidenceAttestation(null)
+      return () => {
+        active = false
+      }
+    }
+
+    void supabase
+      .from('skpe_evidence_sources')
+      .select('id,title,description,status,reliability_level,received_at,metadata')
+      .eq('organization_id', organizationId)
+      .eq('project_id', effectiveProjectId)
+      .eq('cycle_code', 'PEM-02.03')
+      .order('received_at', { ascending: false })
+      .then((response) => {
+        if (!active) return
+        if (response.error) {
+          setEvidenceAttestation(null)
+          return
+        }
+
+        const attestation = ((response.data ?? []) as PositioningEvidenceAttestation[])
+          .find(
+            (item) =>
+              item.metadata?.attestation_key ===
+              'COOTAQUARA-PEM-02.03-VALIDATION-REPORT-20261004',
+          )
+
+        setEvidenceAttestation(attestation ?? null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [organizationId, effectiveProjectId])
+
   if (!formulationId) {
     return (
       <section className="skpe-strategy-state">
@@ -417,6 +494,26 @@ export function StrategicPositioningSection({
           humana. Conteúdo materializado não equivale a aprovação institucional.
         </p>
       </header>
+
+      {evidenceAttestation ? (
+        <section className="skpe-positioning-attestation">
+          <strong>Relato humano recebido — aguardando contraprova estruturada v26</strong>
+          <p>
+            Ricardo Rodrigues · Líder da SPARKOOP neste projeto ·
+            {' '}{evidenceAttestation.metadata?.reporter?.email ?? 'e-mail não informado'}
+          </p>
+          <p>
+            Foi informado que a reunião de validação com a COOTAQUARA foi concluída
+            com sucesso e que Perspectivas, Temas e Objetivos Estratégicos foram
+            aprovados integralmente, sem adequações.
+          </p>
+          <small>
+            Estado da fonte: {evidenceAttestation.status} · confiabilidade:
+            {' '}{evidenceAttestation.reliability_level}. A planilha + HTML v26 ainda
+            não foram submetidos; nenhum estado canônico foi promovido por este relato.
+          </small>
+        </section>
+      ) : null}
 
       <section>
         <h2>{themes.length} Temas Estratégicos em validação</h2>

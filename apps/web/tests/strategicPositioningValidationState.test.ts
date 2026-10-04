@@ -39,3 +39,11 @@ test('validation controls use the canonical validation permission', () => {
   assert.match(section, /canValidate=\{canValidate\}/)
   assert.match(section, /Você pode consultar esta proposta, mas não possui permissão de validação/)
 })
+
+test('reported COOTAQUARA validation is shown as received evidence pending v26 corroboration', () => {
+  assert.match(section, /COOTAQUARA-PEM-02\.03-VALIDATION-REPORT-20261004/)
+  assert.match(section, /Relato humano recebido — aguardando contraprova estruturada v26/)
+  assert.match(section, /Ricardo Rodrigues · Líder da SPARKOOP neste projeto/)
+  assert.match(section, /evidenceAttestation\.metadata\?\.reporter\?\.email/)
+  assert.match(section, /nenhum estado canônico foi promovido por este relato/)
+})

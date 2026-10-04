@@ -26,6 +26,10 @@
 .skpe-strategy-next-stage-preview>header h2{margin:.2rem 0 .4rem;color:#43564e}
 .skpe-strategy-next-stage-preview>header p{margin:0;color:#6a7973;line-height:1.5}
 .skpe-strategy-next-stage-preview .skpe-strategy-objective-card{opacity:.78}
+.skpe-positioning-attestation{display:grid;gap:.45rem;padding:.9rem 1rem;border:1px solid #d9b36c;border-radius:14px;background:#fff8e8;color:#5f471c}
+.skpe-positioning-attestation strong{font-size:.95rem}
+.skpe-positioning-attestation p{margin:0;line-height:1.45}
+.skpe-positioning-attestation small{color:#725d35;line-height:1.4}
 .skpe-positioning-decision{display:grid;gap:.55rem;margin-top:.85rem;padding-top:.75rem;border-top:1px solid #e4ece8}
 .skpe-positioning-decision-current{display:grid;gap:.2rem;padding:.55rem .65rem;border-radius:10px;background:#eef6f2}
 .skpe-positioning-decision-current small{color:#5f726a}
