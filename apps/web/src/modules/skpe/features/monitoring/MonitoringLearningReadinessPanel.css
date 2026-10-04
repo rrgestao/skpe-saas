@@ -1,0 +1,90 @@
+.skpe-learning-readiness {
+  display: grid;
+  gap: .9rem;
+  padding: 1rem;
+  border: 1px solid #d7e2dc;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.skpe-learning-readiness > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.skpe-learning-readiness > header span {
+  color: #14694e;
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.skpe-learning-readiness > header h2 {
+  margin: .2rem 0 .35rem;
+  color: #183c31;
+}
+
+.skpe-learning-readiness > header p {
+  margin: 0;
+  max-width: 70rem;
+  color: #65746e;
+  line-height: 1.5;
+}
+
+.skpe-learning-readiness > header > strong {
+  padding: .35rem .6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.skpe-learning-readiness > header > strong.is-ready {
+  background: #eaf7f1;
+  color: #14694e;
+}
+
+.skpe-learning-readiness > header > strong.is-blocked {
+  background: #fff4df;
+  color: #79551a;
+}
+
+.skpe-learning-readiness__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+}
+
+.skpe-learning-readiness__issues {
+  display: grid;
+  gap: .5rem;
+}
+
+.skpe-learning-readiness__issues > strong {
+  color: #7a4f16;
+}
+
+.skpe-learning-readiness__issues > div {
+  display: grid;
+  gap: .25rem;
+  padding: .7rem;
+  border: 1px solid #ead9b3;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.skpe-learning-readiness__issues span,
+.skpe-learning-readiness__issues small {
+  color: #65746e;
+}
+
+@media (max-width: 700px) {
+  .skpe-learning-readiness > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .skpe-learning-readiness__metrics {
+    grid-template-columns: 1fr;
+  }
+}

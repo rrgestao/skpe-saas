@@ -18,6 +18,7 @@ import { MonitoringStrategyReviewPanel } from './MonitoringStrategyReviewPanel'
 import { MonitoringCycleGovernancePanel } from './MonitoringCycleGovernancePanel'
 import { MonitoringOperationReadinessPanel } from './MonitoringOperationReadinessPanel'
 import { MonitoringCriticalReviewReadinessPanel } from './MonitoringCriticalReviewReadinessPanel'
+import { MonitoringLearningReadinessPanel } from './MonitoringLearningReadinessPanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -839,6 +840,10 @@ export function MonitoringSection({
         refreshToken={strategicReloadToken}
       />
       <MonitoringCriticalReviewReadinessPanel
+        formulationId={formulationId}
+        refreshToken={strategicReloadToken}
+      />
+      <MonitoringLearningReadinessPanel
         formulationId={formulationId}
         refreshToken={strategicReloadToken}
       />
