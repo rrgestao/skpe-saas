@@ -9382,7 +9382,8 @@ case 'monitoring':
                     ? 'performance'
                     : projectContext.current_stage_code === 'PEM-03.02'
                       ? 'indicators'
-                      : projectContext.current_stage_code === 'PEM-03.03'
+                      : projectContext.current_stage_code === 'PEM-03.03' ||
+                          projectContext.current_stage_code === 'PEM-04.01'
                         ? 'initiatives'
                         : projectContext.current_stage_code === 'PEM-03.04'
                           ? 'plan'
