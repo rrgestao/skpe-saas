@@ -1,10 +1,37 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { supabase } from '../../../../lib/supabase'
 import type { StrategicMapPayload } from '../../contracts/strategic-map.ts'
 import { loadStrategicMap } from './strategicMapLoader.ts'
 import { resolveStrategicCauseEffectSuggestions } from './strategicCauseEffectSuggestions.ts'
 
 import './StrategicArchitectureSummary.css'
+
+type StrategicMapReadinessIssue = {
+  code: string
+  severity: string
+  scope?: string
+  message: string
+  affectedCount?: number
+}
+
+type StrategicMapReadiness = {
+  packageStatus?: string
+  readyForValidation?: boolean
+  validated?: boolean
+  readyForFormulation?: boolean
+  contentBlockingIssueCount?: number
+  blockingIssueCount?: number
+  counts?: {
+    activeThemes?: number
+    activePerspectives?: number
+    activeObjectives?: number
+    objectiveRelations?: number
+    causalCycleNodes?: number
+    objectivesWithIndicators?: number
+  }
+  issues?: StrategicMapReadinessIssue[]
+}
 
 type Props = {
   formulationId: string | null
@@ -12,6 +39,7 @@ type Props = {
 
 export function StrategicArchitectureSummary({ formulationId }: Props) {
   const [payload, setPayload] = useState<StrategicMapPayload | null>(null)
+  const [readiness, setReadiness] = useState<StrategicMapReadiness | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -24,9 +52,19 @@ export function StrategicArchitectureSummary({ formulationId }: Props) {
       }
     }
 
-    void loadStrategicMap(formulationId)
-      .then((nextPayload) => {
-        if (active) setPayload(nextPayload)
+    void Promise.all([
+      loadStrategicMap(formulationId),
+      supabase.rpc('get_skpe_strategic_map_readiness', {
+        target_formulation_id: formulationId,
+      }),
+    ])
+      .then(([nextPayload, readinessResponse]) => {
+        if (!active) return
+        setPayload(nextPayload)
+        if (readinessResponse.error) {
+          throw readinessResponse.error
+        }
+        setReadiness((readinessResponse.data ?? null) as StrategicMapReadiness | null)
       })
       .catch((error) => {
         if (!active) return
@@ -85,6 +123,65 @@ export function StrategicArchitectureSummary({ formulationId }: Props) {
 
   return (
     <section className="skpe-architecture-summary">
+      {readiness ? (
+        <section className="skpe-architecture-readiness">
+          <div>
+            <small>Prontidão do Modelo Estratégico Futuro</small>
+            <h2>
+              {readiness.readyForValidation
+                ? 'Conteúdo pronto para validação do mapa'
+                : 'Conteúdo ainda não está pronto para validação do mapa'}
+            </h2>
+            <p>
+              Este checklist é calculado pelo contrato canônico de readiness. Ele
+              não aprova o mapa; apenas mostra o que ainda falta para que PEM-02.05
+              possa seguir para validação humana.
+            </p>
+          </div>
+
+          <div className="skpe-architecture-readiness-kpis">
+            <article>
+              <small>Temas ativos</small>
+              <strong>{readiness.counts?.activeThemes ?? 0}</strong>
+            </article>
+            <article>
+              <small>Perspectivas ativas</small>
+              <strong>{readiness.counts?.activePerspectives ?? 0}</strong>
+            </article>
+            <article>
+              <small>Objetivos ativos</small>
+              <strong>{readiness.counts?.activeObjectives ?? 0}</strong>
+            </article>
+            <article>
+              <small>Relações causais</small>
+              <strong>{readiness.counts?.objectiveRelations ?? 0}</strong>
+            </article>
+          </div>
+
+          {(readiness.issues?.length ?? 0) > 0 ? (
+            <div className="skpe-architecture-readiness-issues">
+              <strong>Pendências de prontidão</strong>
+              {readiness.issues?.map((issue) => (
+                <article key={`${issue.code}:${issue.message}`}>
+                  <div>
+                    <b>{issue.code}</b>
+                    <span>{issue.severity}</span>
+                  </div>
+                  <p>{issue.message}</p>
+                  {typeof issue.affectedCount === 'number' ? (
+                    <small>{issue.affectedCount} ocorrência(s)</small>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="skpe-architecture-readiness-ok">
+              Nenhuma pendência bloqueante foi identificada pelo contrato de readiness.
+            </div>
+          )}
+        </section>
+      ) : null}
+
       <section className="skpe-architecture-section">
         <h2>Temas Estratégicos</h2>
         <div className="skpe-architecture-theme-grid">

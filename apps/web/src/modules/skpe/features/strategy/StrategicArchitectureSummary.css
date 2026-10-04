@@ -1,4 +1,17 @@
 .skpe-architecture-summary{display:grid;gap:1.25rem}
+.skpe-architecture-readiness{display:grid;gap:.85rem;padding:1rem;border:1px solid #d6e2dc;border-radius:14px;background:#f8fbf9}
+.skpe-architecture-readiness>div:first-child small{color:#14694e;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
+.skpe-architecture-readiness h2{margin:.2rem 0 .35rem;color:#183c31;font-size:1.2rem}
+.skpe-architecture-readiness p{margin:0;color:#65746e;line-height:1.5}
+.skpe-architecture-readiness-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem}
+.skpe-architecture-readiness-kpis article{padding:.75rem;border-radius:12px;background:#fff}
+.skpe-architecture-readiness-kpis article strong{font-size:1.2rem}
+.skpe-architecture-readiness-issues{display:grid;gap:.55rem}
+.skpe-architecture-readiness-issues>strong{color:#5f471c}
+.skpe-architecture-readiness-issues article{padding:.75rem;border-color:#ead9b3;background:#fffaf0}
+.skpe-architecture-readiness-issues article>div{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.skpe-architecture-readiness-issues article span{font-size:.72rem;font-weight:800;text-transform:uppercase;color:#8a6423}
+.skpe-architecture-readiness-ok{padding:.7rem .8rem;border-radius:10px;background:#edf7f2;color:#14694e;font-weight:800}
 .skpe-architecture-section{display:grid;gap:.75rem}
 .skpe-architecture-section h2{margin:0;color:#183c31;font-size:1.35rem}
 .skpe-architecture-theme-grid,.skpe-architecture-perspective-grid,.skpe-architecture-objective-grid,.skpe-architecture-relation-grid{display:grid;gap:.75rem}
