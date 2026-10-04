@@ -442,6 +442,23 @@ Deno.serve(async (request) => {
         if (isDeferredTechnicalField) itemsConfirmedWithReservations += 1
       }
 
+      const { error: recordReviewError } = await adminClient.rpc('skpe_confirm_import_record_from_governed_review', {
+        p_request_id: String(requestRow.id),
+        p_reviewer_actor_type: actorType,
+        p_reviewer_user_id: actorUserId,
+        p_review_reason: reason,
+        p_metadata: {
+          source: 'skpe-import-incorporation-edge',
+          action: 'review_batch_integral_matches',
+          validation_scope: 'migration_correspondence_only',
+          historical_business_approval_preserved: true,
+          business_decision_repeated: false,
+          materialization_requested: false,
+          semantic_inference: false,
+        },
+      })
+      if (recordReviewError) return jsonResponse({ error: compactError(recordReviewError) }, 400)
+
       const { error: evaluateError } = await adminClient.rpc('skpe_evaluate_import_incorporation_request', {
         p_request_id: String(requestRow.id),
         p_evaluated_by_actor_type: actorType,
@@ -582,6 +599,22 @@ Deno.serve(async (request) => {
       if (reviewError) return jsonResponse({ error: compactError(reviewError) }, 400)
     }
 
+    const { error: recordReviewError } = await adminClient.rpc('skpe_confirm_import_record_from_governed_review', {
+      p_request_id: requestId,
+      p_reviewer_actor_type: actorType,
+      p_reviewer_user_id: actorUserId,
+      p_review_reason: reason,
+      p_metadata: {
+        source: 'skpe-import-incorporation-edge',
+        action: 'review_request_items',
+        validation_scope: 'governed_item_review',
+        materialization_requested: false,
+        business_decision_created: false,
+        semantic_inference: false,
+      },
+    })
+    if (recordReviewError) return jsonResponse({ error: compactError(recordReviewError) }, 400)
+
     const { error: evaluateError } = await adminClient.rpc('skpe_evaluate_import_incorporation_request', {
       p_request_id: requestId,
       p_evaluated_by_actor_type: actorType,
@@ -596,6 +629,27 @@ Deno.serve(async (request) => {
     if (!reason) return jsonResponse({ error: 'Justificativa da decisão é obrigatória.' }, 400)
     if (payload.decisionOutcome === 'approved_with_reservations' && reservations.length === 0) {
       return jsonResponse({ error: 'Aprovação com ressalvas exige ao menos uma ressalva.' }, 400)
+    }
+
+    if (['approved', 'approved_with_reservations'].includes(payload.decisionOutcome)) {
+      const { error: recordReviewError } = await adminClient.rpc(
+        'skpe_confirm_import_record_from_governed_review',
+        {
+          p_request_id: requestId,
+          p_reviewer_actor_type: actorType,
+          p_reviewer_user_id: actorUserId,
+          p_review_reason: reason,
+          p_metadata: {
+            source: 'skpe-import-incorporation-edge',
+            action: 'decide_request_preflight',
+            validation_scope: 'governed_item_review',
+            materialization_requested: false,
+            business_decision_created: false,
+            semantic_inference: false,
+          },
+        },
+      )
+      if (recordReviewError) return jsonResponse({ error: compactError(recordReviewError) }, 409)
     }
 
     const { data: eligibility, error: evaluateError } = await adminClient.rpc(

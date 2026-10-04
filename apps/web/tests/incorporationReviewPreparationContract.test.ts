@@ -73,6 +73,7 @@ test('edge function exposes governed human review and decision without materiali
   assert.match(edge, /skpe_review_import_incorporation_item/)
   assert.match(edge, /skpe_record_import_incorporation_decision/)
   assert.match(edge, /skpe_evaluate_import_incorporation_request/)
+  assert.match(edge, /skpe_confirm_import_record_from_governed_review/)
   assert.match(edge, /eligible_with_reservations/)
   assert.doesNotMatch(edge, /skpe_execute_governed_import_materialization/)
 })
