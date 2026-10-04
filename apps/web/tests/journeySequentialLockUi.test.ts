@@ -6,13 +6,22 @@ const section = readFileSync(
   new URL('../src/modules/skpe/features/journey/JourneySection.tsx', import.meta.url),
   'utf8',
 )
+const contract = readFileSync(
+  new URL('../src/modules/skpe/contracts/journey.ts', import.meta.url),
+  'utf8',
+)
 
-test('PEM-02 UI mirrors the canonical sequential lock', () => {
-  assert.match(section, /'PEM-02\.02': 'PEM-02\.01'/)
-  assert.match(section, /'PEM-02\.03': 'PEM-02\.02'/)
-  assert.match(section, /'PEM-02\.04': 'PEM-02\.03'/)
-  assert.match(section, /'PEM-02\.05': 'PEM-02\.04'/)
-  assert.match(section, /'PEM-02\.GATE': 'PEM-02\.05'/)
+test('journey UI derives methodology locks from canonical unblock_dependencies metadata', () => {
+  assert.match(contract, /unblock_dependencies/)
+  assert.match(section, /\.from\('skpe_journey_items'\)/)
+  assert.match(section, /\.select\('id,metadata'\)/)
+  assert.match(section, /item\.metadata\?\.unblock_dependencies/)
+  assert.match(section, /required_status \?\? 'completed'/)
   assert.match(section, /Bloqueado metodologicamente/)
   assert.match(section, /statusDialogRequest !== null \|\| methodologyLocked/)
+})
+
+test('journey UI no longer hardcodes PEM-02 dependency pairs', () => {
+  assert.doesNotMatch(section, /pem02DependencyByCode/)
+  assert.doesNotMatch(section, /'PEM-02\.04': 'PEM-02\.03'/)
 })

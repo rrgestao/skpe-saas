@@ -497,7 +497,7 @@ export function JourneySection({
       return
     }
 
-    const journeyRows = ((data ?? []) as JourneyTemporalReadRow[]).map(
+    const baseJourneyRows = ((data ?? []) as JourneyTemporalReadRow[]).map(
       (row): JourneyTemporalRow => ({
         ...row,
         planned_start_date: row.current_plan_start_date,
@@ -505,7 +505,27 @@ export function JourneySection({
       }),
     )
 
-    const resolvedProjectId = journeyRows[0]?.project_id ?? workspace.route.projectId
+    const resolvedProjectId = baseJourneyRows[0]?.project_id ?? workspace.route.projectId
+    const { data: dependencyRows, error: dependencyError } = await supabase
+      .from('skpe_journey_items')
+      .select('id,metadata')
+      .eq('project_id', resolvedProjectId)
+      .is('archived_at', null)
+
+    if (dependencyError) {
+      setRows([])
+      setErrorMessage(translateBackendMessage(dependencyError.message))
+      setLoading(false)
+      return
+    }
+
+    const metadataByItemId = new Map(
+      (dependencyRows ?? []).map((row) => [String(row.id), row.metadata ?? null]),
+    )
+    const journeyRows = baseJourneyRows.map((row): JourneyTemporalRow => ({
+      ...row,
+      metadata: metadataByItemId.get(row.item_id) as JourneyTemporalRow['metadata'],
+    }))
     const { data: governanceRows } = await supabase.rpc(
       'get_skpe_project_leadership_context',
       {
@@ -590,20 +610,27 @@ export function JourneySection({
   const renderJourneyItem = (item: JourneyItem, level = 0) => {
     const hasChildren = item.children.length > 0
     const isExpanded = expandedItems.has(item.item_id)
-    const pem02DependencyByCode: Record<string, string> = {
-      'PEM-02.02': 'PEM-02.01',
-      'PEM-02.03': 'PEM-02.02',
-      'PEM-02.04': 'PEM-02.03',
-      'PEM-02.05': 'PEM-02.04',
-      'PEM-02.GATE': 'PEM-02.05',
-    }
-    const prerequisiteCode = pem02DependencyByCode[item.item_code]
-    const prerequisite = prerequisiteCode
-      ? rows.find((row) => row.item_code === prerequisiteCode)
-      : null
-    const methodologyLocked = Boolean(
-      prerequisite && prerequisite.item_status !== 'completed',
-    )
+    const dependencies = Array.isArray(item.metadata?.unblock_dependencies)
+      ? item.metadata.unblock_dependencies
+      : []
+    const unmetDependencies = dependencies
+      .map((dependency) => {
+        const prerequisite = dependency.code
+          ? rows.find((row) => row.item_code === dependency.code)
+          : null
+        const requiredStatus = dependency.required_status ?? 'completed'
+        return prerequisite && prerequisite.item_status !== requiredStatus
+          ? { prerequisite, requiredStatus }
+          : null
+      })
+      .filter(
+        (dependency): dependency is {
+          prerequisite: JourneyTemporalRow
+          requiredStatus: string
+        } => Boolean(dependency),
+      )
+    const methodologyLocked = unmetDependencies.length > 0
+    const firstUnmetDependency = unmetDependencies[0] ?? null
 
     return (
       <article
@@ -741,11 +768,11 @@ export function JourneySection({
               </div>
             )}
 
-            {methodologyLocked && prerequisite && (
+            {methodologyLocked && firstUnmetDependency ? (
               <div className="skpe-journey-blocked-message">
-                Bloqueado metodologicamente: conclua {prerequisite.item_code} — {methodologyTextPtBr(prerequisite.item_name)} antes de avançar.
+                Bloqueado metodologicamente: {firstUnmetDependency.prerequisite.item_code} — {methodologyTextPtBr(firstUnmetDependency.prerequisite.item_name)} deve estar em {statusLabelPtBr(firstUnmetDependency.requiredStatus)} antes de avançar.
               </div>
-            )}
+            ) : null}
 
             <div className="skpe-phase-progress">
               <div className="skpe-progress-track">
@@ -773,7 +800,7 @@ export function JourneySection({
                       })
                     }
                     disabled={statusDialogRequest !== null || methodologyLocked}
-                    title={methodologyLocked ? `Conclua ${prerequisiteCode} antes de iniciar.` : undefined}
+                    title={methodologyLocked && firstUnmetDependency ? `${firstUnmetDependency.prerequisite.item_code} deve estar em ${statusLabelPtBr(firstUnmetDependency.requiredStatus)} antes de iniciar.` : undefined}
                   >
                     Iniciar
                   </button>
@@ -790,7 +817,7 @@ export function JourneySection({
                       })
                     }
                     disabled={statusDialogRequest !== null || methodologyLocked}
-                    title={methodologyLocked ? `Conclua ${prerequisiteCode} antes de concluir esta etapa.` : undefined}
+                    title={methodologyLocked && firstUnmetDependency ? `${firstUnmetDependency.prerequisite.item_code} deve estar em ${statusLabelPtBr(firstUnmetDependency.requiredStatus)} antes de concluir esta etapa.` : undefined}
                   >
                     Concluir
                   </button>

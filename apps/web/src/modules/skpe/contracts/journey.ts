@@ -39,6 +39,13 @@ export type JourneyRow = {
   validation_status: string
   blocked: boolean
   blocking_reason: string | null
+  metadata?: {
+    unblock_dependencies?: Array<{
+      code?: string
+      required_status?: JourneyStatus | string
+    }>
+    [key: string]: unknown
+  } | null
 }
 
 export type JourneyTemporalState =
