@@ -1,0 +1,81 @@
+.skpe-communication-mobilization-readiness {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #d6e2dc;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.skpe-communication-mobilization-readiness header {
+  display: grid;
+  gap: .45rem;
+}
+
+.skpe-communication-mobilization-readiness header h3 {
+  margin: 0;
+  color: #1f312a;
+}
+
+.skpe-communication-mobilization-readiness header p:last-child {
+  margin: 0;
+  color: #65746e;
+  line-height: 1.5;
+}
+
+.skpe-communication-mobilization-readiness__state {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: .85rem 1rem;
+  border: 1px solid #dce7e3;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.skpe-communication-mobilization-readiness__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .7rem;
+}
+
+.skpe-communication-mobilization-readiness__issues {
+  display: grid;
+  gap: .55rem;
+}
+
+.skpe-communication-mobilization-readiness__issues > strong {
+  color: #7a4f16;
+}
+
+.skpe-communication-mobilization-readiness__issues article {
+  padding: .75rem;
+  border: 1px solid #ead9b3;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.skpe-communication-mobilization-readiness__issues article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.skpe-communication-mobilization-readiness__issues article p,
+.skpe-communication-mobilization-readiness__policy {
+  margin: .35rem 0 0;
+  color: #65746e;
+}
+
+@media (max-width: 980px) {
+  .skpe-communication-mobilization-readiness__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-communication-mobilization-readiness__state {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

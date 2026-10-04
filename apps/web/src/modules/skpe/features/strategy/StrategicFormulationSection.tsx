@@ -13,6 +13,7 @@ import { StrategicArchitectureSummary } from './StrategicArchitectureSummary'
 import { StrategicOkrDecompositionSection } from './StrategicOkrDecompositionSection'
 import { StrategicIndicatorsReadinessSection } from './StrategicIndicatorsReadinessSection'
 import { StrategicImplementationActivationReadinessSection } from './StrategicImplementationActivationReadinessSection'
+import { StrategicCommunicationMobilizationReadinessSection } from './StrategicCommunicationMobilizationReadinessSection'
 import { StrategicExecutionGovernanceReadinessSection } from './StrategicExecutionGovernanceReadinessSection'
 import { StrategicBscMap } from './StrategicBscMap'
 import { StrategicMapLifecyclePanel } from './StrategicMapLifecyclePanel'
@@ -273,6 +274,7 @@ export function StrategicFormulationSection({
       ) : null}
 {activeTab === 'plan' ? (
         <section className="skpe-formulation-tab-panel">
+          <StrategicCommunicationMobilizationReadinessSection formulationId={formulationId} />
           <StrategicExecutionGovernanceReadinessSection formulationId={formulationId} />
           <div className="skpe-formulation-plan-list">
             {initiatives.map((initiative) => (
