@@ -5,9 +5,35 @@ import { supabase } from '../../../../lib/supabase'
 
 import './StrategicInitiativePlanSection.css'
 
+type InitiativeReadinessIssue = {
+  code: string
+  severity: string
+  entityId?: string
+  message: string
+}
+
+type InitiativeReadiness = {
+  applicability?: string
+  packageStatus?: string | null
+  readyForValidation?: boolean
+  readyForFormulation?: boolean
+  blockingIssues?: InitiativeReadinessIssue[]
+  recommendations?: InitiativeReadinessIssue[]
+  metrics?: {
+    selectedInitiatives?: number
+    candidateInitiatives?: number
+    actions?: number
+    risks?: number
+    outcomes?: number
+    blockingIssueCount?: number
+    recommendationCount?: number
+  }
+}
+
 type Props = {
   organizationId: string
   projectId: string
+  formulationId: string | null
 }
 
 type ObjectiveRow = {
@@ -68,6 +94,7 @@ type ProjectBindingRow = {
 export function StrategicInitiativePlanSection({
   organizationId,
   projectId,
+  formulationId,
 }: Props) {
   const [objectives, setObjectives] = useState<ObjectiveRow[]>([])
   const [keyResults, setKeyResults] = useState<KeyResultRow[]>([])
@@ -77,6 +104,7 @@ export function StrategicInitiativePlanSection({
   const [legacyKeyResultLinks, setLegacyKeyResultLinks] = useState<LegacyKeyResultLinkRow[]>([])
   const [sparksStrategicLinks, setSparksStrategicLinks] = useState<SparksStrategicLinkRow[]>([])
   const [projectBindings, setProjectBindings] = useState<ProjectBindingRow[]>([])
+  const [readiness, setReadiness] = useState<InitiativeReadiness | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -95,6 +123,7 @@ export function StrategicInitiativePlanSection({
         legacyKeyResultLinksResponse,
         sparksStrategicLinksResponse,
         projectBindingsResponse,
+        readinessResponse,
       ] = await Promise.all([
         supabase
           .from('skpe_strategic_objectives')
@@ -135,6 +164,12 @@ export function StrategicInitiativePlanSection({
           .select('initiative_id, binding_type')
           .eq('organization_id', organizationId)
           .eq('skpe_project_id', projectId),
+        formulationId
+          ? supabase.rpc('get_skpe_initiatives_readiness', {
+              p_formulation_id: formulationId,
+              p_include_package_state: true,
+            })
+          : Promise.resolve({ data: null, error: null }),
       ])
 
       if (!active) return
@@ -147,6 +182,7 @@ export function StrategicInitiativePlanSection({
         legacyKeyResultLinksResponse,
         sparksStrategicLinksResponse,
         projectBindingsResponse,
+        readinessResponse,
       ]
       const firstError = responses.find((response) => response.error)?.error
 
@@ -196,6 +232,7 @@ export function StrategicInitiativePlanSection({
       setSparksStrategicLinks(strategicLinks)
       setProjectBindings(bindings)
       setSparksInitiatives(loadedSparksInitiatives)
+      setReadiness((readinessResponse.data ?? null) as InitiativeReadiness | null)
       setLoading(false)
     }
 
@@ -203,7 +240,7 @@ export function StrategicInitiativePlanSection({
     return () => {
       active = false
     }
-  }, [organizationId, projectId])
+  }, [organizationId, projectId, formulationId])
 
   const objectiveInitiativeIds = useMemo(() => {
     const map = new Map<string, Set<string>>()
@@ -286,6 +323,63 @@ export function StrategicInitiativePlanSection({
         <div className="skpe-admin-message skpe-admin-message-error">
           {errorMessage}
         </div>
+      ) : null}
+
+      {readiness ? (
+        <section className="skpe-strategic-initiative-plan__readiness">
+          <div>
+            <p className="skpe-eyebrow">PEM-03.03 · Prontidão do portfólio</p>
+            <h4>
+              {readiness.readyForFormulation
+                ? 'Portfólio pronto e validado para conclusão da etapa'
+                : readiness.readyForValidation
+                  ? 'Portfólio pronto para validação humana'
+                  : 'Portfólio ainda possui bloqueadores metodológicos'}
+            </h4>
+            <p>
+              Este painel usa o contrato canônico de prontidão. Ele não cria,
+              seleciona nem prioriza iniciativas automaticamente.
+            </p>
+          </div>
+
+          <div className="skpe-strategic-initiative-plan__readiness-metrics">
+            <MetricCard label="Selecionadas" value={readiness.metrics?.selectedInitiatives ?? 0} />
+            <MetricCard label="Candidatas" value={readiness.metrics?.candidateInitiatives ?? 0} />
+            <MetricCard label="Ações" value={readiness.metrics?.actions ?? 0} />
+            <MetricCard label="Riscos" value={readiness.metrics?.risks ?? 0} />
+            <MetricCard label="Resultados" value={readiness.metrics?.outcomes ?? 0} />
+          </div>
+
+          {(readiness.blockingIssues?.length ?? 0) > 0 ? (
+            <div className="skpe-strategic-initiative-plan__readiness-list is-blocking">
+              <strong>Bloqueadores</strong>
+              {readiness.blockingIssues?.map((issue) => (
+                <article key={`${issue.code}:${issue.entityId ?? issue.message}`}>
+                  <div>
+                    <b>{issue.code}</b>
+                    <span>{issue.severity}</span>
+                  </div>
+                  <p>{issue.message}</p>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          {(readiness.recommendations?.length ?? 0) > 0 ? (
+            <div className="skpe-strategic-initiative-plan__readiness-list">
+              <strong>Recomendações</strong>
+              {readiness.recommendations?.map((issue) => (
+                <article key={`${issue.code}:${issue.entityId ?? issue.message}`}>
+                  <div>
+                    <b>{issue.code}</b>
+                    <span>{issue.severity}</span>
+                  </div>
+                  <p>{issue.message}</p>
+                </article>
+              ))}
+            </div>
+          ) : null}
+        </section>
       ) : null}
 
       <div className="skpe-strategic-initiative-plan__metrics">

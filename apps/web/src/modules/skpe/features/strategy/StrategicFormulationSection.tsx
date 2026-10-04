@@ -263,6 +263,7 @@ export function StrategicFormulationSection({
         <StrategicInitiativePlanSection
           organizationId={organizationId}
           projectId={projectId}
+          formulationId={formulationId}
         />
       ) : null}
 {activeTab === 'plan' ? (
