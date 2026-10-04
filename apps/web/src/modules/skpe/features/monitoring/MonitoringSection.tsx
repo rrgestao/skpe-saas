@@ -16,6 +16,7 @@ import { MonitoringIndicatorCollectionPanel } from './MonitoringIndicatorCollect
 import { MonitoringExecutionCheckInsPanel } from './MonitoringExecutionCheckInsPanel'
 import { MonitoringStrategyReviewPanel } from './MonitoringStrategyReviewPanel'
 import { MonitoringCycleGovernancePanel } from './MonitoringCycleGovernancePanel'
+import { MonitoringOperationReadinessPanel } from './MonitoringOperationReadinessPanel'
 import type {
   ActionBoardExecutionRow,
   CapacityAllocationExecutionRow,
@@ -831,6 +832,11 @@ export function MonitoringSection({
           {capacityPermissionError}
         </div>
       )}
+
+      <MonitoringOperationReadinessPanel
+        formulationId={formulationId}
+        refreshToken={strategicReloadToken}
+      />
 
       {strategicLoading && <div className="skpe-monitoring-state">Verificando prontidão do desempenho estratégico...</div>}
       {!strategicLoading && strategicError && <div className="skpe-monitoring-state is-error" role="alert">{strategicError}</div>}
