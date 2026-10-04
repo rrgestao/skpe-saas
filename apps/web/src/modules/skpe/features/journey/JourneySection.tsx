@@ -8,6 +8,7 @@ import { JourneyItemStatusDialog } from './JourneyItemStatusDialog'
 import { JourneyGantt } from './JourneyGantt'
 import { JourneyProjectPlan } from './JourneyProjectPlan'
 import { Pem02GatePanel } from './Pem02GatePanel'
+import { Pem03GatePanel } from './Pem03GatePanel'
 import { SvarJourneyGantt } from './SvarJourneyGantt'
 import type {
   JourneyRow,
@@ -1019,10 +1020,16 @@ export function JourneySection({
       )}
 
       {project ? (
-        <Pem02GatePanel
-          organizationId={organizationId}
-          projectId={project.project_id}
-        />
+        <>
+          <Pem02GatePanel
+            organizationId={organizationId}
+            projectId={project.project_id}
+          />
+          <Pem03GatePanel
+            organizationId={organizationId}
+            projectId={project.project_id}
+          />
+        </>
       ) : null}
 
       {rows.length > 0 && !loading && (
