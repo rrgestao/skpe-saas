@@ -12,6 +12,7 @@ import { StrategicExecutiveOverview } from './StrategicExecutiveOverview'
 import { StrategicArchitectureSummary } from './StrategicArchitectureSummary'
 import { StrategicOkrDecompositionSection } from './StrategicOkrDecompositionSection'
 import { StrategicBscMap } from './StrategicBscMap'
+import { StrategicMapLifecyclePanel } from './StrategicMapLifecyclePanel'
 import { phase2SuggestionGovernanceNotice } from '../../contracts/strategic-suggestion-governance.ts'
 
 import './StrategicFormulationSection.css'
@@ -231,6 +232,11 @@ export function StrategicFormulationSection({
               </p>
             </div>
           ) : null}
+          <StrategicMapLifecyclePanel
+            organizationId={organizationId}
+            formulationId={formulationId}
+            stageUnlocked={strategicMapStageUnlocked}
+          />
           <StrategicBscMap
             formulationId={formulationId}
             canAdjustLayout={canAdjustStrategicMap && strategicMapStageUnlocked}
