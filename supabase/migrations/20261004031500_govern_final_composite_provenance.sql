@@ -266,7 +266,7 @@ begin
           'business_materialization','none',
           'future_curation_required',
             case
-              when v_source_code='traceability' then true
+              when v_source_code='traceability' then 'always'
               when v_source_code='pending_item' then 'record_dependent'
               when v_source_code='pmvv_institutionalization' then 'record_dependent'
             end,
