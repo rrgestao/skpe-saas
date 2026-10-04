@@ -118,8 +118,6 @@ type IncorporationReviewPackage = {
   decisions?: Array<Record<string, unknown>>
 }
 
-const DIAGNOSTIC_INCORPORATION_TYPES = ['pestel', 'swot', 'tows', 'risk'] as const
-
 
 type BlockedReview = {
   batchId?: string
@@ -571,9 +569,9 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
         .filter((item) => item.mappingStatus === 'covered')
         .map((item) => item.entityCode),
     )
-    const diagnosticTypes = DIAGNOSTIC_INCORPORATION_TYPES.filter((type) => coveredTypes.has(type))
+    const reviewableTypes = Array.from(coveredTypes)
 
-    if (diagnosticTypes.length === 0) {
+    if (reviewableTypes.length === 0) {
       setIncorporationCandidates([])
       return
     }
@@ -582,7 +580,9 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
       .from('skpe_import_records')
       .select('id, entity_code, external_key, source_sheet, source_row, reviewed, review_decision')
       .eq('batch_id', id)
-      .in('entity_code', diagnosticTypes)
+      .in('entity_code', reviewableTypes)
+      .in('proposed_action', ['insert', 'update'])
+      .eq('quality_status', 'valid')
       .order('entity_code', { ascending: true })
       .order('external_key', { ascending: true })
 
@@ -662,7 +662,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
             body: {
               action: 'prepare_review',
               importRecordId: candidate.id,
-              reason: `Preparação governada do primeiro pacote de Diagnóstico: ${candidate.external_key}.`,
+              reason: `Preparação governada para revisão pré-carga: ${candidate.external_key}.`,
             },
           })
           if (error) throw error
