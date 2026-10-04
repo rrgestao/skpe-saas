@@ -188,7 +188,8 @@ Deno.serve(async (request) => {
       .from('skpe_import_records')
       .select('id, entity_code, external_key')
       .eq('batch_id', batchId)
-      .in('entity_code', ['pestel', 'swot', 'tows', 'risk'])
+      .in('proposed_action', ['insert', 'update'])
+      .eq('quality_status', 'valid')
 
     if (batchRecordsError) return jsonResponse({ error: compactError(batchRecordsError) }, 500)
     const recordIds = (batchRecords ?? []).map((record) => String(record.id))
@@ -197,70 +198,65 @@ Deno.serve(async (request) => {
         success: true,
         action: payload.action,
         batchId,
-        totalDiagnosticRecords: 0,
+        totalReviewableRecords: 0,
         pendingImportRecordIds: [],
         confirmedImportRecordIds: [],
+        appliedImportRecordIds: [],
       })
     }
 
     const { data: requests, error: requestsError } = await adminClient
       .from('skpe_import_incorporation_requests')
-      .select('id, import_record_id, request_status')
+      .select('id, import_record_id, request_sequence, request_status')
       .in('import_record_id', recordIds)
-      .eq('request_status', 'under_review')
+      .order('request_sequence', { ascending: false })
 
     if (requestsError) return jsonResponse({ error: compactError(requestsError) }, 500)
 
-    const requestIds = (requests ?? []).map((request) => String(request.id))
-    const { data: items, error: itemsError } = requestIds.length > 0
-      ? await adminClient
-          .from('skpe_import_incorporation_items')
-          .select('incorporation_request_id, validation_state')
-          .in('incorporation_request_id', requestIds)
-      : { data: [], error: null }
-
-    if (itemsError) return jsonResponse({ error: compactError(itemsError) }, 500)
-
-    const requestByRecord = new Map(
-      (requests ?? []).map((request) => [String(request.import_record_id), String(request.id)]),
-    )
-    const itemStatesByRequest = new Map<string, string[]>()
-
-    for (const item of items ?? []) {
-      const itemRequestId = String(item.incorporation_request_id)
-      const states = itemStatesByRequest.get(itemRequestId) ?? []
-      states.push(String(item.validation_state ?? ''))
-      itemStatesByRequest.set(itemRequestId, states)
+    const latestRequestByRecord = new Map<string, { id: string; status: string }>()
+    for (const request of requests ?? []) {
+      const recordId = String(request.import_record_id)
+      if (!latestRequestByRecord.has(recordId)) {
+        latestRequestByRecord.set(recordId, {
+          id: String(request.id),
+          status: String(request.request_status ?? ''),
+        })
+      }
     }
 
     const pendingImportRecordIds: string[] = []
     const confirmedImportRecordIds: string[] = []
+    const appliedImportRecordIds: string[] = []
 
     for (const record of batchRecords ?? []) {
       const recordId = String(record.id)
-      const itemRequestId = requestByRecord.get(recordId)
-      if (!itemRequestId) {
+      const latestRequest = latestRequestByRecord.get(recordId)
+
+      if (!latestRequest) {
         pendingImportRecordIds.push(recordId)
         continue
       }
 
-      const states = itemStatesByRequest.get(itemRequestId) ?? []
-      const fullyConfirmed = states.length > 0
-        && states.every((state) => ['validated', 'validated_with_reservations'].includes(state))
+      if (latestRequest.status === 'applied') {
+        appliedImportRecordIds.push(recordId)
+        confirmedImportRecordIds.push(recordId)
+        continue
+      }
 
-      if (fullyConfirmed) confirmedImportRecordIds.push(recordId)
-      else pendingImportRecordIds.push(recordId)
+      pendingImportRecordIds.push(recordId)
     }
 
     return jsonResponse({
       success: true,
       action: payload.action,
       batchId,
-      totalDiagnosticRecords: recordIds.length,
+      totalReviewableRecords: recordIds.length,
       pendingCount: pendingImportRecordIds.length,
       confirmedCount: confirmedImportRecordIds.length,
+      appliedCount: appliedImportRecordIds.length,
       pendingImportRecordIds,
       confirmedImportRecordIds,
+      appliedImportRecordIds,
     })
   }
 
