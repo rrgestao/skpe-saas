@@ -9,6 +9,7 @@ import { JourneyGantt } from './JourneyGantt'
 import { JourneyProjectPlan } from './JourneyProjectPlan'
 import { Pem02GatePanel } from './Pem02GatePanel'
 import { Pem03GatePanel } from './Pem03GatePanel'
+import { Pem04GatePanel } from './Pem04GatePanel'
 import { SvarJourneyGantt } from './SvarJourneyGantt'
 import type {
   JourneyRow,
@@ -1026,6 +1027,10 @@ export function JourneySection({
             projectId={project.project_id}
           />
           <Pem03GatePanel
+            organizationId={organizationId}
+            projectId={project.project_id}
+          />
+          <Pem04GatePanel
             organizationId={organizationId}
             projectId={project.project_id}
           />
