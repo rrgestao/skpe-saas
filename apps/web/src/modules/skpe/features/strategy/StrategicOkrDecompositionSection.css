@@ -6,6 +6,21 @@
 .skpe-okr-decomposition-header small{display:block;margin-bottom:6px;font-weight:700;color:#246f58;text-transform:uppercase;letter-spacing:.04em}
 .skpe-okr-decomposition-header h3{margin:0;font-size:1.35rem;color:#163f34}
 .skpe-okr-decomposition-header p{max-width:620px;margin:0;line-height:1.55;color:#52645e}
+.skpe-okr-readiness{display:grid;gap:.8rem;padding:1rem;border:1px solid #d9e5df;border-radius:16px;background:#f8fbf9}
+.skpe-okr-readiness>div:first-child small{display:block;color:#246f58;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.skpe-okr-readiness>div:first-child h4{margin:.2rem 0 .35rem;color:#163f34}
+.skpe-okr-readiness>div:first-child p{margin:0;color:#52645e;line-height:1.5}
+.skpe-okr-readiness-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem}
+.skpe-okr-readiness-kpis article{display:flex;flex-direction:column;gap:.2rem;padding:.75rem .85rem;border:1px solid rgba(24,90,70,.12);border-radius:12px;background:#fff}
+.skpe-okr-readiness-kpis span{font-size:.78rem;color:#60716b}
+.skpe-okr-readiness-kpis strong{font-size:1.15rem;color:#1f684f}
+.skpe-okr-readiness-issues{display:grid;gap:.55rem}
+.skpe-okr-readiness-issues>strong{color:#6d4d18}
+.skpe-okr-readiness-issues article{padding:.75rem .85rem;border:1px solid #ead9b3;border-radius:12px;background:#fffaf0}
+.skpe-okr-readiness-issues article>div{display:flex;justify-content:space-between;gap:.5rem;align-items:center}
+.skpe-okr-readiness-issues article span{font-size:.72rem;font-weight:800;text-transform:uppercase;color:#8a6423}
+.skpe-okr-readiness-issues article p{margin:.35rem 0;color:#665b45;line-height:1.4}
+.skpe-okr-readiness-ok{margin:0;padding:.7rem .8rem;border-radius:10px;background:#edf7f2;color:#14694e;font-weight:800}
 .skpe-okr-decomposition-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
 .skpe-okr-decomposition-summary article{display:flex;flex-direction:column;gap:3px;padding:14px 16px;border:1px solid rgba(24,90,70,.12);border-radius:15px;background:#fff}
 .skpe-okr-decomposition-summary strong{font-size:1.35rem;color:#1f684f}

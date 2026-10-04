@@ -4,6 +4,30 @@ import { supabase } from '../../../../lib/supabase'
 
 import './StrategicOkrDecompositionSection.css'
 
+type OkrDeploymentReadinessIssue = {
+  code: string
+  severity: string
+  message: string
+  affectedCount?: number
+}
+
+type OkrDeploymentReadiness = {
+  readyForValidation?: boolean
+  blockingIssueCount?: number
+  counts?: {
+    approvedStrategicObjectives?: number
+    okrs?: number
+    keyResults?: number
+  }
+  issues?: OkrDeploymentReadinessIssue[]
+  methodologyRules?: {
+    fixedKrCountRequired?: boolean
+    krQualityOverFixedQuantity?: boolean
+    humanValidationRequired?: boolean
+    initiativeIsNotKeyResult?: boolean
+  }
+}
+
 type Props = {
   organizationId: string
   projectId: string
@@ -214,6 +238,7 @@ export function StrategicOkrDecompositionSection({
   formulationId,
 }: Props) {
   const [data, setData] = useState<LoadState>(emptyState)
+  const [readiness, setReadiness] = useState<OkrDeploymentReadiness | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -245,6 +270,7 @@ export function StrategicOkrDecompositionSection({
         initiativesResponse,
         initiativeObjectivesResponse,
         initiativeKeyResultsResponse,
+        readinessResponse,
       ] = await Promise.all([
         supabase
           .from('skpe_strategic_objectives')
@@ -312,6 +338,9 @@ export function StrategicOkrDecompositionSection({
           .eq('organization_id', scoped.organizationId)
           .eq('project_id', scoped.projectId)
           .eq('formulation_id', scoped.formulationId),
+        supabase.rpc('get_skpe_okr_deployment_readiness', {
+          target_formulation_id: scoped.formulationId,
+        }),
       ])
 
       const responses = [
@@ -325,6 +354,7 @@ export function StrategicOkrDecompositionSection({
         initiativesResponse,
         initiativeObjectivesResponse,
         initiativeKeyResultsResponse,
+        readinessResponse,
       ]
       const firstError = responses.find((response) => response.error)?.error
 
@@ -337,6 +367,7 @@ export function StrategicOkrDecompositionSection({
         return
       }
 
+      setReadiness((readinessResponse.data ?? null) as OkrDeploymentReadiness | null)
       setData({
         objectives: (objectivesResponse.data ?? []) as StrategicObjectiveRow[],
         okrs: (okrsResponse.data ?? []) as OkrRow[],
@@ -438,6 +469,65 @@ export function StrategicOkrDecompositionSection({
           <span><b>Iniciativa</b> é o que fazemos para mover os KRs; não substitui resultado.</span>
         </div>
       </div>
+
+      {readiness ? (
+        <section className="skpe-okr-readiness">
+          <div>
+            <small>Prontidão de PEM-03.01</small>
+            <h4>
+              {readiness.readyForValidation
+                ? 'Desdobramento em OKRs pronto para validação'
+                : 'Desdobramento em OKRs ainda possui pendências'}
+            </h4>
+            <p>
+              O gate privilegia KRs mensuráveis e validados. Não existe quantidade fixa
+              obrigatória de KRs por OKR; criar atividades artificiais apenas para atingir
+              um número mínimo é metodologicamente incorreto.
+            </p>
+          </div>
+
+          <div className="skpe-okr-readiness-kpis">
+            <article>
+              <span>OEs aprovados</span>
+              <strong>{readiness.counts?.approvedStrategicObjectives ?? 0}</strong>
+            </article>
+            <article>
+              <span>OKRs</span>
+              <strong>{readiness.counts?.okrs ?? 0}</strong>
+            </article>
+            <article>
+              <span>KRs</span>
+              <strong>{readiness.counts?.keyResults ?? 0}</strong>
+            </article>
+            <article>
+              <span>Bloqueadores</span>
+              <strong>{readiness.blockingIssueCount ?? 0}</strong>
+            </article>
+          </div>
+
+          {(readiness.issues?.length ?? 0) > 0 ? (
+            <div className="skpe-okr-readiness-issues">
+              <strong>Pendências metodológicas</strong>
+              {readiness.issues?.map((issue) => (
+                <article key={`${issue.code}:${issue.message}`}>
+                  <div>
+                    <b>{issue.code}</b>
+                    <span>{issue.severity}</span>
+                  </div>
+                  <p>{issue.message}</p>
+                  {typeof issue.affectedCount === 'number' ? (
+                    <small>{issue.affectedCount} ocorrência(s)</small>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="skpe-okr-readiness-ok">
+              Nenhum bloqueador metodológico identificado para PEM-03.01.
+            </p>
+          )}
+        </section>
+      ) : null}
 
       <div className="skpe-okr-decomposition-summary">
         <article><span>OEs</span><strong>{data.objectives.length}</strong></article>

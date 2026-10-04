@@ -9378,7 +9378,15 @@ case 'monitoring':
               initialTab={
                 projectContext.current_stage_code === 'PEM-02.03'
                   ? 'positioning'
-                  : 'overview'
+                  : projectContext.current_stage_code === 'PEM-03.01'
+                    ? 'performance'
+                    : projectContext.current_stage_code === 'PEM-03.02'
+                      ? 'indicators'
+                      : projectContext.current_stage_code === 'PEM-03.03'
+                        ? 'initiatives'
+                        : projectContext.current_stage_code === 'PEM-03.04'
+                          ? 'plan'
+                          : 'overview'
               }
             />
           )}

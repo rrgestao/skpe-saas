@@ -9,6 +9,7 @@ export type StrategicFormulationTab =
   | 'positioning'
   | 'architecture'
   | 'performance'
+  | 'indicators'
   | 'initiatives'
   | 'plan'
 
@@ -26,11 +27,13 @@ type Snapshot = {
   identityStatus: string | null
   strategicMapPackageStatus: string | null
   okrPackageStatus: string | null
+  indicatorPackageStatus: string | null
   initiativePackageStatus: string | null
   themeCount: number
   perspectiveCount: number
   objectiveCount: number
   okrCount: number
+  indicatorCount: number
   initiativeCount: number
 }
 
@@ -67,11 +70,13 @@ export function StrategicFormulationStatusTabs({
     identityStatus: null,
     strategicMapPackageStatus: null,
     okrPackageStatus: null,
+    indicatorPackageStatus: null,
     initiativePackageStatus: null,
     themeCount: 0,
     perspectiveCount: 0,
     objectiveCount: 0,
     okrCount: 0,
+    indicatorCount: 0,
     initiativeCount: 0,
   })
 
@@ -101,9 +106,11 @@ export function StrategicFormulationStatusTabs({
         perspectiveResponse,
         objectiveResponse,
         okrResponse,
+        indicatorResponse,
         initiativeResponse,
         strategicMapPackageResponse,
         okrPackageResponse,
+        indicatorPackageResponse,
         initiativePackageResponse,
       ] = await Promise.all([
         supabase
@@ -133,6 +140,13 @@ export function StrategicFormulationStatusTabs({
           .eq('organization_id', organizationId)
           .eq('project_id', projectId),
         supabase
+          .from('skpe_indicators')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId)
+          .eq('indicator_scope', 'strategic_kpi')
+          .neq('status', 'archived'),
+        supabase
           .from('skpe_sparks_initiative_strategic_links')
           .select('id', { count: 'exact', head: true })
           .eq('organization_id', organizationId)
@@ -149,6 +163,15 @@ export function StrategicFormulationStatusTabs({
         formulationId
           ? supabase
               .from('skpe_okr_packages')
+              .select('status')
+              .eq('organization_id', organizationId)
+              .eq('project_id', projectId)
+              .eq('formulation_id', formulationId)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        formulationId
+          ? supabase
+              .from('skpe_indicator_packages')
               .select('status')
               .eq('organization_id', organizationId)
               .eq('project_id', projectId)
@@ -174,12 +197,14 @@ export function StrategicFormulationStatusTabs({
         strategicMapPackageStatus:
           strategicMapPackageResponse.data?.status ?? null,
         okrPackageStatus: okrPackageResponse.data?.status ?? null,
+        indicatorPackageStatus: indicatorPackageResponse.data?.status ?? null,
         initiativePackageStatus:
           initiativePackageResponse.data?.status ?? null,
         themeCount: themeResponse.count ?? 0,
         perspectiveCount: perspectiveResponse.count ?? 0,
         objectiveCount: objectiveResponse.count ?? 0,
         okrCount: okrResponse.count ?? 0,
+        indicatorCount: indicatorResponse.count ?? 0,
         initiativeCount: initiativeResponse.count ?? 0,
       })
     }
@@ -216,6 +241,10 @@ export function StrategicFormulationStatusTabs({
       snapshot.okrPackageStatus,
       snapshot.okrCount,
     )
+    const indicatorStatus = deriveStatus(
+      snapshot.indicatorPackageStatus,
+      snapshot.indicatorCount,
+    )
     const initiativeStatus = deriveStatus(
       snapshot.initiativePackageStatus,
       snapshot.initiativeCount,
@@ -226,6 +255,7 @@ export function StrategicFormulationStatusTabs({
       pmvvStatus === 'completed' &&
       architectureStatus === 'completed' &&
       performanceStatus === 'completed' &&
+      indicatorStatus === 'completed' &&
       initiativeStatus === 'completed'
         ? 'completed'
         : overviewStatus === 'not_started'
@@ -262,6 +292,12 @@ export function StrategicFormulationStatusTabs({
         label: 'Desdobramento em OKRs',
         status: performanceStatus,
         statusLabel: labelFor(performanceStatus),
+      },
+      {
+        id: 'indicators' as const,
+        label: 'Indicadores e Metas',
+        status: indicatorStatus,
+        statusLabel: labelFor(indicatorStatus),
       },
       {
         id: 'initiatives' as const,
