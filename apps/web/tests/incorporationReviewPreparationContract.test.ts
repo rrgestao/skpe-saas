@@ -78,7 +78,11 @@ test('edge function exposes governed human review and decision without materiali
 })
 
 test('staging exposes preparation UX without approval or materialization CTA', () => {
-  assert.match(staging, /Dados históricos do Diagnóstico — homologação da migração/)
+  assert.match(staging, /Fila governada de revisão pré-carga/)
+  assert.match(staging, /Preservação histórica \/ proveniência/)
+  assert.match(staging, /Reconciliação com registro existente/)
+  assert.match(staging, /Criação canônica controlada/)
+  assert.match(staging, /Decisão formal histórica/)
   assert.match(staging, /Abrir revisão/)
   assert.match(staging, /Atualizar dados para revisão/)
   assert.match(staging, /prepareAllIncorporationReviews/)
@@ -90,7 +94,8 @@ test('staging exposes preparation UX without approval or materialization CTA', (
   assert.match(staging, /reviewIncorporationItem/)
   assert.match(staging, /validateAllIncorporationItems/)
   assert.match(staging, /Confirmar informações/)
-  assert.match(staging, /Homologar Diagnóstico aprovado em lote/)
+  assert.match(staging, /Homologar somente Diagnóstico já aprovado/)
+  assert.match(staging, /diagnosticReviewCount/)
   assert.match(staging, /review_batch_integral_matches/)
   assert.match(staging, /get_batch_review_queue/)
   assert.doesNotMatch(staging, /\.from\('skpe_import_incorporation_requests'\)/)

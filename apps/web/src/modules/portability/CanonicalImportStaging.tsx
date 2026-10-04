@@ -192,6 +192,41 @@ const ENTITY_LABELS: Record<string, string> = {
   version_control: 'Controle de versões',
 }
 
+const REVIEW_GROUP_LABELS = {
+  provenance: 'Preservação histórica / proveniência',
+  reconciliation: 'Reconciliação com registro existente',
+  creation: 'Criação canônica controlada',
+  formalDecision: 'Decisão formal histórica',
+} as const
+
+type ReviewGroup = keyof typeof REVIEW_GROUP_LABELS
+
+const REVIEW_GROUP_BY_ENTITY: Record<string, ReviewGroup> = {
+  client_validation: 'provenance',
+  deliberative_gate: 'provenance',
+  initiative: 'provenance',
+  journey: 'provenance',
+  living_governance: 'provenance',
+  pending_item: 'provenance',
+  pmvv_institutionalization: 'provenance',
+  project: 'provenance',
+  project_portfolio: 'provenance',
+  traceability: 'provenance',
+  version_control: 'provenance',
+  evidence: 'reconciliation',
+  living_value: 'reconciliation',
+  pmvv_validation: 'reconciliation',
+  risk: 'reconciliation',
+  strategic_identity: 'reconciliation',
+  evidence_management: 'creation',
+  methodology_artifact: 'creation',
+  decision: 'formalDecision',
+}
+
+function reviewGroupForEntity(entityCode: string): ReviewGroup {
+  return REVIEW_GROUP_BY_ENTITY[entityCode] ?? 'provenance'
+}
+
 function localizedLabel(value: unknown, labels: Record<string, string>): string {
   const technicalValue = String(value ?? '').trim()
   if (!technicalValue) return '—'
@@ -346,6 +381,24 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const selectedOrganization = useMemo(
     () => organizations.find((item) => item.id === organizationId),
     [organizations, organizationId],
+  )
+
+  const incorporationReviewGroups = useMemo(() => {
+    const counts: Record<ReviewGroup, number> = {
+      provenance: 0,
+      reconciliation: 0,
+      creation: 0,
+      formalDecision: 0,
+    }
+    for (const candidate of incorporationCandidates) {
+      counts[reviewGroupForEntity(candidate.entity_code)] += 1
+    }
+    return counts
+  }, [incorporationCandidates])
+
+  const diagnosticReviewCount = useMemo(
+    () => incorporationCandidates.filter((candidate) => ['pestel', 'swot', 'tows', 'risk'].includes(candidate.entity_code)).length,
+    [incorporationCandidates],
   )
 
   useEffect(() => {
@@ -1249,16 +1302,24 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
 
               {incorporationCandidates.length > 0 && (
                 <details className="canonical-incorporation-review-queue" open>
-                  <summary>Dados históricos do Diagnóstico — homologação da migração ({incorporationCandidates.length})</summary>
-                  <p>O Diagnóstico já foi aprovado integralmente pela Gestão da COOTAQUARA, inclusive os Riscos Estratégicos e suas propostas de mitigação. Nesta etapa, o SPARKs apenas homologa a migração. Vínculos ainda não estruturados — como evidências de monitoramento ou associações futuras a Objetivos — são preservados como ressalvas técnicas, sem reabrir a decisão de negócio.</p>
+                  <summary>Fila governada de revisão pré-carga ({incorporationCandidates.length})</summary>
+                  <p>Esta fila reúne naturezas diferentes de informação histórica. Preservação de proveniência não cria entidade de negócio; reconciliação confirma correspondência com objeto já existente; criação canônica exige decisão explícita; decisões formais históricas permanecem separadas. Nenhuma dessas revisões executa a carga definitiva.</p>
+                  <div className="canonical-simulation-kpis">
+                    <article><small>Preservação histórica</small><strong>{incorporationReviewGroups.provenance}</strong></article>
+                    <article><small>Reconciliação existente</small><strong>{incorporationReviewGroups.reconciliation}</strong></article>
+                    <article><small>Criação controlada</small><strong>{incorporationReviewGroups.creation}</strong></article>
+                    <article><small>Decisão formal histórica</small><strong>{incorporationReviewGroups.formalDecision}</strong></article>
+                  </div>
                   <div className="canonical-staging-actions canonical-diagnostic-batch-actions">
-                    <button
-                      type="button"
-                      onClick={() => void confirmIntegralMatchesInBatch()}
-                      disabled={confirmingIntegralMatches || preparingIncorporationBatch || Boolean(preparingIncorporationId)}
-                    >
-                      {confirmingIntegralMatches ? 'Homologando diagnóstico...' : 'Homologar Diagnóstico aprovado em lote'}
-                    </button>
+                    {diagnosticReviewCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => void confirmIntegralMatchesInBatch()}
+                        disabled={confirmingIntegralMatches || preparingIncorporationBatch || Boolean(preparingIncorporationId)}
+                      >
+                        {confirmingIntegralMatches ? 'Homologando diagnóstico...' : `Homologar somente Diagnóstico já aprovado (${diagnosticReviewCount})`}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="neutral"
@@ -1270,9 +1331,10 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   </div>
                   <div className="canonical-batch-table-wrap">
                     <table>
-                      <thead><tr><th>Tipo</th><th>Chave</th><th>Origem</th><th>Revisão da origem</th><th>Ação</th></tr></thead>
+                      <thead><tr><th>Natureza</th><th>Tipo</th><th>Chave</th><th>Origem</th><th>Revisão da origem</th><th>Ação</th></tr></thead>
                       <tbody>{incorporationCandidates.map((candidate) => (
                         <tr key={candidate.id}>
+                          <td>{REVIEW_GROUP_LABELS[reviewGroupForEntity(candidate.entity_code)]}</td>
                           <td>{localizedLabel(candidate.entity_code, ENTITY_LABELS)}</td>
                           <td><strong>{candidate.external_key}</strong></td>
                           <td>{candidate.source_sheet ?? '—'}{candidate.source_row ? ` · linha ${candidate.source_row}` : ''}</td>
