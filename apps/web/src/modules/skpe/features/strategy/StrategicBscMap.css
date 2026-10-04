@@ -1645,6 +1645,65 @@
   flex: 0 0 auto;
 }
 
+.skpe-bsc-causal-validation-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.skpe-bsc-causal-validation-status.is-pending {
+  background: #fff7df;
+  color: #7a5b14;
+}
+
+.skpe-bsc-causal-validation-status.is-validate {
+  background: #eaf7f1;
+  color: #14694e;
+}
+
+.skpe-bsc-causal-validation-status.is-reject {
+  background: #fff0ed;
+  color: #8a3329;
+}
+
+.skpe-bsc-causal-validation-note {
+  color: #65746e;
+  line-height: 1.4;
+}
+
+.skpe-bsc-causal-validation-editor {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--skpe-border-subtle, #d9e0e7);
+  border-radius: 10px;
+  background: #f8faf9;
+}
+
+.skpe-bsc-causal-validation-editor > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skpe-bsc-causal-validation-editor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid var(--skpe-border-subtle, #d9e0e7);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.skpe-bsc-causal-validation-editor button.is-active {
+  background: #14694e;
+  color: #fff;
+}
+
 @media (max-width: 860px) {
   .skpe-bsc-causal-grid {
     grid-template-columns: 1fr;

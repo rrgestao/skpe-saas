@@ -135,6 +135,21 @@ type BscEdge = Edge<BscEdgeData>
 // SKPE_FE04_CAUSAL_ASSIST_V1
 type CausalRelationConfidence = 'low' | 'medium' | 'high'
 
+type CausalRelationValidation = {
+  id: string
+  relation_id: string
+  decision_sequence: number
+  decision_action: 'validate' | 'reject'
+  decision_notes: string
+  decided_at: string
+}
+
+type CausalRelationValidationDraft = {
+  relationId: string
+  action: 'validate' | 'reject'
+  notes: string
+}
+
 type CausalRelationDraft = {
   relationId: string | null
   sourceObjectiveId: string
@@ -955,6 +970,12 @@ export function StrategicBscMap({
   const [causalManagerOpen, setCausalManagerOpen] = useState(false)
   const [causalSaving, setCausalSaving] = useState(false)
   const [causalMessage, setCausalMessage] = useState('')
+  const [latestCausalValidations, setLatestCausalValidations] = useState<
+    Record<string, CausalRelationValidation>
+  >({})
+  const [causalValidationDraft, setCausalValidationDraft] = useState<
+    CausalRelationValidationDraft | null
+  >(null)
   const [causalDraft, setCausalDraft] = useState<CausalRelationDraft>({
     relationId: null,
     sourceObjectiveId: '',
@@ -1123,6 +1144,41 @@ export function StrategicBscMap({
       active = false
     }
   }, [formulationId])
+
+  useEffect(() => {
+    let active = true
+
+    if (!formulationId) {
+      setLatestCausalValidations({})
+      setCausalValidationDraft(null)
+      return () => {
+        active = false
+      }
+    }
+
+    void supabase
+      .from('skpe_objective_relation_validation_events')
+      .select('id,relation_id,decision_sequence,decision_action,decision_notes,decided_at')
+      .eq('formulation_id', formulationId)
+      .order('decision_sequence', { ascending: false })
+      .then((response) => {
+        if (!active) return
+        if (response.error) {
+          setLatestCausalValidations({})
+          return
+        }
+
+        const latest: Record<string, CausalRelationValidation> = {}
+        for (const event of (response.data ?? []) as CausalRelationValidation[]) {
+          if (!latest[event.relation_id]) latest[event.relation_id] = event
+        }
+        setLatestCausalValidations(latest)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [formulationId, payload?.relations.length])
 
   useEffect(() => {
     let active = true
@@ -1520,6 +1576,10 @@ export function StrategicBscMap({
   )
   const persistCausalRelation = useCallback(async () => {
     if (!payload || !formulationId) return
+    if (!canAdjustLayout) {
+      setCausalMessage('Relações causais só podem ser alteradas durante PEM-02.05.')
+      return
+    }
 
     if (!causalDraft.sourceObjectiveId || !causalDraft.targetObjectiveId) {
       setCausalMessage('Selecione origem e destino.')
@@ -1593,7 +1653,61 @@ export function StrategicBscMap({
     } finally {
       setCausalSaving(false)
     }
-  }, [payload, formulationId, causalDraft, causalIntegrity])
+  }, [payload, formulationId, canAdjustLayout, causalDraft, causalIntegrity])
+
+  const recordCausalValidation = useCallback(async () => {
+    if (!causalValidationDraft || !formulationId) return
+    if (!canAdjustLayout) {
+      setCausalMessage('A validação causal só pode ocorrer durante PEM-02.05.')
+      return
+    }
+    if (causalValidationDraft.notes.trim().length < 10) {
+      setCausalMessage('Informe uma justificativa com pelo menos 10 caracteres.')
+      return
+    }
+
+    setCausalSaving(true)
+    setCausalMessage('')
+
+    const { error } = await supabase.rpc(
+      'record_skpe_objective_relation_validation',
+      {
+        target_relation_id: causalValidationDraft.relationId,
+        decision_action: causalValidationDraft.action,
+        decision_notes: causalValidationDraft.notes.trim(),
+        decision_metadata: {
+          source: 'pem02_05_strategic_map_ui',
+          canonical_relation_mutation_requested: false,
+        },
+      },
+    )
+
+    if (error) {
+      setCausalSaving(false)
+      setCausalMessage(`Não foi possível registrar a decisão: ${error.message}`)
+      return
+    }
+
+    const { data, error: reloadError } = await supabase
+      .from('skpe_objective_relation_validation_events')
+      .select('id,relation_id,decision_sequence,decision_action,decision_notes,decided_at')
+      .eq('formulation_id', formulationId)
+      .order('decision_sequence', { ascending: false })
+
+    if (!reloadError) {
+      const latest: Record<string, CausalRelationValidation> = {}
+      for (const event of (data ?? []) as CausalRelationValidation[]) {
+        if (!latest[event.relation_id]) latest[event.relation_id] = event
+      }
+      setLatestCausalValidations(latest)
+    }
+
+    setCausalValidationDraft(null)
+    setCausalSaving(false)
+    setCausalMessage(
+      'Decisão humana registrada. O readiness do Mapa será recalculado sem alterar a relação causal.',
+    )
+  }, [causalValidationDraft, formulationId, canAdjustLayout])
 
   const deleteCausalRelation = useCallback(
     async (relation: StrategicMapRelation) => {
@@ -2110,7 +2224,7 @@ export function StrategicBscMap({
           ) : null}
         </>
       ) : null}
-      {causalManagerOpen && payload ? (
+      {causalManagerOpen && payload && canAdjustLayout ? (
         <section
           ref={causalManagerRef}
           className="skpe-bsc-causal-manager skpe-bsc-causal-sidepanel"
@@ -2328,6 +2442,10 @@ export function StrategicBscMap({
                   const target = payload.objectives.find(
                     (objective) => objective.id === relation.targetObjectiveId,
                   )
+                  const validation = latestCausalValidations[relation.id] ?? null
+                  const validationDraftOpen =
+                    causalValidationDraft?.relationId === relation.id
+
                   return (
                     <li key={relation.id}>
                       <div>
@@ -2344,9 +2462,90 @@ export function StrategicBscMap({
                               'medium') as CausalRelationDraft['contributionStrength'],
                           )}
                         </span>
+                        <span
+                          className={`skpe-bsc-causal-validation-status is-${validation?.decision_action ?? 'pending'}`}
+                        >
+                          {validation?.decision_action === 'validate'
+                            ? 'Validada humanamente'
+                            : validation?.decision_action === 'reject'
+                              ? 'Rejeitada — requer reformulação'
+                              : 'Pendente de validação humana'}
+                        </span>
                         {relation.rationale ? <p>{relation.rationale}</p> : null}
+                        {validation ? (
+                          <small className="skpe-bsc-causal-validation-note">
+                            Última decisão: {validation.decision_notes}
+                          </small>
+                        ) : null}
+
+                        {validationDraftOpen && causalValidationDraft ? (
+                          <div className="skpe-bsc-causal-validation-editor">
+                            <div>
+                              <button
+                                type="button"
+                                className={causalValidationDraft.action === 'validate' ? 'is-active' : undefined}
+                                onClick={() =>
+                                  setCausalValidationDraft((current) =>
+                                    current ? { ...current, action: 'validate' } : current,
+                                  )
+                                }
+                              >
+                                Validar relação
+                              </button>
+                              <button
+                                type="button"
+                                className={causalValidationDraft.action === 'reject' ? 'is-active' : undefined}
+                                onClick={() =>
+                                  setCausalValidationDraft((current) =>
+                                    current ? { ...current, action: 'reject' } : current,
+                                  )
+                                }
+                              >
+                                Rejeitar relação
+                              </button>
+                            </div>
+                            <textarea
+                              rows={4}
+                              value={causalValidationDraft.notes}
+                              onChange={(event) =>
+                                setCausalValidationDraft((current) =>
+                                  current ? { ...current, notes: event.target.value } : current,
+                                )
+                              }
+                              placeholder="Registre a justificativa da decisão humana sobre esta relação causal."
+                            />
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => void recordCausalValidation()}
+                                disabled={causalSaving}
+                              >
+                                {causalSaving ? 'Registrando...' : 'Registrar decisão'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCausalValidationDraft(null)}
+                                disabled={causalSaving}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                       <div className="skpe-bsc-causal-existing-actions">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCausalValidationDraft({
+                              relationId: relation.id,
+                              action: validation?.decision_action === 'reject' ? 'reject' : 'validate',
+                              notes: validation?.decision_notes ?? '',
+                            })
+                          }
+                        >
+                          {validation ? 'Revisar decisão' : 'Validar'}
+                        </button>
                         <button
                           type="button"
                           onClick={() => loadCausalDraftFromRelation(relation)}
@@ -2432,16 +2631,18 @@ export function StrategicBscMap({
                 <button type="button" className="skpe-bsc-toolbar-action" onClick={fitWholeMap} aria-label="Ajustar Mapa Estratégico à tela" title="Ajustar à tela" data-tooltip="Ajustar à tela">Ajustar à tela</button>
                 <button type="button" className="skpe-bsc-toolbar-action" onClick={restoreDefaultLayout} aria-label="Restaurar layout padrão do Mapa Estratégico" title="Restaurar padrão" data-tooltip="Restaurar padrão">Restaurar padrão</button>
 
-                <button
-                  type="button"
-                  className={causalManagerOpen ? 'is-active' : undefined}
-                  onClick={() => {
-                    setCausalManagerOpen((current) => !current)
-                    setCausalMessage('')
-                  }}
-                >
-                  Relações causais
-                </button>
+                {canAdjustLayout ? (
+                  <button
+                    type="button"
+                    className={causalManagerOpen ? 'is-active' : undefined}
+                    onClick={() => {
+                      setCausalManagerOpen((current) => !current)
+                      setCausalMessage('')
+                    }}
+                  >
+                    Relações causais
+                  </button>
+                ) : null}
 
                 {suggestedRelations.length > 0 ? (
                   <button
