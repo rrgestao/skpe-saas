@@ -7,6 +7,7 @@ import { JourneyEventCreateDialog } from './JourneyEventCreateDialog'
 import { JourneyItemStatusDialog } from './JourneyItemStatusDialog'
 import { JourneyGantt } from './JourneyGantt'
 import { JourneyProjectPlan } from './JourneyProjectPlan'
+import { Pem02GatePanel } from './Pem02GatePanel'
 import { SvarJourneyGantt } from './SvarJourneyGantt'
 import type {
   JourneyRow,
@@ -989,6 +990,14 @@ export function JourneySection({
           </section>
         </div>
       )}
+
+      {project ? (
+        <Pem02GatePanel
+          organizationId={organizationId}
+          projectId={project.project_id}
+        />
+      ) : null}
+
       {rows.length > 0 && !loading && (
         <div className="skpe-journey-view-switch-row">
           <div
