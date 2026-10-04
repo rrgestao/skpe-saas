@@ -20,20 +20,18 @@ type Readiness = {
   blockingIssueCount?: number
   issues?: Issue[]
   metrics?: {
-    strategicRisks?: number
-    strategicRisksRequiringMitigation?: number
-    strategicMitigationsNotReady?: number
     initiativeRisks?: number
     highOrCriticalInitiativeRisks?: number
-    highOrCriticalInitiativeRisksNotReady?: number
+    validatedStrategicRisks?: number
+    strategicRisksRequiringMitigation?: number
   }
   authorityPolicy?: {
+    initiativeRiskAuthority?: string
     strategicRiskAuthority?: string
     strategicMitigationAuthority?: string
-    initiativeRiskAuthority?: string
-    mitigationActionAuthority?: string
     duplicatesRisk?: boolean
-    humanValidationRequired?: boolean
+    automaticRiskAcceptance?: boolean
+    automaticMitigationCreation?: boolean
   }
 }
 
@@ -64,7 +62,7 @@ export function StrategicImplementationRiskReadinessSection({
       if (error) {
         setReadiness(null)
         setErrorMessage(
-          'Não foi possível avaliar os riscos da implementação: ' + error.message,
+          'Não foi possível avaliar os Riscos da Implementação: ' + error.message,
         )
         return
       }
@@ -83,12 +81,12 @@ export function StrategicImplementationRiskReadinessSection({
     <section className="skpe-implementation-risk-readiness">
       <header>
         <p className="skpe-eyebrow">PEM-04.04 · Gestão de Riscos da Implementação</p>
-        <h3>Prontidão dos riscos para a implementação</h3>
+        <h3>Prontidão dos riscos para execução</h3>
         <p>
-          Esta etapa não replica riscos. Ela consolida as authorities já
-          existentes de riscos estratégicos, vínculos de mitigação, riscos das
-          iniciativas e ações 5W2H para verificar se a implementação pode
-          avançar com respostas e responsabilidades governadas.
+          Esta etapa não recria riscos. Ela consolida os riscos das iniciativas
+          selecionadas e os riscos estratégicos já validados, verificando se os
+          casos relevantes possuem owner, resposta, prazo, validação e mitigação
+          estruturada quando exigida.
         </p>
       </header>
 
@@ -103,21 +101,13 @@ export function StrategicImplementationRiskReadinessSection({
           <div className="skpe-implementation-risk-readiness__state">
             <strong>
               {readiness.readyForCompletion
-                ? 'Riscos prontos para conclusão da etapa'
-                : 'Riscos ainda possuem bloqueadores'}
+                ? 'Riscos da implementação prontos para conclusão da etapa'
+                : 'Riscos da implementação ainda possuem bloqueadores'}
             </strong>
             <span>{readiness.blockingIssueCount ?? 0} bloqueador(es)</span>
           </div>
 
           <div className="skpe-implementation-risk-readiness__metrics">
-            <MetricCard
-              label="Riscos estratégicos"
-              value={readiness.metrics?.strategicRisks ?? 0}
-            />
-            <MetricCard
-              label="Mitigações estratégicas pendentes"
-              value={readiness.metrics?.strategicMitigationsNotReady ?? 0}
-            />
             <MetricCard
               label="Riscos das iniciativas"
               value={readiness.metrics?.initiativeRisks ?? 0}
@@ -127,8 +117,12 @@ export function StrategicImplementationRiskReadinessSection({
               value={readiness.metrics?.highOrCriticalInitiativeRisks ?? 0}
             />
             <MetricCard
-              label="Altos/críticos pendentes"
-              value={readiness.metrics?.highOrCriticalInitiativeRisksNotReady ?? 0}
+              label="Riscos estratégicos validados"
+              value={readiness.metrics?.validatedStrategicRisks ?? 0}
+            />
+            <MetricCard
+              label="Estratégicos exigindo mitigação"
+              value={readiness.metrics?.strategicRisksRequiringMitigation ?? 0}
             />
           </div>
 
@@ -150,9 +144,9 @@ export function StrategicImplementationRiskReadinessSection({
           ) : null}
 
           <p className="skpe-implementation-risk-readiness__policy">
-            Riscos estratégicos, riscos de iniciativas e ações de mitigação
-            permanecem em suas authorities canônicas. Nenhum risco é duplicado
-            por PEM-04.04.
+            Nenhum risco é criado, aceito ou mitigado automaticamente. As
+            authorities permanecem em skpe_initiative_risks e nos contratos
+            canônicos de riscos estratégicos/mitigação.
           </p>
         </>
       ) : null}

@@ -15,19 +15,25 @@ Branch:
 
 ## Princípio arquitetural
 
-PEM-04.04 não cria nova fonte de riscos.
+PEM-04.04 não cria uma terceira fonte de verdade de riscos.
 
 Authorities reutilizadas:
 
-- `skpe_strategic_risk_items`;
-- `skpe_strategic_risk_mitigation_links`;
-- `skpe_strategic_risk_mitigation_readiness`;
-- `skpe_initiative_risks`;
-- `skpe_initiative_actions`.
+### Riscos das Iniciativas
 
-Portanto:
+`skpe_initiative_risks`
 
-**nenhum risco é duplicado para a fase de implementação.**
+### Riscos Estratégicos
+
+`skpe_strategic_risk_items`
+
+### Mitigações Estratégicas
+
+`skpe_strategic_risk_mitigation_links`
+
+Read model:
+
+`skpe_strategic_risk_mitigation_readiness`
 
 ## Readiness canônico
 
@@ -39,48 +45,23 @@ Pré-requisito:
 
 `get_skpe_pem0403_change_readiness(...).readyForCompletion = true`
 
-## Riscos estratégicos
-
-A função consulta:
-
-`skpe_strategic_risk_mitigation_readiness`
-
-Para riscos que exigem mitigação, é obrigatório:
-
-- vínculo de mitigação;
-- mitigação primária;
-- Iniciativa/Ação;
-- 5W2H completo.
-
-Quando:
-
-`mitigation_required = true`
-
-e:
-
-`readiness_status <> ready`
-
-a etapa permanece bloqueada.
-
 ## Riscos das Iniciativas
 
-A função considera apenas riscos vinculados a Iniciativas:
-
-`selection_status = selected`
-
-Riscos com:
+Para Iniciativas selecionadas do portfólio, riscos altos/críticos:
 
 `inherent_score >= 15`
 
-são tratados como alto/crítico para o readiness de implementação.
-
-Exigem:
+exigem:
 
 - owner;
 - response_type;
-- response_plan suficiente;
+- response_plan com conteúdo;
 - response_due_date;
 - validation_status = validated.
+
+Bloqueador:
+
+`PEM0404_HIGH_INITIATIVE_RISK_UNMANAGED`
 
 ## Risco aceito
 
@@ -88,35 +69,55 @@ Quando:
 
 `response_type = accept`
 
-o sistema não considera silêncio como aceitação.
+é exigida justificativa explícita:
 
-É exigido conteúdo suficiente em:
+`metadata.acceptanceReason`
 
-`response_plan`
+Bloqueador:
 
-como justificativa/condição de aceitação.
+`PEM0404_ACCEPTED_RISK_WITHOUT_REASON`
 
-## Métricas
+Assim:
 
-O readiness expõe:
+**risco aceito não é tratado como risco sem tratamento.**
 
-- strategicRisks;
-- strategicRisksRequiringMitigation;
-- strategicMitigationsNotReady;
-- initiativeRisks;
-- highOrCriticalInitiativeRisks;
-- highOrCriticalInitiativeRisksNotReady.
+## Riscos Estratégicos
 
-## Política de authorities
+O readiness consome:
 
-O retorno explicita:
+`skpe_strategic_risk_mitigation_readiness`
 
-- strategicRiskAuthority = skpe_strategic_risk_items;
-- strategicMitigationAuthority = skpe_strategic_risk_mitigation_links;
+Para risco estratégico validado que exige mitigação:
+
+`mitigation_required = true`
+
+é obrigatório:
+
+`readiness_status = ready`
+
+Isso representa, no contrato já existente:
+
+- mitigação primária;
+- Iniciativa vinculada;
+- Ação vinculada;
+- 5W2H completo.
+
+Bloqueador:
+
+`PEM0404_STRATEGIC_RISK_MITIGATION_NOT_READY`
+
+A etapa não exige efetividade final da mitigação antes da implementação, pois essa comprovação pertence ao ciclo de execução/monitoramento.
+
+## Política de authority
+
+O readiness declara:
+
 - initiativeRiskAuthority = skpe_initiative_risks;
-- mitigationActionAuthority = skpe_initiative_actions;
+- strategicRiskAuthority = skpe_strategic_risk_items;
+- strategicMitigationAuthority = skpe_strategic_risk_mitigation_links/readiness;
 - duplicatesRisk = false;
-- humanValidationRequired = true.
+- automaticRiskAcceptance = false;
+- automaticMitigationCreation = false.
 
 ## Guard de conclusão
 
@@ -128,7 +129,11 @@ Trigger:
 
 `skpe_pem0404_completion_guard`
 
-PEM-04.04 só pode assumir `completed` quando:
+PEM-04.04 só pode assumir:
+
+`status = completed`
+
+quando:
 
 `readyForCompletion = true`
 
@@ -136,15 +141,8 @@ Ao concluir legitimamente, grava:
 
 - readinessVerifiedAt;
 - readinessSnapshot;
-- riskDuplicated = false.
-
-O guard não altera:
-
-- riscos estratégicos;
-- riscos de iniciativas;
-- aceites;
-- mitigações;
-- ações.
+- riskCreatedAutomatically = false;
+- riskAcceptedAutomatically = false.
 
 ## UI
 
@@ -152,42 +150,48 @@ Novo componente:
 
 `StrategicImplementationRiskReadinessSection`
 
-Exibe:
+Apresenta:
 
-- riscos estratégicos;
-- mitigações pendentes;
-- riscos de iniciativas;
+- quantidade de riscos das iniciativas;
 - riscos altos/críticos;
-- altos/críticos pendentes;
-- bloqueadores;
-- política de não duplicação.
+- riscos estratégicos validados;
+- riscos estratégicos exigindo mitigação;
+- bloqueadores.
+
+Mensagem explícita:
+
+`Nenhum risco é criado, aceito ou mitigado automaticamente.`
 
 Quando:
 
 `current_stage_code = PEM-04.04`
 
-a Formulação abre a aba:
+a Formulação abre automaticamente:
 
-`plan`.
+`plan`
 
 ## Migration
 
 Aplicada no DEV:
 
-`20261004182500_govern_pem0404_implementation_risks.sql`
+`20261004183000_govern_pem0404_implementation_risks.sql`
+
+Funções confirmadas no banco:
+
+- get_skpe_pem0404_implementation_risk_readiness;
+- skpe_guard_pem0404_completion.
 
 ## Testes
 
 Executados:
 
-- pem0404ImplementationRisks.test.ts;
+- pem0404ImplementationRiskReadiness.test.ts;
 - pem0403CapabilitiesChange.test.ts;
-- pem0402CommunicationMobilization.test.ts;
-- pem0401ActivationReadiness.test.ts.
+- pem0402CommunicationMobilization.test.ts.
 
 Resultado:
 
-**16/16 PASS**
+**12/12 PASS**
 
 ## Build
 
@@ -197,36 +201,44 @@ Resultado:
 
 **PASS**
 
-- 2217 módulos transformados;
 - warning não bloqueante de chunk > 500 kB.
 
-## Verificação de não promoção — COOTAQUARA
-
-Após aplicação:
+## Estado COOTAQUARA após aplicação
 
 - PEM-04.03 = not_started;
 - PEM-04.04 = not_started;
-- PEM-04.GATE = not_started / validation_status pending.
+- PEM-04.GATE = not_started / pending.
 
-A migration não contém INSERT/UPDATE de riscos ou mitigações.
+A migration contém apenas:
 
-Portanto:
+- função de readiness;
+- função de guard;
+- trigger;
+- grants/comments.
 
-**nenhum risco, aceite, resposta ou mitigação foi fabricado.**
+Não contém:
+
+- INSERT de risco;
+- UPDATE de risco;
+- criação de mitigação;
+- aceite de risco;
+- promoção de Journey Item.
+
+Conclusão:
+
+**nenhum risco, mitigação ou decisão foi fabricado.**
 
 ## Próximo gate
 
 **PEM-04.GATE — VALIDAÇÃO DA MACROFASE 4**
 
-Preparar o fechamento governado da Macrofase 4 com:
+Preparar fechamento governado da Implementação e Mobilização usando o mesmo padrão de PEM-02.GATE e PEM-03.GATE:
 
-1. PEM-04.01 completed;
-2. PEM-04.02 completed;
-3. PEM-04.03 completed;
-4. PEM-04.04 completed;
-5. readiness agregado;
-6. decisão institucional append-only;
-7. aprovação / aprovação com ressalvas / retorno para ajustes;
-8. auditoria;
-9. imutabilidade após conclusão;
-10. nenhuma promoção automática.
+1. readiness agregado de PEM-04.01 a PEM-04.04;
+2. Macrofase 4 completed;
+3. decisão institucional append-only;
+4. aprovado / aprovado com ressalvas / devolvido para ajustes;
+5. readiness snapshot;
+6. auditoria;
+7. guard fail-closed;
+8. nenhuma ratificação automática.
