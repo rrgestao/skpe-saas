@@ -1,0 +1,81 @@
+.skpe-implementation-risk-readiness {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #d6e2dc;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.skpe-implementation-risk-readiness header {
+  display: grid;
+  gap: .45rem;
+}
+
+.skpe-implementation-risk-readiness header h3 {
+  margin: 0;
+  color: #1f312a;
+}
+
+.skpe-implementation-risk-readiness header p:last-child {
+  margin: 0;
+  color: #65746e;
+  line-height: 1.5;
+}
+
+.skpe-implementation-risk-readiness__state {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: .85rem 1rem;
+  border: 1px solid #dce7e3;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.skpe-implementation-risk-readiness__metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .7rem;
+}
+
+.skpe-implementation-risk-readiness__issues {
+  display: grid;
+  gap: .55rem;
+}
+
+.skpe-implementation-risk-readiness__issues > strong {
+  color: #7a4f16;
+}
+
+.skpe-implementation-risk-readiness__issues article {
+  padding: .75rem;
+  border: 1px solid #ead9b3;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.skpe-implementation-risk-readiness__issues article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.skpe-implementation-risk-readiness__issues article p,
+.skpe-implementation-risk-readiness__policy {
+  margin: .35rem 0 0;
+  color: #65746e;
+}
+
+@media (max-width: 980px) {
+  .skpe-implementation-risk-readiness__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-implementation-risk-readiness__state {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
