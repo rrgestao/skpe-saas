@@ -51,9 +51,218 @@ function validationLabel(metadata: ValidationMetadata | null, status: string) {
   return status === 'draft' ? 'Hipótese técnica — não submetida' : status
 }
 
+type PositioningDecisionAction = 'keep' | 'adjust' | 'replace' | 'remove'
+
+type PositioningValidationDecision = {
+  id: string
+  entity_type: 'strategic_theme' | 'bsc_perspective'
+  entity_id: string
+  entity_code: string
+  decision_sequence: number
+  decision_action: PositioningDecisionAction
+  proposed_name: string | null
+  proposed_description: string | null
+  rationale: string
+  decided_at: string
+}
+
 type Props = {
   organizationId: string
   projectId?: string | null
+}
+
+const decisionActionLabel: Record<PositioningDecisionAction, string> = {
+  keep: 'Manter',
+  adjust: 'Ajustar',
+  replace: 'Substituir',
+  remove: 'Remover',
+}
+
+type PositioningDecisionEditorProps = {
+  formulationId: string
+  entityType: 'strategic_theme' | 'bsc_perspective'
+  entityId: string
+  entityCode: string
+  currentName: string
+  currentDescription: string | null
+  canValidate: boolean
+  latestDecision: PositioningValidationDecision | null
+  onRecorded: () => Promise<void>
+}
+
+function PositioningDecisionEditor({
+  formulationId,
+  entityType,
+  entityId,
+  entityCode,
+  currentName,
+  currentDescription,
+  canValidate,
+  latestDecision,
+  onRecorded,
+}: PositioningDecisionEditorProps) {
+  const [action, setAction] = useState<PositioningDecisionAction>(
+    latestDecision?.decision_action ?? 'keep',
+  )
+  const [proposedName, setProposedName] = useState(
+    latestDecision?.proposed_name ?? currentName,
+  )
+  const [proposedDescription, setProposedDescription] = useState(
+    latestDecision?.proposed_description ?? currentDescription ?? '',
+  )
+  const [rationale, setRationale] = useState(latestDecision?.rationale ?? '')
+  const [evidenceReference, setEvidenceReference] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    setAction(latestDecision?.decision_action ?? 'keep')
+    setProposedName(latestDecision?.proposed_name ?? currentName)
+    setProposedDescription(
+      latestDecision?.proposed_description ?? currentDescription ?? '',
+    )
+    setRationale(latestDecision?.rationale ?? '')
+  }, [currentDescription, currentName, latestDecision])
+
+  const requiresProposal = action === 'adjust' || action === 'replace'
+
+  async function recordDecision() {
+    setMessage('')
+
+    if (rationale.trim().length < 10) {
+      setMessage('Informe uma justificativa com pelo menos 10 caracteres.')
+      return
+    }
+
+    if (
+      requiresProposal &&
+      !proposedName.trim() &&
+      !proposedDescription.trim()
+    ) {
+      setMessage('Informe o nome ou a descrição proposta.')
+      return
+    }
+
+    setSaving(true)
+
+    const { error } = await supabase.rpc(
+      'record_skpe_positioning_validation_decision',
+      {
+        target_formulation_id: formulationId,
+        target_entity_type: entityType,
+        target_entity_id: entityId,
+        decision_action: action,
+        proposed_name: requiresProposal ? proposedName.trim() || null : null,
+        proposed_description: requiresProposal
+          ? proposedDescription.trim() || null
+          : null,
+        decision_rationale: rationale.trim(),
+        evidence_refs: evidenceReference.trim()
+          ? [evidenceReference.trim()]
+          : [],
+        decision_metadata: {
+          source: 'pem02_03_human_validation_ui',
+          entity_code: entityCode,
+          canonical_mutation_requested: false,
+        },
+      },
+    )
+
+    if (error) {
+      setMessage(error.message)
+      setSaving(false)
+      return
+    }
+
+    setMessage('Decisão registrada. O conteúdo canônico ainda não foi alterado.')
+    setSaving(false)
+    await onRecorded()
+  }
+
+  return (
+    <div className="skpe-positioning-decision">
+      {latestDecision ? (
+        <div className="skpe-positioning-decision-current">
+          <small>Última decisão registrada</small>
+          <strong>{decisionActionLabel[latestDecision.decision_action]}</strong>
+          <span>{latestDecision.rationale}</span>
+        </div>
+      ) : null}
+
+      {canValidate ? (
+        <details>
+          <summary>Registrar decisão humana</summary>
+          <div className="skpe-positioning-decision-form">
+            <label>
+              Decisão
+              <select
+                value={action}
+                onChange={(event) =>
+                  setAction(event.target.value as PositioningDecisionAction)
+                }
+              >
+                <option value="keep">Manter</option>
+                <option value="adjust">Ajustar</option>
+                <option value="replace">Substituir</option>
+                <option value="remove">Remover</option>
+              </select>
+            </label>
+
+            {requiresProposal ? (
+              <>
+                <label>
+                  Nome proposto
+                  <input
+                    value={proposedName}
+                    onChange={(event) => setProposedName(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Descrição proposta
+                  <textarea
+                    value={proposedDescription}
+                    onChange={(event) =>
+                      setProposedDescription(event.target.value)
+                    }
+                  />
+                </label>
+              </>
+            ) : null}
+
+            <label>
+              Justificativa
+              <textarea
+                value={rationale}
+                onChange={(event) => setRationale(event.target.value)}
+                placeholder="Explique a decisão e o motivo."
+              />
+            </label>
+
+            <label>
+              Evidência ou referência
+              <input
+                value={evidenceReference}
+                onChange={(event) =>
+                  setEvidenceReference(event.target.value)
+                }
+                placeholder="Opcional: ata, documento, reunião ou referência."
+              />
+            </label>
+
+            <button type="button" onClick={() => void recordDecision()} disabled={saving}>
+              {saving ? 'Registrando...' : 'Registrar decisão'}
+            </button>
+
+            {message ? <p className="skpe-positioning-decision-message">{message}</p> : null}
+          </div>
+        </details>
+      ) : (
+        <p className="skpe-positioning-decision-readonly">
+          Você pode consultar esta proposta, mas não possui permissão de validação.
+        </p>
+      )}
+    </div>
+  )
 }
 
 export function StrategicPositioningSection({
@@ -67,7 +276,46 @@ export function StrategicPositioningSection({
   const [themes, setThemes] = useState<Theme[]>([])
   const [perspectives, setPerspectives] = useState<Perspective[]>([])
   const [objectives, setObjectives] = useState<Objective[]>([])
+  const [canValidate, setCanValidate] = useState(false)
+  const [latestDecisions, setLatestDecisions] = useState<
+    Record<string, PositioningValidationDecision>
+  >({})
   const [error, setError] = useState('')
+
+  async function refreshValidationState() {
+    if (!formulationId) {
+      setCanValidate(false)
+      setLatestDecisions({})
+      return
+    }
+
+    const [permissionResponse, decisionResponse] = await Promise.all([
+      supabase.rpc('can_validate_skpe_formulation', {
+        target_organization_id: organizationId,
+      }),
+      supabase
+        .from('skpe_positioning_validation_events')
+        .select(
+          'id,entity_type,entity_id,entity_code,decision_sequence,decision_action,proposed_name,proposed_description,rationale,decided_at',
+        )
+        .eq('formulation_id', formulationId)
+        .order('decision_sequence', { ascending: false }),
+    ])
+
+    setCanValidate(Boolean(permissionResponse.data))
+
+    if (decisionResponse.error) {
+      setError('Não foi possível carregar as decisões de validação de PEM-02.03.')
+      return
+    }
+
+    const latest: Record<string, PositioningValidationDecision> = {}
+    for (const decision of (decisionResponse.data ?? []) as PositioningValidationDecision[]) {
+      const key = `${decision.entity_type}:${decision.entity_id}`
+      if (!latest[key]) latest[key] = decision
+    }
+    setLatestDecisions(latest)
+  }
 
   useEffect(() => {
     let active = true
@@ -143,6 +391,10 @@ export function StrategicPositioningSection({
     }
   }, [organizationId, effectiveProjectId, formulationId])
 
+  useEffect(() => {
+    void refreshValidationState()
+  }, [organizationId, formulationId])
+
   if (!formulationId) {
     return (
       <section className="skpe-strategy-state">
@@ -177,6 +429,19 @@ export function StrategicPositioningSection({
               </span>
               <strong>{theme.name}</strong>
               {theme.description ? <p>{theme.description}</p> : null}
+              <PositioningDecisionEditor
+                formulationId={formulationId}
+                entityType="strategic_theme"
+                entityId={theme.id}
+                entityCode={theme.code}
+                currentName={theme.name}
+                currentDescription={theme.description}
+                canValidate={canValidate}
+                latestDecision={
+                  latestDecisions[`strategic_theme:${theme.id}`] ?? null
+                }
+                onRecorded={refreshValidationState}
+              />
             </article>
           ))}
         </div>
@@ -195,6 +460,19 @@ export function StrategicPositioningSection({
               {perspective.description ? (
                 <p>{perspective.description}</p>
               ) : null}
+              <PositioningDecisionEditor
+                formulationId={formulationId}
+                entityType="bsc_perspective"
+                entityId={perspective.id}
+                entityCode={perspective.code}
+                currentName={perspective.name}
+                currentDescription={perspective.description}
+                canValidate={canValidate}
+                latestDecision={
+                  latestDecisions[`bsc_perspective:${perspective.id}`] ?? null
+                }
+                onRecorded={refreshValidationState}
+              />
             </article>
           ))}
         </div>
