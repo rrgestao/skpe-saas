@@ -211,6 +211,15 @@ begin
       and version_number=v_new_number;
 
     if v_new_id is null then
+      update public.skpe_incorporation_mapping_versions
+      set version_status='superseded',
+          effective_until=coalesce(effective_until,timezone('utc',now())),
+          metadata=coalesce(metadata,'{}'::jsonb)||jsonb_build_object(
+            'superseded_for_review_contract',true
+          )
+      where id=v_old.id
+        and version_status='active';
+
       insert into public.skpe_incorporation_mapping_versions(
         catalog_id,
         version_number,
