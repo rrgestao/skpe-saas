@@ -1,0 +1,112 @@
+.skpe-critical-review-readiness {
+  display: grid;
+  gap: .9rem;
+  padding: 1rem;
+  border: 1px solid #d7e2dc;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.skpe-critical-review-readiness > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.skpe-critical-review-readiness > header span {
+  color: #14694e;
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.skpe-critical-review-readiness > header h2 {
+  margin: .2rem 0 .35rem;
+  color: #183c31;
+}
+
+.skpe-critical-review-readiness > header p {
+  margin: 0;
+  max-width: 70rem;
+  color: #65746e;
+  line-height: 1.5;
+}
+
+.skpe-critical-review-readiness > header > strong {
+  padding: .35rem .6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: .75rem;
+}
+
+.skpe-critical-review-readiness > header > strong.is-ready {
+  background: #eaf7f1;
+  color: #14694e;
+}
+
+.skpe-critical-review-readiness > header > strong.is-blocked {
+  background: #fff4df;
+  color: #79551a;
+}
+
+.skpe-critical-review-readiness__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+}
+
+.skpe-critical-review-readiness__review {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: .8rem;
+  border: 1px solid #dfe7e3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.skpe-critical-review-readiness__review > div {
+  display: grid;
+  gap: .2rem;
+}
+
+.skpe-critical-review-readiness__review small,
+.skpe-critical-review-readiness__review span {
+  color: #65746e;
+}
+
+.skpe-critical-review-readiness__issues {
+  display: grid;
+  gap: .5rem;
+}
+
+.skpe-critical-review-readiness__issues > strong {
+  color: #7a4f16;
+}
+
+.skpe-critical-review-readiness__issues > div {
+  display: grid;
+  gap: .25rem;
+  padding: .7rem;
+  border: 1px solid #ead9b3;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.skpe-critical-review-readiness__issues span,
+.skpe-critical-review-readiness__issues small {
+  color: #65746e;
+}
+
+@media (max-width: 700px) {
+  .skpe-critical-review-readiness > header,
+  .skpe-critical-review-readiness__review {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .skpe-critical-review-readiness__metrics {
+    grid-template-columns: 1fr;
+  }
+}
