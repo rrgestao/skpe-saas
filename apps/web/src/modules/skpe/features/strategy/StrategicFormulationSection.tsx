@@ -7,6 +7,7 @@ import {
 } from './StrategicFormulationStatusTabs'
 import { StrategicInitiativePlanSection } from './StrategicInitiativePlanSection'
 import { StrategicIdentitySection } from './StrategicIdentitySection'
+import { StrategicPositioningSection } from './StrategicPositioningSection'
 import { StrategicExecutiveOverview } from './StrategicExecutiveOverview'
 import { StrategicArchitectureSummary } from './StrategicArchitectureSummary'
 import { StrategicOkrDecompositionSection } from './StrategicOkrDecompositionSection'
@@ -199,6 +200,15 @@ export function StrategicFormulationSection({
               Objetivos Estratégicos e demais desdobramentos.
             </p>
           </article>
+        </section>
+      ) : null}
+
+      {activeTab === 'positioning' ? (
+        <section className="skpe-formulation-tab-panel">
+          <StrategicPositioningSection
+            organizationId={organizationId}
+            projectId={projectId}
+          />
         </section>
       ) : null}
 

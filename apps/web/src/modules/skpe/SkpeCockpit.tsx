@@ -8332,6 +8332,7 @@ export function SkpeCockpit({
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfileRow | null>(null)
   const [organizationLogoUrl, setOrganizationLogoUrl] = useState<string | null>(null)
   const [projectContext, setProjectContext] = useState<StrategicProjectContext | null>(null)
+  const [strategicProjectContextLoading, setStrategicProjectContextLoading] = useState(mode === 'module')
   const [approvedMacrophases, setApprovedMacrophases] = useState<string[]>([])
   const [initiativeDrilldown, setInitiativeDrilldown] = useState<{
     initiativeId: string
@@ -8531,9 +8532,13 @@ const [startingProject, setStartingProject] = useState(false)
     void loadOrganizationHeader()
 
     if (mode === 'module') {
-      void loadStrategicProjectContext()
+      setStrategicProjectContextLoading(true)
+      void loadStrategicProjectContext().finally(() => {
+        setStrategicProjectContextLoading(false)
+      })
     } else {
       setProjectContext(null)
+      setStrategicProjectContextLoading(false)
     }
   }, [organizationId, mode])
   useEffect(() => {
@@ -8633,7 +8638,7 @@ const [startingProject, setStartingProject] = useState(false)
   const canManageOrganization = isOrganizationAdmin || isPlatformSuperAdmin || userRoleCode === 'administrator'
 
   useEffect(() => {
-    if (mode !== 'module' || capabilitiesLoading) return
+    if (mode !== 'module' || capabilitiesLoading || strategicProjectContextLoading) return
     const allowedBySection: Partial<Record<CockpitSection, boolean>> = {
       overview: canViewOverview,
       journey: canViewJourney,
@@ -8649,7 +8654,7 @@ const [startingProject, setStartingProject] = useState(false)
       administration: canOpenAdministration,
     }
     if (allowedBySection[activeSection] === false) setActiveSection('overview')
-  }, [activeSection, capabilitiesLoading, canOpenAdministration, canViewAgenda, canViewArtifacts, canViewEvolution, canViewGovernance, canViewInitiatives, canViewJourney, canViewMonitoring, canViewOverview, mode])
+  }, [activeSection, capabilitiesLoading, strategicProjectContextLoading, canOpenAdministration, canShowDiagnosis, canShowFormulation, canViewAgenda, canViewArtifacts, canViewEvolution, canViewGovernance, canViewInitiatives, canViewJourney, canViewMonitoring, canViewOverview, mode])
 
   const activeSectionTitle = (() => {
     switch (activeSection) {

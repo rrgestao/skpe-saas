@@ -6,6 +6,7 @@ import { supabase } from '../../../../lib/supabase'
 export type StrategicFormulationTab =
   | 'overview'
   | 'pmvv'
+  | 'positioning'
   | 'architecture'
   | 'performance'
   | 'initiatives'
@@ -26,6 +27,8 @@ type Snapshot = {
   strategicMapPackageStatus: string | null
   okrPackageStatus: string | null
   initiativePackageStatus: string | null
+  themeCount: number
+  perspectiveCount: number
   objectiveCount: number
   okrCount: number
   initiativeCount: number
@@ -65,6 +68,8 @@ export function StrategicFormulationStatusTabs({
     strategicMapPackageStatus: null,
     okrPackageStatus: null,
     initiativePackageStatus: null,
+    themeCount: 0,
+    perspectiveCount: 0,
     objectiveCount: 0,
     okrCount: 0,
     initiativeCount: 0,
@@ -92,6 +97,8 @@ export function StrategicFormulationStatusTabs({
 
       const [
         identityResponse,
+        themeResponse,
+        perspectiveResponse,
         objectiveResponse,
         okrResponse,
         initiativeResponse,
@@ -105,6 +112,16 @@ export function StrategicFormulationStatusTabs({
           .eq('organization_id', organizationId)
           .eq('project_id', projectId)
           .maybeSingle(),
+        supabase
+          .from('skpe_strategic_themes')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId),
+        supabase
+          .from('skpe_bsc_perspectives')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .eq('project_id', projectId),
         supabase
           .from('skpe_strategic_objectives')
           .select('id', { count: 'exact', head: true })
@@ -159,6 +176,8 @@ export function StrategicFormulationStatusTabs({
         okrPackageStatus: okrPackageResponse.data?.status ?? null,
         initiativePackageStatus:
           initiativePackageResponse.data?.status ?? null,
+        themeCount: themeResponse.count ?? 0,
+        perspectiveCount: perspectiveResponse.count ?? 0,
         objectiveCount: objectiveResponse.count ?? 0,
         okrCount: okrResponse.count ?? 0,
         initiativeCount: initiativeResponse.count ?? 0,
@@ -183,6 +202,11 @@ export function StrategicFormulationStatusTabs({
         ? 'completed'
         : 'in_progress'
       : 'not_started'
+
+    const positioningStatus: TabStatus =
+      snapshot.themeCount > 0 || snapshot.perspectiveCount > 0
+        ? 'in_progress'
+        : 'not_started'
 
     const architectureStatus = deriveStatus(
       snapshot.strategicMapPackageStatus,
@@ -220,6 +244,12 @@ export function StrategicFormulationStatusTabs({
         label: 'PMVV',
         status: pmvvStatus,
         statusLabel: labelFor(pmvvStatus),
+      },
+      {
+        id: 'positioning' as const,
+        label: 'Posicionamento Estratégico',
+        status: positioningStatus,
+        statusLabel: labelFor(positioningStatus),
       },
       {
         id: 'architecture' as const,
