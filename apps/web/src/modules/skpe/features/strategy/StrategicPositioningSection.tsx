@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
+import { StrategicPositioningReadinessPanel } from './StrategicPositioningReadinessPanel'
 import './StrategicContentSection.css'
 
 type ValidationMetadata = {
@@ -494,6 +495,8 @@ export function StrategicPositioningSection({
           humana. Conteúdo materializado não equivale a aprovação institucional.
         </p>
       </header>
+
+      <StrategicPositioningReadinessPanel formulationId={formulationId} />
 
       {evidenceAttestation ? (
         <section className="skpe-positioning-attestation">
