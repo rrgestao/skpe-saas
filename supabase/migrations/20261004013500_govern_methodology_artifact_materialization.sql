@@ -336,7 +336,7 @@ begin
       'Artefato metodológico histórico → autoridade canônica de artefatos',
       'Cria artefatos metodológicos canônicos somente para códigos históricos com classificação explícita e preserva a versão do arquivo de origem sem fabricar versões intermediárias.',
       'methodology_artifact','methodology_artifact',
-      'create_new_entity','direct_entity','a1_object_and_fields',
+      'create_new','direct_entity','a1_object_and_fields',
       true,true,true,false,'active',1,
       jsonb_build_object(
         'deterministic_type_map',jsonb_build_object(
