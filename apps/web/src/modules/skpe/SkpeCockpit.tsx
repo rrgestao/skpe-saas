@@ -9372,6 +9372,9 @@ case 'monitoring':
               organizationId={organizationId}
               projectId={projectContext.project_id}
               canAdjustStrategicMap={canManageGovernance}
+              strategicMapStageUnlocked={
+                projectContext.current_stage_code === 'PEM-02.05'
+              }
               initialTab={
                 projectContext.current_stage_code === 'PEM-02.03'
                   ? 'positioning'

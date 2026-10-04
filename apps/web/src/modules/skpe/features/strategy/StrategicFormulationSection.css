@@ -36,6 +36,24 @@
   min-width: 0;
 }
 
+.skpe-formulation-stage-lock {
+  padding: 0.9rem 1rem;
+  border: 1px solid #d9b36c;
+  border-radius: 12px;
+  background: #fff8e8;
+  color: #5f471c;
+}
+
+.skpe-formulation-stage-lock strong {
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.skpe-formulation-stage-lock p {
+  margin: 0;
+  line-height: 1.45;
+}
+
 .skpe-formulation-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

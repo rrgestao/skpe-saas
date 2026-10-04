@@ -31,6 +31,7 @@ type Props = {
   organizationId: string
   projectId: string
   canAdjustStrategicMap: boolean
+  strategicMapStageUnlocked: boolean
   initialTab?: FormulationTab
 }
 
@@ -44,6 +45,7 @@ export function StrategicFormulationSection({
   organizationId,
   projectId,
   canAdjustStrategicMap,
+  strategicMapStageUnlocked,
   initialTab = 'overview',
 }: Props) {
   const [formulationId, setFormulationId] = useState<string | null>(null)
@@ -220,9 +222,18 @@ export function StrategicFormulationSection({
 
       {activeTab === 'architecture' ? (
         <section className="skpe-formulation-tab-panel">
+          {!strategicMapStageUnlocked ? (
+            <div className="skpe-formulation-stage-lock">
+              <strong>Prévia do Modelo Estratégico Futuro</strong>
+              <p>
+                A edição do Mapa Estratégico será liberada em PEM-02.05, após a
+                conclusão governada dos Objetivos Estratégicos em PEM-02.04.
+              </p>
+            </div>
+          ) : null}
           <StrategicBscMap
             formulationId={formulationId}
-            canAdjustLayout={canAdjustStrategicMap}
+            canAdjustLayout={canAdjustStrategicMap && strategicMapStageUnlocked}
           />
           <StrategicArchitectureSummary formulationId={formulationId} />
         </section>

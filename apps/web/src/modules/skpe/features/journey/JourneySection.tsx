@@ -589,6 +589,20 @@ export function JourneySection({
   const renderJourneyItem = (item: JourneyItem, level = 0) => {
     const hasChildren = item.children.length > 0
     const isExpanded = expandedItems.has(item.item_id)
+    const pem02DependencyByCode: Record<string, string> = {
+      'PEM-02.02': 'PEM-02.01',
+      'PEM-02.03': 'PEM-02.02',
+      'PEM-02.04': 'PEM-02.03',
+      'PEM-02.05': 'PEM-02.04',
+      'PEM-02.GATE': 'PEM-02.05',
+    }
+    const prerequisiteCode = pem02DependencyByCode[item.item_code]
+    const prerequisite = prerequisiteCode
+      ? rows.find((row) => row.item_code === prerequisiteCode)
+      : null
+    const methodologyLocked = Boolean(
+      prerequisite && prerequisite.item_status !== 'completed',
+    )
 
     return (
       <article
@@ -599,6 +613,7 @@ export function JourneySection({
           item.is_current ? 'skpe-phase-current' : '',
           selectedItemId === item.item_id ? 'skpe-journey-item-selected' : '',
           hasChildren ? 'skpe-journey-item-drillable' : '',
+          methodologyLocked ? 'skpe-journey-methodology-locked' : '',
           `skpe-journey-type-${item.item_type}`,
         ]
           .filter(Boolean)
@@ -725,6 +740,12 @@ export function JourneySection({
               </div>
             )}
 
+            {methodologyLocked && prerequisite && (
+              <div className="skpe-journey-blocked-message">
+                Bloqueado metodologicamente: conclua {prerequisite.item_code} — {methodologyTextPtBr(prerequisite.item_name)} antes de avançar.
+              </div>
+            )}
+
             <div className="skpe-phase-progress">
               <div className="skpe-progress-track">
                 <span style={{ width: `${item.item_progress}%` }} />
@@ -750,7 +771,8 @@ export function JourneySection({
                         ),
                       })
                     }
-                    disabled={statusDialogRequest !== null}
+                    disabled={statusDialogRequest !== null || methodologyLocked}
+                    title={methodologyLocked ? `Conclua ${prerequisiteCode} antes de iniciar.` : undefined}
                   >
                     Iniciar
                   </button>
@@ -766,7 +788,8 @@ export function JourneySection({
                         targetProgress: 100,
                       })
                     }
-                    disabled={statusDialogRequest !== null}
+                    disabled={statusDialogRequest !== null || methodologyLocked}
+                    title={methodologyLocked ? `Conclua ${prerequisiteCode} antes de concluir esta etapa.` : undefined}
                   >
                     Concluir
                   </button>
