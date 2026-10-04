@@ -1,0 +1,175 @@
+.skpe-pem05-gate-panel {
+  display: grid;
+  gap: .9rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid #d7e2dc;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.skpe-pem05-gate-panel > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.skpe-pem05-gate-panel > header small {
+  color: #14694e;
+  font-weight: 850;
+  letter-spacing: .05em;
+}
+
+.skpe-pem05-gate-panel > header h3 {
+  margin: .15rem 0 .35rem;
+  color: #183c31;
+}
+
+.skpe-pem05-gate-panel > header p {
+  margin: 0;
+  max-width: 72rem;
+  color: #65746e;
+  line-height: 1.5;
+}
+
+.skpe-pem05-gate-panel > header > span {
+  white-space: nowrap;
+  padding: .35rem .6rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 850;
+}
+
+.skpe-pem05-gate-panel > header > span.is-ready {
+  background: #eaf7f1;
+  color: #14694e;
+}
+
+.skpe-pem05-gate-panel > header > span.is-blocked {
+  background: #fff4df;
+  color: #79551a;
+}
+
+.skpe-pem05-gate-prerequisites {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .65rem;
+}
+
+.skpe-pem05-gate-prerequisites article {
+  display: grid;
+  gap: .2rem;
+  padding: .75rem;
+  border: 1px solid #dfe7e3;
+  border-radius: 10px;
+  background: #fff;
+  min-width: 0;
+}
+
+.skpe-pem05-gate-prerequisites article.is-pending {
+  border-color: #ead9b3;
+  background: #fffaf0;
+}
+
+.skpe-pem05-gate-prerequisites small {
+  color: #65746e;
+  font-weight: 800;
+}
+
+.skpe-pem05-gate-prerequisites strong {
+  color: #263b33;
+  line-height: 1.3;
+}
+
+.skpe-pem05-gate-prerequisites span {
+  color: #65746e;
+  font-size: .75rem;
+  overflow-wrap: anywhere;
+}
+
+.skpe-pem05-gate-issues {
+  display: grid;
+  gap: .4rem;
+  padding: .75rem;
+  border-radius: 10px;
+  background: #fff4df;
+  color: #6e551e;
+}
+
+.skpe-pem05-gate-issues ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: .25rem;
+}
+
+.skpe-pem05-gate-decision {
+  display: grid;
+  gap: .7rem;
+}
+
+.skpe-pem05-gate-decision label {
+  display: grid;
+  gap: .3rem;
+  color: #455b52;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.skpe-pem05-gate-decision select,
+.skpe-pem05-gate-decision textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: .65rem;
+  border: 1px solid #cad8d1;
+  border-radius: 9px;
+  background: #fff;
+  font: inherit;
+}
+
+.skpe-pem05-gate-decision textarea {
+  resize: vertical;
+}
+
+.skpe-pem05-gate-decision button {
+  justify-self: start;
+  padding: .65rem .85rem;
+  border: 0;
+  border-radius: 9px;
+  background: #14694e;
+  color: #fff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.skpe-pem05-gate-decision button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.skpe-pem05-gate-readonly,
+.skpe-pem05-gate-message {
+  margin: 0;
+  color: #65746e;
+  line-height: 1.45;
+}
+
+@media (max-width: 1100px) {
+  .skpe-pem05-gate-prerequisites {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .skpe-pem05-gate-panel > header {
+    flex-direction: column;
+  }
+
+  .skpe-pem05-gate-prerequisites {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
