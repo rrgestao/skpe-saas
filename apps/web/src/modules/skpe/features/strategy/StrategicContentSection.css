@@ -19,6 +19,13 @@
 .skpe-strategy-objective-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
 .skpe-strategy-objective-card{min-width:0}
 .skpe-strategy-objective-card strong{font-size:1rem;line-height:1.35}
+.skpe-strategy-validation-guidance{max-width:72rem;color:#65746e;line-height:1.55}
+.skpe-strategy-validation-badge{display:inline-flex;margin-top:.45rem;padding:.28rem .5rem;border:1px solid #d9b36c;border-radius:999px;background:#fff8e8;color:#79551a;font-size:.72rem;font-weight:800;line-height:1.2}
+.skpe-strategy-next-stage-preview{display:grid;gap:.75rem;padding:1rem;border:1px dashed #c7d4ce;border-radius:14px;background:#f7faf8}
+.skpe-strategy-next-stage-preview>header span{color:#697b73;font-size:.74rem;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.skpe-strategy-next-stage-preview>header h2{margin:.2rem 0 .4rem;color:#43564e}
+.skpe-strategy-next-stage-preview>header p{margin:0;color:#6a7973;line-height:1.5}
+.skpe-strategy-next-stage-preview .skpe-strategy-objective-card{opacity:.78}
 @media(max-width:900px){.skpe-strategy-objective-grid{grid-template-columns:1fr}}
 
 /* SK-PE CANONICAL FORMULATION METRIC CARDS V1

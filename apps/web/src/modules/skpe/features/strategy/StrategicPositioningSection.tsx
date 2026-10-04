@@ -3,12 +3,20 @@ import { supabase } from '../../../../lib/supabase'
 import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
 import './StrategicContentSection.css'
 
+type ValidationMetadata = {
+  source_status?: string | null
+  validation_status?: string | null
+  validation_gate?: string | null
+}
+
 type Theme = {
   id: string
   code: string
   name: string
   description: string | null
   display_order: number
+  status: string
+  metadata: ValidationMetadata | null
 }
 
 type Perspective = {
@@ -17,6 +25,8 @@ type Perspective = {
   name: string
   description: string | null
   display_order: number
+  status: string
+  metadata: ValidationMetadata | null
 }
 
 type Objective = {
@@ -26,6 +36,19 @@ type Objective = {
   description: string | null
   perspective_id: string | null
   perspective_code: string | null
+  status: string
+  metadata: ValidationMetadata | null
+}
+
+function validationLabel(metadata: ValidationMetadata | null, status: string) {
+  const sourceStatus = metadata?.source_status?.trim()
+  if (sourceStatus) return sourceStatus
+
+  const validationStatus = metadata?.validation_status?.trim()
+  if (validationStatus === 'pending_validation') return 'Pendente de validação'
+  if (validationStatus === 'draft') return 'Hipótese técnica — não submetida'
+
+  return status === 'draft' ? 'Hipótese técnica — não submetida' : status
 }
 
 type Props = {
@@ -63,14 +86,14 @@ export function StrategicPositioningSection({
 
     const themesQuery = supabase
       .from('skpe_strategic_themes')
-      .select('id,code,name,description,display_order')
+      .select('id,code,name,description,display_order,status,metadata')
       .eq('organization_id', organizationId)
       .eq('formulation_id', formulationId)
       .order('display_order')
 
     const perspectivesQuery = supabase
       .from('skpe_bsc_perspectives')
-      .select('id,code,name,description,display_order')
+      .select('id,code,name,description,display_order,status,metadata')
       .eq('organization_id', organizationId)
       .eq('formulation_id', formulationId)
       .order('display_order')
@@ -78,7 +101,7 @@ export function StrategicPositioningSection({
     const objectivesQuery = supabase
       .from('skpe_strategic_objectives')
       .select(
-        'id,code,name,description,perspective_id,perspective_code',
+        'id,code,name,description,perspective_id,perspective_code,status,metadata',
       )
       .eq('organization_id', organizationId)
       .eq('formulation_id', formulationId)
@@ -135,16 +158,23 @@ export function StrategicPositioningSection({
   return (
     <section className="skpe-strategy-content">
       <header>
-        <span>Arquitetura Estratégica Integrada</span>
+        <span>PEM-02.03 · Escolhas e Posicionamento Estratégico</span>
         <h1>Posicionamento Estratégico</h1>
+        <p className="skpe-strategy-validation-guidance">
+          Esta etapa organiza hipóteses de Temas e Perspectivas para validação
+          humana. Conteúdo materializado não equivale a aprovação institucional.
+        </p>
       </header>
 
       <section>
-        <h2>{themes.length} Temas Estratégicos</h2>
+        <h2>{themes.length} Temas Estratégicos em validação</h2>
         <div className="skpe-strategy-theme-grid">
           {themes.map((theme) => (
             <article key={theme.id}>
               <small>{theme.code}</small>
+              <span className="skpe-strategy-validation-badge">
+                {validationLabel(theme.metadata, theme.status)}
+              </span>
               <strong>{theme.name}</strong>
               {theme.description ? <p>{theme.description}</p> : null}
             </article>
@@ -153,47 +183,45 @@ export function StrategicPositioningSection({
       </section>
 
       <section>
-        <h2>{perspectives.length} Perspectivas Estratégicas</h2>
+        <h2>{perspectives.length} Perspectivas Estratégicas em validação</h2>
         <div className="skpe-strategy-perspective-grid">
           {perspectives.map((perspective) => (
             <article key={perspective.id}>
               <small>{perspective.code}</small>
+              <span className="skpe-strategy-validation-badge">
+                {validationLabel(perspective.metadata, perspective.status)}
+              </span>
               <strong>{perspective.name}</strong>
               {perspective.description ? (
                 <p>{perspective.description}</p>
               ) : null}
-
-              <div className="skpe-strategy-objectives">
-                {objectives
-                  .filter(
-                    (objective) =>
-                      objective.perspective_id === perspective.id ||
-                      objective.perspective_code === perspective.code,
-                  )
-                  .map((objective) => (
-                    <div key={objective.id}>
-                      <b>{objective.code}</b>
-                      <span>{objective.name}</span>
-                    </div>
-                  ))}
-              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="skpe-strategy-objective-section">
-      <h2>{objectives.length} Objetivos Estratégicos</h2>
-      <div className="skpe-strategy-objective-grid">
-        {objectives.map((objective) => (
-          <article key={objective.id} className="skpe-strategy-objective-card">
-            <small>{objective.code}</small>
-            <strong>{objective.name}</strong>
-            {objective.description ? <p>{objective.description}</p> : null}
-          </article>
-        ))}
-      </div>
-    </section>
+      <section className="skpe-strategy-next-stage-preview">
+        <header>
+          <span>Próxima etapa · PEM-02.04</span>
+          <h2>Objetivos Estratégicos — prévia bloqueada</h2>
+          <p>
+            Os {objectives.length} Objetivos já materializados permanecem em
+            draft e não fazem parte da validação desta etapa. Eles só devem ser
+            trabalhados após a conclusão governada do Posicionamento Estratégico.
+          </p>
+        </header>
+        <div className="skpe-strategy-objective-grid">
+          {objectives.map((objective) => (
+            <article key={objective.id} className="skpe-strategy-objective-card">
+              <small>{objective.code}</small>
+              <span className="skpe-strategy-validation-badge">
+                {validationLabel(objective.metadata, objective.status)}
+              </span>
+              <strong>{objective.name}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
     </section>
   )
 }

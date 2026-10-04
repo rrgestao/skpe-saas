@@ -181,6 +181,8 @@ type StrategicProjectContext = {
   project_progress: number
   current_phase_code: string | null
   current_phase_name: string | null
+  current_stage_code: string | null
+  current_stage_name: string | null
   planning_horizon_start_year: number | null
   planning_horizon_end_year: number | null
   reference_year: number | null
@@ -8434,7 +8436,10 @@ const [startingProject, setStartingProject] = useState(false)
     }
 
     const loaded = ((data ?? [])[0] ?? null) as
-      | Omit<StrategicProjectContext, 'current_phase_name'>
+      | Omit<
+          StrategicProjectContext,
+          'current_phase_name' | 'current_stage_code' | 'current_stage_name'
+        >
       | null
 
     if (!loaded) {
@@ -8444,6 +8449,8 @@ const [startingProject, setStartingProject] = useState(false)
     }
 
     let currentPhaseName: string | null = null
+    let currentStageCode: string | null = null
+    let currentStageName: string | null = null
 
     const { data: journeyData, error: journeyError } = await supabase.rpc(
       'get_skpe_journey_temporal_read_model',
@@ -8468,6 +8475,14 @@ const [startingProject, setStartingProject] = useState(false)
           (row) => row.item_code === loaded.current_phase_code,
         )
         currentPhaseName = currentPhase?.item_name ?? null
+
+        const currentStage = journeyRows.find(
+          (row) =>
+            row.item_code.startsWith(`${loaded.current_phase_code}.`) &&
+            row.item_status === 'in_progress',
+        )
+        currentStageCode = currentStage?.item_code ?? null
+        currentStageName = currentStage?.item_name ?? null
       }
 
       setApprovedMacrophases(
@@ -8487,6 +8502,8 @@ const [startingProject, setStartingProject] = useState(false)
     setProjectContext({
       ...loaded,
       current_phase_name: currentPhaseName,
+      current_stage_code: currentStageCode,
+      current_stage_name: currentStageName,
     })
   }
 
@@ -9355,6 +9372,11 @@ case 'monitoring':
               organizationId={organizationId}
               projectId={projectContext.project_id}
               canAdjustStrategicMap={canManageGovernance}
+              initialTab={
+                projectContext.current_stage_code === 'PEM-02.03'
+                  ? 'positioning'
+                  : 'overview'
+              }
             />
           )}
         {activeSection === 'strategic-identity' && canViewJourney && (

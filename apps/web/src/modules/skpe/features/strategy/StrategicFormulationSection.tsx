@@ -31,6 +31,7 @@ type Props = {
   organizationId: string
   projectId: string
   canAdjustStrategicMap: boolean
+  initialTab?: FormulationTab
 }
 
 function percent(value: number | null | undefined) {
@@ -43,11 +44,16 @@ export function StrategicFormulationSection({
   organizationId,
   projectId,
   canAdjustStrategicMap,
+  initialTab = 'overview',
 }: Props) {
   const [formulationId, setFormulationId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<FormulationTab>('overview')
+  const [activeTab, setActiveTab] = useState<FormulationTab>(initialTab)
   const [initiatives, setInitiatives] = useState<InitiativeRow[]>([])
   const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab])
 
   useEffect(() => {
     let active = true
