@@ -7,10 +7,6 @@ import { JourneyEventCreateDialog } from './JourneyEventCreateDialog'
 import { JourneyItemStatusDialog } from './JourneyItemStatusDialog'
 import { JourneyGantt } from './JourneyGantt'
 import { JourneyProjectPlan } from './JourneyProjectPlan'
-import { Pem02GatePanel } from './Pem02GatePanel'
-import { Pem03GatePanel } from './Pem03GatePanel'
-import { Pem04GatePanel } from './Pem04GatePanel'
-import { Pem05GatePanel } from './Pem05GatePanel'
 import { SvarJourneyGantt } from './SvarJourneyGantt'
 import type {
   JourneyRow,
@@ -177,7 +173,7 @@ function getItemTypeLabel(itemType: JourneyRow['item_type']) {
 function getTemporalStateLabel(state: JourneyTemporalState) {
   const labels: Record<JourneyTemporalState, string> = {
     cancelled: 'Cancelado',
-    unscheduled: 'Sugestão metodológica pendente de validação',
+    unscheduled: 'Sem cronograma aprovado',
     completed_without_actual_end: 'Concluído sem data real de término',
     completed_on_time: 'Concluído no prazo',
     completed_late: 'Concluído com atraso',
@@ -228,7 +224,7 @@ function formatPeriod(
   end: string | null,
   formatDate: (value: string | null) => string,
 ) {
-  if (!start && !end) return 'Pendente de validação'
+  if (!start && !end) return 'Sem cronograma aprovado'
   if (start && end) return `${formatDate(start)} a ${formatDate(end)}`
   if (start) return `A partir de ${formatDate(start)}`
   return `Até ${formatDate(end)}`
@@ -1000,7 +996,7 @@ export function JourneySection({
               <small>
                 {temporalSummary.planRow
                   ? getPlanKindLabel(temporalSummary.planRow.current_plan_kind)
-                  : 'Cronograma sugerido pela metodologia · pendente de validação'}
+                  : 'Cronograma ainda não aprovado'}
               </small>
             </article>
 
@@ -1021,26 +1017,8 @@ export function JourneySection({
         </div>
       )}
 
-      {project ? (
-        <>
-          <Pem02GatePanel
-            organizationId={organizationId}
-            projectId={project.project_id}
-          />
-          <Pem03GatePanel
-            organizationId={organizationId}
-            projectId={project.project_id}
-          />
-          <Pem04GatePanel
-            organizationId={organizationId}
-            projectId={project.project_id}
-          />
-          <Pem05GatePanel
-            organizationId={organizationId}
-            projectId={project.project_id}
-          />
-        </>
-      ) : null}
+
+
 
       {rows.length > 0 && !loading && (
         <div className="skpe-journey-view-switch-row">
