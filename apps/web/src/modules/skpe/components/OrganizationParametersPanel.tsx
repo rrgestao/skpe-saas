@@ -21,6 +21,8 @@ type Props = {
 
 const PARAMETER_KEYS = [
   'SKPE.JOURNEY.DURATION_MODE',
+  'SKPE.JOURNEY.STANDARD_DURATION',
+  'SKPE.JOURNEY.EXTENDED_DURATION',
   'SKPE.JOURNEY.ACCELERATED_DURATION',
   'SKPE.JOURNEY.POST_DELIVERY_FOLLOWUP',
   'SKPE.JOURNEY.PEM02.01_DURATION','SKPE.JOURNEY.PEM02.02_DURATION','SKPE.JOURNEY.PEM02.03_DURATION','SKPE.JOURNEY.PEM02.04_DURATION','SKPE.JOURNEY.PEM02.05_DURATION',
@@ -36,13 +38,13 @@ type ParameterKey = (typeof PARAMETER_KEYS)[number]
 type DraftState = Record<ParameterKey, string>
 
 const INITIAL_DRAFT: DraftState = {
-  'SKPE.JOURNEY.DURATION_MODE':'business_days','SKPE.JOURNEY.ACCELERATED_DURATION':'45','SKPE.JOURNEY.POST_DELIVERY_FOLLOWUP':'90',
-  'SKPE.JOURNEY.PEM02.01_DURATION':'2','SKPE.JOURNEY.PEM02.02_DURATION':'5','SKPE.JOURNEY.PEM02.03_DURATION':'5','SKPE.JOURNEY.PEM02.04_DURATION':'7','SKPE.JOURNEY.PEM02.05_DURATION':'6',
-  'SKPE.JOURNEY.PEM03.01_DURATION':'4','SKPE.JOURNEY.PEM03.02_DURATION':'6','SKPE.JOURNEY.PEM03.03_DURATION':'6','SKPE.JOURNEY.PEM03.04_DURATION':'4',
-  'SKPE.JOURNEY.PEM04.01_DURATION':'5','SKPE.JOURNEY.PEM04.02_DURATION':'3','SKPE.JOURNEY.PEM04.03_DURATION':'4','SKPE.JOURNEY.PEM04.04_DURATION':'3',
+  'SKPE.JOURNEY.DURATION_MODE':'business_days','SKPE.JOURNEY.STANDARD_DURATION':'45','SKPE.JOURNEY.EXTENDED_DURATION':'90','SKPE.JOURNEY.ACCELERATED_DURATION':'45','SKPE.JOURNEY.POST_DELIVERY_FOLLOWUP':'90',
+  'SKPE.JOURNEY.PEM02.01_DURATION':'1','SKPE.JOURNEY.PEM02.02_DURATION':'2','SKPE.JOURNEY.PEM02.03_DURATION':'2','SKPE.JOURNEY.PEM02.04_DURATION':'2','SKPE.JOURNEY.PEM02.05_DURATION':'3',
+  'SKPE.JOURNEY.PEM03.01_DURATION':'2','SKPE.JOURNEY.PEM03.02_DURATION':'3','SKPE.JOURNEY.PEM03.03_DURATION':'2','SKPE.JOURNEY.PEM03.04_DURATION':'2',
+  'SKPE.JOURNEY.PEM04.01_DURATION':'3','SKPE.JOURNEY.PEM04.02_DURATION':'2','SKPE.JOURNEY.PEM04.03_DURATION':'2','SKPE.JOURNEY.PEM04.04_DURATION':'2',
   'SKPE.JOURNEY.PEM00.01_DURATION':'1','SKPE.JOURNEY.PEM00.02_DURATION':'1','SKPE.JOURNEY.PEM00.03_DURATION':'1','SKPE.JOURNEY.PEM00.04_DURATION':'1',
-  'SKPE.JOURNEY.PEM00.05_DURATION':'2','SKPE.JOURNEY.PEM00.06_DURATION':'1','SKPE.JOURNEY.PEM00.07_DURATION':'2','SKPE.JOURNEY.PEM00.08_DURATION':'1',
-  'SKPE.JOURNEY.PEM01.01_DURATION':'3','SKPE.JOURNEY.PEM01.02_DURATION':'3','SKPE.JOURNEY.PEM01.03_DURATION':'4','SKPE.JOURNEY.PEM01.04_DURATION':'3','SKPE.JOURNEY.PEM01.05_DURATION':'4','SKPE.JOURNEY.PEM01.06_DURATION':'3',
+  'SKPE.JOURNEY.PEM00.05_DURATION':'1','SKPE.JOURNEY.PEM00.06_DURATION':'1','SKPE.JOURNEY.PEM00.07_DURATION':'1','SKPE.JOURNEY.PEM00.08_DURATION':'1',
+  'SKPE.JOURNEY.PEM01.01_DURATION':'1','SKPE.JOURNEY.PEM01.02_DURATION':'1','SKPE.JOURNEY.PEM01.03_DURATION':'2','SKPE.JOURNEY.PEM01.04_DURATION':'1','SKPE.JOURNEY.PEM01.05_DURATION':'2','SKPE.JOURNEY.PEM01.06_DURATION':'2',
   'SKPE.PERFORMANCE.DEVIATION.ADEQUATE_MAX_PERCENT':'15','SKPE.PERFORMANCE.DEVIATION.ATTENTION_MAX_PERCENT':'30',
 }
 
@@ -275,8 +277,10 @@ export function OrganizationParametersPanel({ organizationId = null, canManage, 
       {loading ? <p>Carregando parâmetros efetivos...</p> : (
         <div className="skpe-organization-parameter-list">
           {renderParameter('SKPE.JOURNEY.DURATION_MODE', 'Contagem da Jornada', 'Escolha entre dias úteis e dias corridos para o planejamento temporal.')}
-          {renderParameter('SKPE.JOURNEY.ACCELERATED_DURATION', 'Meta acelerada', 'Referência para cenários de implantação acelerada.')}
-          {renderParameter('SKPE.JOURNEY.POST_DELIVERY_FOLLOWUP', 'Acompanhamento pós-entrega · PEM-05', 'Período inicial de Monitoramento e Aprendizado após a entrega da implantação.')}
+          {renderParameter('SKPE.JOURNEY.STANDARD_DURATION', 'Prazo usual para entrega', 'Referência SPARKs quando a Ordem de Serviço ou contrato não trouxer prazo específico.')}
+          {renderParameter('SKPE.JOURNEY.EXTENDED_DURATION', 'Prazo ampliado para entrega', 'Referência de ampliação quando a complexidade ou o escopo exigirem.')}
+          {renderParameter('SKPE.JOURNEY.POST_DELIVERY_FOLLOWUP', 'Acompanhamento após a entrega', 'Período de acompanhamento da implantação do Planejamento Estratégico após a entrega.')}
+          <div className="skpe-organization-parameter-copy"><strong>Regra de precedência</strong><span>Quando a Ordem de Serviço ou o contrato estabelecerem prazos, eles prevalecem sobre as referências SPARKs de 45/90/90 dias.</span></div>
           <div className="skpe-organization-parameter-copy"><strong>Cadência da implantação</strong><span>Total efetivo atual: {implementationCadenceTotal} dias. PEM-00: {pem00PhaseTotal} · PEM-01: {pem01PhaseTotal} · PEM-02: {pem02PhaseTotal} · PEM-03: {pem03PhaseTotal} · PEM-04: {pem04PhaseTotal}.</span></div>
           <div className="skpe-organization-parameter-copy"><strong>PEM-00 · Fases</strong><span>O total da Megafase é derivado das fases abaixo; o Gate não consome duração própria.</span></div>
           {renderParameter('SKPE.JOURNEY.PEM00.01_DURATION','PEM-00.01 · Abertura, Mandato e Escopo','Cadência default da fase.')}

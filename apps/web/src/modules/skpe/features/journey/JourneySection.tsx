@@ -200,15 +200,25 @@ function getJourneyDisplayState(item: JourneyTemporalRow) {
   return getTemporalStateLabel(item.temporal_state)
 }
 
-function getCurrentPlanDisplay(item: JourneyTemporalRow, formatDate: (value: string | null) => string) {
-  if (
-    item.item_status === 'completed' &&
-    !item.current_plan_start_date &&
-    !item.current_plan_end_date
-  ) {
-    return 'Não aplicável ao item já concluído'
+function getScheduleLabel(item: JourneyTemporalRow) {
+  if (item.current_plan_start_date || item.current_plan_end_date) return 'Cronograma aprovado'
+  if (item.proposal_start_date || item.proposal_end_date) return 'Cronograma proposto'
+  return 'Cronograma'
+}
+
+function getScheduleDisplay(item: JourneyTemporalRow, formatDate: (value: string | null) => string) {
+  if (item.current_plan_start_date || item.current_plan_end_date) {
+    return formatPeriod(item.current_plan_start_date, item.current_plan_end_date, formatDate)
   }
-  return formatPeriod(item.current_plan_start_date, item.current_plan_end_date, formatDate)
+  if (item.proposal_start_date || item.proposal_end_date) {
+    return formatPeriod(item.proposal_start_date ?? null, item.proposal_end_date ?? null, formatDate)
+  }
+  return 'Aguardando proposta de cronograma'
+}
+
+function shouldShowSchedule(item: JourneyTemporalRow) {
+  if (item.item_status === 'completed' && !item.has_approved_plan) return false
+  return true
 }
 
 function getPlanKindLabel(kind: JourneyTemporalRow['current_plan_kind']) {
@@ -500,7 +510,7 @@ export function JourneySection({
       return
     }
 
-    const baseJourneyRows = ((data ?? []) as JourneyTemporalReadRow[]).map(
+    let baseJourneyRows = ((data ?? []) as JourneyTemporalReadRow[]).map(
       (row): JourneyTemporalRow => ({
         ...row,
         planned_start_date: row.current_plan_start_date,
@@ -509,6 +519,51 @@ export function JourneySection({
     )
 
     const resolvedProjectId = baseJourneyRows[0]?.project_id ?? workspace.route.projectId
+
+    const { data: proposalVersions, error: proposalVersionError } = await supabase
+      .from('skpe_journey_schedule_versions')
+      .select('id,governance_status')
+      .eq('project_id', resolvedProjectId)
+      .in('governance_status', ['draft', 'pending_approval'])
+      .order('version_number', { ascending: false })
+      .limit(1)
+
+    if (proposalVersionError) {
+      setRows([])
+      setErrorMessage(translateBackendMessage(proposalVersionError.message))
+      setLoading(false)
+      return
+    }
+
+    const proposalVersion = proposalVersions?.[0] ?? null
+    if (proposalVersion?.id) {
+      const { data: proposalItems, error: proposalItemsError } = await supabase
+        .from('skpe_journey_schedule_items')
+        .select('journey_item_id,planned_start_date,planned_end_date')
+        .eq('schedule_version_id', proposalVersion.id)
+
+      if (proposalItemsError) {
+        setRows([])
+        setErrorMessage(translateBackendMessage(proposalItemsError.message))
+        setLoading(false)
+        return
+      }
+
+      const proposalByItemId = new Map(
+        (proposalItems ?? []).map((item) => [String(item.journey_item_id), item]),
+      )
+
+      baseJourneyRows = baseJourneyRows.map((row): JourneyTemporalRow => {
+        const proposal = proposalByItemId.get(row.item_id)
+        return {
+          ...row,
+          proposal_schedule_version_id: proposalVersion.id,
+          proposal_schedule_status: proposalVersion.governance_status,
+          proposal_start_date: proposal?.planned_start_date ?? null,
+          proposal_end_date: proposal?.planned_end_date ?? null,
+        }
+      })
+    }
     const { data: dependencyRows, error: dependencyError } = await supabase
       .from('skpe_journey_items')
       .select('id,metadata')
@@ -664,7 +719,7 @@ export function JourneySection({
             <div className="skpe-phase-heading">
               <div>
                 <p>
-                  {getItemTypeLabel(item.item_type)} · {item.item_code}
+                  {getItemTypeLabel(item.item_type)}
                 </p>
                 <h2>{methodologyTextPtBr(item.item_name)}</h2>
               </div>
@@ -718,12 +773,14 @@ export function JourneySection({
                 </span>
               )}
 
-              <span>
-                Plano vigente:{' '}
-                <strong>
-                  {getCurrentPlanDisplay(item, formatDate)}
-                </strong>
-              </span>
+              {shouldShowSchedule(item) ? (
+                <span>
+                  {getScheduleLabel(item)}:{' '}
+                  <strong>
+                    {getScheduleDisplay(item, formatDate)}
+                  </strong>
+                </span>
+              ) : null}
 
               {item.has_active_forecast && (
                 <span>
@@ -773,7 +830,7 @@ export function JourneySection({
 
             {methodologyLocked && firstUnmetDependency ? (
               <div className="skpe-journey-blocked-message">
-                Bloqueado metodologicamente: {firstUnmetDependency.prerequisite.item_code} — {methodologyTextPtBr(firstUnmetDependency.prerequisite.item_name)} deve estar em {statusLabelPtBr(firstUnmetDependency.requiredStatus)} antes de avançar.
+                Esta etapa permanece bloqueada até que {methodologyTextPtBr(firstUnmetDependency.prerequisite.item_name)} esteja {statusLabelPtBr(firstUnmetDependency.requiredStatus)}.
               </div>
             ) : null}
 
@@ -784,7 +841,7 @@ export function JourneySection({
               <strong>{item.item_progress}%</strong>
             </div>
 
-            {canManageJourney && (
+            {canManageJourney && item.item_type !== 'gate' && (
               <div
                 className="skpe-journey-quick-actions"
                 onClick={(event) => event.stopPropagation()}
@@ -1192,28 +1249,12 @@ export function JourneySection({
                     <dt>{selectedItem.item_type === 'macrophase' ? 'Condução metodológica' : 'Responsável'}</dt>
                     <dd>{selectedItem.responsible_name ?? (projectGovernance.organizationLeadName || projectGovernance.sparkoopLeadName ? `Pendente de atribuição específica · Cooperativa: ${projectGovernance.organizationLeadName ?? 'Pendente'} · SPARKOOP: ${projectGovernance.sparkoopLeadName ?? 'Pendente'}` : 'Pendente de atribuição')}</dd>
                   </div>
-                  <div>
-                    <dt>Linha de base original</dt>
-                    <dd>
-                      {selectedItem.baseline_version_number
-                        ? `v${selectedItem.baseline_version_number} · `
-                        : ''}
-                      {formatPeriod(
-                        selectedItem.baseline_start_date,
-                        selectedItem.baseline_end_date,
-                        formatDate,
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Plano institucional vigente</dt>
-                    <dd>
-                      {selectedItem.current_plan_version_number
-                        ? `v${selectedItem.current_plan_version_number} · ${getPlanKindLabel(selectedItem.current_plan_kind)} · `
-                        : ''}
-                      {getCurrentPlanDisplay(selectedItem, formatDate)}
-                    </dd>
-                  </div>
+                  {shouldShowSchedule(selectedItem) ? (
+                    <div>
+                      <dt>{getScheduleLabel(selectedItem)}</dt>
+                      <dd>{getScheduleDisplay(selectedItem, formatDate)}</dd>
+                    </div>
+                  ) : null}
                   <div>
                     <dt>Previsão operacional</dt>
                     <dd>

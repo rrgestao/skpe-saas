@@ -16,6 +16,8 @@ type GateReadiness = {
   pem02Status?: string | null
   pem02Progress?: number | null
   strategicHorizonId?: string | null
+  strategicHorizonStartYear?: number | null
+  strategicHorizonEndYear?: number | null
   candidateFormulationId?: string | null
   formulationStatus?: string | null
   formulationRatification?: {
@@ -111,7 +113,7 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
       (outcome === 'approved' || outcome === 'approved_with_reservations') &&
       !readiness?.readyForClosure
     ) {
-      setMessage('O PEM-02.GATE ainda possui pendências bloqueantes.')
+      setMessage('A Macrofase 2 ainda possui pendências que impedem a decisão institucional.')
       return
     }
 
@@ -135,16 +137,15 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
       return
     }
 
-    const result = (data ?? {}) as {
-      gateDecisionId?: string
-      decisionOutcome?: string
-      status?: string
-      validationStatus?: string
+    void data
+
+    const outcomeLabel: Record<DecisionOutcome, string> = {
+      approved: 'Macrofase 2 aprovada',
+      approved_with_reservations: 'Macrofase 2 aprovada com ressalvas',
+      returned_for_adjustment: 'Macrofase 2 devolvida para ajustes',
     }
 
-    setMessage(
-      `Decisão institucional registrada (${result.gateDecisionId ?? 'sem identificador'}): ${result.decisionOutcome ?? outcome}.`,
-    )
+    setMessage(`Decisão institucional registrada: ${outcomeLabel[outcome]}.`)
     setReason('')
     setReservations('')
     setAdjustments('')
@@ -154,43 +155,54 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
 
   if (!projectId || !readiness) return null
 
+  const horizonLabel =
+    readiness.strategicHorizonStartYear && readiness.strategicHorizonEndYear
+      ? `${readiness.strategicHorizonStartYear}–${readiness.strategicHorizonEndYear}`
+      : 'Horizonte não identificado'
+
   const prerequisites = [
     {
-      label: 'Macrofase PEM-02 concluída',
+      label: 'Macrofase 2 concluída',
       ok: readiness.pem02Status === 'completed' && readiness.pem02Progress === 100,
-      value: `${readiness.pem02Status ?? '—'} · ${readiness.pem02Progress ?? 0}%`,
+      value:
+        readiness.pem02Status === 'completed'
+          ? `Concluída · ${readiness.pem02Progress ?? 100}%`
+          : 'Ainda não concluída',
     },
     {
-      label: 'Horizonte Estratégico corrente',
+      label: 'Horizonte Estratégico',
       ok: Boolean(readiness.strategicHorizonId),
-      value: readiness.strategicHorizonId ?? 'Ausente',
+      value: horizonLabel,
     },
     {
-      label: 'Formulação pronta para ratificação',
+      label: 'Formulação Estratégica',
       ok: Boolean(readiness.formulationRatification?.readyForRatification),
       value: readiness.candidateFormulationId
-        ? `${readiness.formulationStatus ?? 'em elaboração'} · pronta para decisão no Gate`
-        : 'Ausente',
+        ? 'Pronta para validação institucional'
+        : 'Ainda não consolidada',
     },
     {
-      label: 'Cenário e Plano de Evolução',
+      label: 'Plano de Evolução',
       ok: Boolean(
         readiness.evolutionPlanId || readiness.evolutionScenarioReadiness?.ready_to_ratify,
       ),
       value: readiness.evolutionPlanId
-        ? 'Plano já institucionalizado'
+        ? 'Institucionalizado'
         : readiness.evolutionScenarioId
-          ? `${readiness.evolutionScenarioReadiness?.cycle_count ?? 0} ciclo(s) · ${
+          ? `${readiness.evolutionScenarioReadiness?.cycle_count ?? 0} ciclos propostos · ${
               readiness.evolutionScenarioReadiness?.temporalization_complete
-                ? 'pronto para ratificação'
-                : 'temporalização pendente'
+                ? 'prontos para validação'
+                : 'datas ainda em definição'
             }`
-          : 'Cenário ainda não estruturado',
+          : 'Ainda não estruturado',
     },
     {
-      label: 'Readiness sem bloqueadores',
+      label: 'Prontidão para decisão',
       ok: Boolean(readiness.readyForClosure),
-      value: `${readiness.blockingIssueCount ?? 0} pendência(s)`,
+      value:
+        (readiness.blockingIssueCount ?? 0) === 0
+          ? 'Nenhuma pendência'
+          : `${readiness.blockingIssueCount} pendência(s)`,
     },
   ]
 
@@ -198,12 +210,11 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
     <section className="skpe-pem02-gate-panel">
       <header>
         <div>
-          <small>PEM-02.GATE</small>
+          <small>Ponto de validação</small>
           <h3>Ratificação da Macrofase 2</h3>
           <p>
-            Esta decisão ratifica a Formulação Estratégica e institucionaliza o Plano de Evolução para o Horizonte corrente.
-            Ela não substitui as validações anteriores e só pode aprovar o Gate quando
-            todos os pré-requisitos canônicos estiverem atendidos.
+            Ratifique a Formulação Estratégica e o Plano de Evolução antes de iniciar o Desdobramento Estratégico.
+            A Macrofase 3 permanece bloqueada até que esta decisão institucional seja registrada.
           </p>
         </div>
         <span className={readiness.readyForClosure ? 'is-ready' : 'is-blocked'}>
@@ -227,7 +238,7 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
           <ul>
             {readiness.issues?.map((issue, index) => (
               <li key={`${issue.code ?? 'issue'}:${index}`}>
-                {issue.message ?? issue.code ?? 'Pendência identificada pelo backend.'}
+                {issue.message ?? 'Pendência identificada pela solução.'}
               </li>
             ))}
           </ul>
@@ -294,7 +305,7 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
         </div>
       ) : (
         <p className="skpe-pem02-gate-readonly">
-          Você pode acompanhar a prontidão, mas não possui permissão para ratificar este Gate.
+          Você pode acompanhar a prontidão, mas não possui permissão para registrar esta decisão institucional.
         </p>
       )}
 

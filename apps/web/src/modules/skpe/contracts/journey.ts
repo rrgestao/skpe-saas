@@ -86,6 +86,11 @@ export type JourneyTemporalReadRow = Omit<
   current_plan_end_date: string | null
   current_plan_source_mode: string | null
 
+  proposal_schedule_version_id?: string | null
+  proposal_schedule_status?: string | null
+  proposal_start_date?: string | null
+  proposal_end_date?: string | null
+
   current_forecast_version_id: string | null
   current_forecast_version_number: number | null
   current_forecast_activated_at: string | null

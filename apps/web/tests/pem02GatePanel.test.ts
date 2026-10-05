@@ -21,18 +21,18 @@ test('PEM-02 gate UI uses canonical readiness and governed ratification', () => 
 })
 
 test('Gate communicates ratification instead of requiring preapproval', () => {
-  assert.match(panel, /Formulação pronta para ratificação/)
-  assert.match(panel, /Cenário e Plano de Evolução/)
-  assert.match(panel, /temporalização pendente/)
-  assert.match(panel, /institucionaliza o Plano de Evolução/)
+  assert.match(panel, /Formulação Estratégica/)
+  assert.match(panel, /Plano de Evolução/)
+  assert.match(panel, /prontos para validação/)
+  assert.match(panel, /antes de iniciar o Desdobramento Estratégico/)
   assert.doesNotMatch(panel, /Formulação Estratégica aprovada/)
   assert.doesNotMatch(panel, /Plano de Evolução corrente/)
 })
 
 test('Gate approval remains blocked until canonical readiness is clean', () => {
   assert.match(panel, /!readiness\?\.readyForClosure/)
-  assert.match(panel, /PEM-02\.GATE ainda possui pendências bloqueantes/)
-  assert.match(panel, /Macrofase PEM-02 concluída/)
+  assert.match(panel, /Macrofase 2 ainda possui pendências que impedem a decisão institucional/)
+  assert.match(panel, /Macrofase 2 concluída/)
 })
 
 test('institutional Gate panel is embedded in the Gate item hierarchy', () => {
