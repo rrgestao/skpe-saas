@@ -7,6 +7,7 @@ import {
   statusLabelPtBr,
   translateBackendMessage,
 } from '../../shared/i18n/ptBR'
+import { buildExecutiveStrategicReportHtml } from './executiveStrategicReport'
 
 import './DeliveryKitDialog.css'
 
@@ -82,6 +83,7 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
   const [phaseFilter, setPhaseFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [generatingReport, setGeneratingReport] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -270,6 +272,104 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
     }
   }
 
+  const generateExecutiveReport = async () => {
+    const selectedArtifacts = artifacts.filter((artifact) => selectedIds.has(artifact.artifact_id))
+    if (selectedArtifacts.length === 0) {
+      setMessage('Selecione ao menos um artefato para gerar o Relatório Executivo.')
+      return
+    }
+
+    setGeneratingReport(true)
+    setMessage('Consolidando o Relatório Executivo...')
+    try {
+      const [organizationResponse, projectResponse] = await Promise.all([
+        supabase
+          .from('organizations')
+          .select('trade_name,legal_name')
+          .eq('id', organizationId)
+          .maybeSingle(),
+        supabase
+          .from('skpe_projects')
+          .select('name,planning_horizon_start_year,planning_horizon_end_year')
+          .eq('id', projectId)
+          .maybeSingle(),
+      ])
+
+      if (organizationResponse.error) throw organizationResponse.error
+      if (projectResponse.error) throw projectResponse.error
+
+      const organizationName =
+        organizationResponse.data?.trade_name?.trim() ||
+        organizationResponse.data?.legal_name?.trim() ||
+        'Organização'
+
+      const projectName =
+        projectResponse.data?.name?.trim() ||
+        'Planejamento Estratégico'
+
+      const horizonStart = projectResponse.data?.planning_horizon_start_year
+      const horizonEnd = projectResponse.data?.planning_horizon_end_year
+      const horizonLabel =
+        horizonStart && horizonEnd ? `${horizonStart}–${horizonEnd}` : null
+
+      const reportArtifacts = await Promise.all(
+        selectedArtifacts.map(async (artifact) => {
+          const { version } = await currentVersion(artifact)
+          return {
+            title: artifact.title,
+            code: artifact.artifact_code,
+            typeLabel: artifactTypeLabelPtBr(
+              artifact.artifact_type_code,
+              artifact.artifact_type_name,
+            ),
+            phaseCode:
+              artifact.phase_code ??
+              artifact.macrophase_code ??
+              artifact.metafase_code,
+            purpose: artifact.purpose,
+            statusLabel: statusLabelPtBr(artifact.status),
+            version: artifact.current_version_number,
+            validatedAt: artifact.validated_at,
+            contentMarkdown: String(version.content_markdown ?? '').trim() || null,
+            fileName: String(version.file_name ?? '').trim() || null,
+          }
+        }),
+      )
+
+      const generatedAt = new Date()
+      const html = buildExecutiveStrategicReportHtml({
+        organizationName,
+        projectName,
+        horizonLabel,
+        generatedAt,
+        artifacts: reportArtifacts,
+      })
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+      const timestamp = generatedAt
+        .toISOString()
+        .replace(/[-:]/g, '')
+        .replace(/\..+/, '')
+        .replace('T', '_')
+
+      downloadBlob(
+        blob,
+        `SPARKs_PE_Relatorio_Executivo_${timestamp}.html`,
+      )
+      setMessage(
+        `Relatório Executivo consolidado com ${reportArtifacts.length} artefato(s), sem alterar a Jornada.`,
+      )
+    } catch (error) {
+      console.error(error)
+      setMessage(
+        translateBackendMessage(
+          error instanceof Error ? error.message : String(error),
+        ),
+      )
+    } finally {
+      setGeneratingReport(false)
+    }
+  }
+
   return (
     <div className="skpe-delivery-kit" role="dialog" aria-modal="true" aria-label="Kit de Entregas">
       <div className="skpe-delivery-kit-backdrop" onClick={onClose} />
@@ -278,7 +378,7 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
         <div className="skpe-delivery-kit-controls"><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar artefato, código ou fase" /><select value={phaseFilter} onChange={(event) => setPhaseFilter(event.target.value)}><option value="">Toda a jornada</option>{phases.map((phase) => <option key={phase}>{phase}</option>)}</select><div className="skpe-delivery-kit-bulk"><button type="button" onClick={() => setSelectedIds(new Set(artifacts.filter((item) => VALIDATED_STATUSES.has(item.status)).map((item) => item.artifact_id)))}>Selecionar validados</button><button type="button" onClick={() => setSelectedIds(new Set(visibleArtifacts.map((item) => item.artifact_id)))}>Selecionar visíveis</button><button type="button" onClick={() => setSelectedIds(new Set())}>Limpar</button></div></div>
         {message && <div className="skpe-delivery-kit-message" role="status">{message}</div>}
         {loading ? <div>Carregando artefatos...</div> : visibleArtifacts.length === 0 ? <div>Nenhum artefato disponível para os filtros informados.</div> : <div className="skpe-delivery-kit-list">{visibleArtifacts.map((artifact) => <article className="skpe-delivery-kit-item" key={artifact.artifact_id}><input type="checkbox" checked={selectedIds.has(artifact.artifact_id)} onChange={() => toggle(artifact.artifact_id)} aria-label={`Selecionar ${artifact.title}`} /><div><h3>{artifact.title}</h3><p>{artifact.purpose ?? artifactTypeLabelPtBr(artifact.artifact_type_code, artifact.artifact_type_name)}</p><div className="skpe-delivery-kit-meta"><span>{artifact.phase_code ?? artifact.macrophase_code ?? artifact.metafase_code ?? 'Sem fase'}</span><span>{statusLabelPtBr(artifact.status)}</span><span>v{artifact.current_version_number}</span><span>{formatDateTime(artifact.validated_at)}</span></div></div><div className="skpe-delivery-kit-actions"><button type="button" onClick={() => void visualize(artifact)}>Visualizar</button><button type="button" onClick={() => void download(artifact)}>Baixar</button><button type="button" onClick={() => void printArtifact(artifact)}>Imprimir</button></div></article>)}</div>}
-        <footer className="skpe-delivery-kit-footer"><span>{selectedIds.size} artefato(s) selecionado(s)</span><div><button type="button" onClick={onClose}>Fechar</button><button type="button" className="primary" onClick={() => void generateKit()} disabled={generating}>{generating ? 'Gerando Kit...' : 'Gerar Kit em ZIP'}</button></div></footer>
+        <footer className="skpe-delivery-kit-footer"><span>{selectedIds.size} artefato(s) selecionado(s)</span><div><button type="button" onClick={onClose}>Fechar</button><button type="button" onClick={() => void generateExecutiveReport()} disabled={generatingReport}>{generatingReport ? 'Gerando relatório...' : 'Gerar Relatório Executivo'}</button><button type="button" className="primary" onClick={() => void generateKit()} disabled={generating}>{generating ? 'Gerando Kit...' : 'Gerar Kit em ZIP'}</button></div></footer>
       </section>
     </div>
   )
