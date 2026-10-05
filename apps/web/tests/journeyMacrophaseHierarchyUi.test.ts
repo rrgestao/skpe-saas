@@ -7,13 +7,23 @@ const journeySection = readFileSync(
   'utf8',
 )
 
-test('Journey keeps Gates inside the Macrophase tree instead of rendering parallel Gate panels', () => {
-  assert.doesNotMatch(journeySection, /<Pem02GatePanel/)
-  assert.doesNotMatch(journeySection, /<Pem03GatePanel/)
-  assert.doesNotMatch(journeySection, /<Pem04GatePanel/)
-  assert.doesNotMatch(journeySection, /<Pem05GatePanel/)
-  assert.doesNotMatch(journeySection, /import \{ Pem0[2345]GatePanel/)
-  assert.match(journeySection, /item\.children\.map\(\(child\) => renderJourneyItem\(child, level \+ 1\)\)/)
+test('Journey keeps Gates inside their Macrophase hierarchy', () => {
+  assert.match(
+    journeySection,
+    /item\.children\.map\(\(child\) => renderJourneyItem\(child, level \+ 1\)\)/,
+  )
+  assert.match(journeySection, /project && item\.item_type === 'gate'/)
+  assert.match(journeySection, /item\.item_code === 'PEM-02\.GATE'/)
+  assert.match(journeySection, /item\.item_code === 'PEM-03\.GATE'/)
+  assert.match(journeySection, /item\.item_code === 'PEM-04\.GATE'/)
+  assert.match(journeySection, /item\.item_code === 'PEM-05\.GATE'/)
+})
+
+test('future Gate panels are not rendered as a parallel top-level stack', () => {
+  assert.doesNotMatch(
+    journeySection,
+    /<Pem02GatePanel[\s\S]*<Pem03GatePanel[\s\S]*<Pem04GatePanel[\s\S]*<Pem05GatePanel[\s\S]*<div className="skpe-journey-tabs"/,
+  )
 })
 
 test('Journey distinguishes schedule state from strategic validation state', () => {

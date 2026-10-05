@@ -7,6 +7,10 @@ import { JourneyEventCreateDialog } from './JourneyEventCreateDialog'
 import { JourneyItemStatusDialog } from './JourneyItemStatusDialog'
 import { JourneyGantt } from './JourneyGantt'
 import { JourneyProjectPlan } from './JourneyProjectPlan'
+import { Pem02GatePanel } from './Pem02GatePanel'
+import { Pem03GatePanel } from './Pem03GatePanel'
+import { Pem04GatePanel } from './Pem04GatePanel'
+import { Pem05GatePanel } from './Pem05GatePanel'
 import { SvarJourneyGantt } from './SvarJourneyGantt'
 import type {
   JourneyRow,
@@ -862,6 +866,20 @@ export function JourneySection({
             {item.children.map((child) => renderJourneyItem(child, level + 1))}
           </div>
         )}
+
+        {project && item.item_type === 'gate' ? (
+          <div className="skpe-journey-gate-detail">
+            {item.item_code === 'PEM-02.GATE' ? (
+              <Pem02GatePanel organizationId={organizationId} projectId={project.project_id} />
+            ) : item.item_code === 'PEM-03.GATE' ? (
+              <Pem03GatePanel organizationId={organizationId} projectId={project.project_id} />
+            ) : item.item_code === 'PEM-04.GATE' ? (
+              <Pem04GatePanel organizationId={organizationId} projectId={project.project_id} />
+            ) : item.item_code === 'PEM-05.GATE' ? (
+              <Pem05GatePanel organizationId={organizationId} projectId={project.project_id} />
+            ) : null}
+          </div>
+        ) : null}
       </article>
     )
   }

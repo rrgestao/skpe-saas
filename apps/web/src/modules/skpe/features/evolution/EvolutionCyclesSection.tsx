@@ -42,6 +42,9 @@ const statusLabels: Record<string, string> = {
   draft: 'Rascunho',
   adjusted: 'Ajustado',
   submitted: 'Submetido',
+  proposed: 'Proposto',
+  under_review: 'Em revisão',
+  deferred: 'Adiado',
   approved: 'Aprovado',
   rejected: 'Rejeitado',
   superseded: 'Substituído',
@@ -70,9 +73,10 @@ function formatDate(
 }
 
 function cyclePeriod(
-  start: string,
-  end: string,
+  start: string | null | undefined,
+  end: string | null | undefined,
 ) {
+  if (!start && !end) return 'Temporalização pendente'
   return `${formatDate(start)} a ${formatDate(end)}`
 }
 

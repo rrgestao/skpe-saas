@@ -122,8 +122,8 @@ export type EvolutionScenarioCycleRow = {
   title: string
   description: string | null
 
-  period_start: string
-  period_end: string
+  period_start: string | null
+  period_end: string | null
 
   strategic_intent: string | null
   expected_outcome: string | null

@@ -20,16 +20,24 @@ test('PEM-02 gate UI uses canonical readiness and governed ratification', () => 
   assert.match(panel, /Devolver para ajustes/)
 })
 
-test('gate approval remains blocked until canonical readiness is clean', () => {
+test('Gate communicates ratification instead of requiring preapproval', () => {
+  assert.match(panel, /Formulação pronta para ratificação/)
+  assert.match(panel, /Cenário e Plano de Evolução/)
+  assert.match(panel, /temporalização pendente/)
+  assert.match(panel, /institucionaliza o Plano de Evolução/)
+  assert.doesNotMatch(panel, /Formulação Estratégica aprovada/)
+  assert.doesNotMatch(panel, /Plano de Evolução corrente/)
+})
+
+test('Gate approval remains blocked until canonical readiness is clean', () => {
   assert.match(panel, /!readiness\?\.readyForClosure/)
   assert.match(panel, /PEM-02\.GATE ainda possui pendências bloqueantes/)
   assert.match(panel, /Macrofase PEM-02 concluída/)
-  assert.match(panel, /Formulação Estratégica aprovada/)
-  assert.match(panel, /Plano de Evolução corrente/)
 })
 
-test('journey exposes the institutional gate panel', () => {
+test('institutional Gate panel is embedded in the Gate item hierarchy', () => {
   assert.match(journey, /import \{ Pem02GatePanel \}/)
+  assert.match(journey, /item\.item_type === 'gate'/)
+  assert.match(journey, /item\.item_code === 'PEM-02\.GATE'/)
   assert.match(journey, /<Pem02GatePanel/)
-  assert.match(journey, /projectId=\{project\.project_id\}/)
 })

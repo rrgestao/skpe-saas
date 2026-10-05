@@ -16,8 +16,23 @@ type GateReadiness = {
   pem02Status?: string | null
   pem02Progress?: number | null
   strategicHorizonId?: string | null
-  approvedFormulationId?: string | null
+  candidateFormulationId?: string | null
+  formulationStatus?: string | null
+  formulationRatification?: {
+    readyForRatification?: boolean
+    blockingIssueCount?: number
+  } | null
+  evolutionScenarioId?: string | null
+  evolutionScenarioStatus?: string | null
+  evolutionScenarioReadiness?: {
+    structurally_ready?: boolean
+    temporalization_complete?: boolean
+    ready_to_ratify?: boolean
+    cycle_count?: number
+    undated_cycle_count?: number
+  } | null
   evolutionPlanId?: string | null
+  planWillBeMaterializedOnApproval?: boolean
   readyForClosure?: boolean
   blockingIssueCount?: number
   issues?: GateIssue[]
@@ -151,14 +166,26 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
       value: readiness.strategicHorizonId ?? 'Ausente',
     },
     {
-      label: 'Formulação Estratégica aprovada',
-      ok: Boolean(readiness.approvedFormulationId),
-      value: readiness.approvedFormulationId ?? 'Ausente',
+      label: 'Formulação pronta para ratificação',
+      ok: Boolean(readiness.formulationRatification?.readyForRatification),
+      value: readiness.candidateFormulationId
+        ? `${readiness.formulationStatus ?? 'em elaboração'} · pronta para decisão no Gate`
+        : 'Ausente',
     },
     {
-      label: 'Plano de Evolução corrente',
-      ok: Boolean(readiness.evolutionPlanId),
-      value: readiness.evolutionPlanId ?? 'Ausente',
+      label: 'Cenário e Plano de Evolução',
+      ok: Boolean(
+        readiness.evolutionPlanId || readiness.evolutionScenarioReadiness?.ready_to_ratify,
+      ),
+      value: readiness.evolutionPlanId
+        ? 'Plano já institucionalizado'
+        : readiness.evolutionScenarioId
+          ? `${readiness.evolutionScenarioReadiness?.cycle_count ?? 0} ciclo(s) · ${
+              readiness.evolutionScenarioReadiness?.temporalization_complete
+                ? 'pronto para ratificação'
+                : 'temporalização pendente'
+            }`
+          : 'Cenário ainda não estruturado',
     },
     {
       label: 'Readiness sem bloqueadores',
@@ -174,7 +201,7 @@ export function Pem02GatePanel({ organizationId, projectId }: Props) {
           <small>PEM-02.GATE</small>
           <h3>Ratificação da Macrofase 2</h3>
           <p>
-            Esta decisão agrega o fechamento institucional da Formulação Estratégica.
+            Esta decisão ratifica a Formulação Estratégica e institucionaliza o Plano de Evolução para o Horizonte corrente.
             Ela não substitui as validações anteriores e só pode aprovar o Gate quando
             todos os pré-requisitos canônicos estiverem atendidos.
           </p>
