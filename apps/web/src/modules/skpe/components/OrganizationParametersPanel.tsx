@@ -305,7 +305,7 @@ export function OrganizationParametersPanel({ organizationId = null, canManage, 
           {renderParameter('SKPE.JOURNEY.PEM02.04_DURATION','PEM-02.04 · Objetivos Estratégicos','Cadência default da fase.')}
           {renderParameter('SKPE.JOURNEY.PEM02.05_DURATION','PEM-02.05 · Modelo Estratégico Futuro','Cadência default da fase.')}
           <div className="skpe-organization-parameter-copy"><strong>PEM-03 · Fases</strong><span>O total da Megafase é derivado das fases abaixo; o Gate não consome duração própria.</span></div>
-          {renderParameter('SKPE.JOURNEY.PEM03.01_DURATION','PEM-03.01 · Mapa Estratégico','Cadência default da fase.')}
+          {renderParameter('SKPE.JOURNEY.PEM03.01_DURATION','PEM-03.01 · Desdobramento em OKRs','Cadência default da fase.')}
           {renderParameter('SKPE.JOURNEY.PEM03.02_DURATION','PEM-03.02 · Indicadores e Metas','Cadência default da fase.')}
           {renderParameter('SKPE.JOURNEY.PEM03.03_DURATION','PEM-03.03 · Iniciativas e Projetos Estratégicos','Cadência default da fase.')}
           {renderParameter('SKPE.JOURNEY.PEM03.04_DURATION','PEM-03.04 · Responsabilidades e Governança da Execução','Cadência default da fase.')}

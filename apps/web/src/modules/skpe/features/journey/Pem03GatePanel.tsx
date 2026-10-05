@@ -112,7 +112,7 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
       (outcome === 'approved' || outcome === 'approved_with_reservations') &&
       !readiness?.readyForClosure
     ) {
-      setMessage('O PEM-03.GATE ainda possui pendências bloqueantes.')
+      setMessage('A Macrofase 3 ainda possui pendências que impedem a decisão institucional.')
       return
     }
 
@@ -136,20 +136,15 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
       return
     }
 
-    const result = (data ?? {}) as {
-      gateDecisionId?: string
-      decisionOutcome?: string
-      status?: string
-      validationStatus?: string
+    void data
+
+    const outcomeLabel: Record<DecisionOutcome, string> = {
+      approved: 'Aprovada',
+      approved_with_reservations: 'Aprovada com ressalvas',
+      returned_for_adjustment: 'Devolvida para ajustes',
     }
 
-    setMessage(
-      'Decisão institucional registrada (' +
-        (result.gateDecisionId ?? 'sem identificador') +
-        '): ' +
-        (result.decisionOutcome ?? outcome) +
-        '.',
-    )
+    setMessage(`Decisão institucional registrada: ${outcomeLabel[outcome]}.`)
     setReason('')
     setReservations('')
     setAdjustments('')
@@ -161,7 +156,7 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
 
   const prerequisites = [
     {
-      label: 'Macrofase PEM-03 concluída',
+      label: 'Macrofase 3 concluída',
       ok:
         readiness.pem03Status === 'completed' &&
         readiness.pem03Progress === 100,
@@ -172,28 +167,28 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
         '%',
     },
     {
-      label: 'PEM-03.01 · OKRs',
+      label: 'OKRs e Resultados-Chave',
       ok: Boolean(readiness.okrReadiness?.readyForValidation),
       value: readiness.okrReadiness?.readyForValidation
         ? 'Pronto'
         : 'Pendente',
     },
     {
-      label: 'PEM-03.02 · Indicadores e Metas',
+      label: 'Indicadores e Metas',
       ok: Boolean(readiness.indicatorsReadiness?.readyForFormulation),
       value: readiness.indicatorsReadiness?.readyForFormulation
         ? 'Validado'
         : 'Pendente',
     },
     {
-      label: 'PEM-03.03 · Iniciativas',
+      label: 'Iniciativas e Projetos Estratégicos',
       ok: Boolean(readiness.initiativesReadiness?.readyForFormulation),
       value: readiness.initiativesReadiness?.readyForFormulation
         ? 'Validado'
         : 'Pendente',
     },
     {
-      label: 'PEM-03.04 · Governança',
+      label: 'Responsabilidades e Governança da Execução',
       ok: Boolean(readiness.governanceReadiness?.readyForFormulation),
       value: readiness.governanceReadiness?.readyForFormulation
         ? 'Validado'
@@ -205,10 +200,10 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
     <section className="skpe-pem03-gate-panel">
       <header>
         <div>
-          <small>PEM-03.GATE</small>
+          <small>Ponto de validação</small>
           <h3>Ratificação da Macrofase 3</h3>
           <p>
-            Este Gate ratifica o Desdobramento Estratégico. A decisão não cria
+            Este ponto de validação confirma o Desdobramento Estratégico antes da implementação. A decisão não cria
             OKRs, indicadores, metas, iniciativas ou regras de governança; ela
             apenas registra o aceite executivo depois que todos os contratos
             canônicos de prontidão estiverem atendidos.
@@ -237,7 +232,7 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
               <li key={(issue.code ?? 'issue') + ':' + index}>
                 {issue.message ??
                   issue.code ??
-                  'Pendência identificada pelo backend.'}
+                  'Pendência identificada pela solução.'}
               </li>
             ))}
           </ul>
@@ -311,7 +306,7 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
         </div>
       ) : (
         <p className="skpe-pem03-gate-readonly">
-          Você pode acompanhar a prontidão, mas não possui permissão para ratificar este Gate.
+          Você pode acompanhar a prontidão, mas não possui permissão para registrar esta decisão institucional.
         </p>
       )}
 

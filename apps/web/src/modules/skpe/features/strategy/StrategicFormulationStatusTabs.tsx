@@ -54,9 +54,9 @@ function deriveStatus(
 }
 
 function labelFor(status: TabStatus) {
-  if (status === 'completed') return 'ConcluÃ­do'
+  if (status === 'completed') return 'Concluído'
   if (status === 'in_progress') return 'Em andamento'
-  return 'Ainda nÃ£o iniciado'
+  return 'Ainda não iniciado'
 }
 
 export function StrategicFormulationStatusTabs({
@@ -316,7 +316,7 @@ export function StrategicFormulationStatusTabs({
 
   return (
     <WorkspaceTabs
-      ariaLabel="Etapas da FormulaÃ§Ã£o EstratÃ©gica"
+      ariaLabel="Etapas da Formulação Estratégica"
       activeId={activeId}
       onChange={onChange}
       tabs={tabs}

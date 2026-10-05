@@ -400,6 +400,8 @@ type JourneySectionProps = {
   canManageJourney: boolean
   canGenerateDeliverables: boolean
   onGenerateDeliverables: (item: JourneyRow) => void
+  canOpenWorkArea: boolean
+  onOpenWorkArea: (item: JourneyRow) => void
 }
 
 export function JourneySection({
@@ -419,6 +421,8 @@ export function JourneySection({
   canManageJourney,
   canGenerateDeliverables,
   onGenerateDeliverables,
+  canOpenWorkArea,
+  onOpenWorkArea,
 }: JourneySectionProps) {
   const workspace = useSkpeWorkspace()
   const [rows, setRows] = useState<JourneyTemporalRow[]>([])
@@ -901,6 +905,18 @@ export function JourneySection({
                     Reabrir
                   </button>
                 )}
+
+                {canOpenWorkArea &&
+                  ['macrophase', 'phase'].includes(item.item_type) &&
+                  ['in_progress', 'completed'].includes(item.item_status) &&
+                  /^PEM-0[345]/.test(item.item_code) && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenWorkArea(item)}
+                    >
+                      Abrir área de trabalho
+                    </button>
+                  )}
 
                 {canGenerateDeliverables &&
                   ['macrophase', 'phase', 'activity', 'deliverable'].includes(item.item_type) &&

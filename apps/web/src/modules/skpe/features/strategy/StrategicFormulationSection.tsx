@@ -61,8 +61,15 @@ export function StrategicFormulationSection({
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
+    const requestedTab = sessionStorage.getItem('skpe:formulation:target-tab') as FormulationTab | null
+    if (requestedTab && ['overview','pmvv','positioning','architecture','performance','indicators','initiatives','plan'].includes(requestedTab)) {
+      setActiveTab(requestedTab)
+      sessionStorage.removeItem('skpe:formulation:target-tab')
+      sessionStorage.removeItem('skpe:formulation:target-stage')
+      return
+    }
     setActiveTab(initialTab)
-  }, [initialTab])
+  }, [initialTab, projectId])
 
   useEffect(() => {
     let active = true

@@ -112,7 +112,7 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
       (outcome === 'approved' || outcome === 'approved_with_reservations') &&
       !readiness?.readyForClosure
     ) {
-      setMessage('O PEM-04.GATE ainda possui pendências bloqueantes.')
+      setMessage('A Macrofase 4 ainda possui pendências que impedem a decisão institucional.')
       return
     }
 
@@ -136,20 +136,15 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
       return
     }
 
-    const result = (data ?? {}) as {
-      gateDecisionId?: string
-      decisionOutcome?: string
-      status?: string
-      validationStatus?: string
+    void data
+
+    const outcomeLabel: Record<DecisionOutcome, string> = {
+      approved: 'Aprovada',
+      approved_with_reservations: 'Aprovada com ressalvas',
+      returned_for_adjustment: 'Devolvida para ajustes',
     }
 
-    setMessage(
-      'Decisão institucional registrada (' +
-        (result.gateDecisionId ?? 'sem identificador') +
-        '): ' +
-        (result.decisionOutcome ?? outcome) +
-        '.',
-    )
+    setMessage(`Decisão institucional registrada: ${outcomeLabel[outcome]}.`)
     setReason('')
     setReservations('')
     setAdjustments('')
@@ -161,7 +156,7 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
 
   const prerequisites = [
     {
-      label: 'Macrofase PEM-04 concluída',
+      label: 'Macrofase 4 concluída',
       ok:
         readiness.pem04Status === 'completed' &&
         readiness.pem04Progress === 100,
@@ -172,28 +167,28 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
         '%',
     },
     {
-      label: 'PEM-04.01 · Ativação',
+      label: 'Ativação do Plano de Implementação',
       ok: Boolean(readiness.activationReadiness?.readyForCompletion),
       value: readiness.activationReadiness?.readyForCompletion
         ? 'Pronto'
         : 'Pendente',
     },
     {
-      label: 'PEM-04.02 · Comunicação',
+      label: 'Comunicação e Mobilização',
       ok: Boolean(readiness.communicationReadiness?.readyForCompletion),
       value: readiness.communicationReadiness?.readyForCompletion
         ? 'Validado'
         : 'Pendente',
     },
     {
-      label: 'PEM-04.03 · Capacidades e Mudança',
+      label: 'Capacidades e Gestão da Mudança',
       ok: Boolean(readiness.changeReadiness?.readyForCompletion),
       value: readiness.changeReadiness?.readyForCompletion
         ? 'Validado'
         : 'Pendente',
     },
     {
-      label: 'PEM-04.04 · Riscos',
+      label: 'Gestão de Riscos da Implementação',
       ok: Boolean(readiness.riskReadiness?.readyForCompletion),
       value: readiness.riskReadiness?.readyForCompletion
         ? 'Pronto'
@@ -205,13 +200,13 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
     <section className="skpe-pem04-gate-panel">
       <header>
         <div>
-          <small>PEM-04.GATE</small>
+          <small>Ponto de validação</small>
           <h3>Ratificação da Macrofase 4</h3>
           <p>
-            Este Gate ratifica a Implementação e Mobilização preparada pela
+            Este ponto de validação confirma a Implementação e Mobilização preparada pela
             organização. Ele não inicia ações, envia comunicações, cria
             capacidades ou altera riscos; apenas registra o aceite executivo
-            depois que todos os contratos canônicos de prontidão estiverem atendidos.
+            depois que todas as etapas e condições necessárias estiverem atendidas.
           </p>
         </div>
         <span className={readiness.readyForClosure ? 'is-ready' : 'is-blocked'}>
@@ -237,7 +232,7 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
               <li key={(issue.code ?? 'issue') + ':' + index}>
                 {issue.message ??
                   issue.code ??
-                  'Pendência identificada pelo backend.'}
+                  'Pendência identificada pela solução.'}
               </li>
             ))}
           </ul>
@@ -311,7 +306,7 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
         </div>
       ) : (
         <p className="skpe-pem04-gate-readonly">
-          Você pode acompanhar a prontidão, mas não possui permissão para ratificar este Gate.
+          Você pode acompanhar a prontidão, mas não possui permissão para registrar esta decisão institucional.
         </p>
       )}
 

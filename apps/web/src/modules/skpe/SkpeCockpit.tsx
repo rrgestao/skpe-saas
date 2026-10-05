@@ -9430,6 +9430,33 @@ case 'monitoring':
               capabilities?.can_generate_delivery_kit ??
               canViewArtifacts
             }
+            canOpenWorkArea={canViewJourney}
+            onOpenWorkArea={(item) => {
+              const code = item.item_code
+              if (code.startsWith('PEM-05')) {
+                sessionStorage.setItem('skpe:monitoring:target-stage', code)
+                navigateToSection('monitoring')
+                return
+              }
+
+              const formulationTab =
+                code === 'PEM-03.01'
+                  ? 'performance'
+                  : code === 'PEM-03.02'
+                    ? 'indicators'
+                    : code === 'PEM-03.03' || code === 'PEM-04.01'
+                      ? 'initiatives'
+                      : code === 'PEM-03.04' ||
+                          code === 'PEM-04.02' ||
+                          code === 'PEM-04.03' ||
+                          code === 'PEM-04.04'
+                        ? 'plan'
+                        : 'overview'
+
+              sessionStorage.setItem('skpe:formulation:target-tab', formulationTab)
+              sessionStorage.setItem('skpe:formulation:target-stage', code)
+              navigateToSection('formulations')
+            }}
             onGenerateDeliverables={(item) => {
               void (async () => {
                 const { error } = await supabase.rpc(

@@ -290,6 +290,19 @@ export function MonitoringSection({
   const [strategicError, setStrategicError] = useState('')
   const [strategicReloadToken, setStrategicReloadToken] = useState(0)
   const [eligibleMonitoringOwners, setEligibleMonitoringOwners] = useState<EligibleMonitoringOwner[]>([])
+
+  useEffect(() => {
+    const requestedStage = sessionStorage.getItem('skpe:monitoring:target-stage')
+    if (!requestedStage) return
+
+    const timer = window.setTimeout(() => {
+      const anchor = document.getElementById(`skpe-monitoring-${requestedStage.toLowerCase().replace(/\./g, '-')}`)
+      anchor?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      sessionStorage.removeItem('skpe:monitoring:target-stage')
+    }, 150)
+
+    return () => window.clearTimeout(timer)
+  }, [projectId])
   const [monitoringPackageDraft, setMonitoringPackageDraft] = useState<MonitoringPackageDraft>(() => createInitialMonitoringPackageDraft())
   const [monitoringPackageSaving, setMonitoringPackageSaving] = useState(false)
   const [monitoringPackageMessage, setMonitoringPackageMessage] = useState('')
@@ -836,23 +849,31 @@ export function MonitoringSection({
         </div>
       )}
 
-      <MonitoringOperationReadinessPanel
-        formulationId={formulationId}
-        refreshToken={strategicReloadToken}
-      />
-      <MonitoringCriticalReviewReadinessPanel
-        formulationId={formulationId}
-        refreshToken={strategicReloadToken}
-      />
-      <MonitoringLearningReadinessPanel
-        formulationId={formulationId}
-        refreshToken={strategicReloadToken}
-      />
-      <MonitoringStrategyUpdateReadinessPanel
-        organizationId={organizationId}
-        formulationId={formulationId}
-        refreshToken={strategicReloadToken}
-      />
+      <div id="skpe-monitoring-pem-05-01">
+        <MonitoringOperationReadinessPanel
+          formulationId={formulationId}
+          refreshToken={strategicReloadToken}
+        />
+      </div>
+      <div id="skpe-monitoring-pem-05-02">
+        <MonitoringCriticalReviewReadinessPanel
+          formulationId={formulationId}
+          refreshToken={strategicReloadToken}
+        />
+      </div>
+      <div id="skpe-monitoring-pem-05-03">
+        <MonitoringLearningReadinessPanel
+          formulationId={formulationId}
+          refreshToken={strategicReloadToken}
+        />
+      </div>
+      <div id="skpe-monitoring-pem-05-04">
+        <MonitoringStrategyUpdateReadinessPanel
+          organizationId={organizationId}
+          formulationId={formulationId}
+          refreshToken={strategicReloadToken}
+        />
+      </div>
 
       {strategicLoading && <div className="skpe-monitoring-state">Verificando prontidão do desempenho estratégico...</div>}
       {!strategicLoading && strategicError && <div className="skpe-monitoring-state is-error" role="alert">{strategicError}</div>}
