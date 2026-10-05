@@ -79,7 +79,7 @@ export function MonitoringCriticalReviewReadinessPanel({
     <article className="skpe-critical-review-readiness">
       <header>
         <div>
-          <span>PEM-05.02 · Análise Crítica de Desempenho</span>
+          <span>Análise Crítica de Desempenho</span>
           <h2>Prontidão da RAE e das decisões</h2>
           <p>
             Esta etapa reutiliza a RAE do FE-08. Ela exige análise substantiva,
@@ -133,7 +133,7 @@ export function MonitoringCriticalReviewReadinessPanel({
               {readiness.issues?.map((issue, index) => (
                 <div key={(issue.code ?? 'issue') + ':' + index}>
                   <b>{issue.code ?? 'PENDÊNCIA'}</b>
-                  <span>{issue.message ?? 'Pendência identificada pelo backend.'}</span>
+                  <span>{issue.message ?? 'Pendência identificada pela solução.'}</span>
                   {typeof issue.affectedCount === 'number' ? (
                     <small>{issue.affectedCount} item(ns)</small>
                   ) : null}

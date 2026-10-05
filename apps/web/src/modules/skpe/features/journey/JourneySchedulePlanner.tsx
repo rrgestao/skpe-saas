@@ -676,15 +676,14 @@ export function JourneySchedulePlanner({
           <h2>Linha de Base da Jornada</h2>
           <p>
             A aplicação sugere as datas em dias úteis a partir da janela própria da Jornada.
-            Revise as folhas antes da validação; fases, etapas e MEGAFASES são
-            consolidadas pelo backend a partir dos filhos ativos.
+            Revise as atividades e entregas antes da validação; fases, etapas e MEGAFASES são consolidadas automaticamente a partir dos itens ativos.
           </p>
         </div>
 
         <div className="skpe-schedule-planner-rules">
-          <span><strong>90 dias úteis</strong> implantação padrão</span>
-          <span><strong>45 dias úteis</strong> meta acelerada</span>
-          <span><strong>+90 dias úteis</strong> acompanhamento pós-entrega</span>
+          <span><strong>45 dias úteis</strong> referência usual de entrega</span>
+          <span><strong>até 90 dias úteis</strong> entrega ampliada conforme escopo</span>
+          <span><strong>até +90 dias úteis</strong> acompanhamento após a entrega</span>
         </div>
       </header>
 

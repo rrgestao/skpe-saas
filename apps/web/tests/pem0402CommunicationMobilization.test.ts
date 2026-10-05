@@ -10,6 +10,10 @@ const section = readFileSync(
   new URL('../src/modules/skpe/features/strategy/StrategicCommunicationMobilizationReadinessSection.tsx', import.meta.url),
   'utf8',
 )
+const workspace = readFileSync(
+  new URL('../src/modules/skpe/features/strategy/StrategicCommunicationMobilizationWorkspace.tsx', import.meta.url),
+  'utf8',
+)
 const cockpit = readFileSync(
   new URL('../src/modules/skpe/SkpeCockpit.tsx', import.meta.url),
   'utf8',
@@ -42,11 +46,16 @@ test('PEM-04.02 completion is fail-closed and never sends communication', () => 
   assert.doesNotMatch(migration, /send_email|send_message|smtp|twilio/i)
 })
 
-test('PEM-04.02 UI exposes readiness and opens the plan workspace', () => {
-  assert.match(section, /PEM-04\.02 · Comunicação e Mobilização/)
+test('PEM-04.02 UI exposes readiness and full proposal/review/validation workflow', () => {
+  assert.match(section, /Comunicação e Mobilização/)
   assert.match(section, /get_skpe_pem0402_communication_readiness/)
   assert.match(section, /não\s+dispara mensagens automaticamente/)
   assert.match(section, /Validação humana obrigatória/)
   assert.match(section, /Bloqueadores/)
+  assert.doesNotMatch(section, /<p className="skpe-eyebrow">PEM-04\.02/)
+  assert.match(workspace, /ensure_skpe_pem0402_communication_package/)
+  assert.match(workspace, /upsert_skpe_pem0402_communication_item/)
+  assert.match(workspace, /transition_skpe_pem0402_communication_package/)
+  assert.match(workspace, /Nenhuma mensagem é enviada automaticamente/)
   assert.match(cockpit, /current_stage_code === 'PEM-04\.02'[\s\S]*'plan'/)
 })

@@ -112,14 +112,14 @@ export function StrategicIndicatorsReadinessSection({ formulationId }: Props) {
     <section className="skpe-indicator-readiness">
       <header>
         <div>
-          <small>PEM-03.02 · Indicadores e Metas</small>
+          <small>Indicadores e Metas</small>
           <h3>
             {readiness.readyForValidation
               ? 'Conteúdo pronto para validação do pacote'
               : 'Indicadores e metas ainda possuem pendências'}
           </h3>
           <p>
-            Este painel usa o readiness canônico da Formulação. Ele exige fonte,
+            Esta etapa verifica a qualidade da Formulação. Cada indicador deve possuir fonte,
             fórmula, método de cálculo, unidade, polaridade, frequência, baseline
             e meta coerente. Benchmark permanece recomendação quando aplicável;
             não é tratado como evidência própria da cooperativa.
@@ -194,7 +194,7 @@ export function StrategicIndicatorsReadinessSection({ formulationId }: Props) {
 
       <footer>
         <span>
-          Readiness para validação: <b>{readiness.readyForValidation ? 'sim' : 'não'}</b>
+          Prontidão para validação: <b>{readiness.readyForValidation ? 'sim' : 'não'}</b>
         </span>
         <span>
           Pacote validado: <b>{readiness.validated ? 'sim' : 'não'}</b>

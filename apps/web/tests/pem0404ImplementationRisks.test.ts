@@ -10,6 +10,14 @@ const section = readFileSync(
   new URL('../src/modules/skpe/features/strategy/StrategicImplementationRiskReadinessSection.tsx', import.meta.url),
   'utf8',
 )
+const workspace = readFileSync(
+  new URL('../src/modules/skpe/features/strategy/StrategicImplementationRiskWorkspace.tsx', import.meta.url),
+  'utf8',
+)
+const validationMigration = readFileSync(
+  new URL('../../../supabase/migrations/20261005121000_govern_implementation_risk_human_validation.sql', import.meta.url),
+  'utf8',
+)
 const cockpit = readFileSync(
   new URL('../src/modules/skpe/SkpeCockpit.tsx', import.meta.url),
   'utf8',
@@ -40,11 +48,16 @@ test('PEM-04.04 completion is fail-closed without mutating risks', () => {
   assert.doesNotMatch(migration, /insert into public\.skpe_initiative_risks/i)
 })
 
-test('PEM-04.04 UI exposes risk readiness and opens plan workspace', () => {
-  assert.match(section, /PEM-04\.04 · Gestão de Riscos da Implementação/)
+test('PEM-04.04 UI exposes risk readiness and governed human-validation workflow', () => {
+  assert.match(section, /Gestão de Riscos da Implementação/)
   assert.match(section, /get_skpe_pem0404_implementation_risk_readiness/)
-  assert.match(section, /não replica riscos/)
-  assert.match(section, /Nenhum risco é duplicado/)
+  assert.match(section, /não recria riscos/)
+  assert.match(section, /Nenhum risco é criado, aceito ou mitigado automaticamente/)
   assert.match(section, /Bloqueadores/)
+  assert.doesNotMatch(section, /<p className="skpe-eyebrow">PEM-04\.04/)
+  assert.match(workspace, /upsert_skpe_initiative_risk/)
+  assert.match(workspace, /transition_skpe_initiative_risk_validation/)
+  assert.match(validationMigration, /human validation workflow for implementation risks/i)
+  assert.match(validationMigration, /automaticRiskAcceptance',false/)
   assert.match(cockpit, /current_stage_code === 'PEM-04\.04'[\s\S]*'plan'/)
 })

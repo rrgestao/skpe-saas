@@ -10,6 +10,10 @@ const section = readFileSync(
   new URL('../src/modules/skpe/features/strategy/StrategicCapabilitiesChangeReadinessSection.tsx', import.meta.url),
   'utf8',
 )
+const workspace = readFileSync(
+  new URL('../src/modules/skpe/features/strategy/StrategicCapabilitiesChangeWorkspace.tsx', import.meta.url),
+  'utf8',
+)
 const cockpit = readFileSync(
   new URL('../src/modules/skpe/SkpeCockpit.tsx', import.meta.url),
   'utf8',
@@ -38,11 +42,15 @@ test('PEM-04.03 requires treatment ownership, deadline and human validation', ()
   assert.match(migration, /skpe_guard_pem0403_completion/)
 })
 
-test('PEM-04.03 UI exposes canonical capacity authority and opens plan workspace', () => {
-  assert.match(section, /PEM-04\.03 · Capacidades e Gestão da Mudança/)
+test('PEM-04.03 UI exposes canonical capacity authority and full proposal/review/validation workflow', () => {
+  assert.match(section, /Capacidades e Gestão da Mudança/)
   assert.match(section, /get_skpe_pem0403_change_readiness/)
-  assert.match(section, /não a\s+duplica/)
-  assert.match(section, /sparks_person_capacity_periods\/allocations/)
+  assert.match(section, /não duplica esse controle/)
   assert.match(section, /Bloqueadores/)
+  assert.doesNotMatch(section, /<p className="skpe-eyebrow">PEM-04\.03/)
+  assert.match(workspace, /configure_skpe_pem0403_change_package/)
+  assert.match(workspace, /upsert_skpe_pem0403_change_item/)
+  assert.match(workspace, /transition_skpe_pem0403_change_package/)
+  assert.match(workspace, /humanValidationRequired: true/)
   assert.match(cockpit, /current_stage_code === 'PEM-04\.03'[\s\S]*'plan'/)
 })

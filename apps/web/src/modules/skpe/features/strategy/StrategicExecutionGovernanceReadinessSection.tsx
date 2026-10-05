@@ -98,13 +98,12 @@ export function StrategicExecutionGovernanceReadinessSection({
   return (
     <section className="skpe-execution-governance-readiness">
       <header>
-        <p className="skpe-eyebrow">PEM-03.04 · Responsabilidades e Governança da Execução</p>
+        <p className="skpe-eyebrow">Responsabilidades e Governança da Execução</p>
         <h3>Prontidão da governança de execução</h3>
         <p>
           Esta etapa define quem acompanha a estratégia, quem governa os ciclos
-          de revisão e qual a cadência de monitoramento. O painel lê o contrato
-          canônico do pacote FE-08 e não cria responsáveis, fóruns ou decisões
-          automaticamente.
+          de revisão e qual a cadência de monitoramento. A solução verifica as regras
+          de governança já definidas e não cria responsáveis, fóruns ou decisões automaticamente.
         </p>
       </header>
 

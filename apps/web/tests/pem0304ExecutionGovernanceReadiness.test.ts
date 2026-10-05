@@ -10,6 +10,10 @@ const section = readFileSync(
   new URL('../src/modules/skpe/features/strategy/StrategicExecutionGovernanceReadinessSection.tsx', import.meta.url),
   'utf8',
 )
+const workspace = readFileSync(
+  new URL('../src/modules/skpe/features/strategy/StrategicExecutionGovernanceWorkspace.tsx', import.meta.url),
+  'utf8',
+)
 
 test('PEM-03.04 completion reuses canonical monitoring package readiness', () => {
   assert.match(migration, /get_skpe_monitoring_package_readiness/)
@@ -20,14 +24,19 @@ test('PEM-03.04 completion reuses canonical monitoring package readiness', () =>
   assert.doesNotMatch(migration, /insert into public\.skpe_strategy_reviews/i)
 })
 
-test('execution governance UI exposes canonical FE-08 readiness', () => {
-  assert.match(section, /PEM-03\.04 · Responsabilidades e Governança da Execução/)
+test('execution governance UI exposes canonical FE-08 readiness and full configuration workflow', () => {
+  assert.match(section, /Responsabilidades e Governança da Execução/)
   assert.match(section, /get_skpe_monitoring_package_readiness/)
   assert.match(section, /Cadência de monitoramento/)
   assert.match(section, /Cadência de revisão/)
   assert.match(section, /Responsável pelo monitoramento/)
   assert.match(section, /Responsável pela governança \/ RAE/)
   assert.match(section, /não cria responsáveis, fóruns ou decisões/)
+  assert.doesNotMatch(section, /<p className="skpe-eyebrow">PEM-03\.04/)
+  assert.match(workspace, /configure_skpe_monitoring_package/)
+  assert.match(workspace, /transition_skpe_monitoring_package/)
+  assert.match(workspace, /MonitoringPackageConfigurationPanel/)
+  assert.match(workspace, /MonitoringPackageWorkflowPanel/)
 })
 
 test('execution governance UI separates blockers from recommendations', () => {

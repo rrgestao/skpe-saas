@@ -15,7 +15,8 @@ test('future Journey wording aligns PEM-03.01 to OKR deployment rather than rebu
   assert.match(migration, /'PEM-03\.01','Desdobramento em OKRs'/)
   assert.match(migration, /Objetivos de OKR qualitativos e Resultados-Chave mensuráveis/)
   assert.doesNotMatch(parameters, /PEM-03\.01 · Mapa Estratégico/)
-  assert.match(parameters, /PEM-03\.01 · Desdobramento em OKRs/)
+  assert.match(parameters, /Desdobramento em OKRs/)
+  assert.doesNotMatch(parameters, /PEM-03\.01 · Desdobramento em OKRs/)
 })
 
 test('migration aligns both project Journey and methodology template without touching status', () => {

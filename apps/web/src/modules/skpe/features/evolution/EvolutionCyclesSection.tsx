@@ -415,7 +415,7 @@ export function EvolutionCyclesSection({
           <small>
             {readiness
               ? `${readiness.alignedObjectiveCount}/${readiness.objectiveCount} objetivo(s) alinhado(s)`
-              : 'Readiness não disponível.'}
+              : 'Prontidão ainda não disponível.'}
           </small>
         </article>
       </div>
@@ -838,7 +838,7 @@ export function EvolutionCyclesSection({
                       >
                         {issue.message ??
                           issue.code ??
-                          'Pendência identificada pelo backend.'}
+                          'Pendência identificada pela solução.'}
                       </li>
                     ),
                   )}
@@ -860,17 +860,13 @@ export function EvolutionCyclesSection({
           </>
         ) : (
           <div className="skpe-evolution-empty">
-            Readiness ainda não disponível.
+            Prontidão ainda não disponível.
           </div>
         )}
       </article>
 
       <footer className="skpe-evolution-footer-note">
-        Esta visualização não materializa
-        alinhamentos institucionais e não
-        executa o PEM-02.GATE. A fonte de
-        verdade para prontidão permanece no
-        backend governado do SK-PE.
+        Esta visualização não materializa alinhamentos institucionais e não registra a decisão do ponto de validação da Macrofase 2. A fonte de verdade para a prontidão permanece nos registros governados do Planejamento Estratégico.
       </footer>
     </section>
   )

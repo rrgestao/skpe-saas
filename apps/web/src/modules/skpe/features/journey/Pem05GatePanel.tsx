@@ -161,10 +161,9 @@ export function Pem05GatePanel({ organizationId, projectId }: Props) {
         readiness.pem05Status === 'completed' &&
         readiness.pem05Progress === 100,
       value:
-        (readiness.pem05Status ?? '—') +
-        ' · ' +
-        (readiness.pem05Progress ?? 0) +
-        '%',
+        readiness.pem05Status === 'completed'
+          ? `Concluída · ${readiness.pem05Progress ?? 100}%`
+          : `Em andamento · ${readiness.pem05Progress ?? 0}%`,
     },
     {
       label: 'Operação da Rotina de Monitoramento',

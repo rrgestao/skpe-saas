@@ -609,7 +609,7 @@ function getItemTypeLabel(itemType: JourneyTemporalRow['item_type']) {
     meta_stage: 'Metaetapa',
     activity: 'Atividade',
     deliverable: 'Entregável',
-    gate: 'Gate',
+    gate: 'Ponto de validação',
   }
 
   return labels[itemType]
@@ -621,9 +621,9 @@ function getBarTitle(
   formatDate: (value: string | null) => string,
 ) {
   const labels: Record<GanttBarKind, string> = {
-    baseline: 'Baseline original',
+    baseline: 'Linha de base original',
     plan: 'Plano institucional vigente',
-    forecast: 'Forecast operacional',
+    forecast: 'Previsão operacional',
     actual: 'Realizado',
   }
 

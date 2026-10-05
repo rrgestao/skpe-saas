@@ -10,6 +10,10 @@ const section = readFileSync(
   new URL('../src/modules/skpe/features/strategy/StrategicImplementationRiskReadinessSection.tsx', import.meta.url),
   'utf8',
 )
+const workspace = readFileSync(
+  new URL('../src/modules/skpe/features/strategy/StrategicImplementationRiskWorkspace.tsx', import.meta.url),
+  'utf8',
+)
 const cockpit = readFileSync(
   new URL('../src/modules/skpe/SkpeCockpit.tsx', import.meta.url),
   'utf8',
@@ -39,11 +43,13 @@ test('PEM-04.04 requires strategic risk mitigation readiness', () => {
   assert.match(migration, /skpe_guard_pem0404_completion/)
 })
 
-test('PEM-04.04 UI exposes risk readiness and does not duplicate risks', () => {
-  assert.match(section, /PEM-04\.04 · Gestão de Riscos da Implementação/)
+test('PEM-04.04 UI exposes risk readiness and preserves a single risk authority', () => {
+  assert.match(section, /Gestão de Riscos da Implementação/)
   assert.match(section, /get_skpe_pem0404_implementation_risk_readiness/)
   assert.match(section, /não recria riscos/)
   assert.match(section, /Nenhum risco é criado, aceito ou mitigado automaticamente/)
   assert.match(section, /Bloqueadores/)
+  assert.match(workspace, /skpe_initiative_risks/)
+  assert.match(workspace, /upsert_skpe_initiative_risk/)
   assert.match(cockpit, /current_stage_code === 'PEM-04\.04'[\s\S]*'plan'/)
 })

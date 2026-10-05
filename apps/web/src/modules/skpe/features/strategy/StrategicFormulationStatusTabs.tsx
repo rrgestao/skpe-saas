@@ -20,6 +20,7 @@ type Props = {
   projectId: string
   activeId: StrategicFormulationTab
   onChange: (id: StrategicFormulationTab) => void
+  currentStageCode?: string | null
 }
 
 type Snapshot = {
@@ -64,6 +65,7 @@ export function StrategicFormulationStatusTabs({
   projectId,
   activeId,
   onChange,
+  currentStageCode = null,
 }: Props) {
   const [snapshot, setSnapshot] = useState<Snapshot>({
     formulationStatus: null,
@@ -262,7 +264,7 @@ export function StrategicFormulationStatusTabs({
           ? 'not_started'
           : 'in_progress'
 
-    return [
+    const allTabs = [
       {
         id: 'overview' as const,
         label: 'Visão Geral',
@@ -301,18 +303,36 @@ export function StrategicFormulationStatusTabs({
       },
       {
         id: 'initiatives' as const,
-        label: 'Plano de Iniciativas',
+        label: currentStageCode === 'PEM-04.01' ? 'Ativação e Iniciativas' : 'Plano de Iniciativas',
         status: initiativeStatus,
         statusLabel: labelFor(initiativeStatus),
       },
       {
         id: 'plan' as const,
-        label: 'Plano Estratégico',
+        label: currentStageCode?.startsWith('PEM-04')
+          ? 'Implementação e Mobilização'
+          : 'Governança da Execução',
         status: planStatus,
         statusLabel: labelFor(planStatus),
       },
     ]
-  }, [snapshot])
+
+    const maxTabIndex = !currentStageCode
+      ? allTabs.length - 1
+      : currentStageCode.startsWith('PEM-05') || currentStageCode.startsWith('PEM-04')
+        ? allTabs.length - 1
+        : currentStageCode === 'PEM-03.04' || currentStageCode === 'PEM-03.GATE'
+          ? allTabs.findIndex((tab) => tab.id === 'plan')
+          : currentStageCode === 'PEM-03.03'
+            ? allTabs.findIndex((tab) => tab.id === 'initiatives')
+            : currentStageCode === 'PEM-03.02'
+              ? allTabs.findIndex((tab) => tab.id === 'indicators')
+              : currentStageCode === 'PEM-03.01'
+                ? allTabs.findIndex((tab) => tab.id === 'performance')
+                : allTabs.findIndex((tab) => tab.id === 'architecture')
+
+    return allTabs.slice(0, Math.max(maxTabIndex, 0) + 1)
+  }, [snapshot, currentStageCode])
 
   return (
     <WorkspaceTabs

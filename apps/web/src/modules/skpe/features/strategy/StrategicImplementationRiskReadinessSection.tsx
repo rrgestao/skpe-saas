@@ -80,12 +80,12 @@ export function StrategicImplementationRiskReadinessSection({
   return (
     <section className="skpe-implementation-risk-readiness">
       <header>
-        <p className="skpe-eyebrow">PEM-04.04 · Gestão de Riscos da Implementação</p>
+        <p className="skpe-eyebrow">Gestão de Riscos da Implementação</p>
         <h3>Prontidão dos riscos para execução</h3>
         <p>
           Esta etapa não recria riscos. Ela consolida os riscos das iniciativas
           selecionadas e os riscos estratégicos já validados, verificando se os
-          casos relevantes possuem owner, resposta, prazo, validação e mitigação
+          casos relevantes possuem responsável, resposta, prazo, validação e mitigação
           estruturada quando exigida.
         </p>
       </header>
@@ -137,7 +137,7 @@ export function StrategicImplementationRiskReadinessSection({
                       <span>{issue.affectedCount} item(ns)</span>
                     ) : null}
                   </div>
-                  <p>{issue.message ?? 'Pendência identificada pelo backend.'}</p>
+                  <p>{issue.message ?? 'Pendência identificada pela solução.'}</p>
                 </article>
               ))}
             </div>
@@ -145,8 +145,7 @@ export function StrategicImplementationRiskReadinessSection({
 
           <p className="skpe-implementation-risk-readiness__policy">
             Nenhum risco é criado, aceito ou mitigado automaticamente. As
-            authorities permanecem em skpe_initiative_risks e nos contratos
-            canônicos de riscos estratégicos/mitigação.
+            fontes oficiais de riscos e mitigação permanecem preservadas, sem duplicação ou alteração silenciosa.
           </p>
         </>
       ) : null}

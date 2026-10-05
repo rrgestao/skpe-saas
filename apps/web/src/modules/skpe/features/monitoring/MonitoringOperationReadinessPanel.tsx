@@ -84,7 +84,7 @@ export function MonitoringOperationReadinessPanel({
     <article className="skpe-monitoring-operation-readiness">
       <header>
         <div>
-          <span>PEM-05.01 · Operação da Rotina de Monitoramento</span>
+          <span>Operação da Rotina de Monitoramento</span>
           <h2>Prontidão do ciclo para análise crítica</h2>
           <p>
             A etapa reutiliza integralmente o FE-08. Ela comprova que um ciclo
@@ -146,7 +146,7 @@ export function MonitoringOperationReadinessPanel({
               {readiness.issues?.map((issue, index) => (
                 <div key={(issue.code ?? 'issue') + ':' + index}>
                   <b>{issue.code ?? 'PENDÊNCIA'}</b>
-                  <span>{issue.message ?? 'Pendência identificada pelo backend.'}</span>
+                  <span>{issue.message ?? 'Pendência identificada pela solução.'}</span>
                   {typeof issue.affectedCount === 'number' ? (
                     <small>{issue.affectedCount} item(ns)</small>
                   ) : null}

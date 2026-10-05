@@ -84,13 +84,12 @@ export function StrategicCapabilitiesChangeReadinessSection({
   return (
     <section className="skpe-capabilities-change-readiness">
       <header>
-        <p className="skpe-eyebrow">PEM-04.03 · Capacidades e Gestão da Mudança</p>
+        <p className="skpe-eyebrow">Capacidades e Gestão da Mudança</p>
         <h3>Prontidão das capacidades e mudanças necessárias</h3>
         <p>
           Esta etapa registra lacunas e impactos que precisam ser tratados para
           executar a estratégia. A capacidade quantitativa de pessoas continua
-          sendo controlada pela authority transversal do SPARKs; o SK-PE não a
-          duplica.
+          sendo controlada pela capacidade corporativa do SPARKs; o SK-PE não duplica esse controle.
         </p>
       </header>
 
@@ -142,15 +141,14 @@ export function StrategicCapabilitiesChangeReadinessSection({
                       <span>{issue.affectedCount} item(ns)</span>
                     ) : null}
                   </div>
-                  <p>{issue.message ?? 'Pendência identificada pelo backend.'}</p>
+                  <p>{issue.message ?? 'Pendência identificada pela solução.'}</p>
                 </article>
               ))}
             </div>
           ) : null}
 
           <p className="skpe-capabilities-change-readiness__policy">
-            Authority de capacidade: sparks_person_capacity_periods/allocations.
-            Evidências: sparks_evidence_assets. Validação humana obrigatória.
+            A capacidade de pessoas e as evidências permanecem nas fontes corporativas correspondentes. Validação humana obrigatória.
           </p>
         </>
       ) : null}

@@ -161,10 +161,9 @@ export function Pem04GatePanel({ organizationId, projectId }: Props) {
         readiness.pem04Status === 'completed' &&
         readiness.pem04Progress === 100,
       value:
-        (readiness.pem04Status ?? '—') +
-        ' · ' +
-        (readiness.pem04Progress ?? 0) +
-        '%',
+        readiness.pem04Status === 'completed'
+          ? `Concluída · ${readiness.pem04Progress ?? 100}%`
+          : `Em andamento · ${readiness.pem04Progress ?? 0}%`,
     },
     {
       label: 'Ativação do Plano de Implementação',

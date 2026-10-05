@@ -161,10 +161,9 @@ export function Pem03GatePanel({ organizationId, projectId }: Props) {
         readiness.pem03Status === 'completed' &&
         readiness.pem03Progress === 100,
       value:
-        (readiness.pem03Status ?? '—') +
-        ' · ' +
-        (readiness.pem03Progress ?? 0) +
-        '%',
+        readiness.pem03Status === 'completed'
+          ? `Concluída · ${readiness.pem03Progress ?? 100}%`
+          : `Em andamento · ${readiness.pem03Progress ?? 0}%`,
     },
     {
       label: 'OKRs e Resultados-Chave',

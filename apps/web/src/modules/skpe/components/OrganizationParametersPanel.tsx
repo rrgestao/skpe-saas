@@ -281,39 +281,39 @@ export function OrganizationParametersPanel({ organizationId = null, canManage, 
           {renderParameter('SKPE.JOURNEY.EXTENDED_DURATION', 'Prazo ampliado para entrega', 'Referência de ampliação quando a complexidade ou o escopo exigirem.')}
           {renderParameter('SKPE.JOURNEY.POST_DELIVERY_FOLLOWUP', 'Acompanhamento após a entrega', 'Período de acompanhamento da implantação do Planejamento Estratégico após a entrega.')}
           <div className="skpe-organization-parameter-copy"><strong>Regra de precedência</strong><span>Quando a Ordem de Serviço ou o contrato estabelecerem prazos, eles prevalecem sobre as referências SPARKs de 45/90/90 dias.</span></div>
-          <div className="skpe-organization-parameter-copy"><strong>Cadência da implantação</strong><span>Total efetivo atual: {implementationCadenceTotal} dias. PEM-00: {pem00PhaseTotal} · PEM-01: {pem01PhaseTotal} · PEM-02: {pem02PhaseTotal} · PEM-03: {pem03PhaseTotal} · PEM-04: {pem04PhaseTotal}.</span></div>
-          <div className="skpe-organization-parameter-copy"><strong>PEM-00 · Fases</strong><span>O total da Megafase é derivado das fases abaixo; o Gate não consome duração própria.</span></div>
-          {renderParameter('SKPE.JOURNEY.PEM00.01_DURATION','PEM-00.01 · Abertura, Mandato e Escopo','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM00.02_DURATION','PEM-00.02 · Governança, Papéis e Ritos','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM00.03_DURATION','PEM-00.03 · Caracterização da Organização','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM00.04_DURATION','PEM-00.04 · Checklist Dinâmico','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM00.05_DURATION','PEM-00.05 · Gestão de Evidências','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM00.06_DURATION','PEM-00.06 · Autoavaliações e Diagnósticos','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM00.07_DURATION','PEM-00.07 · Planos de Ação e Follow-up','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM00.08_DURATION','PEM-00.08 · Lacunas, Pendências e Prontidão','Cadência default da fase.')}
-          <div className="skpe-organization-parameter-copy"><strong>PEM-01 · Fases</strong><span>O total da Megafase é derivado das fases abaixo; o Gate não consome duração própria.</span></div>
-          {renderParameter('SKPE.JOURNEY.PEM01.01_DURATION','PEM-01.01 · Consolidação da Base Diagnóstica','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM01.02_DURATION','PEM-01.02 · Avaliações, Diagnósticos e Planos Anteriores','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM01.03_DURATION','PEM-01.03 · Contexto e PESTEL','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM01.04_DURATION','PEM-01.04 · Partes Interessadas, Mercado e Posicionamento','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM01.05_DURATION','PEM-01.05 · SWOT e TOWS','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM01.06_DURATION','PEM-01.06 · Riscos, Lacunas e Temas Críticos','Cadência default da fase.')}
-          <div className="skpe-organization-parameter-copy"><strong>PEM-02 · Fases</strong><span>O total da Megafase é derivado das fases abaixo; o Gate não consome duração própria.</span></div>
-          {renderParameter('SKPE.JOURNEY.PEM02.01_DURATION','PEM-02.01 · Abertura da Formulação Estratégica','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM02.02_DURATION','PEM-02.02 · Direcionadores Estratégicos','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM02.03_DURATION','PEM-02.03 · Escolhas e Posicionamento Estratégico','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM02.04_DURATION','PEM-02.04 · Objetivos Estratégicos','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM02.05_DURATION','PEM-02.05 · Modelo Estratégico Futuro','Cadência default da fase.')}
-          <div className="skpe-organization-parameter-copy"><strong>PEM-03 · Fases</strong><span>O total da Megafase é derivado das fases abaixo; o Gate não consome duração própria.</span></div>
-          {renderParameter('SKPE.JOURNEY.PEM03.01_DURATION','PEM-03.01 · Desdobramento em OKRs','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM03.02_DURATION','PEM-03.02 · Indicadores e Metas','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM03.03_DURATION','PEM-03.03 · Iniciativas e Projetos Estratégicos','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM03.04_DURATION','PEM-03.04 · Responsabilidades e Governança da Execução','Cadência default da fase.')}
-          <div className="skpe-organization-parameter-copy"><strong>PEM-04 · Fases</strong><span>O total da Megafase é derivado das fases abaixo; o Gate não consome duração própria.</span></div>
-          {renderParameter('SKPE.JOURNEY.PEM04.01_DURATION','PEM-04.01 · Plano de Implementação','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM04.02_DURATION','PEM-04.02 · Comunicação e Mobilização','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM04.03_DURATION','PEM-04.03 · Capacidades e Gestão da Mudança','Cadência default da fase.')}
-          {renderParameter('SKPE.JOURNEY.PEM04.04_DURATION','PEM-04.04 · Gestão de Riscos da Implementação','Cadência default da fase.')}
+          <div className="skpe-organization-parameter-copy"><strong>Cadência da implantação</strong><span>Total efetivo atual: {implementationCadenceTotal} dias. Preparação: {pem00PhaseTotal} · Diagnóstico: {pem01PhaseTotal} · Formulação: {pem02PhaseTotal} · Desdobramento: {pem03PhaseTotal} · Implementação: {pem04PhaseTotal}.</span></div>
+          <div className="skpe-organization-parameter-copy"><strong>Preparação e Enquadramento · Etapas</strong><span>O total da Macrofase é derivado das etapas abaixo; o ponto de validação não consome duração própria.</span></div>
+          {renderParameter('SKPE.JOURNEY.PEM00.01_DURATION','Abertura, Mandato e Escopo','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM00.02_DURATION','Governança, Papéis e Ritos','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM00.03_DURATION','Caracterização da Organização','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM00.04_DURATION','Checklist Dinâmico','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM00.05_DURATION','Gestão de Evidências','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM00.06_DURATION','Autoavaliações e Diagnósticos','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM00.07_DURATION','Planos de Ação e Acompanhamento','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM00.08_DURATION','Lacunas, Pendências e Prontidão','Cadência de referência desta etapa.')}
+          <div className="skpe-organization-parameter-copy"><strong>Diagnóstico Estratégico · Etapas</strong><span>O total da Macrofase é derivado das etapas abaixo; o ponto de validação não consome duração própria.</span></div>
+          {renderParameter('SKPE.JOURNEY.PEM01.01_DURATION','Consolidação da Base Diagnóstica','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM01.02_DURATION','Avaliações, Diagnósticos e Planos Anteriores','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM01.03_DURATION','Contexto e PESTEL','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM01.04_DURATION','Partes Interessadas, Mercado e Posicionamento','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM01.05_DURATION','SWOT e TOWS','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM01.06_DURATION','Riscos, Lacunas e Temas Críticos','Cadência de referência desta etapa.')}
+          <div className="skpe-organization-parameter-copy"><strong>Formulação Estratégica · Etapas</strong><span>O total da Macrofase é derivado das etapas abaixo; o ponto de validação não consome duração própria.</span></div>
+          {renderParameter('SKPE.JOURNEY.PEM02.01_DURATION','Abertura da Formulação Estratégica','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM02.02_DURATION','Direcionadores Estratégicos','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM02.03_DURATION','Escolhas e Posicionamento Estratégico','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM02.04_DURATION','Objetivos Estratégicos','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM02.05_DURATION','Modelo Estratégico Futuro','Cadência de referência desta etapa.')}
+          <div className="skpe-organization-parameter-copy"><strong>Desdobramento Estratégico · Etapas</strong><span>O total da Macrofase é derivado das etapas abaixo; o ponto de validação não consome duração própria.</span></div>
+          {renderParameter('SKPE.JOURNEY.PEM03.01_DURATION','Desdobramento em OKRs','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM03.02_DURATION','Indicadores e Metas','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM03.03_DURATION','Iniciativas e Projetos Estratégicos','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM03.04_DURATION','Responsabilidades e Governança da Execução','Cadência de referência desta etapa.')}
+          <div className="skpe-organization-parameter-copy"><strong>Implementação e Mobilização · Etapas</strong><span>O total da Macrofase é derivado das etapas abaixo; o ponto de validação não consome duração própria.</span></div>
+          {renderParameter('SKPE.JOURNEY.PEM04.01_DURATION','Ativação do Plano de Implementação','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM04.02_DURATION','Comunicação e Mobilização','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM04.03_DURATION','Capacidades e Gestão da Mudança','Cadência de referência desta etapa.')}
+          {renderParameter('SKPE.JOURNEY.PEM04.04_DURATION','Gestão de Riscos da Implementação','Cadência de referência desta etapa.')}
           {renderParameter('SKPE.PERFORMANCE.DEVIATION.ADEQUATE_MAX_PERCENT', 'Desvio · faixa adequada', 'Desvio absoluto máximo para manter a leitura de desempenho na faixa adequada.')}
           {renderParameter('SKPE.PERFORMANCE.DEVIATION.ATTENTION_MAX_PERCENT', 'Desvio · faixa de atenção', 'Desvio absoluto máximo da faixa de atenção; acima deste valor a leitura é crítica.')}
         </div>

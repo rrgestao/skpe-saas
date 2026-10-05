@@ -1,0 +1,338 @@
+.skpe-okr-workspace,
+.skpe-indicator-workspace,
+.skpe-communication-workspace,
+.skpe-change-workspace,
+.skpe-implementation-risk-workspace {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.skpe-okr-workspace > header,
+.skpe-indicator-workspace > header,
+.skpe-communication-workspace > header,
+.skpe-change-workspace > header,
+.skpe-implementation-risk-workspace > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skpe-okr-workspace > header h3,
+.skpe-indicator-workspace > header h3,
+.skpe-communication-workspace > header h3,
+.skpe-change-workspace > header h3,
+.skpe-implementation-risk-workspace > header h3 {
+  margin: 0.15rem 0 0.35rem;
+}
+
+.skpe-okr-workspace > header p,
+.skpe-indicator-workspace > header p,
+.skpe-communication-workspace > header p,
+.skpe-change-workspace > header p,
+.skpe-implementation-risk-workspace > header p {
+  margin: 0;
+  color: #607069;
+  line-height: 1.5;
+}
+
+.skpe-okr-workspace > header > strong,
+.skpe-indicator-workspace > header > strong,
+.skpe-communication-workspace > header > strong,
+.skpe-change-workspace > header > strong {
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: #f1f6f4;
+  white-space: nowrap;
+  font-size: 0.86rem;
+}
+
+.skpe-okr-work-block,
+.skpe-indicator-block,
+.skpe-communication-form,
+.skpe-change-config,
+.skpe-change-form,
+.skpe-implementation-risk-form,
+.skpe-okr-decision,
+.skpe-indicator-decision,
+.skpe-communication-decision,
+.skpe-change-decision,
+.skpe-implementation-risk-decision {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid #e2e9e6;
+  border-radius: 12px;
+  background: #fbfdfc;
+}
+
+.skpe-okr-work-block h4,
+.skpe-indicator-block h4,
+.skpe-change-form h4 {
+  margin: 0;
+}
+
+.skpe-okr-grid,
+.skpe-indicator-grid,
+.skpe-communication-grid,
+.skpe-change-grid,
+.skpe-implementation-risk-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.skpe-okr-grid,
+.skpe-indicator-grid,
+.skpe-communication-grid,
+.skpe-change-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skpe-okr-grid label,
+.skpe-indicator-grid label,
+.skpe-communication-grid label,
+.skpe-change-grid label,
+.skpe-change-config label,
+.skpe-implementation-risk-form label,
+.skpe-okr-decision label,
+.skpe-indicator-decision label,
+.skpe-communication-decision label,
+.skpe-change-decision label,
+.skpe-implementation-risk-decision {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.skpe-okr-grid label.wide,
+.skpe-indicator-grid label.wide,
+.skpe-communication-grid label.wide,
+.skpe-change-grid label.wide,
+.skpe-implementation-risk-form label.wide {
+  grid-column: 1 / -1;
+}
+
+.skpe-okr-grid input,
+.skpe-okr-grid select,
+.skpe-okr-grid textarea,
+.skpe-indicator-grid input,
+.skpe-indicator-grid select,
+.skpe-indicator-grid textarea,
+.skpe-communication-grid input,
+.skpe-communication-grid select,
+.skpe-communication-grid textarea,
+.skpe-change-grid input,
+.skpe-change-grid select,
+.skpe-change-grid textarea,
+.skpe-change-config input,
+.skpe-change-config select,
+.skpe-change-config textarea,
+.skpe-implementation-risk-form input,
+.skpe-implementation-risk-form select,
+.skpe-implementation-risk-form textarea,
+.skpe-okr-decision textarea,
+.skpe-indicator-decision textarea,
+.skpe-communication-decision textarea,
+.skpe-change-decision textarea,
+.skpe-implementation-risk-decision textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ccd8d3;
+  border-radius: 9px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.skpe-okr-grid textarea,
+.skpe-indicator-grid textarea,
+.skpe-communication-grid textarea,
+.skpe-change-grid textarea,
+.skpe-change-config textarea,
+.skpe-implementation-risk-form textarea,
+.skpe-okr-decision textarea,
+.skpe-indicator-decision textarea,
+.skpe-communication-decision textarea,
+.skpe-change-decision textarea,
+.skpe-implementation-risk-decision textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.skpe-okr-list,
+.skpe-indicator-list,
+.skpe-communication-items,
+.skpe-change-items,
+.skpe-implementation-risk-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.skpe-okr-list article,
+.skpe-indicator-list article,
+.skpe-communication-items article,
+.skpe-change-items article,
+.skpe-implementation-risk-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid #e5ece9;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.skpe-communication-items article,
+.skpe-change-items article,
+.skpe-implementation-risk-list article {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+}
+
+.skpe-okr-list article > div,
+.skpe-indicator-list article > div,
+.skpe-communication-items article > div,
+.skpe-change-items article > div,
+.skpe-implementation-risk-list article > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.skpe-okr-list small,
+.skpe-indicator-list small,
+.skpe-communication-items small,
+.skpe-change-items small,
+.skpe-implementation-risk-list small {
+  color: #6d7d76;
+}
+
+.skpe-okr-workspace button,
+.skpe-indicator-workspace button,
+.skpe-communication-workspace button,
+.skpe-change-workspace button,
+.skpe-implementation-risk-workspace button {
+  min-height: 38px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #c9d6d1;
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.skpe-okr-workspace button:disabled,
+.skpe-indicator-workspace button:disabled,
+.skpe-communication-workspace button:disabled,
+.skpe-change-workspace button:disabled,
+.skpe-implementation-risk-workspace button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.skpe-okr-grid .actions,
+.skpe-indicator-grid .actions,
+.skpe-communication-actions,
+.skpe-change-actions,
+.skpe-implementation-risk-form .actions,
+.skpe-implementation-risk-list .actions,
+.skpe-okr-decision > div,
+.skpe-indicator-decision > div,
+.skpe-communication-decision > div,
+.skpe-change-decision > div {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.skpe-okr-grid .actions,
+.skpe-indicator-grid .actions,
+.skpe-communication-actions,
+.skpe-change-actions,
+.skpe-implementation-risk-form .actions {
+  grid-column: 1 / -1;
+}
+
+.skpe-communication-empty,
+.skpe-change-empty {
+  padding: 0.9rem;
+  border: 1px dashed #c9d6d1;
+  border-radius: 10px;
+  background: #f8fbfa;
+}
+
+.skpe-theme-dark .skpe-okr-workspace,
+.skpe-theme-dark .skpe-indicator-workspace,
+.skpe-theme-dark .skpe-communication-workspace,
+.skpe-theme-dark .skpe-change-workspace,
+.skpe-theme-dark .skpe-implementation-risk-workspace,
+.skpe-theme-dark .skpe-okr-work-block,
+.skpe-theme-dark .skpe-indicator-block,
+.skpe-theme-dark .skpe-communication-form,
+.skpe-theme-dark .skpe-change-config,
+.skpe-theme-dark .skpe-change-form,
+.skpe-theme-dark .skpe-implementation-risk-form,
+.skpe-theme-dark .skpe-okr-decision,
+.skpe-theme-dark .skpe-indicator-decision,
+.skpe-theme-dark .skpe-communication-decision,
+.skpe-theme-dark .skpe-change-decision,
+.skpe-theme-dark .skpe-implementation-risk-decision,
+.skpe-theme-dark .skpe-okr-list article,
+.skpe-theme-dark .skpe-indicator-list article,
+.skpe-theme-dark .skpe-communication-items article,
+.skpe-theme-dark .skpe-change-items article,
+.skpe-theme-dark .skpe-implementation-risk-list article {
+  border-color: #365248;
+  background: #172821;
+  color: #f0f7f4;
+}
+
+.skpe-theme-dark .skpe-okr-grid input,
+.skpe-theme-dark .skpe-okr-grid select,
+.skpe-theme-dark .skpe-okr-grid textarea,
+.skpe-theme-dark .skpe-indicator-grid input,
+.skpe-theme-dark .skpe-indicator-grid select,
+.skpe-theme-dark .skpe-indicator-grid textarea,
+.skpe-theme-dark .skpe-communication-grid input,
+.skpe-theme-dark .skpe-communication-grid select,
+.skpe-theme-dark .skpe-communication-grid textarea,
+.skpe-theme-dark .skpe-change-grid input,
+.skpe-theme-dark .skpe-change-grid select,
+.skpe-theme-dark .skpe-change-grid textarea,
+.skpe-theme-dark .skpe-implementation-risk-form input,
+.skpe-theme-dark .skpe-implementation-risk-form select,
+.skpe-theme-dark .skpe-implementation-risk-form textarea {
+  border-color: #46665a;
+  background: #102019;
+  color: #f0f7f4;
+}
+
+@media (max-width: 820px) {
+  .skpe-okr-grid,
+  .skpe-indicator-grid,
+  .skpe-communication-grid,
+  .skpe-change-grid,
+  .skpe-implementation-risk-form {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-okr-list article,
+  .skpe-indicator-list article,
+  .skpe-communication-items article,
+  .skpe-change-items article,
+  .skpe-implementation-risk-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .skpe-okr-workspace > header,
+  .skpe-indicator-workspace > header,
+  .skpe-communication-workspace > header,
+  .skpe-change-workspace > header,
+  .skpe-implementation-risk-workspace > header {
+    display: grid;
+  }
+}

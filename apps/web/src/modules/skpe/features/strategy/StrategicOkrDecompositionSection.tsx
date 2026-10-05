@@ -473,7 +473,7 @@ export function StrategicOkrDecompositionSection({
       {readiness ? (
         <section className="skpe-okr-readiness">
           <div>
-            <small>Prontidão de PEM-03.01</small>
+            <small>Prontidão de OKRs e Resultados-Chave</small>
             <h4>
               {readiness.readyForValidation
                 ? 'Desdobramento em OKRs pronto para validação'
@@ -523,7 +523,7 @@ export function StrategicOkrDecompositionSection({
             </div>
           ) : (
             <p className="skpe-okr-readiness-ok">
-              Nenhum bloqueador metodológico identificado para PEM-03.01.
+              Nenhuma pendência metodológica identificada para OKRs e Resultados-Chave.
             </p>
           )}
         </section>

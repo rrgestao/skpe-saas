@@ -82,13 +82,12 @@ export function StrategicCommunicationMobilizationReadinessSection({
   return (
     <section className="skpe-communication-mobilization-readiness">
       <header>
-        <p className="skpe-eyebrow">PEM-04.02 · Comunicação e Mobilização</p>
+        <p className="skpe-eyebrow">Comunicação e Mobilização</p>
         <h3>Prontidão do plano de comunicação da implementação</h3>
         <p>
           O plano organiza públicos, objetivos, mensagens, canais, cadência,
           responsáveis e mobilização. A etapa prepara e valida o plano; não
-          dispara mensagens automaticamente. Evidências permanecem sob a
-          authority transversal de evidências do SPARKs.
+          dispara mensagens automaticamente. As evidências permanecem vinculadas ao repositório de evidências do SPARKs.
         </p>
       </header>
 
@@ -137,15 +136,14 @@ export function StrategicCommunicationMobilizationReadinessSection({
                       <span>{issue.affectedCount} item(ns)</span>
                     ) : null}
                   </div>
-                  <p>{issue.message ?? 'Pendência identificada pelo backend.'}</p>
+                  <p>{issue.message ?? 'Pendência identificada pela solução.'}</p>
                 </article>
               ))}
             </div>
           ) : null}
 
           <p className="skpe-communication-mobilization-readiness__policy">
-            Validação humana obrigatória. Nenhum e-mail, mensagem, aviso ou
-            convocação é enviado por este contrato.
+            Validação humana obrigatória. Nenhum e-mail, mensagem, aviso ou convocação é enviado automaticamente nesta etapa.
           </p>
         </>
       ) : null}

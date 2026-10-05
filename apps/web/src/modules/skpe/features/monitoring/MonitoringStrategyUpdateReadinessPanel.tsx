@@ -179,7 +179,7 @@ export function MonitoringStrategyUpdateReadinessPanel({
     <article className="skpe-strategy-update-readiness">
       <header>
         <div>
-          <span>PEM-05.04 · Atualização Estratégica Governada</span>
+          <span>Atualização Estratégica Governada</span>
           <h2>Decisão de atualização da estratégia</h2>
           <p>
             A Formulação aprovada nunca é alterada silenciosamente. A decisão
@@ -219,7 +219,7 @@ export function MonitoringStrategyUpdateReadinessPanel({
               {readiness.issues?.map((issue, index) => (
                 <div key={(issue.code ?? 'issue') + ':' + index}>
                   <b>{issue.code ?? 'PENDÊNCIA'}</b>
-                  <span>{issue.message ?? 'Pendência identificada pelo backend.'}</span>
+                  <span>{issue.message ?? 'Pendência identificada pela solução.'}</span>
                 </div>
               ))}
             </div>
@@ -261,7 +261,7 @@ export function MonitoringStrategyUpdateReadinessPanel({
                 <div className="skpe-strategy-update-readiness__revision">
                   <strong>Abrir revisão formal</strong>
                   <p>
-                    Esta ação criará uma nova versão draft derivada da Formulação
+                    Esta ação criará uma nova versão em elaboração derivada da Formulação
                     aprovada, preservando lineage e versionamento.
                   </p>
                   <label>

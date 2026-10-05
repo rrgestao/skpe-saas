@@ -87,7 +87,7 @@ export function MonitoringCycleGovernancePanel({ organizationId, cycleId, onChan
   return (
     <section className="skpe-monitoring-governance" aria-label="Governança e fechamento do ciclo">
       <header><div><span>Governança do ciclo</span><h3>Ratificação e fechamento</h3></div></header>
-      {!readiness ? <p className="skpe-monitoring-empty">Readiness do ciclo indisponível.</p> : (
+      {!readiness ? <p className="skpe-monitoring-empty">Prontidão do ciclo indisponível.</p> : (
         <>
           <div className="skpe-monitoring-grid">
             <article><span>Status</span><strong>{readiness.cycleStatus}</strong></article>

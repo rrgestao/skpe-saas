@@ -9375,6 +9375,7 @@ case 'monitoring':
               strategicMapStageUnlocked={
                 projectContext.current_stage_code === 'PEM-02.05'
               }
+              currentStageCode={projectContext.current_stage_code}
               initialTab={
                 projectContext.current_stage_code === 'PEM-02.03'
                   ? 'positioning'
@@ -9436,6 +9437,12 @@ case 'monitoring':
               if (code.startsWith('PEM-05')) {
                 sessionStorage.setItem('skpe:monitoring:target-stage', code)
                 navigateToSection('monitoring')
+                return
+              }
+
+              if (code === 'PEM-03.03' || code === 'PEM-04.01') {
+                sessionStorage.setItem('skpe:initiatives:target-stage', code)
+                navigateToSection('initiatives')
                 return
               }
 

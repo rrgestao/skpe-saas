@@ -76,7 +76,7 @@ export function MonitoringLearningReadinessPanel({
     <article className="skpe-learning-readiness">
       <header>
         <div>
-          <span>PEM-05.03 · Aprendizado e Melhoria</span>
+          <span>Aprendizado e Melhoria</span>
           <h2>Prontidão dos aprendizados estratégicos</h2>
           <p>
             A etapa reutiliza o ledger canônico de aprendizados do FE-08. Ela
@@ -115,7 +115,7 @@ export function MonitoringLearningReadinessPanel({
               {readiness.issues?.map((issue, index) => (
                 <div key={(issue.code ?? 'issue') + ':' + index}>
                   <b>{issue.code ?? 'PENDÊNCIA'}</b>
-                  <span>{issue.message ?? 'Pendência identificada pelo backend.'}</span>
+                  <span>{issue.message ?? 'Pendência identificada pela solução.'}</span>
                   {typeof issue.affectedCount === 'number' ? (
                     <small>{issue.affectedCount} item(ns)</small>
                   ) : null}

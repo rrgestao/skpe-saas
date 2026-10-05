@@ -11,12 +11,18 @@ import { StrategicPositioningSection } from './StrategicPositioningSection'
 import { StrategicExecutiveOverview } from './StrategicExecutiveOverview'
 import { StrategicArchitectureSummary } from './StrategicArchitectureSummary'
 import { StrategicOkrDecompositionSection } from './StrategicOkrDecompositionSection'
+import { StrategicOkrWorkspace } from './StrategicOkrWorkspace'
 import { StrategicIndicatorsReadinessSection } from './StrategicIndicatorsReadinessSection'
+import { StrategicIndicatorWorkspace } from './StrategicIndicatorWorkspace'
 import { StrategicImplementationActivationReadinessSection } from './StrategicImplementationActivationReadinessSection'
 import { StrategicCommunicationMobilizationReadinessSection } from './StrategicCommunicationMobilizationReadinessSection'
+import { StrategicCommunicationMobilizationWorkspace } from './StrategicCommunicationMobilizationWorkspace'
 import { StrategicCapabilitiesChangeReadinessSection } from './StrategicCapabilitiesChangeReadinessSection'
+import { StrategicCapabilitiesChangeWorkspace } from './StrategicCapabilitiesChangeWorkspace'
 import { StrategicImplementationRiskReadinessSection } from './StrategicImplementationRiskReadinessSection'
+import { StrategicImplementationRiskWorkspace } from './StrategicImplementationRiskWorkspace'
 import { StrategicExecutionGovernanceReadinessSection } from './StrategicExecutionGovernanceReadinessSection'
+import { StrategicExecutionGovernanceWorkspace } from './StrategicExecutionGovernanceWorkspace'
 import { StrategicBscMap } from './StrategicBscMap'
 import { StrategicMapLifecyclePanel } from './StrategicMapLifecyclePanel'
 import { phase2SuggestionGovernanceNotice } from '../../contracts/strategic-suggestion-governance.ts'
@@ -40,6 +46,7 @@ type Props = {
   canAdjustStrategicMap: boolean
   strategicMapStageUnlocked: boolean
   initialTab?: FormulationTab
+  currentStageCode?: string | null
 }
 
 function percent(value: number | null | undefined) {
@@ -54,22 +61,28 @@ export function StrategicFormulationSection({
   canAdjustStrategicMap,
   strategicMapStageUnlocked,
   initialTab = 'overview',
+  currentStageCode = null,
 }: Props) {
   const [formulationId, setFormulationId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<FormulationTab>(initialTab)
+  const [focusedStageCode, setFocusedStageCode] = useState<string | null>(currentStageCode)
   const [initiatives, setInitiatives] = useState<InitiativeRow[]>([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [futureWorkRefresh, setFutureWorkRefresh] = useState(0)
 
   useEffect(() => {
     const requestedTab = sessionStorage.getItem('skpe:formulation:target-tab') as FormulationTab | null
+    const requestedStage = sessionStorage.getItem('skpe:formulation:target-stage')
     if (requestedTab && ['overview','pmvv','positioning','architecture','performance','indicators','initiatives','plan'].includes(requestedTab)) {
       setActiveTab(requestedTab)
+      setFocusedStageCode(requestedStage ?? currentStageCode)
       sessionStorage.removeItem('skpe:formulation:target-tab')
       sessionStorage.removeItem('skpe:formulation:target-stage')
       return
     }
+    setFocusedStageCode(currentStageCode)
     setActiveTab(initialTab)
-  }, [initialTab, projectId])
+  }, [initialTab, projectId, currentStageCode])
 
   useEffect(() => {
     let active = true
@@ -191,7 +204,11 @@ export function StrategicFormulationSection({
         organizationId={organizationId}
         projectId={projectId}
         activeId={activeTab}
-        onChange={(id) => setActiveTab(id)}
+        onChange={(id) => {
+          setActiveTab(id)
+          setFocusedStageCode(currentStageCode)
+        }}
+        currentStageCode={currentStageCode}
       />
 
       {errorMessage ? (
@@ -259,7 +276,13 @@ export function StrategicFormulationSection({
       ) : null}
 {activeTab === 'performance' ? (
         <section className="skpe-formulation-tab-panel">
+          <StrategicOkrWorkspace
+            organizationId={organizationId}
+            formulationId={formulationId}
+            onChanged={() => setFutureWorkRefresh((value) => value + 1)}
+          />
           <StrategicOkrDecompositionSection
+            key={`okr-readiness-${futureWorkRefresh}`}
             organizationId={organizationId}
             projectId={projectId}
             formulationId={formulationId}
@@ -268,12 +291,22 @@ export function StrategicFormulationSection({
       ) : null}
       {activeTab === 'indicators' ? (
         <section className="skpe-formulation-tab-panel">
-          <StrategicIndicatorsReadinessSection formulationId={formulationId} />
+          <StrategicIndicatorWorkspace
+            organizationId={organizationId}
+            formulationId={formulationId}
+            onChanged={() => setFutureWorkRefresh((value) => value + 1)}
+          />
+          <StrategicIndicatorsReadinessSection
+            key={`indicator-readiness-${futureWorkRefresh}`}
+            formulationId={formulationId}
+          />
         </section>
       ) : null}
       {activeTab === 'initiatives' ? (
         <section className="skpe-formulation-tab-panel">
-          <StrategicImplementationActivationReadinessSection formulationId={formulationId} />
+          {focusedStageCode === 'PEM-04.01' ? (
+            <StrategicImplementationActivationReadinessSection formulationId={formulationId} />
+          ) : null}
           <StrategicInitiativePlanSection
             organizationId={organizationId}
             projectId={projectId}
@@ -283,10 +316,59 @@ export function StrategicFormulationSection({
       ) : null}
 {activeTab === 'plan' ? (
         <section className="skpe-formulation-tab-panel">
-          <StrategicCommunicationMobilizationReadinessSection formulationId={formulationId} />
-          <StrategicCapabilitiesChangeReadinessSection formulationId={formulationId} />
-          <StrategicImplementationRiskReadinessSection formulationId={formulationId} />
-          <StrategicExecutionGovernanceReadinessSection formulationId={formulationId} />
+          {focusedStageCode === 'PEM-03.04' ? (
+            <>
+              <StrategicExecutionGovernanceWorkspace
+                organizationId={organizationId}
+                formulationId={formulationId}
+                onChanged={() => setFutureWorkRefresh((value) => value + 1)}
+              />
+              <StrategicExecutionGovernanceReadinessSection
+                key={`execution-readiness-${futureWorkRefresh}`}
+                formulationId={formulationId}
+              />
+            </>
+          ) : null}
+          {focusedStageCode === 'PEM-04.02' ? (
+            <>
+              <StrategicCommunicationMobilizationWorkspace
+                organizationId={organizationId}
+                formulationId={formulationId}
+                onChanged={() => setFutureWorkRefresh((value) => value + 1)}
+              />
+              <StrategicCommunicationMobilizationReadinessSection
+                key={`communication-readiness-${futureWorkRefresh}`}
+                formulationId={formulationId}
+              />
+            </>
+          ) : null}
+          {focusedStageCode === 'PEM-04.03' ? (
+            <>
+              <StrategicCapabilitiesChangeWorkspace
+                organizationId={organizationId}
+                formulationId={formulationId}
+                onChanged={() => setFutureWorkRefresh((value) => value + 1)}
+              />
+              <StrategicCapabilitiesChangeReadinessSection
+                key={`change-readiness-${futureWorkRefresh}`}
+                formulationId={formulationId}
+              />
+            </>
+          ) : null}
+          {focusedStageCode === 'PEM-04.04' ? (
+            <>
+              <StrategicImplementationRiskWorkspace
+                organizationId={organizationId}
+                projectId={projectId}
+                formulationId={formulationId}
+                onChanged={() => setFutureWorkRefresh((value) => value + 1)}
+              />
+              <StrategicImplementationRiskReadinessSection
+                key={`implementation-risk-readiness-${futureWorkRefresh}`}
+                formulationId={formulationId}
+              />
+            </>
+          ) : null}
           <div className="skpe-formulation-plan-list">
             {initiatives.map((initiative) => (
               <article key={initiative.id}>

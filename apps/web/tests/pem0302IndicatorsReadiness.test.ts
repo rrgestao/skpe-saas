@@ -14,6 +14,10 @@ const indicators = readFileSync(
   new URL('../src/modules/skpe/features/strategy/StrategicIndicatorsReadinessSection.tsx', import.meta.url),
   'utf8',
 )
+const indicatorWorkspace = readFileSync(
+  new URL('../src/modules/skpe/features/strategy/StrategicIndicatorWorkspace.tsx', import.meta.url),
+  'utf8',
+)
 const cockpit = readFileSync(
   new URL('../src/modules/skpe/SkpeCockpit.tsx', import.meta.url),
   'utf8',
@@ -28,12 +32,18 @@ test('PEM-03.02 completion reuses canonical indicators readiness', () => {
   assert.doesNotMatch(migration, /update public\.skpe_indicator_targets/i)
 })
 
-test('Indicators and Targets are a dedicated formulation stage', () => {
+test('Indicators and Targets are a dedicated formulation stage with full proposal workflow', () => {
   assert.match(statusTabs, /\| 'indicators'/)
   assert.match(statusTabs, /label: 'Indicadores e Metas'/)
   assert.match(statusTabs, /skpe_indicator_packages/)
-  assert.match(indicators, /PEM-03\.02 · Indicadores e Metas/)
+  assert.match(indicators, /Indicadores e Metas/)
   assert.match(indicators, /get_skpe_indicators_readiness/)
+  assert.doesNotMatch(indicators, /<small>PEM-03\.02/)
+  assert.match(indicatorWorkspace, /configure_skpe_indicator_package/)
+  assert.match(indicatorWorkspace, /upsert_skpe_strategic_indicator/)
+  assert.match(indicatorWorkspace, /upsert_skpe_indicator_target/)
+  assert.match(indicatorWorkspace, /transition_skpe_indicator_package/)
+  assert.match(indicatorWorkspace, /humanValidationRequired:true/)
 })
 
 test('current PEM-03 stage opens the correct formulation tab', () => {

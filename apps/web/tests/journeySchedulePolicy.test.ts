@@ -6,6 +6,14 @@ const migration = readFileSync(
   new URL('../../../supabase/migrations/20261005023000_align_journey_schedule_policy_and_legacy_reconciliation.sql', import.meta.url),
   'utf8',
 )
+const planner = readFileSync(
+  new URL('../src/modules/skpe/features/journey/JourneySchedulePlanner.tsx', import.meta.url),
+  'utf8',
+)
+const projectPlan = readFileSync(
+  new URL('../src/modules/skpe/features/journey/JourneyProjectPlan.tsx', import.meta.url),
+  'utf8',
+)
 
 test('SPARKs fallback schedule uses 45-day usual delivery, 90-day extension and 90-day follow-up', () => {
   assert.match(migration, /SKPE\.JOURNEY\.STANDARD_DURATION/)
@@ -32,4 +40,19 @@ test('legacy projects preserve known actual dates and propose only the remaining
 
 test('PEM-02 validation copy states ratification is required before strategic deployment', () => {
   assert.match(migration, /Ratificar a Formulação Estratégica e o Plano de Evolução antes de iniciar o Desdobramento Estratégico/)
+})
+
+test('schedule UI exposes the governed 45 / up to 90 / up to 90 rule in business language', () => {
+  assert.match(planner, /45 dias úteis<\/strong> referência usual de entrega/)
+  assert.match(planner, /até 90 dias úteis<\/strong> entrega ampliada conforme escopo/)
+  assert.match(planner, /acompanhamento após a entrega/)
+  assert.doesNotMatch(planner, /90 dias úteis<\/strong> implantação padrão/)
+  assert.doesNotMatch(planner, /meta acelerada/)
+})
+
+test('project planning UI does not expose backend or forecast implementation terms', () => {
+  assert.doesNotMatch(projectPlan, /consolidadas pelo backend/)
+  assert.doesNotMatch(projectPlan, /validada pelo backend/)
+  assert.doesNotMatch(projectPlan, /Forecast operacional/)
+  assert.match(projectPlan, /Previsão operacional/)
 })

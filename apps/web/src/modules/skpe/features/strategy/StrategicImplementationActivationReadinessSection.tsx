@@ -82,10 +82,10 @@ export function StrategicImplementationActivationReadinessSection({
   return (
     <section className="skpe-implementation-activation-readiness">
       <header>
-        <p className="skpe-eyebrow">PEM-04.01 · Ativação do Plano de Implementação</p>
+        <p className="skpe-eyebrow">Ativação do Plano de Implementação</p>
         <h3>Prontidão para ativar o portfólio aprovado</h3>
         <p>
-          Esta etapa não redesenha nem reprioriza o portfólio de PEM-03.03.
+          Esta etapa não redesenha nem reprioriza o portfólio estratégico já validado.
           Ela confirma se as iniciativas selecionadas possuem condições reais
           para entrar em execução: responsabilidade, horizonte, ações, marcos e
           validações suficientes. Nenhuma execução é iniciada automaticamente.
@@ -144,8 +144,7 @@ export function StrategicImplementationActivationReadinessSection({
           ) : null}
 
           <p className="skpe-implementation-activation-readiness__policy">
-            Regra canônica: reutiliza o portfólio validado em PEM-03.03, não
-            reprioriza iniciativas e não inicia execução automaticamente.
+            A etapa reutiliza o portfólio validado, não reprioriza iniciativas e não inicia execução automaticamente.
           </p>
         </>
       ) : null}

@@ -552,8 +552,7 @@ export function JourneyProjectPlan({
             <div>
               <strong>3 · Cronograma</strong>
               <span>
-                Informe e revise as datas planejadas. Fases e MEGAFASES são
-                consolidadas pelo backend a partir das folhas.
+                Informe e revise as datas planejadas. Fases e MEGAFASES são consolidadas automaticamente a partir das atividades e entregas planejadas.
               </span>
             </div>
           </section>
@@ -675,17 +674,14 @@ export function JourneyProjectPlan({
               <strong>{metrics.baselineApproved ? 'Aprovado' : 'Ainda não fechado'}</strong>
               <small>
                 {metrics.forecastActive
-                  ? 'Forecast operacional já ativo'
-                  : 'Sem forecast operacional ativo'}
+                  ? 'Previsão operacional já ativa'
+                  : 'Sem previsão operacional ativa'}
               </small>
             </article>
           </div>
 
           <div className="skpe-project-plan-callout">
-            A prontidão temporal obrigatória é validada pelo backend no momento
-            da submissão da Linha de Base. Responsabilidades e recursos serão
-            progressivamente incorporados ao mesmo gate de prontidão, sem
-            alterar os contratos já governados.
+            A aplicação verifica se o cronograma obrigatório está completo antes da submissão da Linha de Base. Responsabilidades e recursos são considerados na mesma verificação de prontidão, preservando as regras de governança já estabelecidas.
           </div>
 
           <div className="skpe-project-plan-navigation">
