@@ -903,14 +903,14 @@ export function JourneySection({
                 )}
 
                 {canGenerateDeliverables &&
-                  (item.item_type === 'macrophase' ||
-                    item.item_type === 'stage') && (
+                  ['macrophase', 'phase', 'activity', 'deliverable'].includes(item.item_type) &&
+                  ['in_progress', 'completed'].includes(item.item_status) && (
                     <button
                       type="button"
                       className="skpe-generate-deliverables-button"
                       onClick={() => onGenerateDeliverables(item)}
                     >
-                      Gerar artefatos e evidências
+                      Abrir artefatos da etapa
                     </button>
                   )}
               </div>

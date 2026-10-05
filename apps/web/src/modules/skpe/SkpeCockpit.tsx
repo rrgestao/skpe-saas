@@ -9431,19 +9431,36 @@ case 'monitoring':
               canViewArtifacts
             }
             onGenerateDeliverables={(item) => {
-              sessionStorage.setItem(
-                'skpe:delivery-kit:macrophase-id',
-                item.item_id,
-              )
-              sessionStorage.setItem(
-                'skpe:delivery-kit:macrophase-code',
-                item.item_code,
-              )
-              sessionStorage.setItem(
-                'skpe:delivery-kit:macrophase-name',
-                item.item_name,
-              )
-              navigateToSection('artifacts')
+              void (async () => {
+                const { error } = await supabase.rpc(
+                  'ensure_skpe_journey_item_artifacts',
+                  {
+                    target_item_id: item.item_id,
+                    target_reason:
+                      'Pacote solicitado a partir da Jornada Estratégica.',
+                  },
+                )
+
+                sessionStorage.setItem(
+                  'skpe:artifacts:item-id',
+                  item.item_id,
+                )
+                sessionStorage.setItem(
+                  'skpe:artifacts:item-code',
+                  item.item_code,
+                )
+                sessionStorage.setItem(
+                  'skpe:artifacts:item-name',
+                  item.item_name,
+                )
+                if (error) {
+                  sessionStorage.setItem(
+                    'skpe:artifacts:message',
+                    translateBackendMessage(error.message),
+                  )
+                }
+                navigateToSection('artifacts')
+              })()
             }}
           />
         )}

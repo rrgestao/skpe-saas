@@ -176,6 +176,24 @@ export function MethodologyArtifactsSection({ organizationId, projectId, canMana
 
   useEffect(() => { void loadAll() }, [organizationId, projectId])
 
+  useEffect(() => {
+    const requestedItemCode = sessionStorage.getItem('skpe:artifacts:item-code')
+    const requestedMessage = sessionStorage.getItem('skpe:artifacts:message')
+
+    if (requestedItemCode) {
+      setTab('artifacts')
+      setPhaseFilter(requestedItemCode)
+      sessionStorage.removeItem('skpe:artifacts:item-code')
+      sessionStorage.removeItem('skpe:artifacts:item-id')
+      sessionStorage.removeItem('skpe:artifacts:item-name')
+    }
+
+    if (requestedMessage) {
+      setMessage(requestedMessage)
+      sessionStorage.removeItem('skpe:artifacts:message')
+    }
+  }, [projectId])
+
   const loadDetail = async (artifact: Artifact) => {
     setSelected(artifact)
     const { data, error } = await supabase.rpc('get_methodology_artifact_detail', { target_artifact_id: artifact.artifact_id })
@@ -315,6 +333,39 @@ export function MethodologyArtifactsSection({ organizationId, projectId, canMana
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
 
+  const textVersionBlob = (version: Record<string, unknown>) => {
+    const content = String(version.content_markdown ?? '')
+    if (!content.trim()) return null
+    return new Blob([content], { type: 'text/markdown;charset=utf-8' })
+  }
+
+  const visualizeTextVersion = (version: Record<string, unknown>) => {
+    const blob = textVersionBlob(version)
+    if (!blob) {
+      setMessage('Esta versão ainda não possui conteúdo disponível.')
+      return
+    }
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener,noreferrer')
+    window.setTimeout(() => URL.revokeObjectURL(url), 120000)
+  }
+
+  const downloadTextVersion = (version: Record<string, unknown>) => {
+    const blob = textVersionBlob(version)
+    if (!blob) {
+      setMessage('Esta versão ainda não possui conteúdo disponível.')
+      return
+    }
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = String(version.file_name ?? 'artefato.md')
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
   const onFile = (event: ChangeEvent<HTMLInputElement>) => setFile(event.target.files?.[0] ?? null)
 
   if (!projectId) return <section className="skpe-artifacts-empty"><h2>Artefatos e evidências</h2><p>Inicie a jornada estratégica para gerenciar as entregas metodológicas.</p></section>
@@ -358,7 +409,16 @@ export function MethodologyArtifactsSection({ organizationId, projectId, canMana
 
     {tab === 'audit' && <section className="skpe-artifacts-audit"><header><h2>Trilha de auditoria</h2><p>Histórico cronológico das operações realizadas.</p></header>{audit.length === 0 ? <div className="skpe-artifacts-state">Nenhum registro de auditoria.</div> : audit.map((item) => <article key={String(item.audit_id)}><time>{formatDate(String(item.occurred_at))}</time><div><strong>{String(item.action_description ?? item.action_code)}</strong><span>{String(item.artifact_title ?? item.artifact_code ?? 'Registro metodológico')}</span></div><code>{eventLabelPtBr(String(item.action_code))}</code></article>)}</section>}
 
-    {selected && <aside className="skpe-artifact-drawer" aria-label="Detalhes do artefato"><div className="skpe-artifact-drawer-backdrop" onClick={() => { setSelected(null); setDetail(null) }} /><div className="skpe-artifact-drawer-panel"><header><div><span>{selected.artifact_type_name}</span><h2>{selected.title}</h2><small>{selected.artifact_code}</small></div><button onClick={() => { setSelected(null); setDetail(null) }} aria-label="Fechar">×</button></header><section className="skpe-artifact-drawer-actions">{canManage && !selectedIsProtected && <><button onClick={() => setShowVersion(true)}>Nova versão</button><button onClick={() => setShowValidation(true)}>Validar</button><select value={selected.status} onChange={(e) => void changeStatus(e.target.value)}>{Object.entries(statusLabel).filter(([key]) => !['pending','partial','awaiting_validation','satisfied'].includes(key)).map(([key, value]) => <option key={key} value={key}>{value}</option>)}</select></>}</section>{selectedIsProtected && <div className="skpe-artifact-protected-notice"><strong>Artefato validado e protegido.</strong><span>Visualização, impressão e download permanecem disponíveis. Para criar nova versão, a fase deverá ser reaberta formalmente.</span></div>}<section className="skpe-artifact-meta"><div><span>Situação</span><strong>{statusLabelPtBr(selected.status, statusLabel[selected.status])}</strong></div><div><span>Versão atual</span><strong>v{selected.current_version_number}</strong></div><div><span>Prazo</span><strong>{formatDate(selected.planned_due_date)}</strong></div><div><span>Fase</span><strong>{selected.phase_code ?? selected.macrophase_code ?? selected.metafase_code ?? '—'}</strong></div></section><section><h3>Finalidade</h3><p>{selected.purpose ?? 'Não informada.'}</p></section><section><h3>Versões</h3>{detail?.versions?.length ? detail.versions.map((version) => <article className="skpe-version-card" key={String(version.id)}><div><strong>{String(version.version_label)}</strong><span>{String(version.change_summary ?? 'Sem resumo')}</span><small>{formatDate(String(version.created_at))}</small></div>{version.storage_path ? <button onClick={() => void downloadVersion(version)}>Baixar arquivo</button> : <span>Conteúdo registrado</span>}</article>) : <p>Nenhuma versão registrada.</p>}</section><section><h3>Validações</h3>{detail?.validations?.length ? detail.validations.map((validation) => <article className="skpe-validation-card" key={String(validation.id)}><strong>{statusLabelPtBr(String(validation.validation_status), statusLabel[String(validation.validation_status)])}</strong><span>{String(validation.decision_text ?? validation.reservations ?? 'Sem observação')}</span><small>{formatDate(String(validation.validated_at))}</small></article>) : <p>Nenhuma validação registrada.</p>}</section></div></aside>}
+    {selected && <aside className="skpe-artifact-drawer" aria-label="Detalhes do artefato"><div className="skpe-artifact-drawer-backdrop" onClick={() => { setSelected(null); setDetail(null) }} /><div className="skpe-artifact-drawer-panel"><header><div><span>{selected.artifact_type_name}</span><h2>{selected.title}</h2><small>{selected.artifact_code}</small></div><button onClick={() => { setSelected(null); setDetail(null) }} aria-label="Fechar">×</button></header><section className="skpe-artifact-drawer-actions">{canManage && !selectedIsProtected && <><button onClick={() => setShowVersion(true)}>Nova versão</button><button onClick={() => setShowValidation(true)}>Validar</button><select value={selected.status} onChange={(e) => void changeStatus(e.target.value)}>{Object.entries(statusLabel).filter(([key]) => !['pending','partial','awaiting_validation','satisfied'].includes(key)).map(([key, value]) => <option key={key} value={key}>{value}</option>)}</select></>}</section>{selectedIsProtected && <div className="skpe-artifact-protected-notice"><strong>Artefato validado e protegido.</strong><span>Visualização, impressão e download permanecem disponíveis. Para criar nova versão, a fase deverá ser reaberta formalmente.</span></div>}<section className="skpe-artifact-meta"><div><span>Situação</span><strong>{statusLabelPtBr(selected.status, statusLabel[selected.status])}</strong></div><div><span>Versão atual</span><strong>v{selected.current_version_number}</strong></div><div><span>Prazo</span><strong>{formatDate(selected.planned_due_date)}</strong></div><div><span>Fase</span><strong>{selected.phase_code ?? selected.macrophase_code ?? selected.metafase_code ?? '—'}</strong></div></section><section><h3>Finalidade</h3><p>{selected.purpose ?? 'Não informada.'}</p></section><section><h3>Versões</h3>{detail?.versions?.length ? detail.versions.map((version) => <article className="skpe-version-card" key={String(version.id)}><div><strong>{String(version.version_label)}</strong><span>{String(version.change_summary ?? 'Sem resumo')}</span><small>{formatDate(String(version.created_at))}</small></div>{version.storage_path ? (
+              <button onClick={() => void downloadVersion(version)}>Baixar arquivo</button>
+            ) : version.content_markdown ? (
+              <div className="skpe-version-actions">
+                <button onClick={() => visualizeTextVersion(version)}>Visualizar</button>
+                <button onClick={() => downloadTextVersion(version)}>Baixar</button>
+              </div>
+            ) : (
+              <span>Conteúdo ainda não disponível</span>
+            )}</article>) : <p>Nenhuma versão registrada.</p>}</section><section><h3>Validações</h3>{detail?.validations?.length ? detail.validations.map((validation) => <article className="skpe-validation-card" key={String(validation.id)}><strong>{statusLabelPtBr(String(validation.validation_status), statusLabel[String(validation.validation_status)])}</strong><span>{String(validation.decision_text ?? validation.reservations ?? 'Sem observação')}</span><small>{formatDate(String(validation.validated_at))}</small></article>) : <p>Nenhuma validação registrada.</p>}</section></div></aside>}
 
     {showCreate && <div className="skpe-artifact-modal"><div className="skpe-artifact-modal-backdrop" onClick={() => setShowCreate(false)} /><form onSubmit={(e) => { e.preventDefault(); void createArtifact() }}><header><h2>Novo artefato metodológico</h2><button type="button" onClick={() => setShowCreate(false)}>×</button></header><label><span>Tipo *</span><select value={form.typeCode} onChange={(e) => setForm({ ...form, typeCode: e.target.value })}><option value="">Selecione</option>{catalog.map((item) => <option key={item.artifact_type_id} value={item.artifact_type_code}>{item.artifact_type_name}</option>)}</select></label><label><span>Requisito associado</span><select value={form.requirementCode} onChange={(e) => { const req = requirements.find((item) => item.requirement_code === e.target.value); setForm({ ...form, requirementCode: e.target.value, typeCode: req?.artifact_type_code ?? form.typeCode }) }}><option value="">Sem requisito específico</option>{requirements.map((item) => <option key={item.requirement_id} value={item.requirement_code}>{item.requirement_name}</option>)}</select></label><label className="wide"><span>Título *</span><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label className="wide"><span>Finalidade</span><textarea value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} /></label><label><span>Metafase</span><input value={form.metafase} onChange={(e) => setForm({ ...form, metafase: e.target.value })} placeholder="PEM-00" /></label><label><span>Macrofase</span><input value={form.macrophase} onChange={(e) => setForm({ ...form, macrophase: e.target.value })} placeholder="PEM-01" /></label><label><span>Fase</span><input value={form.phase} onChange={(e) => setForm({ ...form, phase: e.target.value })} /></label><label><span>Etapa</span><input value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })} /></label><label><span>Gate</span><input value={form.gate} onChange={(e) => setForm({ ...form, gate: e.target.value })} /></label><label><span>Prazo planejado</span><input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></label><footer><button type="button" onClick={() => setShowCreate(false)}>Cancelar</button><button className="primary" disabled={saving}>{saving ? 'Salvando...' : 'Criar artefato'}</button></footer></form></div>}
 
