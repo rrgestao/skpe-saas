@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
 import { StrategicBscMap } from '../../skpe/features/strategy/StrategicBscMap'
+import { StrategicObjectiveExecutiveAnalytics } from './StrategicObjectiveExecutiveAnalytics'
 import { buildExecutivePerformanceReportHtml } from './executivePerformanceReport'
 
 import './InitiativePerformanceCockpit.css'
@@ -746,6 +747,15 @@ export function InitiativePerformanceCockpit({
           </button>
         </div>
 
+      {formulationId && projectId ? (
+        <StrategicObjectiveExecutiveAnalytics
+          organizationId={organizationId}
+          projectId={projectId}
+          formulationId={formulationId}
+          onOpenMeasures={onObjectivePerformanceDrilldown}
+          onOpenInitiatives={onObjectiveInitiativesDrilldown}
+        />
+      ) : null}
       <section className="skpe-performance-execution-section">
         <header className="skpe-performance-section-heading">
           <div>

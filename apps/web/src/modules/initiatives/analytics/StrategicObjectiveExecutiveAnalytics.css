@@ -1,0 +1,22 @@
+.skpe-objective-analytics{display:grid;gap:1rem;margin:0 0 1.15rem}
+.skpe-objective-analytics>header{display:flex;justify-content:space-between;gap:1rem;align-items:flex-end}
+.skpe-objective-analytics>header p{margin:0;text-transform:uppercase;letter-spacing:.08em;font-size:.68rem;font-weight:800;color:#66756e}
+.skpe-objective-analytics>header h2{margin:.2rem 0 0}
+.skpe-objective-analytics>header>span{font-size:.72rem;color:#66756e}
+.skpe-objective-analytics__rule{margin:0;color:#66756e;font-size:.76rem}
+.skpe-objective-analytics__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem}
+.skpe-objective-analytics__card{display:grid;gap:.8rem;border:1px solid #dce4df;border-radius:12px;background:#fff;padding:1rem}
+.skpe-objective-analytics__title span{font-size:.68rem;font-weight:800;color:#66756e}
+.skpe-objective-analytics__title h3{margin:.15rem 0 .2rem;font-size:1rem}
+.skpe-objective-analytics__title small{color:#66756e}
+.skpe-objective-analytics__metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem}
+.skpe-objective-analytics__metrics>div{border:1px solid #e2e9e5;border-radius:9px;padding:.55rem .6rem}
+.skpe-objective-analytics__metrics span,.skpe-objective-analytics__metrics small{display:block;font-size:.64rem;color:#66756e}
+.skpe-objective-analytics__metrics strong{display:block;margin-top:.2rem;font-size:.95rem}
+.skpe-objective-analytics__metrics .is-attention{border-color:#d9b76d;background:#fffaf0}
+.skpe-objective-analytics__actions{display:flex;gap:.55rem;flex-wrap:wrap}
+.skpe-objective-analytics__actions button{border:1px solid #cad8d1;border-radius:8px;background:#fff;padding:.5rem .7rem;font:inherit;font-size:.72rem;cursor:pointer}
+.skpe-objective-analytics-state{padding:.85rem 1rem;border:1px solid #dce4df;border-radius:10px;background:#f7faf8}
+.skpe-objective-analytics-state.is-error{background:#fff7f7;border-color:#dcb7b7}
+@media(max-width:1100px){.skpe-objective-analytics__grid{grid-template-columns:1fr}}
+@media(max-width:760px){.skpe-objective-analytics>header{display:block}.skpe-objective-analytics>header>span{display:block;margin-top:.35rem}.skpe-objective-analytics__metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
