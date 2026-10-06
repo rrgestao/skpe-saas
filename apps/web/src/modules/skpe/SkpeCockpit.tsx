@@ -8710,7 +8710,7 @@ case 'monitoring':
       case 'agenda':
         return 'Agenda'
       case 'artifacts':
-        return 'Artefatos e evidências'
+        return 'Entregas e Relatórios'
       case 'governance':
         return 'Governança'
       case 'administration':
@@ -8966,6 +8966,20 @@ case 'monitoring':
               </button>
 
 
+              <button
+                type="button"
+                className={
+                  activeSection === 'artifacts'
+                    ? 'skpe-nav-active'
+                    : ''
+                }
+                onClick={() => navigateToSection('artifacts')}
+                title="Entregas e Relatórios"
+                hidden={!canViewArtifacts}
+              >
+                <ArtifactsIcon />
+                <span>Entregas e Relatórios</span>
+              </button>
               <button
                 type="button"
                 className={

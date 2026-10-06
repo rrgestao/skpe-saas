@@ -55,6 +55,7 @@ type Props = {
   rows: OrganizationIndicatorGridItem[]
   onReload: () => Promise<void>
   readOnly?: boolean
+  onOpenHistory?: (indicatorId: string) => void
 }
 
 type GridRow = {
@@ -152,7 +153,7 @@ function periodLabel(start: string | null | undefined, end: string | null | unde
   return start ? `Desde ${dateLabel(start)}` : `Até ${dateLabel(end)}`
 }
 
-export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = false }: Props) {
+export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = false, onOpenHistory }: Props) {
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -378,7 +379,7 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
         viewportMode="balanced"
         selectedId={selectedIndicatorId}
         onSelect={(id) => setSelectedIndicatorId(id)}
-        onDoubleClick={readOnly ? undefined : (id) => openPanel(id)}
+        onDoubleClick={(id) => { if (readOnly) onOpenHistory?.(id); else openPanel(id) }}
         contextMenu={readOnly ? undefined : menu}
         onContextAction={readOnly ? undefined : (action, id) => {
           setSelectedIndicatorId(id)

@@ -3,6 +3,7 @@ import { MeasuresCatalogSmartGrid } from './MeasuresCatalogSmartGrid'
 import { SparksSummaryCards } from '../../components/design-system/SparksSummaryCards'
 import { SparksMeasureDualSelector } from './SparksMeasureDualSelector'
 import { OrganizationIndicatorsSmartGrid } from './OrganizationIndicatorsSmartGrid'
+import { MeasureIndicatorHistoryPanel } from './MeasureIndicatorHistoryPanel'
 import { supabase } from '../../lib/supabase'
 
 import './MeasuresPerformanceWorkspace.css'
@@ -154,6 +155,7 @@ export function MeasuresPerformanceWorkspace({
   const [adopting, setAdopting] = useState(false)
   const [adoptionPanelOpen, setAdoptionPanelOpen] = useState(false)
   const [summaryFilter, setSummaryFilter] = useState<'all' | 'withTarget' | 'assessed' | 'withBenchmark'>('all')
+  const [historyIndicatorId, setHistoryIndicatorId] = useState<string | null>(null)
 
   const selectedReference = useMemo(
     () =>
@@ -336,6 +338,11 @@ export function MeasuresPerformanceWorkspace({
 
     return Array.from(byIndicator.values())
   }, [rows])
+
+  const historyIndicator = useMemo(() =>
+    uniqueRows.find((row) => row.indicator_id === historyIndicatorId) ?? null,
+    [historyIndicatorId, uniqueRows],
+  )
 
   const summary = useMemo(() => {
     const withTarget = uniqueRows.filter((row) => row.target_id).length
@@ -520,7 +527,7 @@ export function MeasuresPerformanceWorkspace({
               : 'Medidas do contexto'}
           </h3>
           <p>
-            Ausência de apuração permanece distinta de valor zero.
+            Ausência de apuração permanece distinta de valor zero. Dê duplo clique em um indicador para consultar histórico e tendência governados.
           </p>
         </div>
       </div>
@@ -542,8 +549,18 @@ export function MeasuresPerformanceWorkspace({
           rows={summaryFilteredRows}
           onReload={loadMeasures}
           readOnly
+          onOpenHistory={setHistoryIndicatorId}
         />
       )}
+
+      {historyIndicator ? (
+        <MeasureIndicatorHistoryPanel
+          organizationId={organizationId}
+          sourceModuleCode={sourceModuleCode}
+          indicator={historyIndicator}
+          onClose={() => setHistoryIndicatorId(null)}
+        />
+      ) : null}
 
       {mode === 'administration' ? (
         <section className="sparks-measures-workspace__catalog-section">

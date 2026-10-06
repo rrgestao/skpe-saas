@@ -368,13 +368,13 @@ export function MethodologyArtifactsSection({ organizationId, projectId, canMana
 
   const onFile = (event: ChangeEvent<HTMLInputElement>) => setFile(event.target.files?.[0] ?? null)
 
-  if (!projectId) return <section className="skpe-artifacts-empty"><h2>Artefatos e evidências</h2><p>Inicie a jornada estratégica para gerenciar as entregas metodológicas.</p></section>
+  if (!projectId) return <section className="skpe-artifacts-empty"><h2>Entregas e Relatórios</h2><p>Inicie a jornada estratégica para gerenciar entregas, relatórios e artefatos metodológicos.</p></section>
 
   return <section className="skpe-artifacts-page">
     <header className="skpe-artifacts-header">
       <div>
-        {onBack && <button type="button" className="skpe-artifacts-secondary" onClick={onBack}>← {backLabel}</button>}<span>Gestão metodológica</span><h1>Artefatos e evidências</h1><p>Controle entregas, versões, validações e prontidão dos gates.</p></div>
-      <div className="skpe-artifacts-header-actions">{canGenerateDeliveryKit && <button type="button" className="skpe-artifacts-secondary" onClick={() => setShowDeliveryKit(true)}>Kit de Entregas</button>}{canManage && <button type="button" className="skpe-artifacts-primary" onClick={() => setShowCreate(true)}>+ Novo artefato</button>}</div>
+        {onBack && <button type="button" className="skpe-artifacts-secondary" onClick={onBack}>← {backLabel}</button>}<span>Central de saídas executivas</span><h1>Entregas e Relatórios</h1><p>Gere relatórios e kits de entrega a partir dos artefatos governados, preservando versões, validações e prontidão da Jornada.</p></div>
+      <div className="skpe-artifacts-header-actions">{canGenerateDeliveryKit && <button type="button" className="skpe-artifacts-secondary" onClick={() => setShowDeliveryKit(true)}>Gerar entregas e relatório</button>}{canManage && <button type="button" className="skpe-artifacts-primary" onClick={() => setShowCreate(true)}>+ Novo artefato</button>}</div>
     </header>
     {showDeliveryKit && canGenerateDeliveryKit && <DeliveryKitDialog organizationId={organizationId} projectId={projectId} onClose={() => setShowDeliveryKit(false)} />}
 
