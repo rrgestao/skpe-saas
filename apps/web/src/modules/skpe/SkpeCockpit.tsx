@@ -9440,8 +9440,7 @@ case 'monitoring':
                 return
               }
 
-              if (code === 'PEM-03.03' || code === 'PEM-04.01') {
-                sessionStorage.setItem('skpe:initiatives:target-stage', code)
+              if (code === 'PEM-03.03') {
                 navigateToSection('initiatives')
                 return
               }
