@@ -9638,6 +9638,7 @@ case 'monitoring':
             projectId={projectContext?.project_id ?? ''}
             canManage={canManageArtifacts}
             canGenerateDeliveryKit={capabilities?.can_generate_delivery_kit ?? canViewArtifacts}
+            onOpenPerformanceOutputs={() => navigateToSection('overview')}
             onBack={() => navigateToSection('journey')}
             backLabel="Voltar para Jornada Estratégica"
           />

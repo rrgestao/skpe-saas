@@ -10,6 +10,7 @@ type Props = {
   projectId: string
   canManage: boolean
   canGenerateDeliveryKit: boolean
+  onOpenPerformanceOutputs?: () => void
   onBack?: () => void
   backLabel?: string
 }
@@ -119,7 +120,7 @@ const formatDate = (value: string | null | undefined) => {
 
 const safeName = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '_')
 
-export function MethodologyArtifactsSection({ organizationId, projectId, canManage, canGenerateDeliveryKit, onBack, backLabel = 'Voltar' }: Props) {
+export function MethodologyArtifactsSection({ organizationId, projectId, canManage, canGenerateDeliveryKit, onOpenPerformanceOutputs, onBack, backLabel = 'Voltar' }: Props) {
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
@@ -378,6 +379,34 @@ export function MethodologyArtifactsSection({ organizationId, projectId, canMana
     </header>
     {showDeliveryKit && canGenerateDeliveryKit && <DeliveryKitDialog organizationId={organizationId} projectId={projectId} onClose={() => setShowDeliveryKit(false)} />}
 
+    <section className="skpe-publication-center" aria-label="Centro de Publicação do Planejamento Estratégico">
+      <header>
+        <div><span>Publicação executiva</span><h2>Saídas disponíveis</h2></div>
+        <p>As saídas abaixo usam somente artefatos, dados e validações já registrados. Nenhum relatório completa conteúdo institucional ausente.</p>
+      </header>
+      <div className="skpe-publication-center__grid">
+        <article>
+          <span>Plano Estratégico</span><h3>Relatório Executivo do PE</h3>
+          <p>Consolida os artefatos selecionados e identifica se o ciclo final está concluído.</p>
+          <button type="button" disabled={!canGenerateDeliveryKit} onClick={() => setShowDeliveryKit(true)}>Gerar relatório estratégico</button>
+        </article>
+        <article>
+          <span>Entrega institucional</span><h3>Kit Final de Entregas</h3>
+          <p>Reúne versões governadas, índice e manifesto com SHA-256 em um pacote ZIP.</p>
+          <button type="button" disabled={!canGenerateDeliveryKit} onClick={() => setShowDeliveryKit(true)}>Montar kit final</button>
+        </article>
+        <article>
+          <span>Jornada</span><h3>Artefatos por etapa</h3>
+          <p>Consulta versões, validações, prontidão de gates e histórico de auditoria.</p>
+          <button type="button" onClick={() => { setTab('artifacts'); setStatusFilter('') }}>Consultar artefatos</button>
+        </article>
+        <article>
+          <span>Resultados</span><h3>Desempenho e Portfólio</h3>
+          <p>Relatório executivo de desempenho e extração CSV ficam na Visão Geral, junto ao cockpit governado.</p>
+          <button type="button" disabled={!onOpenPerformanceOutputs} onClick={onOpenPerformanceOutputs}>Abrir saídas de desempenho</button>
+        </article>
+      </div>
+    </section>
     <section className="skpe-artifacts-summary">
       <article role="button" tabIndex={0} onClick={() => { setTab('artifacts'); setStatusFilter('') }} onKeyDown={(e) => activate(e, () => { setTab('artifacts'); setStatusFilter('') })}><span>Artefatos</span><strong>{artifacts.length}</strong><small>Clique para consultar</small></article>
       <article role="button" tabIndex={0} onClick={() => { setTab('readiness') }} onKeyDown={(e) => activate(e, () => setTab('readiness'))}><span>Prontidão</span><strong>{progress}%</strong><small>{readiness.filter((item) => item.requirement_status === 'satisfied').length} de {readiness.length} requisitos</small></article>

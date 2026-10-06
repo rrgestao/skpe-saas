@@ -28,4 +28,8 @@ test('outputs center explains that reports and kits come from governed artifacts
   assert.match(artifacts, /Gerar entregas e relatório/)
   assert.match(delivery, /Gerar Relat.rio Executivo/)
   assert.match(delivery, /Gerar Kit em ZIP/)
+  assert.match(artifacts, /Relatório Executivo do PE/)
+  assert.match(artifacts, /Kit Final de Entregas/)
+  assert.match(artifacts, /Desempenho e Portfólio/)
+  assert.match(cockpit, /onOpenPerformanceOutputs=\{\(\) => navigateToSection\('overview'\)\}/)
 })
