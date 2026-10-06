@@ -54,6 +54,25 @@ type ExpectedChecklistItem = {
   display_order: number
 }
 
+type OperationalChecklistRow = {
+  checklist_id: string
+  checklist_code: string
+  checklist_name: string
+  checklist_status: string
+  completion_percentage: number | null
+  readiness_score: number | null
+  item_id: string
+  item_code: string
+  item_name: string
+  is_required: boolean
+  is_applicable: boolean
+  collection_status: string | null
+  assessment_status: string | null
+  compliance_level: number | null
+  overall_score: number | null
+  files_count: number
+  validated_files_count: number
+}
 type EvidenceVersionDownload = {
   id?: string
   evidence_asset_id: string
@@ -297,7 +316,7 @@ export function EvidenceManagementWorkspace({
   const [expectedLoading, setExpectedLoading] = useState(true)
   const [expectedError, setExpectedError] = useState('')
 
-  const [operationalChecklistItems, setOperationalChecklistItems] = useState<number | null>(null)
+  const [operationalChecklistRows, setOperationalChecklistRows] = useState<OperationalChecklistRow[]>([])
   const [operationalChecklistError, setOperationalChecklistError] = useState('')
 
   useEffect(() => {
@@ -369,8 +388,8 @@ export function EvidenceManagementWorkspace({
         target_project_id: projectId,
       })
       if (cancelled) return
-      if (queryError) { setOperationalChecklistItems(null); setOperationalChecklistError(queryError.message); return }
-      setOperationalChecklistItems((data ?? []).length)
+      if (queryError) { setOperationalChecklistRows([]); setOperationalChecklistError(queryError.message); return }
+      setOperationalChecklistRows((data ?? []) as unknown as OperationalChecklistRow[])
     }
     void loadOperationalChecklist()
     return () => { cancelled = true }
@@ -546,6 +565,25 @@ export function EvidenceManagementWorkspace({
       }))
   }, [expectedItems])
 
+  const checklistCoverage = useMemo(() => {
+    const applicable = operationalChecklistRows.filter((row) => row.is_applicable)
+    const required = applicable.filter((row) => row.is_required)
+    const linked = required.filter((row) => Number(row.files_count) > 0)
+    const validated = required.filter((row) => Number(row.validated_files_count) > 0)
+    const assessed = required.filter((row) => {
+      const status = row.assessment_status?.trim().toLowerCase() ?? ''
+      return Boolean(status) && !['pending', 'not_assessed', 'not_started'].includes(status)
+    })
+
+    return {
+      applicable: applicable.length,
+      required: required.length,
+      linked: linked.length,
+      validated: validated.length,
+      assessed: assessed.length,
+      validatedCoverage: required.length ? Math.round((validated.length / required.length) * 100) : null,
+    }
+  }, [operationalChecklistRows])
   const counts = useMemo(
     () => ({
       available: assets.filter(
@@ -897,11 +935,11 @@ export function EvidenceManagementWorkspace({
         <div className="skpe-evidence-operational-state">
           {operationalChecklistError ? (
             <span>Não foi possível consultar o checklist do projeto neste momento.</span>
-          ) : operationalChecklistItems === 0 ? (
+          ) : operationalChecklistRows.length === 0 ? (
             <span>O checklist do projeto ainda não foi materializado. Os requisitos previstos abaixo vêm do padrão metodológico publicado e devem ser reconciliados com evidências já disponíveis na organização antes de novas solicitações.</span>
-          ) : operationalChecklistItems !== null ? (
-            <span>Checklist do projeto disponível com {operationalChecklistItems} itens para coleta, vínculo e avaliação de evidências.</span>
-          ) : null}
+          ) : (
+            <span>Checklist do projeto disponível com {operationalChecklistRows.length} itens para coleta, vínculo e avaliação de evidências.</span>
+          )}
         </div>
       </header>
 
@@ -929,6 +967,23 @@ export function EvidenceManagementWorkspace({
           </div>
         </section>
       ) : null}
+      <section className="skpe-evidence-coverage" aria-label="Cobertura governada do checklist de evidências">
+        <header>
+          <div><span className="skpe-evidence-section__eyebrow">Cobertura do checklist</span><h3>Requisito ≠ arquivo ≠ evidência suficiente</h3></div>
+          <p>A cobertura abaixo só existe quando o checklist operacional foi materializado. Arquivo vinculado não é tratado automaticamente como evidência validada ou suficiente.</p>
+        </header>
+        {operationalChecklistRows.length === 0 ? (
+          <div className="skpe-evidence-coverage-empty">Cobertura ainda indisponível: o checklist operacional do projeto não foi materializado.</div>
+        ) : (
+          <div className="skpe-evidence-coverage-grid">
+            <article><span>Requisitos obrigatórios aplicáveis</span><strong>{checklistCoverage.required}</strong></article>
+            <article><span>Com arquivo vinculado</span><strong>{checklistCoverage.linked}</strong><small>vínculo físico não implica validação</small></article>
+            <article><span>Com arquivo validado</span><strong>{checklistCoverage.validated}</strong><small>{checklistCoverage.validatedCoverage == null ? '—' : `${checklistCoverage.validatedCoverage}%`} dos obrigatórios</small></article>
+            <article><span>Itens avaliados</span><strong>{checklistCoverage.assessed}</strong><small>avaliação contextual registrada</small></article>
+          </div>
+        )}
+        <p className="skpe-evidence-coverage-rule">Suficiência permanece uma avaliação contextual governada. Ela não é derivada da quantidade de arquivos nem do percentual de cobertura.</p>
+      </section>
       <div className="skpe-evidence-metrics">
         <MetricCard
           label="Evidências previstas"
@@ -1003,24 +1058,18 @@ export function EvidenceManagementWorkspace({
         />
 
         <MetricCard
-          label="Cobertura do Diagnóstico"
+          label="Em uso estratégico"
           value={counts.used || '—'}
           helper={
             counts.used
               ? `${counts.used} evidências vinculadas a uso analítico`
-              : 'não calculada sem vínculo requisito ↔ evidência'
+              : 'nenhuma evidência marcada como atualmente utilizada'
           }
           active={activeFilter === 'used'}
-          onClick={
-            counts.used > 0 ? () => toggleFilter('used') : undefined
-          }
+          onClick={counts.used > 0 ? () => toggleFilter('used') : undefined}
           disabled={counts.used === 0}
-          ariaLabel="Filtrar evidências utilizadas no diagnóstico"
-          tooltip={
-            counts.used > 0
-              ? 'Clique para mostrar evidências atualmente utilizadas.'
-              : 'A cobertura percentual será calculada após o vínculo do checklist.'
-          }
+          ariaLabel="Filtrar evidências em uso estratégico"
+          tooltip="Uso estratégico é distinto da cobertura de requisitos do checklist."
         />
       </div>
 
@@ -1105,7 +1154,7 @@ export function EvidenceManagementWorkspace({
               </button>
             </header>
 
-            {operationalChecklistItems === 0 ? (
+            {operationalChecklistRows.length === 0 ? (
               <div className="skpe-evidence-checklist-notice">
                 <strong>Checklist operacional ainda não materializado para este projeto.</strong>
                 <span>
