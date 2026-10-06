@@ -380,6 +380,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
   const [reviewingIncorporationRequest, setReviewingIncorporationRequest] = useState(false)
   const [confirmingIntegralMatches, setConfirmingIntegralMatches] = useState(false)
   const [decidingIncorporationRequest, setDecidingIncorporationRequest] = useState(false)
+  const [materializingIncorporationRequest, setMaterializingIncorporationRequest] = useState(false)
   const [blockedReview, setBlockedReview] = useState<BlockedReview | null>(null)
   const [correctedValuesText, setCorrectedValuesText] = useState('')
   const [reviewNotes, setReviewNotes] = useState('')
@@ -963,6 +964,54 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
     }
   }
 
+  const materializeIncorporationRequest = async () => {
+    const requestId = String(incorporationReview?.request?.id ?? '')
+    if (!requestId) return
+
+    const confirmed = window.confirm(
+      'Esta ação executará a incorporação governada do registro aprovado ao modelo canônico. A decisão ficará auditada e não equivale a uma nova aprovação institucional. Deseja continuar?',
+    )
+    if (!confirmed) return
+
+    const reason = window.prompt(
+      'Registre a justificativa para executar a incorporação governada:',
+    )?.trim()
+    if (!reason || reason.length < 10) return
+
+    setMaterializingIncorporationRequest(true)
+    setMessage('Executando incorporação governada...')
+    setMessageType('info')
+
+    try {
+      const { data, error } = await supabase.functions.invoke('skpe-import-incorporation', {
+        body: {
+          action: 'materialize_request',
+          requestId,
+          reason,
+        },
+      })
+      if (error) throw error
+      const reviewPackage = (data ?? null) as IncorporationReviewPackage | null
+      if (!reviewPackage?.request || reviewPackage.materializationExecuted !== true) {
+        throw new Error('A incorporação não retornou confirmação de materialização.')
+      }
+      setIncorporationReview(reviewPackage)
+      setMessage('Incorporação governada concluída. Proveniência, revisão e decisão permaneceram preservadas para auditoria.')
+      setMessageType('success')
+      if (batchId) {
+        const coverage = await loadMappingCoverage(batchId)
+        await loadIncorporationCandidates(batchId, coverage)
+        await loadSummary(batchId)
+      }
+    } catch (error) {
+      setMessage(error instanceof Error
+        ? `Não foi possível executar a incorporação governada: ${error.message}`
+        : 'Não foi possível executar a incorporação governada.')
+      setMessageType('error')
+    } finally {
+      setMaterializingIncorporationRequest(false)
+    }
+  }
   const openExistingBatch = async (id: string) => {
     setOpeningBatchId(id)
     setPayload(null)
@@ -1539,8 +1588,24 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                         Fechar revisão
                       </button>
                     </div>
+                    {['approved', 'approved_with_reservations'].includes(String(incorporationReview.request?.request_status ?? '')) ? (
+                      <div className="canonical-materialization-action">
+                        <strong>Incorporação governada disponível</strong>
+                        <p>
+                          A revisão humana e a decisão já foram registradas. A ação abaixo executa somente a materialização técnica autorizada pelo contrato canônico, preservando proveniência e auditoria.
+                        </p>
+                        <button
+                          type="button"
+                          className="readiness"
+                          onClick={() => void materializeIncorporationRequest()}
+                          disabled={materializingIncorporationRequest}
+                        >
+                          {materializingIncorporationRequest ? 'Incorporando...' : 'Executar incorporação governada'}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
-                  <p className="canonical-readiness-note">Revisão e decisão ficam registradas para auditoria. A incorporação definitiva ao planejamento permanece bloqueada e não é executada por esta tela.</p>
+                  <p className="canonical-readiness-note">Revisão, decisão e eventual materialização são etapas distintas e auditadas. Nenhum arquivo importado se torna autoridade apenas por ter sido enviado ao staging.</p>
                 </div>
               )}
 

@@ -37,6 +37,6 @@ test('organization-scoped portability uses business language for historical revi
   assert.match(portability, /Importe dados históricos para revisão controlada/)
   assert.match(staging, /Fila governada de revisão pré-carga/)
   assert.match(staging, /Atualizar dados para revisão/)
-  assert.match(staging, /incorporação definitiva ao planejamento permanece bloqueada/)
+  assert.match(staging, /Revisão, decisão e eventual materialização são etapas distintas e auditadas/)
   assert.doesNotMatch(staging, /Preparar pacote completo/)
 })

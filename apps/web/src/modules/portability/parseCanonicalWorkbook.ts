@@ -585,7 +585,7 @@ function positioningValidationPreflight(workbook: ExcelJS.Workbook): Positioning
   }
 }
 
-function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number, positioningValidation: PositioningValidationPreflight): ReconciliationConflict[] {
+function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number, positioningValidation: PositioningValidationPreflight, organization: string): ReconciliationConflict[] {
   const decisionRows = sheetMatrix(workbook.getWorksheet('18_Decisoes'))
   const pmvvRows = sheetMatrix(workbook.getWorksheet('34_PMVV_Validacao'))
   const gateRows = sheetMatrix(workbook.getWorksheet('31_Gate_Deliberativo'))
@@ -604,7 +604,7 @@ function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number, pos
       id: 'REC-001', severity: 'critical', topic: 'PMVV',
       sourceA: '18_Decisoes / DEC-02.03', valueA: `${pmvvDecision} em ${pmvvDate}`,
       sourceB: '34_PMVV_Validacao', valueB: pmvvStatus,
-      canonicalValue: 'PMVV aprovado pela Direção em 30/07/2026; institucionalização em andamento.',
+      canonicalValue: `PMVV reportado como aprovado pela gestão de ${organization}; institucionalização permanece sujeita à reconciliação governada.`,
       rule: 'Decisão formal, data, evidência e status pós-reunião devem ser interpretados em conjunto.', decision: 'accept_canonical',
     },
     {
@@ -633,7 +633,7 @@ function canonicalConflicts(workbook: ExcelJS.Workbook, valuesCount: number, pos
   ]
 }
 
-export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImportPreview> {
+export async function parseCanonicalWorkbook(file: File, expectedOrganization?: { code?: string; name?: string }): Promise<CanonicalImportPreview> {
   validateFileMetadata(file)
   const fileBuffer = await file.arrayBuffer()
   if (!hasZipSignature(fileBuffer)) {
@@ -654,8 +654,12 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
 
   const projectRows = sheetMatrix(workbook.getWorksheet('01_Projeto'))
   const organization = findValue(projectRows, 'Organização')
-  if (organization.toLocaleUpperCase('pt-BR') !== 'COOTAQUARA') {
-    throw new Error(`A planilha pertence a “${organization || 'organização não identificada'}”. A carga canônica inicial está bloqueada para outra organização.`)
+  const normalizedOrganization = slug(organization)
+  const expectedNames = [expectedOrganization?.name, expectedOrganization?.code]
+    .map((value) => slug(value ?? ''))
+    .filter(Boolean)
+  if (expectedNames.length > 0 && !expectedNames.includes(normalizedOrganization)) {
+    throw new Error(`A planilha pertence a “${organization || 'organização não identificada'}” e não corresponde à organização selecionada.`)
   }
 
   const sheets: SheetInventory[] = []
@@ -684,7 +688,7 @@ export async function parseCanonicalWorkbook(file: File): Promise<CanonicalImpor
 
   const valuesCount = entities.find((entity) => entity.entityCode === 'living_value')?.records.length ?? 0
   const positioningValidation = positioningValidationPreflight(workbook)
-  const conflicts = canonicalConflicts(workbook, valuesCount, positioningValidation)
+  const conflicts = canonicalConflicts(workbook, valuesCount, positioningValidation, organization || expectedOrganization?.name || expectedOrganization?.code || 'Organização')
   const phaseRows = sheetMatrix(workbook.getWorksheet('02_Fases'))
   const mf1Status = recordValue(phaseRows, 'codigo', 'MF1', 'status') || 'Não informado'
   const mf2Status = recordValue(phaseRows, 'codigo', 'MF2', 'status') || 'Não informado'

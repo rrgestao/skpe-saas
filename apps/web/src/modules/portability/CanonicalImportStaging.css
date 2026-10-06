@@ -603,3 +603,5 @@
     min-width: 760px;
   }
 }
+
+.canonical-materialization-action{display:grid;gap:.45rem;margin-top:.8rem;padding:.8rem .9rem;border:1px solid #bdd5ca;border-radius:10px;background:#f4faf7}.canonical-materialization-action strong{font-size:.8rem;color:#173f32}.canonical-materialization-action p{margin:0;color:#61736a;font-size:.74rem;line-height:1.45}.canonical-materialization-action button{justify-self:start}

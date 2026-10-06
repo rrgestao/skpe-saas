@@ -73,7 +73,7 @@ Functional v1 complete plus:
 | Executive portfolio CSV | Implemented | CLOSED_FOR_V1_BASE | Tabular executive extraction complete. |
 | Entregas e Relatórios navigation | Implemented | CLOSED_FOR_V1_BASE | First-class area complete; final publication set still required. |
 | Final PE report / delivery package | Partial | V1_REQUIRED | Consolidate full executive PE report and phase/final delivery packages from governed artifacts. |
-| Import / export / portability | Advanced | V1_REQUIRED | E2E reimport/interchange validation and authority-preservation tests. |
+| Import / export / portability | Implemented + DEV validated | CLOSED_FOR_V1 | Multi-organization round-trip, authority preservation, human review/decision and explicit governed materialization closed in checkpoint 084. |
 | Organization/user administration | Advanced | V1_RELEASE | Runtime permission/profile/role scenarios and unauthorized-path validation. |
 | Security hardening | Backlog identified | V1_RELEASE | Triage Supabase security advisor findings and close critical/high release-relevant items. |
 | Frontend performance | Build green, bundle large | V1_RELEASE | Code splitting/lazy-loading for heavy areas; establish acceptable bundle/runtime threshold. |
@@ -230,7 +230,9 @@ Must distinguish:
 - validated;
 - currently used.
 
-### V1-R05 — Import/export portability E2E
+### V1-R05 — Import/export portability E2E — CLOSED_FOR_V1 (Checkpoint 084)
+
+Closure status: 613/613 full-suite PASS; production build PASS; DEV Edge Function skpe-import-incorporation v11 active with JWT verification. No real customer materialization executed.
 
 Minimum scenarios:
 

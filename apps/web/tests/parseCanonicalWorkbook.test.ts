@@ -22,11 +22,11 @@ function setTable(sheet: ExcelJS.Worksheet, headers: string[], rows: Array<Array
   rows.forEach((values, index) => { sheet.getRow(index + 5).values = [null, ...values] })
 }
 
-async function representativeV26(options: { prefixedOoxml?: boolean; valuesSheet?: string; approvedPositioning?: boolean } = {}): Promise<Uint8Array> {
+async function representativeV26(options: { prefixedOoxml?: boolean; valuesSheet?: string; approvedPositioning?: boolean; organization?: string } = {}): Promise<Uint8Array> {
   const workbook = new ExcelJS.Workbook()
   V26_SHEETS.forEach((name) => workbook.addWorksheet(name === '35_Valores' ? (options.valuesSheet ?? name) : name))
   setTable(workbook.getWorksheet('01_Projeto')!, ['Campo', 'Informação'], [
-    ['Organização', 'COOTAQUARA'], ['Horizonte estratégico', '2026–2030'], ['Versão da solução', '26.0'],
+    ['Organização', options.organization ?? 'COOTAQUARA'], ['Horizonte estratégico', '2026–2030'], ['Versão da solução', '26.0'],
   ])
   setTable(workbook.getWorksheet('02_Fases')!, ['Código', 'Fase', 'Status'], [
     ['MF1', 'Diagnóstico e Entendimento Estratégico', 'Aprovado'], ['MF2', 'Formulação Estratégica', 'Em andamento'],
@@ -122,6 +122,21 @@ describe('parseCanonicalWorkbook', () => {
     assert.match(preview.journey.nextStage, /Reconciliar v26 com o atestado recebido/)
   })
 
+  it('valida a planilha contra a organização selecionada sem hard-code de cliente', async () => {
+    const bytes = await representativeV26({ organization: 'COOPERATIVA TESTE' })
+    const preview = await parseCanonicalWorkbook(
+      asFile(bytes, 'SPARKs_PE_COOPERATIVA_TESTE.xlsx'),
+      { code: 'CTESTE', name: 'COOPERATIVA TESTE' },
+    )
+    assert.equal(preview.organization, 'COOPERATIVA TESTE')
+    await assert.rejects(
+      parseCanonicalWorkbook(
+        asFile(bytes, 'SPARKs_PE_COOPERATIVA_TESTE.xlsx'),
+        { code: 'OUTRA', name: 'OUTRA ORGANIZAÇÃO' },
+      ),
+      /não corresponde à organização selecionada/,
+    )
+  })
   it('mantém compatibilidade com o alias legado 35_Valores_Vivos', async () => {
     const preview = await parseCanonicalWorkbook(asFile(await representativeV26({ valuesSheet: '35_Valores_Vivos' })))
     assert.equal(preview.entities.find((entity) => entity.entityCode === 'living_value')?.records.length, 7)

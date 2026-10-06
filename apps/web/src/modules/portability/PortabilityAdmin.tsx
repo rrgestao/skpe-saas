@@ -516,7 +516,7 @@ export function PortabilityAdmin({ organizations, fixedOrganizationId }: Props) 
 
           <aside className="portability-request-note">
             <strong>Importante</strong>
-            <span>Esta etapa registra a solicitação e sua trilha de auditoria. A geração física dos arquivos e a aplicação de importações serão implementadas nos blocos seguintes.</span>
+            <span>A solicitação inicia uma trilha auditável. Exportações podem gerar JSON, Excel, HTML e ZIP; importações passam por prévia, staging, simulação, revisão humana e materialização governada antes de alterar o estado canônico.</span>
           </aside>
 
           <div className="portability-request-actions">

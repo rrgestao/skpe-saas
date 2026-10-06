@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 type RequestPayload = {
-  action?: 'prepare_review' | 'get_review' | 'get_batch_review_queue' | 'review_item' | 'review_request_items' | 'review_batch_integral_matches' | 'decide_request'
+  action?: 'prepare_review' | 'get_review' | 'get_batch_review_queue' | 'review_item' | 'review_request_items' | 'review_batch_integral_matches' | 'decide_request' | 'materialize_request'
   importRecordId?: string
   batchId?: string
   requestId?: string
@@ -92,7 +92,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'Conteúdo da requisição inválido.' }, 400)
   }
 
-  const supportedActions = ['prepare_review', 'get_review', 'get_batch_review_queue', 'review_item', 'review_request_items', 'review_batch_integral_matches', 'decide_request']
+  const supportedActions = ['prepare_review', 'get_review', 'get_batch_review_queue', 'review_item', 'review_request_items', 'review_batch_integral_matches', 'decide_request', 'materialize_request']
   if (!payload.action || !supportedActions.includes(payload.action)) {
     return jsonResponse({ error: 'Ação inválida.' }, 400)
   }
@@ -176,6 +176,9 @@ Deno.serve(async (request) => {
   if (canManage !== true && isSuperAdmin !== true) {
     return jsonResponse({ error: 'Sem permissão para operar esta incorporação.' }, 403)
   }
+
+  let materializationExecuted = false
+  let materializationResult: unknown = null
 
   const actorType = isSuperAdmin === true ? 'sparks_consultancy' : 'organization'
   const actorUserId = requesterData.user.id
@@ -689,6 +692,36 @@ Deno.serve(async (request) => {
     if (decisionError) return jsonResponse({ error: compactError(decisionError) }, 400)
   }
 
+  if (payload.action === 'materialize_request') {
+    const reason = payload.reason?.trim()
+    if (!reason || reason.length < 10) {
+      return jsonResponse({ error: 'Justificativa da materialização deve ter pelo menos 10 caracteres.' }, 400)
+    }
+
+    const { data: materialized, error: materializationError } = await adminClient.rpc(
+      'skpe_execute_governed_import_materialization',
+      {
+        p_request_id: requestId,
+        p_materialized_by_actor_type: actorType,
+        p_materialized_by_user_id: actorUserId,
+        p_metadata: {
+          source: 'skpe-import-incorporation-edge',
+          action: 'materialize_request',
+          authenticated_actor_user_id: actorUserId,
+          human_confirmation: true,
+          reason,
+          semantic_inference: false,
+        },
+      },
+    )
+
+    if (materializationError) {
+      return jsonResponse({ error: compactError(materializationError) }, 409)
+    }
+
+    materializationExecuted = true
+    materializationResult = materialized
+  }
   if (!requestId || !importRecordId) {
     return jsonResponse({ error: 'Contexto da incorporação incompleto.' }, 500)
   }
@@ -759,7 +792,8 @@ Deno.serve(async (request) => {
   return jsonResponse({
     success: true,
     action: payload.action,
-    materializationExecuted: false,
+    materializationExecuted,
+    materializationResult,
     request: requestResponse.data,
     importRecord: recordResponse.data,
     items: itemsResponse.data ?? [],

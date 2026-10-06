@@ -48,7 +48,7 @@ test('edge function authenticates and authorizes before privileged orchestration
   assert.match(edge, /skpe_prepare_import_incorporation_review/)
 })
 
-test('edge function exposes governed human review and decision without materialization', () => {
+test('edge function separates governed review and decision from explicit materialization', () => {
   assert.match(edge, /'prepare_review' \| 'get_review' \| 'get_batch_review_queue' \| 'review_item' \| 'review_request_items' \| 'review_batch_integral_matches' \| 'decide_request'/)
   assert.match(edge, /human_bulk_review: true/)
   assert.match(edge, /human_batch_confirmation: true/)
@@ -81,10 +81,13 @@ test('edge function exposes governed human review and decision without materiali
   assert.match(edge, /appliedImportRecordIds/)
   assert.match(edge, /totalReviewableRecords/)
   assert.match(edge, /eligible_with_reservations/)
-  assert.doesNotMatch(edge, /skpe_execute_governed_import_materialization/)
+  assert.match(edge, /materialize_request/)
+  assert.match(edge, /skpe_execute_governed_import_materialization/)
+  assert.match(edge, /human_confirmation: true/)
+  assert.match(edge, /semantic_inference: false/)
 })
 
-test('staging exposes preparation UX without approval or materialization CTA', () => {
+test('staging exposes review, decision and explicit governed materialization as distinct steps', () => {
   assert.match(staging, /Fila governada de revisão pré-carga/)
   assert.match(staging, /Preservação histórica \/ proveniência/)
   assert.match(staging, /Reconciliação com registro existente/)
@@ -120,6 +123,7 @@ test('staging exposes preparation UX without approval or materialization CTA', (
   assert.match(staging, /action: 'review_request_items'/)
   assert.match(staging, /decideIncorporationRequest/)
   assert.match(staging, /Aprovar informação/)
-  assert.match(staging, /A incorporação definitiva ao planejamento permanece bloqueada/)
-  assert.doesNotMatch(staging, />Materializar</)
+  assert.match(staging, /Executar incorporação governada/)
+  assert.match(staging, /materializeIncorporationRequest/)
+  assert.match(staging, /Nenhum arquivo importado se torna autoridade apenas por ter sido enviado ao staging/)
 })
