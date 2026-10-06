@@ -46,5 +46,5 @@ test('workspace exposes validated count and states the official-reading rule', (
   assert.match(workspace, /measurement_status: string \| null/)
   assert.match(workspace, /label: 'Validados'/)
   assert.match(workspace, /summaryFilter === 'validated'/)
-  assert.match(workspace, /somente apurações validadas compõem a leitura oficial/)
+  assert.match(workspace, /Somente estados governados compõem Meta oficial, Benchmark oficial e leitura oficial/)
 })

@@ -72,6 +72,8 @@ type GridRow = {
   strategicBinding: string
   status: string
   target: string
+  targetStatus: string
+  officialTarget: string
   targetPeriod: string
   measurement: string
   measurementStatus: string
@@ -83,6 +85,8 @@ type GridRow = {
   performance: string
   officialPerformance: string
   benchmark: string
+  benchmarkStatus: string
+  officialBenchmark: string
   benchmarkSource: string
   benchmarkContext: string
 }
@@ -113,8 +117,22 @@ function statusLabel(value: string | null | undefined) {
     active: 'Ativo',
     inactive: 'Inativo',
     archived: 'Arquivado',
+    achieved: 'Atingida',
+    not_achieved: 'Não atingida',
   }
   return value ? labels[value] ?? value : 'Não informada'
+}
+
+function officialTargetLabel(row: OrganizationIndicatorGridItem) {
+  if (!row.target_id) return 'Sem meta'
+  if (!['active', 'achieved', 'not_achieved'].includes(row.target_status ?? '')) return 'Meta não oficial'
+  return display(row.target_value)
+}
+
+function officialBenchmarkLabel(row: OrganizationIndicatorGridItem) {
+  if (!row.benchmark_id) return 'Sem benchmark'
+  if (!['active', 'verified'].includes(row.benchmark_status ?? '')) return 'Benchmark não oficial'
+  return display(row.benchmark_value)
 }
 
 function measurementLabel(row: OrganizationIndicatorGridItem) {
@@ -215,6 +233,8 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
         strategicBinding: strategicBindingLabel(row),
         status: statusLabel(row.indicator_status),
         target: row.target_id ? display(row.target_value) : 'Não informada',
+        targetStatus: statusLabel(row.target_status),
+        officialTarget: officialTargetLabel(row),
         targetPeriod: periodLabel(row.target_period_start, row.target_period_end),
         measurement: measurementLabel(row),
         measurementStatus: measurementStatusLabel(row.measurement_status),
@@ -226,6 +246,8 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
         performance: performanceLabel(row.effective_performance),
         officialPerformance: officialPerformanceLabel(row),
         benchmark: row.benchmark_id ? display(row.benchmark_value) : 'Não informado',
+        benchmarkStatus: statusLabel(row.benchmark_status),
+        officialBenchmark: officialBenchmarkLabel(row),
         benchmarkSource: row.benchmark_source_name ?? 'Não informada',
         benchmarkContext: [row.benchmark_reference_organization, row.benchmark_reference_period]
           .filter(Boolean)
@@ -250,7 +272,9 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
       { id: 'responsibility', label: 'Responsabilidade', minWidth: 175 },
       { id: 'strategicBinding', label: 'Vínculo estratégico', minWidth: 205 },
       { id: 'status', label: 'Situação', minWidth: 115, align: 'center' },
-      { id: 'target', label: 'Meta', minWidth: 120, align: 'center' },
+      { id: 'target', label: 'Meta selecionada', minWidth: 135, align: 'center' },
+      { id: 'targetStatus', label: 'Situação da meta', minWidth: 145, align: 'center' },
+      { id: 'officialTarget', label: 'Meta oficial', minWidth: 140, align: 'center' },
       { id: 'targetPeriod', label: 'Horizonte da meta', minWidth: 185 },
       {
         id: 'measurement',
@@ -278,10 +302,12 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
       },
       {
         id: 'benchmark',
-        label: 'Benchmark',
-        minWidth: 125,
+        label: 'Benchmark selecionado',
+        minWidth: 165,
         align: 'center',
       },
+      { id: 'benchmarkStatus', label: 'Situação do benchmark', minWidth: 175, align: 'center' },
+      { id: 'officialBenchmark', label: 'Benchmark oficial', minWidth: 160, align: 'center' },
       {
         id: 'benchmarkSource',
         label: 'Fonte do benchmark',

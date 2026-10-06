@@ -155,7 +155,7 @@ export function MeasuresPerformanceWorkspace({
   const [adoptionMessage, setAdoptionMessage] = useState('')
   const [adopting, setAdopting] = useState(false)
   const [adoptionPanelOpen, setAdoptionPanelOpen] = useState(false)
-  const [summaryFilter, setSummaryFilter] = useState<'all' | 'withTarget' | 'assessed' | 'validated' | 'withBenchmark'>('all')
+  const [summaryFilter, setSummaryFilter] = useState<'all' | 'withTarget' | 'officialTarget' | 'assessed' | 'validated' | 'withBenchmark' | 'officialBenchmark'>('all')
   const [historyIndicatorId, setHistoryIndicatorId] = useState<string | null>(null)
 
   const selectedReference = useMemo(
@@ -347,6 +347,7 @@ export function MeasuresPerformanceWorkspace({
 
   const summary = useMemo(() => {
     const withTarget = uniqueRows.filter((row) => row.target_id).length
+    const officialTarget = uniqueRows.filter((row) => row.target_id && ['active', 'achieved', 'not_achieved'].includes(row.target_status ?? '')).length
     const assessed = uniqueRows.filter(
       (row) =>
         row.measurement_state &&
@@ -354,19 +355,26 @@ export function MeasuresPerformanceWorkspace({
     ).length
     const validated = uniqueRows.filter((row) => row.measurement_status === 'validated').length
     const withBenchmark = uniqueRows.filter((row) => row.benchmark_id).length
+    const officialBenchmark = uniqueRows.filter((row) => row.benchmark_id && ['active', 'verified'].includes(row.benchmark_status ?? '')).length
 
     return {
       indicators: uniqueRows.length,
       withTarget,
+      officialTarget,
       assessed,
       validated,
       withBenchmark,
+      officialBenchmark,
     }
   }, [uniqueRows])
 
   const summaryFilteredRows = useMemo(() => {
     if (summaryFilter === 'withTarget') {
       return uniqueRows.filter((row) => Boolean(row.target_id))
+    }
+
+    if (summaryFilter === 'officialTarget') {
+      return uniqueRows.filter((row) => row.target_id && ['active', 'achieved', 'not_achieved'].includes(row.target_status ?? ''))
     }
 
     if (summaryFilter === 'assessed') {
@@ -379,6 +387,10 @@ export function MeasuresPerformanceWorkspace({
 
     if (summaryFilter === 'validated') {
       return uniqueRows.filter((row) => row.measurement_status === 'validated')
+    }
+
+    if (summaryFilter === 'officialBenchmark') {
+      return uniqueRows.filter((row) => row.benchmark_id && ['active', 'verified'].includes(row.benchmark_status ?? ''))
     }
 
     if (summaryFilter === 'withBenchmark') {
@@ -509,10 +521,12 @@ export function MeasuresPerformanceWorkspace({
         ariaLabel="Filtros rápidos dos indicadores"
         items={[
           { id: 'all', label: 'Indicadores', value: summary.indicators },
-          { id: 'withTarget', label: 'Com meta', value: summary.withTarget },
+          { id: 'withTarget', label: 'Com meta registrada', value: summary.withTarget },
+          { id: 'officialTarget', label: 'Metas oficiais', value: summary.officialTarget },
           { id: 'assessed', label: 'Apurados', value: summary.assessed },
           { id: 'validated', label: 'Validados', value: summary.validated },
-          { id: 'withBenchmark', label: 'Com benchmark', value: summary.withBenchmark },
+          { id: 'withBenchmark', label: 'Com benchmark registrado', value: summary.withBenchmark },
+          { id: 'officialBenchmark', label: 'Benchmarks oficiais', value: summary.officialBenchmark },
         ]}
         selectedId={summaryFilter}
         onSelect={(id) => {
@@ -535,7 +549,7 @@ export function MeasuresPerformanceWorkspace({
               : 'Medidas do contexto'}
           </h3>
           <p>
-            Ausência de apuração permanece distinta de valor zero. A última apuração pode estar pendente, rejeitada ou validada; somente apurações validadas compõem a leitura oficial. Dê duplo clique em um indicador para consultar histórico e tendência governados.
+            Presença não equivale a oficialidade: metas em rascunho e benchmarks em rascunho/arquivados permanecem visíveis, mas são qualificados. Somente estados governados compõem Meta oficial, Benchmark oficial e leitura oficial. Dê duplo clique em um indicador para consultar histórico e tendência governados.
           </p>
         </div>
       </div>
