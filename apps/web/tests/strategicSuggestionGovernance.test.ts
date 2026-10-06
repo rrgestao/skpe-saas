@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  phase2SuggestionGovernanceNotice,
   type GovernedStrategicSuggestion,
   validateGovernedStrategicSuggestion,
 } from '../src/modules/skpe/contracts/strategic-suggestion-governance.ts'
@@ -80,8 +81,8 @@ test('Formulação Estratégica expõe o contrato transversal de sugestão e val
     'utf8',
   )
   assert.match(source, /phase2SuggestionGovernanceNotice/)
-  assert.match(source, /Governança das sugestões da Fase 2/)
-  assert.match(source, /Análise assistida e validação humana/)
+  assert.match(phase2SuggestionGovernanceNotice, /Análise assistida/)
+  assert.match(phase2SuggestionGovernanceNotice, /A decisão final é sempre humana/)
 })
 
 test('contrato preserva as cinco ações canônicas de recomendação', () => {

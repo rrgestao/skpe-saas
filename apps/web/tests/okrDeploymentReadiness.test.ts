@@ -37,7 +37,7 @@ test('PEM-03.01 completion fails closed when readiness is not satisfied', () => 
 
 test('OKR decomposition UI exposes canonical PEM-03.01 readiness', () => {
   assert.match(section, /get_skpe_okr_deployment_readiness/)
-  assert.match(section, /Prontidão de PEM-03\.01/)
+  assert.match(section, /Prontidão de OKRs e Resultados-Chave/)
   assert.match(section, /Não existe quantidade fixa/)
   assert.match(section, /OEs aprovados/)
   assert.match(section, /Pendências metodológicas/)

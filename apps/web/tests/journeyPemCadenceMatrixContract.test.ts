@@ -37,8 +37,8 @@ test('linha de base usa janelas governadas por Megafase e mantem fases provisór
 })
 
 test('Administracao da Organizacao expoe a matriz e o total efetivo', () => {
-  assert.match(panel, /PEM-00 · Fases/)
-  assert.match(panel, /PEM-04 · Fases/)
+  assert.match(panel, /Preparação e Enquadramento · Etapas/)
+  assert.match(panel, /Implementação e Mobilização · Etapas/)
   assert.match(panel, /implementationCadenceTotal/)
   assert.match(panel, /Total efetivo atual:/)
 })
@@ -64,8 +64,8 @@ test('Gates sao marcos e nao consomem duracao propria', () => {
 })
 
 test('Administracao expoe Fases de PEM-00 e PEM-01 e calcula totais derivados', () => {
-  assert.match(panel, /PEM-00\.01 · Abertura, Mandato e Escopo/)
-  assert.match(panel, /PEM-01\.05 · SWOT e TOWS/)
+  assert.match(panel, /Abertura, Mandato e Escopo/)
+  assert.match(panel, /SWOT e TOWS/)
   assert.match(panel, /pem00PhaseTotal/)
   assert.match(panel, /pem01PhaseTotal/)
 })
@@ -90,7 +90,7 @@ test('Linha de Base posiciona Fases da PEM-02 e Gate no fechamento', () => {
 })
 
 test('Administracao expoe Fases e total derivado da PEM-02', () => {
-  assert.match(panel, /PEM-02\.04 · Objetivos Estratégicos/)
+  assert.match(panel, /Objetivos Estratégicos/)
   assert.match(panel, /pem02PhaseTotal/)
   assert.doesNotMatch(panel, /PEM02_DURATION','PEM-02 · Formulação Estratégica/)
 })

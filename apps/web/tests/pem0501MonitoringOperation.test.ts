@@ -42,7 +42,7 @@ test('PEM-05.01 completion is fail-closed without changing cycle state', () => {
 })
 
 test('monitoring UI exposes PEM-05.01 operation readiness', () => {
-  assert.match(panel, /PEM-05\.01 · Operação da Rotina de Monitoramento/)
+  assert.match(panel, /Operação da Rotina de Monitoramento/)
   assert.match(panel, /get_skpe_pem0501_monitoring_operation_readiness/)
   assert.match(panel, /Não abre, submete, ratifica ou fecha ciclos automaticamente/)
   assert.match(panel, /Registros operacionais/)

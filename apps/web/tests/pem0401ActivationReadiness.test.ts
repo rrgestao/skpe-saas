@@ -43,7 +43,7 @@ test('PEM-04.01 completion is fail-closed and records readiness evidence', () =>
 })
 
 test('PEM-04.01 UI exposes activation readiness and opens initiatives workspace', () => {
-  assert.match(section, /PEM-04\.01 · Ativação do Plano de Implementação/)
+  assert.match(section, /Ativação do Plano de Implementação/)
   assert.match(section, /get_skpe_pem0401_activation_readiness/)
   assert.match(section, /não redesenha nem reprioriza/)
   assert.match(section, /Nenhuma execução é iniciada automaticamente/)

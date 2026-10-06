@@ -48,7 +48,7 @@ test('PEM-05.04 does not mutate approved formulation or create revision automati
 })
 
 test('monitoring UI requires explicit human decision and explicit revision creation', () => {
-  assert.match(panel, /PEM-05\.04 · Atualização Estratégica Governada/)
+  assert.match(panel, /Atualização Estratégica Governada/)
   assert.match(panel, /record_skpe_strategy_update_decision/)
   assert.match(panel, /create_skpe_formulation_revision/)
   assert.match(panel, /Uma nova revisão só é criada por ação humana explícita/)

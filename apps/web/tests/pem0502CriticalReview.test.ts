@@ -47,7 +47,7 @@ test('PEM-05.02 never creates conclusions or decisions automatically', () => {
 })
 
 test('monitoring UI exposes PEM-05.02 critical review readiness', () => {
-  assert.match(panel, /PEM-05\.02 · Análise Crítica de Desempenho/)
+  assert.match(panel, /Análise Crítica de Desempenho/)
   assert.match(panel, /get_skpe_pem0502_critical_review_readiness/)
   assert.match(panel, /Nenhuma conclusão ou decisão é criada automaticamente/)
   assert.match(panel, /Itens de análise/)

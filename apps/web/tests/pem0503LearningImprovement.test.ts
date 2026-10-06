@@ -50,7 +50,7 @@ test('PEM-05.03 completion is fail-closed and never fabricates learning/action',
 })
 
 test('monitoring UI exposes PEM-05.03 learning readiness', () => {
-  assert.match(panel, /PEM-05\.03 · Aprendizado e Melhoria/)
+  assert.match(panel, /Aprendizado e Melhoria/)
   assert.match(panel, /get_skpe_pem0503_learning_readiness/)
   assert.match(panel, /nenhum desses elementos é criado ou aceito automaticamente/)
   assert.match(panel, /Aprendizados/)

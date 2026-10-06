@@ -35,8 +35,8 @@ test('layout catalog is available to authenticated users while organization writ
 test('organization-scoped portability uses business language for historical review', () => {
   assert.match(portability, /Dados da organização/)
   assert.match(portability, /Importe dados históricos para revisão controlada/)
-  assert.match(staging, /Dados históricos do Diagnóstico — revisão humana/)
-  assert.match(staging, /Preparar dados históricos para revisão/)
-  assert.match(staging, /incorporação ao planejamento atual/)
+  assert.match(staging, /Fila governada de revisão pré-carga/)
+  assert.match(staging, /Atualizar dados para revisão/)
+  assert.match(staging, /incorporação definitiva ao planejamento permanece bloqueada/)
   assert.doesNotMatch(staging, /Preparar pacote completo/)
 })
