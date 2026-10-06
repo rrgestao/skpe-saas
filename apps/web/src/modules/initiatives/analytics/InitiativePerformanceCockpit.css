@@ -1314,3 +1314,11 @@ button.skpe-performance-summary-card:focus-visible {
   text-align: center;
 }
 /* PLAN DEVELOPMENT READINESS V7 END */
+/* SKPE-MON-ANL-01 - Executive dashboard wave */
+.skpe-performance-export-row{display:flex;justify-content:flex-end;margin:-.25rem 0 .85rem}
+.skpe-performance-export-button{border:1px solid var(--organization-secondary,var(--sparks-accent,#176b53));border-radius:9px;background:transparent;padding:.55rem .8rem;color:var(--organization-secondary,var(--sparks-accent,#176b53));font:inherit;font-size:.72rem;font-weight:750;cursor:pointer}
+.skpe-performance-export-button:hover{background:color-mix(in srgb,var(--organization-secondary,var(--sparks-accent,#176b53)) 8%,transparent)}
+.skpe-performance-execution-section .skpe-performance-summary-grid{margin-bottom:1rem}
+.skpe-performance-composition-section .skpe-performance-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1180px){.skpe-performance-composition-section .skpe-performance-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.skpe-performance-export-row{justify-content:stretch}.skpe-performance-export-button{width:100%}}

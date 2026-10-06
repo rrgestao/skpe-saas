@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase'
 import { StrategicBscMap } from '../../skpe/features/strategy/StrategicBscMap'
+import { buildExecutivePerformanceReportHtml } from './executivePerformanceReport'
 
 import './InitiativePerformanceCockpit.css'
 
@@ -38,6 +39,8 @@ type InitiativePerformanceCockpitProps = {
   surface?: 'dashboard' | 'monitoring'
   dashboard: unknown
   organizationId: string
+  organizationName?: string
+  projectName?: string
   projectId?: string | null
   initiatives: unknown[]
   journeySnapshot?: JourneyPerformanceSnapshot | null
@@ -105,6 +108,51 @@ function formatDashboardDate(value: string | null | undefined) {
   return new Intl.DateTimeFormat('pt-BR').format(parsed)
 }
 
+function distribution(
+  items: NormalizedInitiative[],
+  pick: (item: NormalizedInitiative) => string,
+  fallback: string,
+) {
+  const counts = new Map<string, number>()
+  for (const item of items) {
+    const key = pick(item).trim() || fallback
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return Array.from(counts.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label, 'pt-BR'))
+}
+
+function priorityLabel(value: string) {
+  return (
+    {
+      critical: 'Crítica',
+      high: 'Alta',
+      medium: 'Média',
+      low: 'Baixa',
+    }[value] ?? (value || 'Não informada')
+  )
+}
+
+function classLabel(value: string) {
+  return (
+    {
+      program: 'Programa',
+      project: 'Projeto',
+      structuring_action: 'Ação estruturante',
+      process: 'Processo',
+      sprint: 'Sprint',
+      task: 'Tarefa',
+      work: 'Trabalho',
+      initiative: 'Iniciativa',
+    }[value] ?? (value || 'Não informada')
+  )
+}
+
+function csvCell(value: unknown) {
+  const text = String(value ?? '')
+  return `"${text.replaceAll('"', '""')}"`
+}
 function normalizeInitiative(value: unknown): NormalizedInitiative {
   const record = asRecord(value)
   return {
@@ -140,6 +188,8 @@ function normalizeInitiative(value: unknown): NormalizedInitiative {
 export function InitiativePerformanceCockpit({
   surface = 'monitoring',
   organizationId,
+  organizationName = 'Organização',
+  projectName = 'Planejamento Estratégico',
   projectId: projectIdProp = null,
   initiatives,
   journeySnapshot = null,
@@ -406,6 +456,28 @@ export function InitiativePerformanceCockpit({
     total - inProgress - proposals - underAnalysis - blocked - completed,
   )
 
+  const operationalItems = normalized.filter(
+    (item) => !['proposed', 'under_analysis'].includes(item.status) && item.progress !== null,
+  )
+  const averageOperationalProgress = operationalItems.length
+    ? operationalItems.reduce((sum, item) => sum + (item.progress ?? 0), 0) / operationalItems.length
+    : null
+  const priorityDistribution = distribution(
+    normalized,
+    (item) => priorityLabel(item.priority),
+    'Não informada',
+  )
+  const areaDistribution = distribution(
+    normalized,
+    (item) => item.responsibleArea,
+    'Sem área responsável',
+  ).slice(0, 6)
+  const classDistribution = distribution(
+    normalized,
+    (item) => classLabel(item.initiativeClass),
+    'Não informada',
+  )
+
   const portfolioSegments = [
     { key: 'in_progress', label: 'Em execução', value: inProgress, color: 'var(--organization-secondary, #01877A)' },
     { key: 'proposals', label: 'Propostas', value: proposals, color: 'color-mix(in srgb, var(--organization-secondary, #01877A) 58%, white)' },
@@ -464,6 +536,67 @@ export function InitiativePerformanceCockpit({
   const okrsReadinessProgress = planReadiness.okrsTotal
     ? Math.max(0, Math.min(100, ((planReadiness.okrsReady ?? 0) / planReadiness.okrsTotal) * 100))
     : 0
+
+  const exportPortfolioCsv = () => {
+    const header = ['Código', 'Iniciativa', 'Situação', 'Prioridade', 'Classe', 'Área responsável', 'Responsável', 'Criticidade', 'Progresso (%)', 'Início', 'Término-alvo']
+    const lines = normalized.map((item) => [
+      item.code,
+      item.name,
+      item.status,
+      priorityLabel(item.priority),
+      classLabel(item.initiativeClass),
+      item.responsibleArea || 'Sem área responsável',
+      item.responsibleName || '',
+      item.criticality,
+      item.progress ?? '',
+      item.startDate,
+      item.dueDate,
+    ].map(csvCell).join(';'))
+    const csv = `\uFEFF${header.map(csvCell).join(';')}\r\n${lines.join('\r\n')}`
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    const stamp = new Date().toISOString().slice(0, 10).replaceAll('-', '')
+    anchor.href = url
+    anchor.download = `SPARKs-PE-Portfolio-Executivo-${stamp}.csv`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+  }
+  const exportExecutivePerformance = () => {
+    const html = buildExecutivePerformanceReportHtml({
+      organizationName,
+      projectName,
+      generatedAt: new Date(),
+      journey: journeySnapshot,
+      portfolio: {
+        total,
+        operationalUniverse: operationalItems.length,
+        averageOperationalProgress,
+        inProgress,
+        underAnalysis,
+        proposals,
+        blocked,
+        critical,
+        withoutDueDate,
+        attentionSignals: attentionTotal,
+      },
+      priorities: priorityDistribution,
+      areas: areaDistribution,
+      classes: classDistribution,
+    })
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    const stamp = new Date().toISOString().slice(0, 10).replaceAll('-', '')
+    anchor.href = url
+    anchor.download = `SPARKs-PE-Relatorio-Executivo-Desempenho-${stamp}.html`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <section className="skpe-performance-cockpit" aria-label="Painel de Resultados e Desempenho">
@@ -604,6 +737,14 @@ export function InitiativePerformanceCockpit({
           <h2>Execução estratégica e atenção à gestão</h2>
           <p>Acompanhe o que está sendo executado e onde a gestão precisa agir.</p>
         </header>
+        <div className="skpe-performance-export-row">
+          <button type="button" className="skpe-performance-export-button" onClick={exportPortfolioCsv}>
+            Exportar dados do portfólio (CSV)
+          </button>
+          <button type="button" className="skpe-performance-export-button" onClick={exportExecutivePerformance}>
+            Exportar relatório executivo de desempenho
+          </button>
+        </div>
 
       <section className="skpe-performance-execution-section">
         <header className="skpe-performance-section-heading">
@@ -614,6 +755,23 @@ export function InitiativePerformanceCockpit({
             Execução corrente do portfólio de iniciativas.
           </p>
         </header>
+
+        <div className="skpe-performance-summary-grid">
+          <button type="button" className="skpe-performance-summary-card" onClick={() => onStatusDrilldown('all')}>
+            <span>Portfólio visível</span><strong>{total}</strong><small>iniciativas no universo carregado</small>
+          </button>
+          <button type="button" className="skpe-performance-summary-card" onClick={() => onStatusDrilldown('in_progress')}>
+            <span>Em execução</span><strong>{inProgress}</strong><small>iniciativas em execução corrente</small>
+          </button>
+          <article className="skpe-performance-summary-card">
+            <span>Progresso médio operacional</span>
+            <strong>{averageOperationalProgress == null ? '—' : `${averageOperationalProgress.toFixed(0)}%`}</strong>
+            <small>{operationalItems.length} iniciativa(s) elegível(is); propostas e itens em análise não entram na média</small>
+          </article>
+          <button type="button" className="skpe-performance-summary-card is-attention" onClick={() => onStatusDrilldown('attention')}>
+            <span>Sinais para gestão</span><strong>{attentionTotal}</strong><small>ocorrências; uma iniciativa pode gerar mais de um sinal</small>
+          </button>
+        </div>
 
         <div className="skpe-performance-portfolio-visual">
           <button
@@ -688,6 +846,48 @@ export function InitiativePerformanceCockpit({
               <strong>{item.value}</strong>
             </button>
           ))}
+        </div>
+      </section>
+
+      <section className="skpe-performance-composition-section">
+        <header className="skpe-performance-section-heading">
+          <div><p className="skpe-performance-eyebrow">Composição do portfólio</p><h2>Onde a execução está concentrada</h2></div>
+          <p>Distribuições calculadas somente com atributos existentes no portfólio governado. Ausência de classificação permanece explícita.</p>
+        </header>
+        <div className="skpe-performance-grid">
+          <article className="skpe-performance-card">
+            <header><h3>Por prioridade</h3><span>Quantidade de iniciativas por prioridade registrada.</span></header>
+            <div className="skpe-performance-bars">
+              {priorityDistribution.map((item) => (
+                <div className="skpe-performance-bar-row" key={item.label}>
+                  <div className="skpe-performance-bar-label"><span>{item.label}</span><strong>{item.value}</strong></div>
+                  <div className="skpe-performance-bar-track"><span style={{ width: `${total ? (item.value / total) * 100 : 0}%` }} /></div>
+                </div>
+              ))}
+            </div>
+          </article>
+          <article className="skpe-performance-card">
+            <header><h3>Por área responsável</h3><span>Até seis áreas com maior concentração do portfólio.</span></header>
+            <div className="skpe-performance-bars">
+              {areaDistribution.map((item) => (
+                <div className="skpe-performance-bar-row" key={item.label}>
+                  <div className="skpe-performance-bar-label"><span>{item.label}</span><strong>{item.value}</strong></div>
+                  <div className="skpe-performance-bar-track"><span style={{ width: `${total ? (item.value / total) * 100 : 0}%` }} /></div>
+                </div>
+              ))}
+            </div>
+          </article>
+          <article className="skpe-performance-card">
+            <header><h3>Por classe</h3><span>Programas, projetos, ações e demais classes do portfólio.</span></header>
+            <div className="skpe-performance-bars">
+              {classDistribution.map((item) => (
+                <div className="skpe-performance-bar-row" key={item.label}>
+                  <div className="skpe-performance-bar-label"><span>{item.label}</span><strong>{item.value}</strong></div>
+                  <div className="skpe-performance-bar-track"><span style={{ width: `${total ? (item.value / total) * 100 : 0}%` }} /></div>
+                </div>
+              ))}
+            </div>
+          </article>
         </div>
       </section>
       </section>

@@ -1135,6 +1135,7 @@ function buildJourneyPerformanceSnapshot(
 
 function OverviewSection({
   organizationId,
+  organizationName,
   projectContext,
   canManageJourney,
   startingProject,
@@ -1144,6 +1145,7 @@ function OverviewSection({
   onInitiativeDrilldown,
 }: {
   organizationId: string
+  organizationName: string
   projectContext: StrategicProjectContext | null
   canManageJourney: boolean
   startingProject: boolean
@@ -1246,6 +1248,8 @@ function OverviewSection({
       surface="dashboard"
       dashboard={dashboard}
       organizationId={organizationId}
+      organizationName={organizationName}
+      projectName={projectContext?.project_name ?? 'Planejamento Estratégico'}
       projectId={projectContext?.project_id ?? null}
       initiatives={initiatives}
       journeySnapshot={journeySnapshot}
@@ -3719,6 +3723,8 @@ const [kanbanInitiativeId, setKanbanInitiativeId] =
           surface="monitoring"
           dashboard={dashboard}
           organizationId={organizationId}
+          organizationName={organizationName}
+          projectName={projectContext?.project_name ?? 'Planejamento Estratégico'}
           initiatives={initiatives}
           canAdjustStrategicMap={canAdjustStrategicMap}
           onStatusDrilldown={(filter) => {
@@ -9336,6 +9342,7 @@ case 'monitoring':
         {activeSection === 'overview' && (
           <OverviewSection
             organizationId={organizationId}
+            organizationName={organizationName}
             projectContext={projectContext}
             canManageJourney={canManageJourney}
             startingProject={startingProject}

@@ -77,6 +77,36 @@ type EvidenceGridRow = {
   utilizada: string
 }
 
+type EvidenceCreateForm = {
+  title: string
+  description: string
+  evidenceType: string
+  sourceType: string
+  referenceDate: string
+  validityDate: string
+  confidentialityLevel: string
+  changeReason: string
+}
+
+const emptyEvidenceCreateForm: EvidenceCreateForm = {
+  title: '',
+  description: '',
+  evidenceType: 'document',
+  sourceType: 'internal',
+  referenceDate: '',
+  validityDate: '',
+  confidentialityLevel: 'internal',
+  changeReason: '',
+}
+
+async function fileSha256(file: File) {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  return Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, '0')).join('')
+}
+
+function safeStorageFileName(name: string) {
+  return name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'evidencia'
+}
 type CardFilter =
   | 'expected'
   | 'available'
@@ -246,6 +276,12 @@ export function EvidenceManagementWorkspace({
   const [showChecklistWorkspace, setShowChecklistWorkspace] = useState(false)
   const [downloadVersions, setDownloadVersions] = useState<EvidenceVersionDownload[]>([])
   const [selectedEvidenceAssetId, setSelectedEvidenceAssetId] = useState<string | null>(null)
+  const [showCreateEvidence, setShowCreateEvidence] = useState(false)
+  const [evidenceForm, setEvidenceForm] = useState<EvidenceCreateForm>(emptyEvidenceCreateForm)
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
+  const [savingEvidence, setSavingEvidence] = useState(false)
+  const [evidenceCreateMessage, setEvidenceCreateMessage] = useState('')
+  const [evidenceRefreshKey, setEvidenceRefreshKey] = useState(0)
 
   const [expectedItems, setExpectedItems] = useState<ExpectedChecklistItem[]>([])
   const [expectedLoading, setExpectedLoading] = useState(true)
@@ -312,7 +348,7 @@ export function EvidenceManagementWorkspace({
     return () => {
       cancelled = true
     }
-  }, [organizationId])
+  }, [organizationId, evidenceRefreshKey])
 
   useEffect(() => {
     let cancelled = false
@@ -597,6 +633,105 @@ export function EvidenceManagementWorkspace({
     return value ? String(value) : ''
   }
 
+  async function saveEvidence() {
+    const title = evidenceForm.title.trim()
+    const reason = evidenceForm.changeReason.trim()
+    if (!title) { setEvidenceCreateMessage('Informe o título da evidência.'); return }
+    if (reason.length < 10) { setEvidenceCreateMessage('Informe uma justificativa com pelo menos 10 caracteres.'); return }
+
+    setSavingEvidence(true)
+    setEvidenceCreateMessage('')
+
+    let uploadedPath: string | null = null
+    let contentHash: string | null = null
+    let assetId: string | null = null
+
+    try {
+      if (evidenceFile) {
+        contentHash = await fileSha256(evidenceFile)
+        const { data: existingEvidence, error: existingEvidenceError } = await supabase
+          .from('sparks_evidence_assets')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('content_hash', contentHash)
+          .is('archived_at', null)
+          .maybeSingle()
+        if (existingEvidenceError) throw existingEvidenceError
+        assetId = existingEvidence?.id ?? null
+
+        if (!assetId) {
+          const safeName = safeStorageFileName(evidenceFile.name)
+          const now = new Date()
+          uploadedPath = `${organizationId}/${now.getFullYear()}/${crypto.randomUUID()}-${safeName}`
+          const { error: uploadError } = await supabase.storage
+            .from('sparks-evidence')
+            .upload(uploadedPath, evidenceFile, {
+              cacheControl: '3600',
+              contentType: evidenceFile.type || undefined,
+              upsert: false,
+            })
+          if (uploadError) throw uploadError
+        }
+      }
+
+      if (!assetId) {
+        const { data: evidenceAssetId, error: registerError } = await supabase.rpc(
+        'register_sparks_evidence_asset',
+        {
+          target_organization_id: organizationId,
+          evidence_title: title,
+          evidence_description: evidenceForm.description.trim() || null,
+          target_evidence_type: evidenceForm.evidenceType,
+          target_source_type: evidenceForm.sourceType,
+          target_origin_module_code: 'SK-PE',
+          target_reference_date: evidenceForm.referenceDate || null,
+          target_validity_date: evidenceForm.validityDate || null,
+          target_confidentiality_level: evidenceForm.confidentialityLevel,
+          target_content_hash: contentHash,
+          target_file_name: evidenceFile?.name ?? null,
+          target_mime_type: evidenceFile?.type || null,
+          target_file_size_bytes: evidenceFile?.size ?? null,
+          target_storage_bucket: uploadedPath ? 'sparks-evidence' : null,
+          target_storage_path: uploadedPath,
+          change_reason: reason,
+        },
+      )
+
+        if (registerError) throw registerError
+        assetId = typeof evidenceAssetId === 'string' ? evidenceAssetId : null
+      }
+
+      if (assetId) {
+        const { error: linkError } = await supabase.rpc('link_sparks_evidence', {
+          target_organization_id: organizationId,
+          target_evidence_asset_id: assetId,
+          target_module_code: 'SK-PE',
+          target_type: 'strategic_project',
+          target_id: projectId,
+          target_usage_purpose: 'Evidência disponível para diagnóstico, formulação, execução e monitoramento do Planejamento Estratégico.',
+          target_relevance_level: 'important',
+          target_is_primary: false,
+          change_reason: reason,
+        })
+        if (linkError) {
+          setEvidenceCreateMessage(`Evidência registrada, mas o vínculo ao projeto requer revisão: ${linkError.message}`)
+        } else {
+          setEvidenceCreateMessage('Evidência registrada e vinculada ao projeto com rastreabilidade.')
+        }
+      }
+
+      setEvidenceForm(emptyEvidenceCreateForm)
+      setEvidenceFile(null)
+      setEvidenceRefreshKey((value) => value + 1)
+    } catch (caught) {
+      if (uploadedPath) {
+        await supabase.storage.from('sparks-evidence').remove([uploadedPath])
+      }
+      setEvidenceCreateMessage(caught instanceof Error ? caught.message : 'Não foi possível registrar a evidência.')
+    } finally {
+      setSavingEvidence(false)
+    }
+  }
   async function downloadEvidence(asset: EvidenceRow) {
     const version = downloadVersions.find(
       (item) => item.evidence_asset_id === asset.evidence_asset_id,
@@ -626,13 +761,22 @@ export function EvidenceManagementWorkspace({
         </span>
         <div className="skpe-evidence-intro-heading-row">
           <h2>Base transversal para diagnóstico e decisões</h2>
-          <button
-            type="button"
-            className="skpe-evidence-checklist-button"
-            onClick={() => setShowChecklistWorkspace(true)}
-          >
-            Checklist de evidências e downloads
-          </button>
+          <div className="skpe-evidence-heading-actions">
+            <button
+              type="button"
+              className="skpe-evidence-checklist-button"
+              onClick={() => setShowCreateEvidence((value) => !value)}
+            >
+              {showCreateEvidence ? 'Fechar cadastro' : 'Registrar evidência'}
+            </button>
+            <button
+              type="button"
+              className="skpe-evidence-checklist-button"
+              onClick={() => setShowChecklistWorkspace(true)}
+            >
+              Checklist de evidências e downloads
+            </button>
+          </div>
         </div>
         <p>
           Decisões estratégicas confiáveis precisam nascer de fatos e dados, não de achismos.
@@ -655,6 +799,30 @@ export function EvidenceManagementWorkspace({
         </div>
       </header>
 
+      {showCreateEvidence ? (
+        <section className="skpe-evidence-create-card" aria-label="Registrar evidência">
+          <header>
+            <div><span className="skpe-evidence-section__eyebrow">Cadastro governado</span><h3>Nova evidência transversal</h3></div>
+            <p>O arquivo e seus metadados serão registrados no serviço transversal de evidências, sob autoridade documental do SK-DOC, e vinculados ao projeto estratégico atual.</p>
+          </header>
+          {evidenceCreateMessage ? <div className="skpe-evidence-create-message" role="status">{evidenceCreateMessage}</div> : null}
+          <div className="skpe-evidence-create-grid">
+            <label className="wide"><span>Título *</span><input value={evidenceForm.title} onChange={(event) => setEvidenceForm({ ...evidenceForm, title: event.target.value })} /></label>
+            <label><span>Categoria *</span><select value={evidenceForm.evidenceType} onChange={(event) => setEvidenceForm({ ...evidenceForm, evidenceType: event.target.value })}>{Object.entries(categoryLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+            <label><span>Origem *</span><select value={evidenceForm.sourceType} onChange={(event) => setEvidenceForm({ ...evidenceForm, sourceType: event.target.value })}><option value="internal">Interna</option><option value="external">Externa</option><option value="public">Pública</option><option value="market">Mercado</option><option value="benchmark">Benchmark</option><option value="regulatory">Regulatória</option><option value="partner">Parceiro</option><option value="other">Outra</option></select></label>
+            <label><span>Data de referência</span><input type="date" value={evidenceForm.referenceDate} onChange={(event) => setEvidenceForm({ ...evidenceForm, referenceDate: event.target.value })} /></label>
+            <label><span>Validade</span><input type="date" value={evidenceForm.validityDate} onChange={(event) => setEvidenceForm({ ...evidenceForm, validityDate: event.target.value })} /></label>
+            <label><span>Confidencialidade</span><select value={evidenceForm.confidentialityLevel} onChange={(event) => setEvidenceForm({ ...evidenceForm, confidentialityLevel: event.target.value })}><option value="public">Pública</option><option value="internal">Interna</option><option value="restricted">Restrita</option><option value="confidential">Confidencial</option></select></label>
+            <label className="wide"><span>Arquivo</span><input type="file" onChange={(event) => setEvidenceFile(event.target.files?.[0] ?? null)} /><small>Até 50 MB. PDF, Office, texto, CSV, JSON, ZIP e imagens usuais.</small></label>
+            <label className="wide"><span>Descrição</span><textarea value={evidenceForm.description} onChange={(event) => setEvidenceForm({ ...evidenceForm, description: event.target.value })} /></label>
+            <label className="wide"><span>Justificativa / contexto do registro *</span><textarea value={evidenceForm.changeReason} onChange={(event) => setEvidenceForm({ ...evidenceForm, changeReason: event.target.value })} placeholder="Explique por que esta evidência está sendo disponibilizada e para qual uso estratégico." /></label>
+          </div>
+          <div className="skpe-evidence-create-actions">
+            <button type="button" onClick={() => { setEvidenceForm(emptyEvidenceCreateForm); setEvidenceFile(null); setEvidenceCreateMessage('') }} disabled={savingEvidence}>Limpar</button>
+            <button type="button" className="primary" onClick={() => void saveEvidence()} disabled={savingEvidence}>{savingEvidence ? 'Registrando...' : 'Registrar evidência'}</button>
+          </div>
+        </section>
+      ) : null}
       <div className="skpe-evidence-metrics">
         <MetricCard
           label="Evidências previstas"
