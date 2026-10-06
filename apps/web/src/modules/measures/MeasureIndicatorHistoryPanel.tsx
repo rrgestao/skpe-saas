@@ -33,6 +33,16 @@ type Props = {
   onClose: () => void
 }
 
+function measurementStatusLabel(value: string | null) {
+  const labels: Record<string, string> = {
+    submitted: 'Aguardando validação',
+    validated: 'Validada',
+    rejected: 'Rejeitada',
+    superseded: 'Substituída',
+  }
+  return value ? labels[value] ?? value : 'Não informada'
+}
+
 function dateLabel(value: string | null) {
   if (!value) return '—'
   const parsed = new Date(`${value}T00:00:00`)
@@ -90,10 +100,10 @@ export function MeasureIndicatorHistoryPanel({
     }
   }, [indicator.indicator_id, organizationId, sourceModuleCode])
 
-  const chronological = useMemo(
+  const officialChronological = useMemo(
     () =>
       rows
-        .filter((row) => row.measured_value != null)
+        .filter((row) => row.measurement_status === 'validated' && row.measured_value != null)
         .slice()
         .sort((a, b) => {
           const aTime = a.measurement_date ? Date.parse(a.measurement_date) : a.observation_order
@@ -104,17 +114,17 @@ export function MeasureIndicatorHistoryPanel({
   )
 
   const trendEligible =
-    chronological.length >= 3 && rows.some((row) => row.trend_eligible)
+    officialChronological.length >= 3 && rows.some((row) => row.trend_eligible)
 
   const chart = useMemo(() => {
     if (!trendEligible) return null
-    const values = chronological.map((row) => Number(row.measured_value))
+    const values = officialChronological.map((row) => Number(row.measured_value))
     const minimum = Math.min(...values)
     const maximum = Math.max(...values)
     const span = maximum - minimum
 
-    const points = chronological.map((row, index) => {
-      const x = chronological.length === 1 ? 50 : 6 + (index / (chronological.length - 1)) * 88
+    const points = officialChronological.map((row, index) => {
+      const x = officialChronological.length === 1 ? 50 : 6 + (index / (officialChronological.length - 1)) * 88
       const normalized = span === 0 ? 0.5 : (Number(row.measured_value) - minimum) / span
       const y = 88 - normalized * 72
       return { row, x, y }
@@ -126,10 +136,10 @@ export function MeasureIndicatorHistoryPanel({
       points,
       polyline: points.map((point) => `${point.x},${point.y}`).join(' '),
     }
-  }, [chronological, trendEligible])
+  }, [officialChronological, trendEligible])
 
-  const newest = chronological.at(-1) ?? null
-  const oldest = chronological[0] ?? null
+  const newest = officialChronological.at(-1) ?? null
+  const oldest = officialChronological[0] ?? null
 
   return (
     <>
@@ -145,7 +155,7 @@ export function MeasureIndicatorHistoryPanel({
             <span>Histórico governado</span>
             <h3>{indicator.code ?? 'Indicador'} · {indicator.name ?? 'Sem nome'}</h3>
             <p>
-              A trajetória usa somente apurações canônicas vigentes. Ausência de dado não vira zero.
+              A trajetória oficial usa somente apurações validadas. Apurações pendentes ou rejeitadas continuam visíveis na tabela; ausência de dado não vira zero.
             </p>
           </div>
           <button type="button" onClick={onClose}>Fechar</button>
@@ -176,7 +186,7 @@ export function MeasureIndicatorHistoryPanel({
                 <header>
                   <div>
                     <span>Trajetória descritiva</span>
-                    <strong>{chronological.length} observações</strong>
+                    <strong>{officialChronological.length} observações validadas</strong>
                   </div>
                   <small>
                     A curva não classifica melhora ou piora automaticamente; essa interpretação depende de polaridade, meta e contexto governados.
@@ -205,6 +215,7 @@ export function MeasureIndicatorHistoryPanel({
                   <tr>
                     <th>Data</th>
                     <th>Valor</th>
+                    <th>Situação</th>
                     <th>Desempenho</th>
                     <th>Qualidade</th>
                     <th>Fonte</th>
@@ -213,11 +224,12 @@ export function MeasureIndicatorHistoryPanel({
                 </thead>
                 <tbody>
                   {rows.length === 0 ? (
-                    <tr><td colSpan={6}>Nenhuma apuração governada registrada para este indicador.</td></tr>
+                    <tr><td colSpan={7}>Nenhuma apuração governada registrada para este indicador.</td></tr>
                   ) : rows.map((row) => (
                     <tr key={row.measurement_id}>
                       <td>{dateLabel(row.measurement_date)}</td>
                       <td>{numberLabel(row.measured_value, indicator.unit)}</td>
+                      <td>{measurementStatusLabel(row.measurement_status)}</td>
                       <td>{row.effective_performance == null ? '—' : `${row.effective_performance.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}</td>
                       <td>{row.data_quality ?? 'Não informada'}</td>
                       <td>{row.source_name ?? row.source_reference ?? 'Não informada'}</td>

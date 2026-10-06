@@ -40,6 +40,7 @@ export type OrganizationIndicatorGridItem = {
   measurement_source_reference?: string | null
   evidence_reference?: string | null
   measurement_state: string | null
+  measurement_status?: string | null
   benchmark_id: string | null
   benchmark_type?: string | null
   benchmark_value: number | null
@@ -73,11 +74,14 @@ type GridRow = {
   target: string
   targetPeriod: string
   measurement: string
+  measurementStatus: string
+  officialMeasurement: string
   measurementDate: string
   measurementSource: string
   evidence: string
   interpretation: string
   performance: string
+  officialPerformance: string
   benchmark: string
   benchmarkSource: string
   benchmarkContext: string
@@ -118,6 +122,26 @@ function measurementLabel(row: OrganizationIndicatorGridItem) {
     return 'Ainda não apurado'
   }
   return row.measured_value == null ? 'Ainda não apurado' : String(row.measured_value)
+}
+
+function measurementStatusLabel(value: string | null | undefined) {
+  const labels: Record<string, string> = {
+    submitted: 'Aguardando validação',
+    validated: 'Validada',
+    rejected: 'Rejeitada',
+    superseded: 'Substituída',
+  }
+  return value ? labels[value] ?? value : 'Não informada'
+}
+
+function officialMeasurementLabel(row: OrganizationIndicatorGridItem) {
+  if (row.measurement_status !== 'validated') return 'Sem leitura oficial'
+  return row.measured_value == null ? 'Sem leitura oficial' : String(row.measured_value)
+}
+
+function officialPerformanceLabel(row: OrganizationIndicatorGridItem) {
+  if (row.measurement_status !== 'validated') return 'Não oficial'
+  return performanceLabel(row.effective_performance)
 }
 
 function performanceLabel(value: number | null) {
@@ -193,11 +217,14 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
         target: row.target_id ? display(row.target_value) : 'Não informada',
         targetPeriod: periodLabel(row.target_period_start, row.target_period_end),
         measurement: measurementLabel(row),
+        measurementStatus: measurementStatusLabel(row.measurement_status),
+        officialMeasurement: officialMeasurementLabel(row),
         measurementDate: dateLabel(row.measurement_date),
         measurementSource: display(row.measurement_source_name, 'Não informada'),
         evidence: display(row.evidence_reference, 'Não informada'),
         interpretation: interpretationLabel(row),
         performance: performanceLabel(row.effective_performance),
+        officialPerformance: officialPerformanceLabel(row),
         benchmark: row.benchmark_id ? display(row.benchmark_value) : 'Não informado',
         benchmarkSource: row.benchmark_source_name ?? 'Não informada',
         benchmarkContext: [row.benchmark_reference_organization, row.benchmark_reference_period]
@@ -231,14 +258,22 @@ export function OrganizationIndicatorsSmartGrid({ rows, onReload, readOnly = fal
         minWidth: 135,
         align: 'center',
       },
+      { id: 'measurementStatus', label: 'Situação da apuração', minWidth: 165 },
+      { id: 'officialMeasurement', label: 'Leitura oficial', minWidth: 145, align: 'center' },
       { id: 'measurementDate', label: 'Data da apuração', minWidth: 150 },
       { id: 'measurementSource', label: 'Fonte da apuração', minWidth: 180 },
       { id: 'evidence', label: 'Evidência', minWidth: 180 },
       { id: 'interpretation', label: 'Interpretação', minWidth: 150 },
       {
         id: 'performance',
-        label: 'Desempenho',
-        minWidth: 130,
+        label: 'Desempenho da última apuração',
+        minWidth: 185,
+        align: 'center',
+      },
+      {
+        id: 'officialPerformance',
+        label: 'Desempenho oficial',
+        minWidth: 155,
         align: 'center',
       },
       {

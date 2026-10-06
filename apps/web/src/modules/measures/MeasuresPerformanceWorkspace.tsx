@@ -54,6 +54,7 @@ type MeasureContextRow = {
   measurement_source_reference: string | null
   evidence_reference: string | null
   measurement_state: string | null
+  measurement_status: string | null
   benchmark_id: string | null
   benchmark_type: string | null
   benchmark_value: number | null
@@ -154,7 +155,7 @@ export function MeasuresPerformanceWorkspace({
   const [adoptionMessage, setAdoptionMessage] = useState('')
   const [adopting, setAdopting] = useState(false)
   const [adoptionPanelOpen, setAdoptionPanelOpen] = useState(false)
-  const [summaryFilter, setSummaryFilter] = useState<'all' | 'withTarget' | 'assessed' | 'withBenchmark'>('all')
+  const [summaryFilter, setSummaryFilter] = useState<'all' | 'withTarget' | 'assessed' | 'validated' | 'withBenchmark'>('all')
   const [historyIndicatorId, setHistoryIndicatorId] = useState<string | null>(null)
 
   const selectedReference = useMemo(
@@ -351,12 +352,14 @@ export function MeasuresPerformanceWorkspace({
         row.measurement_state &&
         row.measurement_state !== 'not_assessed',
     ).length
+    const validated = uniqueRows.filter((row) => row.measurement_status === 'validated').length
     const withBenchmark = uniqueRows.filter((row) => row.benchmark_id).length
 
     return {
       indicators: uniqueRows.length,
       withTarget,
       assessed,
+      validated,
       withBenchmark,
     }
   }, [uniqueRows])
@@ -372,6 +375,10 @@ export function MeasuresPerformanceWorkspace({
           Boolean(row.measurement_state) &&
           row.measurement_state !== 'not_assessed',
       )
+    }
+
+    if (summaryFilter === 'validated') {
+      return uniqueRows.filter((row) => row.measurement_status === 'validated')
     }
 
     if (summaryFilter === 'withBenchmark') {
@@ -504,6 +511,7 @@ export function MeasuresPerformanceWorkspace({
           { id: 'all', label: 'Indicadores', value: summary.indicators },
           { id: 'withTarget', label: 'Com meta', value: summary.withTarget },
           { id: 'assessed', label: 'Apurados', value: summary.assessed },
+          { id: 'validated', label: 'Validados', value: summary.validated },
           { id: 'withBenchmark', label: 'Com benchmark', value: summary.withBenchmark },
         ]}
         selectedId={summaryFilter}
@@ -527,7 +535,7 @@ export function MeasuresPerformanceWorkspace({
               : 'Medidas do contexto'}
           </h3>
           <p>
-            Ausência de apuração permanece distinta de valor zero. Dê duplo clique em um indicador para consultar histórico e tendência governados.
+            Ausência de apuração permanece distinta de valor zero. A última apuração pode estar pendente, rejeitada ou validada; somente apurações validadas compõem a leitura oficial. Dê duplo clique em um indicador para consultar histórico e tendência governados.
           </p>
         </div>
       </div>

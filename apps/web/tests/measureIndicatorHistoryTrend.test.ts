@@ -19,13 +19,13 @@ test('indicator history consumes the canonical history read model and its eligib
   assert.match(panel, /get_sparks_measure_indicator_history/)
   assert.match(panel, /target_limit: 24/)
   assert.match(panel, /trend_eligible/)
-  assert.match(panel, /chronological\.length >= 3/)
+  assert.match(panel, /officialChronological\.length >= 3/)
   assert.match(panel, /Histórico insuficiente para tendência governada/)
 })
 
 test('trend chart remains descriptive and never turns missing measurements into zero', () => {
-  assert.match(panel, /filter\(\(row\) => row\.measured_value != null\)/)
-  assert.match(panel, /Ausência de dado não vira zero/)
+  assert.match(panel, /measurement_status === 'validated' && row\.measured_value != null/)
+  assert.match(panel, /ausência de dado não vira zero/i)
   assert.match(panel, /não classifica melhora ou piora automaticamente/)
   assert.match(panel, /Nenhuma apuração governada registrada/)
 })
