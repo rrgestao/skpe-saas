@@ -28,7 +28,10 @@ import './App.css'
 const LAST_SUCCESSFUL_EMAIL_KEY =
   'skpe:last-successful-email'
 const PLATFORM_THEME_KEY = 'sparks:platform-theme'
-const PRIVACY_POLICY_VERSION = 'SPARKS-PRIVACY-2026-10-02'
+const SECURITY_POLICY_VERSION = 'POL-001-R00-2025-01-08'
+const SECURITY_POLICY_CODE = 'POL-001'
+const SECURITY_POLICY_REVISION = '00'
+const SECURITY_POLICY_DATE = '08/01/2025'
 
 type MessageType = 'info' | 'success' | 'error'
 
@@ -429,14 +432,14 @@ function App() {
 
   const [passwordFieldReady, setPasswordFieldReady] =
     useState(false)
-  const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false)
+  const [securityPolicyOpen, setSecurityPolicyOpen] = useState(false)
   const [accountRequestOpen, setAccountRequestOpen] = useState(false)
   const [accountRequestName, setAccountRequestName] = useState('')
   const [accountRequestEmail, setAccountRequestEmail] = useState('')
   const [accountRequestOrganization, setAccountRequestOrganization] = useState('')
   const [accountRequestRole, setAccountRequestRole] = useState('')
   const [accountRequestReason, setAccountRequestReason] = useState('')
-  const [accountRequestPrivacyAccepted, setAccountRequestPrivacyAccepted] = useState(false)
+  const [accountRequestSecurityPolicyAcknowledged, setAccountRequestSecurityPolicyAcknowledged] = useState(false)
   const [accountRequestSubmitting, setAccountRequestSubmitting] = useState(false)
 
   const [organizations, setOrganizations] =
@@ -1410,22 +1413,28 @@ function App() {
   ) => {
     event.preventDefault()
 
-    if (!accountRequestPrivacyAccepted) {
-      showMessage('É necessário aceitar a Política de Privacidade para enviar a solicitação.', 'error')
+    if (!accountRequestSecurityPolicyAcknowledged) {
+      showMessage(
+        'É necessário confirmar ciência da Política de Segurança Cibernética e da Informação para enviar a solicitação.',
+        'error',
+      )
       return
     }
 
     setAccountRequestSubmitting(true)
     clearMessage()
 
-    const { error } = await supabase.rpc('submit_platform_account_request', {
+    const { error } = await supabase.rpc('submit_platform_account_request_v2', {
       p_full_name: accountRequestName.trim(),
       p_email: accountRequestEmail.trim().toLowerCase(),
       p_organization_name: accountRequestOrganization.trim() || null,
       p_requested_role: accountRequestRole.trim() || null,
       p_phone: null,
       p_request_reason: accountRequestReason.trim() || null,
-      p_privacy_policy_version: PRIVACY_POLICY_VERSION,
+      p_policy_code: SECURITY_POLICY_CODE,
+      p_policy_revision: SECURITY_POLICY_REVISION,
+      p_policy_effective_date: '2025-01-08',
+      p_policy_version: SECURITY_POLICY_VERSION,
     })
 
     setAccountRequestSubmitting(false)
@@ -2273,15 +2282,15 @@ function App() {
           ) : null}
 
           <p className="sparks-login-legal">
-            Ao continuar, você concorda com os Termos de Serviço e a{' '}
+            Ao continuar, você declara ciência dos Termos de Serviço e da{' '}
             <button
               type="button"
               className="sparks-login-legal-link"
-              onClick={() => setPrivacyPolicyOpen(true)}
+              onClick={() => setSecurityPolicyOpen(true)}
             >
-              Política de Privacidade
+              Política de Segurança Cibernética e da Informação
             </button>{' '}
-            da Plataforma SPARKs.
+            da SPARKOOP.
           </p>
 
           {message && (
@@ -2317,8 +2326,8 @@ function App() {
                 <label>Função / papel pretendido<input value={accountRequestRole} onChange={(event) => setAccountRequestRole(event.target.value)} placeholder="Ex.: dirigente, colaborador, consultor" /></label>
                 <label>Motivo da solicitação<textarea value={accountRequestReason} onChange={(event) => setAccountRequestReason(event.target.value)} rows={3} /></label>
                 <label className="sparks-auth-consent">
-                  <input type="checkbox" checked={accountRequestPrivacyAccepted} onChange={(event) => setAccountRequestPrivacyAccepted(event.target.checked)} required />
-                  <span>Li e concordo com a <button type="button" onClick={() => setPrivacyPolicyOpen(true)}>Política de Privacidade</button>.</span>
+                  <input type="checkbox" checked={accountRequestSecurityPolicyAcknowledged} onChange={(event) => setAccountRequestSecurityPolicyAcknowledged(event.target.checked)} required />
+                  <span>Li e estou ciente da <button type="button" onClick={() => setSecurityPolicyOpen(true)}>Política de Segurança Cibernética e da Informação</button> da SPARKOOP.</span>
                 </label>
                 <button type="submit" className="primary-button" disabled={accountRequestSubmitting}>{accountRequestSubmitting ? 'Enviando...' : 'Enviar solicitação'}</button>
               </form>
@@ -2326,28 +2335,75 @@ function App() {
           </div>
         ) : null}
 
-        {privacyPolicyOpen ? (
+        {securityPolicyOpen ? (
           <div className="sparks-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="sparks-privacy-title">
-            <button className="sparks-auth-dialog-backdrop" type="button" aria-label="Fechar" onClick={() => setPrivacyPolicyOpen(false)} />
+            <button className="sparks-auth-dialog-backdrop" type="button" aria-label="Fechar" onClick={() => setSecurityPolicyOpen(false)} />
             <article className="sparks-auth-dialog-panel sparks-privacy-panel">
               <header>
                 <div>
-                  <span className="eyebrow">Versão {PRIVACY_POLICY_VERSION}</span>
-                  <h2 id="sparks-privacy-title">Política de Privacidade da Plataforma SPARKs</h2>
-                  <p>Aplicável ao acesso, uso, governança e integração de dados no ecossistema SPARKOOP.</p>
+                  <span className="eyebrow">Documento oficial SPARKOOP</span>
+                  <h2 id="sparks-privacy-title">Política de Segurança Cibernética e da Informação</h2>
+                  <p>Política institucional aplicável à proteção das informações e aos controles de segurança cibernética da SPARKOOP.</p>
                 </div>
-                <button type="button" className="sparks-auth-dialog-close" onClick={() => setPrivacyPolicyOpen(false)} aria-label="Fechar">×</button>
+                <button type="button" className="sparks-auth-dialog-close" onClick={() => setSecurityPolicyOpen(false)} aria-label="Fechar">×</button>
               </header>
+              <div className="sparks-policy-document-meta" aria-label="Identificação do documento">
+                <span><strong>Código</strong>{SECURITY_POLICY_CODE}</span>
+                <span><strong>Revisão</strong>{SECURITY_POLICY_REVISION}</span>
+                <span><strong>Data</strong>{SECURITY_POLICY_DATE}</span>
+                <span><strong>Unidade</strong>Governança</span>
+              </div>
               <div className="sparks-privacy-content">
-                <section><h3>1. Escopo e papéis</h3><p>A Plataforma SPARKs apoia governança, estratégia, gestão, documentos, evidências, conhecimento e decisões organizacionais. A SPARKOOP opera a Plataforma conforme os contratos aplicáveis; cada Organização permanece responsável pelos dados que insere, autoriza ou compartilha em seu contexto.</p></section>
-                <section><h3>2. Dados tratados</h3><p>Podem ser tratados dados de identificação e contato, vínculo e função organizacional, autenticação, permissões, registros de uso e auditoria, dados de projetos, documentos, evidências, decisões, indicadores, agendas e demais conteúdos inseridos legitimamente pelos usuários e Organizações.</p></section>
-                <section><h3>3. Finalidades e bases</h3><p>Os dados são utilizados para autenticar usuários, controlar acessos, executar funcionalidades contratadas, preservar rastreabilidade e segurança, produzir análises autorizadas, manter evidências e histórico, cumprir obrigações legais e contratuais e melhorar a confiabilidade operacional. O tratamento observa a LGPD e as bases legais aplicáveis a cada relação.</p></section>
-                <section><h3>4. Documentos, evidências e conhecimento</h3><p>SK-DOC governa documentos, evidências, versões, proveniência e integridade; SK-KM governa conhecimento, classificação, contexto e recuperação; módulos como SK-PE consomem referências e resultados sem assumir a autoridade documental.</p></section>
-                <section><h3>5. Compartilhamento e integrações</h3><p>Dados podem ser processados por provedores de infraestrutura, identidade, armazenamento e integrações autorizadas, estritamente para viabilizar a Plataforma. Integrações externas, inclusive login Google ou fontes documentais, obedecem às permissões concedidas e aos contratos aplicáveis.</p></section>
-                <section><h3>6. Segurança, retenção e auditoria</h3><p>São adotados controles de autenticação, autorização, segregação por Organização, trilhas de auditoria, versionamento e medidas técnicas compatíveis com o risco. Os dados são mantidos pelo período necessário à finalidade, à relação contratual, à governança histórica e às obrigações legais aplicáveis.</p></section>
-                <section><h3>7. Direitos dos titulares</h3><p>Nos termos da LGPD, titulares podem solicitar confirmação de tratamento, acesso, correção, informação sobre compartilhamento e, quando aplicável, anonimização, bloqueio, eliminação, portabilidade, revisão de decisões automatizadas e revogação de consentimento. A solicitação deve ser dirigida ao canal de privacidade indicado pela SPARKOOP ou pela Organização controladora.</p></section>
-                <section><h3>8. Decisões assistidas e uso de IA</h3><p>Recursos de inteligência podem apoiar classificação, análise, recomendação e síntese. Quando houver decisão institucional relevante, a Plataforma preserva validação humana, contexto, fonte e rastreabilidade, não substituindo automaticamente a autoridade decisória definida pela Organização.</p></section>
-                <section><h3>9. Atualizações</h3><p>Esta política pode ser atualizada para refletir evolução da Plataforma, novos módulos, integrações, requisitos legais ou contratuais. A versão vigente e sua data permanecem identificadas nesta tela.</p></section>
+                <section>
+                  <h3>1. Objetivo</h3>
+                  <p>Tratar e prevenir incidentes de segurança cibernética, reforçando o comprometimento da alta administração com a melhoria contínua dos procedimentos relacionados à segurança cibernética e da informação da SPARKOOP.</p>
+                </section>
+                <section>
+                  <h3>2. Abrangência</h3>
+                  <p>Todos os usuários que compõem as estruturas organizacionais da SPARKOOP (dirigentes, sócios, empregados e estagiários) e demais pessoas com acesso autorizado às informações da SPARKOOP, incluindo cooperados, parceiros, empresas prestadoras de serviço e ao público.</p>
+                </section>
+                <section>
+                  <h3>3. Documentos complementares</h3>
+                  <ul><li>DIN-001 Glossário</li></ul>
+                </section>
+                <section>
+                  <h3>4. Responsabilidades</h3>
+                  <ul>
+                    <li>A SPARKOOP, por meio da área de Governança de TI, Segurança e Inovação com reporte ao Diretor de Tecnologia da Informação, é responsável pela gestão centralizada de segurança cibernética da SPARKOOP.</li>
+                    <li>Todos os que compõem as estruturas organizacionais da SPARKOOP devem respeitar e praticar o conteúdo desta Política.</li>
+                  </ul>
+                </section>
+                <section>
+                  <h3>5. Procedimento</h3>
+                  <ol className="sparks-policy-procedures">
+                    <li><strong>5.1.</strong> Para reduzir a vulnerabilidade da instituição a incidentes cibernéticos e atender aos demais objetivos de segurança cibernética, a SPARKOOP adota procedimentos e controles, conforme porte e perfil de risco da entidade. Estes procedimentos e controles são aplicados para sistemas de informação desenvolvidos internamente ou adquiridos de terceiros.</li>
+                    <li><strong>5.2.</strong> É estabelecido plano de ação e de resposta a incidentes, revisado anualmente.</li>
+                    <li><strong>5.3.</strong> As informações de propriedade ou sob custódia das entidades da SPARKOOP, mantidas em meio eletrônico ou físico, são classificadas de acordo com os requisitos de proteção esperados em termos de sigilo, valor, requisitos legais, sensibilidade e necessidades do negócio, de modo que busquem assegurar a confidencialidade, a integridade e a disponibilidade dos dados e dos sistemas de informação utilizados, conforme manual de classificação da informação específico.</li>
+                    <li><strong>5.4.</strong> São adotados mecanismos para disseminação da cultura de segurança cibernética na entidade.</li>
+                    <li><strong>5.5.</strong> Complementam esta política e a ela se subordinam todas as normas e procedimentos operacionais que regulam a segurança cibernética no âmbito da SPARKOOP.</li>
+                  </ol>
+                </section>
+                <section>
+                  <h3>6. Indicadores de desempenho</h3>
+                  <ul><li>Índice de Incidentes Cibernéticos e da Informação</li></ul>
+                </section>
+                <section>
+                  <h3>7. Anexos</h3>
+                  <p>Não há.</p>
+                </section>
+                <section>
+                  <h3>8. Registros</h3>
+                  <ul><li>Atas das Assembleias do Conselho de Administração</li></ul>
+                </section>
+                <details className="sparks-policy-control">
+                  <summary>Controle documental</summary>
+                  <div className="sparks-policy-control-grid">
+                    <span><strong>Elaborador</strong>Ricardo Rodrigues</span>
+                    <span><strong>Aprovador</strong>Robson Silva</span>
+                    <span><strong>Homologador</strong>Conselho de Administração</span>
+                    <span><strong>Revisão 00</strong>Documento inicial · 08/01/2025</span>
+                  </div>
+                </details>
               </div>
             </article>
           </div>

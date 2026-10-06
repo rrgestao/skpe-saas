@@ -2819,3 +2819,65 @@ td,
   .sparks-login-card { width: min(410px, calc(100% - 2rem)); }
 }
 /* LOGIN NEXUS SCALE ALIGNMENT V3 END */
+.sparks-policy-document-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.9rem 0 1.1rem;
+  padding: 0.9rem;
+  border: 1px solid #dde5e1;
+  border-radius: 14px;
+  background: #f7faf8;
+}
+.sparks-policy-document-meta span,
+.sparks-policy-control-grid span {
+  display: grid;
+  gap: 0.2rem;
+  color: #4f5f57;
+  font-size: 0.86rem;
+}
+.sparks-policy-document-meta strong,
+.sparks-policy-control-grid strong {
+  color: #18392f;
+  font-size: 0.72rem;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+.sparks-privacy-content ul,
+.sparks-privacy-content ol {
+  margin: 0.45rem 0 0;
+  padding-left: 1.35rem;
+  color: #5f6b74;
+  line-height: 1.55;
+}
+.sparks-privacy-content li + li {
+  margin-top: 0.45rem;
+}
+.sparks-policy-procedures {
+  list-style: none;
+  padding-left: 0 !important;
+}
+.sparks-policy-control {
+  margin-top: 0.9rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid #dde5e1;
+  border-radius: 14px;
+  background: #fbfcfb;
+}
+.sparks-policy-control summary {
+  color: #18392f;
+  font-weight: 750;
+  cursor: pointer;
+}
+.sparks-policy-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 1rem;
+  margin-top: 0.9rem;
+}
+@media (max-width: 720px) {
+  .sparks-policy-document-meta,
+  .sparks-policy-control-grid {
+    grid-template-columns: 1fr;
+  }
+}
