@@ -8,6 +8,7 @@ test('executive report assembles selected canonical artifacts without inventing 
     organizationName: 'COOTAQUARA',
     projectName: 'Planejamento Estratégico 2026–2030',
     horizonLabel: '2026–2030',
+    isFinalized: false,
     generatedAt: new Date('2026-10-05T18:00:00.000Z'),
     artifacts: [
       {
@@ -37,7 +38,8 @@ test('executive report assembles selected canonical artifacts without inventing 
     ],
   })
 
-  assert.match(html, /Relatório Executivo do Planejamento Estratégico/)
+  assert.match(html, /Relatório Executivo de Trabalho/)
+  assert.match(html, /não deve ser apresentado como versão final institucional/)
   assert.match(html, /PEM-01 — Diagnóstico Estratégico/)
   assert.match(html, /PEM-02 — Formulação Estratégica/)
   assert.match(html, /Pacote de Diagnóstico/)
@@ -53,6 +55,7 @@ test('executive report escapes artifact content instead of executing markup', ()
     organizationName: '<org>',
     projectName: 'project',
     horizonLabel: null,
+    isFinalized: true,
     generatedAt: new Date('2026-10-05T18:00:00.000Z'),
     artifacts: [{
       title: '<script>alert(1)</script>',

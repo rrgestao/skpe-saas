@@ -15,6 +15,7 @@ type BuildExecutiveReportArgs = {
   organizationName: string
   projectName: string
   horizonLabel: string | null
+  isFinalized: boolean
   generatedAt: Date
   artifacts: ExecutiveReportArtifact[]
 }
@@ -73,9 +74,17 @@ export function buildExecutiveStrategicReportHtml({
   organizationName,
   projectName,
   horizonLabel,
+  isFinalized,
   generatedAt,
   artifacts,
 }: BuildExecutiveReportArgs) {
+  const reportTitle = isFinalized
+    ? 'Plano Estratégico Consolidado'
+    : 'Relatório Executivo de Trabalho'
+  const reportStatus = isFinalized
+    ? 'Jornada concluída e ratificada'
+    : 'Documento de trabalho — a Jornada ainda não foi concluída'
+
   const sorted = [...artifacts].sort((a, b) => {
     const phaseCompare = phaseSortValue(phaseRoot(a.phaseCode)) - phaseSortValue(phaseRoot(b.phaseCode))
     if (phaseCompare !== 0) return phaseCompare
@@ -128,7 +137,7 @@ export function buildExecutiveStrategicReportHtml({
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Relatório Executivo do Planejamento Estratégico — SPARKs PE</title>
+<title>${escapeHtml(reportTitle)} — SPARKs PE</title>
 <style>
   :root{font-family:Inter,Arial,sans-serif;color:#17251e;background:#fff}
   body{margin:0;line-height:1.5}
@@ -161,8 +170,9 @@ export function buildExecutiveStrategicReportHtml({
 <main>
   <section class="cover">
     <small>SPARKs PE</small>
-    <h1>Relatório Executivo do Planejamento Estratégico</h1>
+    <h1>${escapeHtml(reportTitle)}</h1>
     <p class="lead">Consolidação das versões selecionadas dos artefatos metodológicos registrados na Jornada Estratégica.</p>
+    <p><strong>${escapeHtml(reportStatus)}</strong></p>
     <p>Gerado em ${escapeHtml(generatedAt.toLocaleString('pt-BR'))}.</p>
   </section>
 
@@ -170,6 +180,12 @@ export function buildExecutiveStrategicReportHtml({
     <p class="eyebrow">Como ler este relatório</p>
     <h2>Consolidação governada</h2>
     <p>Este relatório reúne conteúdos já registrados na solução. A geração deste arquivo não cria evidência, aprovação, decisão institucional ou nova versão dos artefatos.</p>
+    <div class="notice">
+      <strong>${isFinalized ? 'Plano consolidado:' : 'Documento de trabalho:'}</strong>
+      ${isFinalized
+        ? ' a Jornada registrada no projeto está concluída. Este relatório continua subordinado aos registros canônicos e às validações existentes na solução.'
+        : ' a Jornada ainda possui etapas ou validações pendentes. Este arquivo não deve ser apresentado como versão final institucional do Planejamento Estratégico.'}
+    </div>
     <div class="notice">
       <strong>Regra de autoridade:</strong> em caso de divergência, prevalecem os registros canônicos e as validações existentes na solução SPARKs PE.
     </div>

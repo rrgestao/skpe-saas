@@ -282,7 +282,7 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
     setGeneratingReport(true)
     setMessage('Consolidando o Relatório Executivo...')
     try {
-      const [organizationResponse, projectResponse] = await Promise.all([
+      const [organizationResponse, projectResponse, finalGateResponse] = await Promise.all([
         supabase
           .from('organizations')
           .select('trade_name,legal_name')
@@ -293,10 +293,18 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
           .select('name,planning_horizon_start_year,planning_horizon_end_year')
           .eq('id', projectId)
           .maybeSingle(),
+        supabase
+          .from('skpe_journey_items')
+          .select('status')
+          .eq('project_id', projectId)
+          .eq('code', 'PEM-05.GATE')
+          .is('archived_at', null)
+          .maybeSingle(),
       ])
 
       if (organizationResponse.error) throw organizationResponse.error
       if (projectResponse.error) throw projectResponse.error
+      if (finalGateResponse.error) throw finalGateResponse.error
 
       const organizationName =
         organizationResponse.data?.trade_name?.trim() ||
@@ -311,6 +319,7 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
       const horizonEnd = projectResponse.data?.planning_horizon_end_year
       const horizonLabel =
         horizonStart && horizonEnd ? `${horizonStart}–${horizonEnd}` : null
+      const isFinalized = finalGateResponse.data?.status === 'completed'
 
       const reportArtifacts = await Promise.all(
         selectedArtifacts.map(async (artifact) => {
@@ -341,6 +350,7 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
         organizationName,
         projectName,
         horizonLabel,
+        isFinalized,
         generatedAt,
         artifacts: reportArtifacts,
       })
