@@ -55,6 +55,33 @@ type EconomicProjection = {
   }
 }
 
+type InitiativeExecutionContext = {
+  progress: number | null
+  startDate: string | null
+  targetEndDate: string | null
+  baselineStartDate: string | null
+  baselineTargetEndDate: string | null
+  forecastStartDate: string | null
+  forecastEndDate: string | null
+  startedAt: string | null
+  completedAt: string | null
+}
+
+type ActionEconomicRow = {
+  id: string
+  code: string
+  name: string
+  status: string
+  progress: number | null
+  plannedCost: number | null
+  actualCost: number | null
+  currencyCode: string | null
+  estimatedEffort: number | null
+  actualEffort: number | null
+  effortUnit: string | null
+  plannedDueDate: string | null
+  forecastDueDate: string | null
+}
 type Props = {
   organizationId: string
   initiativeId: string
@@ -119,6 +146,45 @@ function formatVariance(value: Numeric | undefined, suffix = '') {
   return `${parsed > 0 ? '+' : ''}${formatNumber(parsed)}${suffix}`
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return '—'
+  const datePart = value.slice(0, 10)
+  const [year, month, day] = datePart.split('-')
+  return year && month && day ? `${day}/${month}/${year}` : value
+}
+
+function percentageOfPlan(actual: Numeric | undefined, planned: Numeric | undefined) {
+  const actualValue = toNumber(actual)
+  const plannedValue = toNumber(planned)
+  if (actualValue === null || plannedValue === null || plannedValue <= 0) return null
+  return (actualValue / plannedValue) * 100
+}
+
+function formatPercentage(value: number | null) {
+  if (value === null) return '—'
+  return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value)}%`
+}
+
+function economicInterpretation(actual: Numeric | undefined, planned: Numeric | undefined, noun: string) {
+  const actualValue = toNumber(actual)
+  const plannedValue = toNumber(planned)
+  if (actualValue === null || plannedValue === null) return `${noun}: comparação indisponível por ausência de valor planejado ou realizado.`
+  const delta = actualValue - plannedValue
+  if (delta === 0) return `${noun}: realizado igual ao planejado registrado.`
+  return `${noun}: realizado ${delta > 0 ? 'acima' : 'abaixo'} do planejado em ${formatNumber(Math.abs(delta))}.`
+}
+function actionStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    planned: 'Planejada',
+    in_progress: 'Em execução',
+    on_hold: 'Em espera',
+    blocked: 'Bloqueada',
+    completed: 'Concluída',
+    cancelled: 'Cancelada',
+    archived: 'Arquivada',
+  }
+  return labels[status] ?? status
+}
 function parseOptionalNumber(value: string) {
   const normalized = value.trim().replace(',', '.')
   if (!normalized) return null
@@ -137,6 +203,8 @@ export function InitiativeEconomicExecutionDialog({
   onSaved,
 }: Props) {
   const [projection, setProjection] = useState<EconomicProjection | null>(null)
+  const [executionContext, setExecutionContext] = useState<InitiativeExecutionContext | null>(null)
+  const [economicActions, setEconomicActions] = useState<ActionEconomicRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
@@ -154,13 +222,30 @@ export function InitiativeEconomicExecutionDialog({
     setLoading(true)
     setMessage(null)
 
-    const { data, error } = await supabase.rpc(
-      'get_sparks_initiative_economic_projection',
-      {
-        target_organization_id: organizationId,
-        target_initiative_id: initiativeId,
-      },
-    )
+    const [projectionResponse, initiativeResponse, actionsResponse] = await Promise.all([
+      supabase.rpc(
+        'get_sparks_initiative_economic_projection',
+        {
+          target_organization_id: organizationId,
+          target_initiative_id: initiativeId,
+        },
+      ),
+      supabase
+        .from('sparks_initiatives')
+        .select('progress,start_date,target_end_date,baseline_start_date,baseline_target_end_date,forecast_start_date,forecast_end_date,started_at,completed_at')
+        .eq('organization_id', organizationId)
+        .eq('id', initiativeId)
+        .maybeSingle(),
+      supabase
+        .from('sparks_initiative_actions')
+        .select('id,code,name,status,progress,planned_cost,actual_cost,currency_code,estimated_effort,actual_effort,effort_unit,planned_due_date,forecast_due_date')
+        .eq('organization_id', organizationId)
+        .eq('initiative_id', initiativeId)
+        .is('archived_at', null)
+        .order('code'),
+    ])
+
+    const error = projectionResponse.error ?? initiativeResponse.error ?? actionsResponse.error
 
     if (error) {
       setProjection(null)
@@ -172,7 +257,36 @@ export function InitiativeEconomicExecutionDialog({
       return
     }
 
-    const loaded = data as EconomicProjection
+    const loaded = projectionResponse.data as EconomicProjection
+    const initiative = initiativeResponse.data
+    const actions = actionsResponse.data ?? []
+
+    setExecutionContext(initiative ? {
+      progress: initiative.progress == null ? null : Number(initiative.progress),
+      startDate: initiative.start_date,
+      targetEndDate: initiative.target_end_date,
+      baselineStartDate: initiative.baseline_start_date,
+      baselineTargetEndDate: initiative.baseline_target_end_date,
+      forecastStartDate: initiative.forecast_start_date,
+      forecastEndDate: initiative.forecast_end_date,
+      startedAt: initiative.started_at,
+      completedAt: initiative.completed_at,
+    } : null)
+    setEconomicActions(actions.map((action) => ({
+      id: action.id,
+      code: action.code,
+      name: action.name,
+      status: action.status,
+      progress: action.progress == null ? null : Number(action.progress),
+      plannedCost: action.planned_cost == null ? null : Number(action.planned_cost),
+      actualCost: action.actual_cost == null ? null : Number(action.actual_cost),
+      currencyCode: action.currency_code,
+      estimatedEffort: action.estimated_effort == null ? null : Number(action.estimated_effort),
+      actualEffort: action.actual_effort == null ? null : Number(action.actual_effort),
+      effortUnit: action.effort_unit,
+      plannedDueDate: action.planned_due_date,
+      forecastDueDate: action.forecast_due_date,
+    })))
     const direct = loaded.initiative.direct
 
     setProjection(loaded)
@@ -283,6 +397,17 @@ export function InitiativeEconomicExecutionDialog({
   }
 
   const direct = projection?.initiative.direct ?? null
+  const costConsumption = direct ? percentageOfPlan(direct.actualCost, direct.plannedCost) : null
+  const effortConsumption = direct ? percentageOfPlan(direct.actualEffort, direct.estimatedEffort) : null
+  const scheduleReading = !executionContext?.targetEndDate
+    ? 'Término-alvo não informado.'
+    : !executionContext.forecastEndDate
+      ? 'Forecast de término ainda não informado.'
+      : executionContext.forecastEndDate > executionContext.targetEndDate
+        ? 'Forecast posterior ao término-alvo registrado.'
+        : executionContext.forecastEndDate < executionContext.targetEndDate
+          ? 'Forecast anterior ao término-alvo registrado.'
+          : 'Forecast alinhado ao término-alvo registrado.'
 
   return (
     <div
@@ -384,6 +509,30 @@ export function InitiativeEconomicExecutionDialog({
                 </div>
               </div>
 
+              <section className="skpe-initiative-physical-financial" aria-label="Leitura físico-financeira">
+                <div className="skpe-card-heading">
+                  <div>
+                    <p className="skpe-card-code">Leitura gerencial integrada</p>
+                    <h3>Execução física × econômica × prazo</h3>
+                    <p>Percentuais econômicos só são calculados quando planejado e realizado existem na mesma moeda ou unidade. Ausência de dado permanece como ausência.</p>
+                  </div>
+                </div>
+                <div className="skpe-initiative-kpi-grid">
+                  <div><span>Progresso físico</span><strong>{executionContext?.progress == null ? '—' : formatPercentage(executionContext.progress)}</strong></div>
+                  <div><span>Consumo do orçamento direto</span><strong>{formatPercentage(costConsumption)}</strong></div>
+                  <div><span>Consumo do esforço direto</span><strong>{formatPercentage(effortConsumption)}</strong></div>
+                  <div><span>Término-alvo</span><strong>{formatDate(executionContext?.targetEndDate)}</strong></div>
+                  <div><span>Forecast de término</span><strong>{formatDate(executionContext?.forecastEndDate)}</strong></div>
+                  <div><span>Início realizado</span><strong>{formatDate(executionContext?.startedAt)}</strong></div>
+                </div>
+                <div className="skpe-initiative-management-reading">
+                  <strong>Leitura factual para a gestão</strong>
+                  <p>{direct ? economicInterpretation(direct.actualCost, direct.plannedCost, 'Custo') : 'Custo: sem leitura.'}</p>
+                  <p>{direct ? economicInterpretation(direct.actualEffort, direct.estimatedEffort, 'Esforço') : 'Esforço: sem leitura.'}</p>
+                  <p>{scheduleReading}</p>
+                  <small>Esta leitura não classifica automaticamente a iniciativa como boa ou ruim e não substitui análise gerencial.</small>
+                </div>
+              </section>
               <div className="skpe-initiative-form-grid">
                 <label><span>Custo planejado</span><input inputMode="decimal" value={plannedCost} onChange={(event) => setPlannedCost(event.target.value)} disabled={!editable} /></label>
                 <label><span>Custo realizado</span><input inputMode="decimal" value={actualCost} onChange={(event) => setActualCost(event.target.value)} disabled={!editable} /></label>
@@ -458,6 +607,45 @@ export function InitiativeEconomicExecutionDialog({
                 </div>
               )}
               <p>Moedas diferentes e unidades de esforço diferentes permanecem separadas. Não há conversão cambial nem conversão implícita de grandezas.</p>
+            </section>
+
+            <section className="skpe-initiative-form-card">
+              <div className="skpe-card-heading">
+                <div>
+                  <p className="skpe-card-code">Plano de ação e execução econômica</p>
+                  <h3>Leitura físico-financeira por ação</h3>
+                  <p>Cada ação preserva sua moeda e unidade de esforço. Desvios são diferenças factuais, sem conversão ou julgamento automático.</p>
+                </div>
+              </div>
+              {economicActions.length === 0 ? (
+                <p>Nenhuma ação vigente foi localizada para esta iniciativa.</p>
+              ) : (
+                <div className="skpe-table-wrap">
+                  <table className="skpe-admin-table skpe-initiative-physical-financial-table">
+                    <thead>
+                      <tr>
+                        <th>Ação</th><th>Situação</th><th>Progresso físico</th><th>Custo planejado</th><th>Custo realizado</th><th>Desvio de custo</th><th>Esforço estimado</th><th>Esforço realizado</th><th>Término planejado</th><th>Forecast</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {economicActions.map((action) => (
+                        <tr key={action.id}>
+                          <td><strong>{action.code}</strong><br /><span>{action.name}</span></td>
+                          <td>{actionStatusLabel(action.status)}</td>
+                          <td>{action.progress == null ? '—' : formatPercentage(action.progress)}</td>
+                          <td>{formatMoney(action.plannedCost, action.currencyCode)}</td>
+                          <td>{formatMoney(action.actualCost, action.currencyCode)}</td>
+                          <td>{action.plannedCost == null || action.actualCost == null ? '—' : formatMoney(action.actualCost - action.plannedCost, action.currencyCode)}</td>
+                          <td>{action.estimatedEffort == null ? '—' : `${formatNumber(action.estimatedEffort)} ${effortUnitLabels[action.effortUnit ?? ''] ?? action.effortUnit ?? ''}`.trim()}</td>
+                          <td>{action.actualEffort == null ? '—' : `${formatNumber(action.actualEffort)} ${effortUnitLabels[action.effortUnit ?? ''] ?? action.effortUnit ?? ''}`.trim()}</td>
+                          <td>{formatDate(action.plannedDueDate)}</td>
+                          <td>{formatDate(action.forecastDueDate)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </section>
           </>
         )}
