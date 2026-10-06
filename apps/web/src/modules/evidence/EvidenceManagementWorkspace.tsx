@@ -55,11 +55,16 @@ type ExpectedChecklistItem = {
 }
 
 type EvidenceVersionDownload = {
+  id?: string
   evidence_asset_id: string
   storage_bucket: string | null
   storage_path: string | null
   file_name: string | null
   version_number: number | null
+  version_label?: string | null
+  content_hash?: string | null
+  change_summary?: string | null
+  created_at?: string | null
 }
 
 type EvidenceGridRow = {
@@ -282,6 +287,11 @@ export function EvidenceManagementWorkspace({
   const [savingEvidence, setSavingEvidence] = useState(false)
   const [evidenceCreateMessage, setEvidenceCreateMessage] = useState('')
   const [evidenceRefreshKey, setEvidenceRefreshKey] = useState(0)
+  const [versionFile, setVersionFile] = useState<File | null>(null)
+  const [versionReason, setVersionReason] = useState('')
+  const [savingVersion, setSavingVersion] = useState(false)
+  const [versionMessage, setVersionMessage] = useState('')
+  const [selectedVersionHistory, setSelectedVersionHistory] = useState<EvidenceVersionDownload[]>([])
 
   const [expectedItems, setExpectedItems] = useState<ExpectedChecklistItem[]>([])
   const [expectedLoading, setExpectedLoading] = useState(true)
@@ -483,6 +493,40 @@ export function EvidenceManagementWorkspace({
     [assets, selectedEvidenceAssetId],
   )
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadSelectedVersionHistory() {
+      setVersionFile(null)
+      setVersionReason('')
+      setVersionMessage('')
+
+      if (!selectedEvidenceAssetId) {
+        setSelectedVersionHistory([])
+        return
+      }
+
+      const { data, error: historyError } = await supabase
+        .from('sparks_evidence_versions')
+        .select('id,evidence_asset_id,storage_bucket,storage_path,file_name,version_number,version_label,content_hash,change_summary,created_at')
+        .eq('evidence_asset_id', selectedEvidenceAssetId)
+        .order('version_number', { ascending: false })
+
+      if (cancelled) return
+      if (historyError) {
+        setSelectedVersionHistory([])
+        setVersionMessage(historyError.message)
+        return
+      }
+
+      setSelectedVersionHistory((data ?? []) as EvidenceVersionDownload[])
+    }
+
+    void loadSelectedVersionHistory()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedEvidenceAssetId, evidenceRefreshKey])
   const checklistAxes = useMemo(() => {
     const requirementsByAxis = new Map<string, ExpectedChecklistItem[]>()
     for (const item of expectedItems) {
@@ -732,25 +776,87 @@ export function EvidenceManagementWorkspace({
       setSavingEvidence(false)
     }
   }
+  async function saveEvidenceVersion() {
+    if (!selectedEvidenceAssetId) { setVersionMessage('Selecione uma evidência.'); return }
+    if (!versionFile) { setVersionMessage('Selecione o arquivo da nova versão.'); return }
+    if (versionReason.trim().length < 10) { setVersionMessage('Informe uma justificativa com pelo menos 10 caracteres.'); return }
+
+    setSavingVersion(true)
+    setVersionMessage('')
+    let uploadedPath: string | null = null
+
+    try {
+      const contentHash = await fileSha256(versionFile)
+      if (selectedVersionHistory.some((version) => version.content_hash === contentHash)) {
+        setVersionMessage('Este arquivo já existe no histórico de versões da evidência.')
+        setSavingVersion(false)
+        return
+      }
+
+      const safeName = safeStorageFileName(versionFile.name)
+      const now = new Date()
+      uploadedPath = `${organizationId}/${now.getFullYear()}/${selectedEvidenceAssetId}/${crypto.randomUUID()}-${safeName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('sparks-evidence')
+        .upload(uploadedPath, versionFile, {
+          cacheControl: '3600',
+          contentType: versionFile.type || undefined,
+          upsert: false,
+        })
+      if (uploadError) throw uploadError
+
+      const { error: versionError } = await supabase.rpc(
+        'add_sparks_evidence_version',
+        {
+          target_organization_id: organizationId,
+          target_evidence_asset_id: selectedEvidenceAssetId,
+          target_content_hash: contentHash,
+          target_file_name: versionFile.name,
+          target_mime_type: versionFile.type || null,
+          target_file_size_bytes: versionFile.size,
+          target_storage_bucket: 'sparks-evidence',
+          target_storage_path: uploadedPath,
+          change_reason: versionReason.trim(),
+        },
+      )
+      if (versionError) throw versionError
+
+      setVersionFile(null)
+      setVersionReason('')
+      setVersionMessage('Nova versão registrada. A evidência retornou para validação, preservando todo o histórico anterior.')
+      setEvidenceRefreshKey((value) => value + 1)
+    } catch (caught) {
+      if (uploadedPath) {
+        await supabase.storage.from('sparks-evidence').remove([uploadedPath])
+      }
+      setVersionMessage(caught instanceof Error ? caught.message : 'Não foi possível registrar a nova versão.')
+    } finally {
+      setSavingVersion(false)
+    }
+  }
+
+  async function downloadEvidenceVersion(version: EvidenceVersionDownload, fallbackName: string) {
+    if (!version.storage_bucket || !version.storage_path) return
+    const { data, error: downloadError } = await supabase.storage
+      .from(version.storage_bucket)
+      .download(version.storage_path)
+    if (downloadError || !data) return
+    const url = URL.createObjectURL(data)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = version.file_name ?? fallbackName
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+  }
   async function downloadEvidence(asset: EvidenceRow) {
     const version = downloadVersions.find(
       (item) => item.evidence_asset_id === asset.evidence_asset_id,
     )
     if (!version?.storage_bucket || !version.storage_path) return
-
-    const { data, error: downloadError } = await supabase.storage
-      .from(version.storage_bucket)
-      .download(version.storage_path)
-
-    if (downloadError || !data) return
-    const url = URL.createObjectURL(data)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = version.file_name ?? asset.title ?? 'evidencia'
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    URL.revokeObjectURL(url)
+    await downloadEvidenceVersion(version, asset.title ?? 'evidencia')
   }
 
   return (
@@ -1145,6 +1251,72 @@ export function EvidenceManagementWorkspace({
                       A consulta e análise permanecem disponíveis mesmo sem arquivo materializado.
                       O download só é liberado quando existir uma versão física governada pelo SK-DOC.
                     </p>
+
+                    <section className="skpe-evidence-version-lifecycle">
+                      <header>
+                        <div>
+                          <span className="skpe-evidence-section__eyebrow">Versionamento governado</span>
+                          <h5>Histórico de versões</h5>
+                        </div>
+                        <strong>{selectedVersionHistory.length} versão(ões)</strong>
+                      </header>
+
+                      {selectedVersionHistory.length === 0 ? (
+                        <p className="skpe-evidence-version-empty">Nenhuma versão física foi registrada para esta evidência.</p>
+                      ) : (
+                        <div className="skpe-evidence-version-list">
+                          {selectedVersionHistory.map((version) => (
+                            <article key={version.id ?? `${version.evidence_asset_id}:${version.version_number}`}>
+                              <div>
+                                <strong>v{version.version_label ?? version.version_number ?? '—'}</strong>
+                                <span>{version.file_name ?? 'Arquivo sem nome registrado'}</span>
+                                <small>{version.created_at ? new Date(version.created_at).toLocaleString('pt-BR') : 'Data não informada'}</small>
+                                {version.change_summary ? <p>{version.change_summary}</p> : null}
+                              </div>
+                              <button
+                                type="button"
+                                disabled={!version.storage_bucket || !version.storage_path}
+                                onClick={() => void downloadEvidenceVersion(version, selectedEvidenceAsset.title ?? 'evidencia')}
+                              >
+                                Baixar v{version.version_number ?? ''}
+                              </button>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="skpe-evidence-version-form">
+                        <strong>Registrar nova versão</strong>
+                        <p>
+                          A versão anterior será preservada. O novo arquivo se tornará a versão corrente e a evidência retornará para validação humana.
+                        </p>
+                        <label>
+                          <span>Novo arquivo *</span>
+                          <input
+                            key={evidenceRefreshKey}
+                            type="file"
+                            onChange={(event) => setVersionFile(event.target.files?.[0] ?? null)}
+                          />
+                        </label>
+                        <label>
+                          <span>Justificativa da nova versão *</span>
+                          <textarea
+                            value={versionReason}
+                            onChange={(event) => setVersionReason(event.target.value)}
+                            placeholder="Descreva o que mudou e por que esta versão substitui a versão corrente."
+                          />
+                        </label>
+                        {versionMessage ? <div className="skpe-evidence-version-message" role="status">{versionMessage}</div> : null}
+                        <button
+                          type="button"
+                          className="skpe-evidence-version-primary"
+                          onClick={() => void saveEvidenceVersion()}
+                          disabled={savingVersion}
+                        >
+                          {savingVersion ? 'Registrando versão...' : 'Registrar nova versão'}
+                        </button>
+                      </div>
+                    </section>
                   </section>
                 ) : null}
               </aside>
