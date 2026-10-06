@@ -1,4 +1,4 @@
-﻿# SK-PE — Continuity Checkpoint 073
+# SK-PE — Continuity Checkpoint 073
 
 Date: 2026-10-06
 Project: SPARKs PE application
@@ -81,4 +81,3 @@ Continue end-to-end runtime and usability validation of the established Journey,
 3. generic-organization regression;
 4. Evidence creation/upload remediation under the transversal SK-DOC evidence authority;
 5. business-language cleanup discovered during real navigation.
-
