@@ -5,6 +5,22 @@ import { supabase } from '../../../../lib/supabase'
 
 import './MonitoringOperationReadinessPanel.css'
 
+const monitoringCycleStatusLabels: Record<string, string> = {
+  planned: 'Planejado',
+  open: 'Aberto',
+  collecting: 'Em coleta',
+  under_review: 'Em análise',
+  pending_ratification: 'Aguardando ratificação',
+  closed: 'Encerrado',
+  cancelled: 'Cancelado',
+  reopened: 'Reaberto',
+}
+
+function monitoringCycleStatusLabel(status: string | null | undefined) {
+  if (!status) return '—'
+  return monitoringCycleStatusLabels[status] ?? status.replaceAll('_', ' ')
+}
+
 type Props = {
   formulationId: string | null
   refreshToken?: number
@@ -87,8 +103,8 @@ export function MonitoringOperationReadinessPanel({
           <span>Operação da Rotina de Monitoramento</span>
           <h2>Prontidão do ciclo para análise crítica</h2>
           <p>
-            A etapa reutiliza integralmente o FE-08. Ela comprova que um ciclo
-            foi operado, recebeu medições/check-ins e chegou pronto para revisão.
+            A etapa reutiliza a governança de monitoramento já configurada. Ela comprova que um ciclo
+            foi operado, recebeu medições e atualizações de acompanhamento e chegou pronto para revisão.
             Não abre, submete, ratifica ou fecha ciclos automaticamente.
           </p>
         </div>
@@ -137,7 +153,7 @@ export function MonitoringOperationReadinessPanel({
                   : 'Nenhum ciclo operado pronto para revisão'}
               </strong>
             </div>
-            <span>{readiness.cycleStatus ?? '—'}</span>
+            <span>{monitoringCycleStatusLabel(readiness.cycleStatus)}</span>
           </div>
 
           {(readiness.issues?.length ?? 0) > 0 ? (

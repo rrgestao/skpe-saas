@@ -44,6 +44,13 @@ export type JourneyRow = {
       code?: string
       required_status?: JourneyStatus | string
     }>
+    template_metadata?: {
+      unblock_dependencies?: Array<{
+        code?: string
+        required_status?: JourneyStatus | string
+      }>
+      [key: string]: unknown
+    }
     [key: string]: unknown
   } | null
 }

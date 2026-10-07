@@ -32,7 +32,7 @@ export function MonitoringPackageConfigurationPanel({
 }: Props) {
   return (
     <section className="skpe-monitoring-package-config" aria-label="Configuração governada FE-08">
-      <h3>Configuração metodológica FE-08</h3>
+      <h3>Configuração do monitoramento estratégico</h3>
       <p className="skpe-monitoring-empty">
         Os valores iniciais vêm dos defaults técnicos do runtime. Revise-os e defina os responsáveis antes de salvar. Salvar mantém o pacote em elaboração; não submete nem valida automaticamente.
       </p>

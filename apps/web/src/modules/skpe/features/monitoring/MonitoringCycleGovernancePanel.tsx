@@ -9,6 +9,22 @@ type Props = {
 }
 
 type Issue = { code: string; message: string }
+const monitoringCycleStatusLabels: Record<string, string> = {
+  planned: 'Planejado',
+  open: 'Aberto',
+  collecting: 'Em coleta',
+  under_review: 'Em análise',
+  pending_ratification: 'Aguardando ratificação',
+  closed: 'Encerrado',
+  cancelled: 'Cancelado',
+  reopened: 'Reaberto',
+}
+
+function monitoringCycleStatusLabel(status: string | null | undefined) {
+  if (!status) return '—'
+  return monitoringCycleStatusLabels[status] ?? status.replaceAll('_', ' ')
+}
+
 type Readiness = {
   cycleStatus: string
   readyForReview: boolean
@@ -90,7 +106,7 @@ export function MonitoringCycleGovernancePanel({ organizationId, cycleId, onChan
       {!readiness ? <p className="skpe-monitoring-empty">Prontidão do ciclo indisponível.</p> : (
         <>
           <div className="skpe-monitoring-grid">
-            <article><span>Status</span><strong>{readiness.cycleStatus}</strong></article>
+            <article><span>Situação do ciclo</span><strong>{monitoringCycleStatusLabel(readiness.cycleStatus)}</strong></article>
             <article><span>Pronto para análise</span><strong>{readiness.readyForReview ? 'Sim' : 'Não'}</strong></article>
             <article><span>Pronto para fechamento</span><strong>{readiness.readyForClose ? 'Sim' : 'Não'}</strong></article>
           </div>

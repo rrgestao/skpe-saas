@@ -328,7 +328,7 @@ export function StrategicInitiativePlanSection({
       {readiness ? (
         <section className="skpe-strategic-initiative-plan__readiness">
           <div>
-            <p className="skpe-eyebrow">PEM-03.03 · Prontidão do portfólio</p>
+            <p className="skpe-eyebrow">Prontidão do portfólio estratégico</p>
             <h4>
               {readiness.readyForFormulation
                 ? 'Portfólio pronto e validado para conclusão da etapa'

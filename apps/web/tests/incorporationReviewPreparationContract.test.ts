@@ -125,5 +125,5 @@ test('staging exposes review, decision and explicit governed materialization as 
   assert.match(staging, /Aprovar informação/)
   assert.match(staging, /Executar incorporação governada/)
   assert.match(staging, /materializeIncorporationRequest/)
-  assert.match(staging, /Nenhum arquivo importado se torna autoridade apenas por ter sido enviado ao staging/)
+  assert.match(staging, /Nenhum arquivo importado se torna autoridade apenas por ter sido enviado à área de conferência/)
 })

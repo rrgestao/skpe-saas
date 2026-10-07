@@ -674,7 +674,9 @@ export function JourneySection({
     const isExpanded = expandedItems.has(item.item_id)
     const dependencies = Array.isArray(item.metadata?.unblock_dependencies)
       ? item.metadata.unblock_dependencies
-      : []
+      : Array.isArray(item.metadata?.template_metadata?.unblock_dependencies)
+        ? item.metadata.template_metadata.unblock_dependencies
+        : []
     const unmetDependencies = dependencies
       .map((dependency) => {
         const prerequisite = dependency.code

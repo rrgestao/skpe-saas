@@ -1605,7 +1605,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                       </div>
                     ) : null}
                   </div>
-                  <p className="canonical-readiness-note">Revisão, decisão e eventual materialização são etapas distintas e auditadas. Nenhum arquivo importado se torna autoridade apenas por ter sido enviado ao staging.</p>
+                  <p className="canonical-readiness-note">Revisão, decisão e eventual materialização são etapas distintas e auditadas. Nenhum arquivo importado se torna autoridade apenas por ter sido enviado à área de conferência.</p>
                 </div>
               )}
 
@@ -1633,7 +1633,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
               {(readiness.unmappedEntities ?? []).length > 0 && (
                 <details className="canonical-mapping-gap" open>
                   <summary>Mapeamento para o modelo atual pendente ({readiness.counts?.unmapped ?? 0} registros)</summary>
-                  <p>O conteúdo foi validado no staging, mas ainda não possui destino canônico definido no modelo atual do SK-PE. A carga definitiva permanece bloqueada até que cada tipo de informação tenha regra de transformação e destino auditável.</p>
+                  <p>O conteúdo passou pela conferência inicial, mas ainda não possui destino canônico definido no modelo atual do planejamento estratégico. A carga definitiva permanece bloqueada até que cada tipo de informação tenha regra de transformação e destino auditável.</p>
                   <div className="canonical-batch-table-wrap">
                     <table>
                       <thead><tr><th>Tipo de informação</th><th>Registros sem destino</th></tr></thead>
@@ -1734,7 +1734,7 @@ export function CanonicalImportStaging({ organizations, onBackToPortal }: Props)
                   <div className="canonical-staging-actions secondary">
                     <button type="button" className="readiness" onClick={() => void approveBlockedCorrection()} disabled={approvingCorrection || !reviewNotes.trim()}>{approvingCorrection ? 'Confirmando...' : 'Confirmar correção revisada'}</button>
                   </div>
-                  <p className="canonical-readiness-note">A confirmação altera somente o registro no staging, registra auditoria e reavalia a prontidão. Nenhuma tabela estratégica definitiva é atualizada.</p>
+                  <p className="canonical-readiness-note">A confirmação altera somente o registro em conferência, registra auditoria e reavalia a prontidão. Nenhuma informação estratégica definitiva é atualizada.</p>
                 </div>
               )}
               <p className="canonical-readiness-note">Esta avaliação não executa carga definitiva, não reabre a Macrofase 1 e não libera o PEM-02.04.</p>

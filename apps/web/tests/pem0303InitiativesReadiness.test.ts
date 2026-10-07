@@ -22,7 +22,7 @@ test('PEM-03.03 completion reuses canonical initiatives readiness', () => {
 
 test('Initiatives UI exposes canonical portfolio readiness without automating decisions', () => {
   assert.match(section, /get_skpe_initiatives_readiness/)
-  assert.match(section, /PEM-03\.03 · Prontidão do portfólio/)
+  assert.match(section, /Prontidão do portfólio estratégico/)
   assert.match(section, /Portfólio ainda possui bloqueadores metodológicos/)
   assert.match(section, /Bloqueadores/)
   assert.match(section, /Recomendações/)

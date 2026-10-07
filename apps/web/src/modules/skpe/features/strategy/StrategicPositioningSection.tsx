@@ -488,7 +488,7 @@ export function StrategicPositioningSection({
   return (
     <section className="skpe-strategy-content">
       <header>
-        <span>PEM-02.03 · Escolhas e Posicionamento Estratégico</span>
+        <span>Escolhas e Posicionamento Estratégico</span>
         <h1>Posicionamento Estratégico</h1>
         <p className="skpe-strategy-validation-guidance">
           Esta etapa organiza hipóteses de Temas e Perspectivas para validação
@@ -580,7 +580,7 @@ export function StrategicPositioningSection({
 
       <section className="skpe-strategy-next-stage-preview">
         <header>
-          <span>Próxima etapa · PEM-02.04</span>
+          <span>Próxima etapa · Objetivos Estratégicos</span>
           <h2>Objetivos Estratégicos — prévia bloqueada</h2>
           <p>
             Os {objectives.length} Objetivos já materializados permanecem em

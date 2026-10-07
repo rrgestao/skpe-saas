@@ -38,14 +38,14 @@ test('exports explicitly remain interchange outputs rather than hidden product a
   assert.match(portablePackage, /official_source_when_saas_is_active: 'Plataforma SPARKs'/)
   assert.match(portablePackage, /import_requires_validation: true/)
   assert.match(preview, /A planilha é um meio de intercâmbio/)
-  assert.match(admin, /prévia, staging, simulação, revisão humana e materialização governada/)
+  assert.match(admin, /prévia, área de conferência, simulação, revisão humana e materialização governada/)
 })
 
 test('import flow separates staging, decision and explicit governed materialization', () => {
   assert.match(staging, /Nenhuma tabela estratégica definitiva foi alterada/)
   assert.match(staging, /Aprovar informação/)
   assert.match(staging, /Executar incorporação governada/)
-  assert.match(staging, /Nenhum arquivo importado se torna autoridade apenas por ter sido enviado ao staging/)
+  assert.match(staging, /Nenhum arquivo importado se torna autoridade apenas por ter sido enviado à área de conferência/)
   assert.match(edge, /materialize_request/)
   assert.match(edge, /skpe_execute_governed_import_materialization/)
   assert.match(edge, /human_confirmation: true/)

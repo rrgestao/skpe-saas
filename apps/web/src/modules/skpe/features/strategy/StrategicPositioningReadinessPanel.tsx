@@ -85,7 +85,7 @@ export function StrategicPositioningReadinessPanel({ formulationId }: Props) {
     <section className="skpe-positioning-readiness">
       <header>
         <div>
-          <p className="skpe-eyebrow">Prontidão de PEM-02.03</p>
+          <p className="skpe-eyebrow">Prontidão das escolhas e do posicionamento</p>
           <h2>
             {readiness.readyForCompletion
               ? 'Posicionamento pronto para conclusão governada'

@@ -65,7 +65,7 @@ export function CanonicalWorkbookImportPreview({ organizations }: Props) {
       <div className="canonical-import-heading">
         <div>
           <p>Prévia canônica</p>
-          <h3 id="canonical-import-title">Gerar payload completo com controle de qualidade</h3>
+          <h3 id="canonical-import-title">Preparar pacote de importação com controle de qualidade</h3>
           <span>
             A planilha deve corresponder à organização selecionada. Chaves duplicadas são corrigidas
             automaticamente e linhas estruturalmente inválidas são colocadas em quarentena.
@@ -123,7 +123,7 @@ export function CanonicalWorkbookImportPreview({ organizations }: Props) {
           <div className="canonical-conflicts">
             <div className="canonical-section-title">
               <div>
-                <p>Qualidade do payload</p>
+                <p>Qualidade da importação</p>
                 <h4>{preview.quality.canDownload ? 'Apto para download controlado' : 'Download bloqueado'}</h4>
               </div>
               <button type="button" onClick={downloadPreview} disabled={!preview.quality.canDownload}>

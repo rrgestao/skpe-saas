@@ -206,7 +206,7 @@ export function StrategicMapLifecyclePanel({
     <section className="skpe-map-lifecycle">
       <header>
         <div>
-          <small>PEM-02.05 · Governança do Mapa</small>
+          <small>Governança do Mapa Estratégico</small>
           <h3>Validação e versão oficial</h3>
         </div>
         <span>{packageStatusLabel(status)}</span>
@@ -214,7 +214,7 @@ export function StrategicMapLifecyclePanel({
 
       <div className="skpe-map-lifecycle-summary">
         <article>
-          <small>Readiness</small>
+          <small>Prontidão para validação</small>
           <strong>{readiness?.readyForValidation ? 'Pronto' : 'Bloqueado'}</strong>
         </article>
         <article>

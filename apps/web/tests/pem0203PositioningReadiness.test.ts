@@ -44,7 +44,7 @@ test('PEM-02.03 completion is fail-closed and stores readiness evidence', () => 
 
 test('Positioning UI exposes canonical PEM-02.03 readiness', () => {
   assert.match(panel, /get_skpe_pem0203_positioning_readiness/)
-  assert.match(panel, /Prontidão de PEM-02\.03/)
+  assert.match(panel, /Prontidão das escolhas e do posicionamento/)
   assert.match(panel, /Temas decididos/)
   assert.match(panel, /Perspectivas decididas/)
   assert.match(panel, /Contraprova documental/)
