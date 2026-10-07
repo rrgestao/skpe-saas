@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SparksSmartGrid, type SparksSmartGridColumn } from '../../components/design-system/SparksSmartGrid'
 
 import { MetricCard } from '../../components/design-system'
 import { supabase } from '../../lib/supabase'
+import { EvidenceFilePreview } from './EvidenceFilePreview'
 
 import './EvidenceManagementWorkspace.css'
 
@@ -29,6 +30,8 @@ type EvidenceRow = {
   validity_status: string | null
   availability_status: string | null
   evidence_link_id: string | null
+  target_type?: string | null
+  target_id?: string | null
   usage_module_code: string | null
   usage_status: string | null
   is_currently_used: boolean | null
@@ -37,6 +40,10 @@ type EvidenceRow = {
   made_available_at: string | null
   made_available_by_name: string | null
   made_available_actor_type: string | null
+  source_external_key?: string | null
+  skdoc_document_id?: string | null
+  current_version_id?: string | null
+  metadata?: Record<string, unknown> | null
 }
 
 type ExpectedChecklistItem = {
@@ -79,6 +86,8 @@ type EvidenceVersionDownload = {
   storage_bucket: string | null
   storage_path: string | null
   file_name: string | null
+  mime_type?: string | null
+  file_size_bytes?: number | null
   version_number: number | null
   version_label?: string | null
   content_hash?: string | null
@@ -130,6 +139,28 @@ async function fileSha256(file: File) {
 
 function safeStorageFileName(name: string) {
   return name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'evidencia'
+}
+
+function inferDocumentYear(name: string) {
+  const years = Array.from(new Set(name.match(/(?:19|20)\d{2}/g) ?? []))
+  return years.length === 1 ? years[0] : null
+}
+
+function normalizeSeriesKey(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleUpperCase('pt-BR')
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function defaultSeriesTitle(row: EvidenceRow) {
+  const metadataSeries = row.metadata?.series_title
+  if (typeof metadataSeries === 'string' && metadataSeries.trim()) return metadataSeries.trim()
+  return (row.title ?? 'Série documental')
+    .replace(/\s+[—-]\s+(?:19|20)\d{2}\s*$/u, '')
+    .trim()
 }
 type CardFilter =
   | 'expected'
@@ -235,6 +266,33 @@ function originLabel(row: EvidenceRow) {
   return rawOrigin || moduleCode || 'Origem não informada'
 }
 
+function sourceReferenceLabel(row: EvidenceRow, version?: EvidenceVersionDownload | null) {
+  const metadata = row.metadata ?? {}
+  const sourcePayload =
+    metadata.source_payload && typeof metadata.source_payload === 'object'
+      ? metadata.source_payload as Record<string, unknown>
+      : {}
+  const sourceSheet = typeof metadata.source_sheet === 'string' ? metadata.source_sheet : null
+  const sourceName = typeof sourcePayload.fonte === 'string' ? sourcePayload.fonte : null
+  const sourceCode = typeof sourcePayload.codigo === 'string' ? sourcePayload.codigo : null
+  const sourceDate = typeof sourcePayload.data_periodo === 'string' ? sourcePayload.data_periodo : null
+  const responsible = typeof sourcePayload.responsavel === 'string' ? sourcePayload.responsavel : null
+  const risk = typeof sourcePayload.risco_relacionado === 'string' ? sourcePayload.risco_relacionado : null
+
+  const parts = [
+    version?.file_name ? `Arquivo: ${version.file_name}` : null,
+    sourceName ? `Fonte: ${sourceName}` : originLabel(row),
+    sourceSheet ? `Origem: ${sourceSheet}` : null,
+    sourceCode ? `Código: ${sourceCode}` : row.source_external_key ? `Chave: ${row.source_external_key}` : null,
+    sourceDate ? `Data: ${sourceDate}` : row.reference_date ? `Data: ${formatDate(row.reference_date)}` : null,
+    responsible ? `Responsável: ${responsible}` : null,
+    risk ? `Risco: ${risk}` : null,
+    version?.version_label ? `Versão: ${version.version_label}` : null,
+  ].filter(Boolean)
+
+  return parts.join(' · ')
+}
+
 function periodLabel(row: EvidenceRow) {
   if (row.reference_period_start || row.reference_period_end) {
     const start = formatDate(row.reference_period_start)
@@ -300,6 +358,17 @@ export function EvidenceManagementWorkspace({
   const [showChecklistWorkspace, setShowChecklistWorkspace] = useState(false)
   const [downloadVersions, setDownloadVersions] = useState<EvidenceVersionDownload[]>([])
   const [selectedEvidenceAssetId, setSelectedEvidenceAssetId] = useState<string | null>(null)
+  const [evidenceMaintenanceOpen, setEvidenceMaintenanceOpen] = useState(false)
+  const [associationChecklistItemId, setAssociationChecklistItemId] = useState('')
+  const [associationReason, setAssociationReason] = useState('')
+  const [associationMessage, setAssociationMessage] = useState('')
+  const [associatingEvidence, setAssociatingEvidence] = useState(false)
+  const [seriesTitle, setSeriesTitle] = useState('')
+  const [seriesFiles, setSeriesFiles] = useState<File[]>([])
+  const [seriesReason, setSeriesReason] = useState('')
+  const [seriesMessage, setSeriesMessage] = useState('')
+  const [registeringSeries, setRegisteringSeries] = useState(false)
+  const [checklistRefreshKey, setChecklistRefreshKey] = useState(0)
   const [showCreateEvidence, setShowCreateEvidence] = useState(false)
   const [evidenceForm, setEvidenceForm] = useState<EvidenceCreateForm>(emptyEvidenceCreateForm)
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
@@ -311,6 +380,8 @@ export function EvidenceManagementWorkspace({
   const [savingVersion, setSavingVersion] = useState(false)
   const [versionMessage, setVersionMessage] = useState('')
   const [selectedVersionHistory, setSelectedVersionHistory] = useState<EvidenceVersionDownload[]>([])
+  const [previewVersionId, setPreviewVersionId] = useState<string | null>(null)
+  const selectedEvidenceAnalysisRef = useRef<HTMLElement | null>(null)
 
   const [expectedItems, setExpectedItems] = useState<ExpectedChecklistItem[]>([])
   const [expectedLoading, setExpectedLoading] = useState(true)
@@ -318,6 +389,7 @@ export function EvidenceManagementWorkspace({
 
   const [operationalChecklistRows, setOperationalChecklistRows] = useState<OperationalChecklistRow[]>([])
   const [operationalChecklistError, setOperationalChecklistError] = useState('')
+  const [selectedChecklistRequirementId, setSelectedChecklistRequirementId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -347,6 +419,8 @@ export function EvidenceManagementWorkspace({
             'validity_status',
             'availability_status',
             'evidence_link_id',
+            'target_type',
+            'target_id',
             'usage_module_code',
             'usage_status',
             'is_currently_used',
@@ -368,7 +442,36 @@ export function EvidenceManagementWorkspace({
         return
       }
 
-      setRows((data ?? []) as unknown as EvidenceRow[])
+      const projectionRows = (data ?? []) as unknown as EvidenceRow[]
+      const assetIds = Array.from(new Set(projectionRows.map((row) => row.evidence_asset_id)))
+      const { data: assetDetails, error: detailsError } = assetIds.length
+        ? await supabase
+            .from('sparks_evidence_assets')
+            .select('id,source_external_key,skdoc_document_id,current_version_id,metadata')
+            .in('id', assetIds)
+        : { data: [], error: null }
+
+      if (cancelled) return
+
+      if (detailsError) {
+        setRows(projectionRows)
+      } else {
+        const detailById = new Map(
+          ((assetDetails ?? []) as Array<{
+            id: string
+            source_external_key: string | null
+            skdoc_document_id: string | null
+            current_version_id: string | null
+            metadata: Record<string, unknown> | null
+          }>).map((detail) => [detail.id, detail]),
+        )
+        setRows(
+          projectionRows.map((row) => ({
+            ...row,
+            ...(detailById.get(row.evidence_asset_id) ?? {}),
+          })),
+        )
+      }
       setLoading(false)
     }
 
@@ -393,7 +496,7 @@ export function EvidenceManagementWorkspace({
     }
     void loadOperationalChecklist()
     return () => { cancelled = true }
-  }, [organizationId, projectId])
+  }, [checklistRefreshKey, organizationId, projectId])
 
   useEffect(() => {
     let cancelled = false
@@ -482,7 +585,7 @@ export function EvidenceManagementWorkspace({
 
       const { data, error: versionError } = await supabase
         .from('sparks_evidence_versions')
-        .select('evidence_asset_id,storage_bucket,storage_path,file_name,version_number')
+        .select('evidence_asset_id,storage_bucket,storage_path,file_name,mime_type,file_size_bytes,version_number,version_label')
         .in('evidence_asset_id', assetIds)
         .order('version_number', { ascending: false })
 
@@ -507,6 +610,13 @@ export function EvidenceManagementWorkspace({
     }
   }, [assets])
 
+  useEffect(() => {
+    if (!selectedEvidenceAssetId) return
+    const timer = window.setTimeout(() => {
+      selectedEvidenceAnalysisRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [selectedEvidenceAssetId])
   const selectedEvidenceAsset = useMemo(
     () => assets.find((asset) => asset.evidence_asset_id === selectedEvidenceAssetId) ?? null,
     [assets, selectedEvidenceAssetId],
@@ -519,6 +629,7 @@ export function EvidenceManagementWorkspace({
       setVersionFile(null)
       setVersionReason('')
       setVersionMessage('')
+      setPreviewVersionId(null)
 
       if (!selectedEvidenceAssetId) {
         setSelectedVersionHistory([])
@@ -527,7 +638,7 @@ export function EvidenceManagementWorkspace({
 
       const { data, error: historyError } = await supabase
         .from('sparks_evidence_versions')
-        .select('id,evidence_asset_id,storage_bucket,storage_path,file_name,version_number,version_label,content_hash,change_summary,created_at')
+        .select('id,evidence_asset_id,storage_bucket,storage_path,file_name,mime_type,file_size_bytes,version_number,version_label,content_hash,change_summary,created_at')
         .eq('evidence_asset_id', selectedEvidenceAssetId)
         .order('version_number', { ascending: false })
 
@@ -564,6 +675,84 @@ export function EvidenceManagementWorkspace({
         ),
       }))
   }, [expectedItems])
+
+  const checklistRequirementRows = useMemo(() => checklistAxes.flatMap(({ axis, requirements }) =>
+    requirements.map((requirement) => {
+      const operational = operationalChecklistRows.find((row) => row.item_code === requirement.code)
+      return {
+        id: requirement.id,
+        eixo: axis.name,
+        codigo: requirement.code,
+        requisito: requirement.name,
+        evidencias: operational ? String(operational.files_count) : '0',
+        atendimento: operational?.assessment_status ? statusLabel(operational.assessment_status) : 'Não avaliado',
+        aderencia: operational?.compliance_level == null ? '—' : `${operational.compliance_level}%`,
+        situacao: operational?.collection_status ? statusLabel(operational.collection_status) : 'Pendente',
+      }
+    }),
+  ), [checklistAxes, operationalChecklistRows])
+
+  const checklistRequirementColumns: SparksSmartGridColumn[] = [
+    { id: 'eixo', label: 'Eixo', minWidth: 170, maxWidth: 260, tooltip: true },
+    { id: 'codigo', label: 'Código', minWidth: 105, maxWidth: 130 },
+    { id: 'requisito', label: 'Requisito / prática', minWidth: 300, maxWidth: 560, tooltip: true, grow: 2 },
+    { id: 'evidencias', label: 'Evidências', minWidth: 105, maxWidth: 130, align: 'center' },
+    { id: 'atendimento', label: 'Atendimento', minWidth: 150, maxWidth: 220 },
+    { id: 'aderencia', label: 'Aderência', minWidth: 120, maxWidth: 150, align: 'center' },
+    { id: 'situacao', label: 'Situação', minWidth: 135, maxWidth: 190 },
+  ]
+
+  const assetChecklistAxisMap = useMemo(() => {
+    const axisByRequirementCode = new Map<string, string>()
+    for (const group of checklistAxes) {
+      for (const requirement of group.requirements) {
+        axisByRequirementCode.set(requirement.code, group.axis.name)
+      }
+    }
+
+    const requirementCodeByItemId = new Map(
+      operationalChecklistRows.map((item) => [item.item_id, item.item_code]),
+    )
+    const axisNamesByAsset = new Map<string, Set<string>>()
+
+    for (const link of rows) {
+      if (link.target_type !== 'skpe_evidence_checklist_item' || !link.target_id) continue
+      const requirementCode = requirementCodeByItemId.get(link.target_id)
+      const axisName = requirementCode ? axisByRequirementCode.get(requirementCode) : null
+      if (!axisName) continue
+      const current = axisNamesByAsset.get(link.evidence_asset_id) ?? new Set<string>()
+      current.add(axisName)
+      axisNamesByAsset.set(link.evidence_asset_id, current)
+    }
+
+    return new Map(
+      Array.from(axisNamesByAsset.entries()).map(([assetId, axisNames]) => [
+        assetId,
+        Array.from(axisNames).join(' · '),
+      ]),
+    )
+  }, [checklistAxes, operationalChecklistRows, rows])
+
+  const selectedChecklistRequirement = useMemo(() => {
+    if (!selectedChecklistRequirementId) return null
+    for (const group of checklistAxes) {
+      const requirement = group.requirements.find((item) => item.id === selectedChecklistRequirementId)
+      if (requirement) {
+        return {
+          axis: group.axis,
+          requirement,
+          operational: operationalChecklistRows.find((row) => row.item_code === requirement.code) ?? null,
+        }
+      }
+    }
+    return null
+  }, [checklistAxes, operationalChecklistRows, selectedChecklistRequirementId])
+
+  useEffect(() => {
+    if (!selectedChecklistRequirementId && checklistRequirementRows.length > 0) {
+      setSelectedChecklistRequirementId(checklistRequirementRows[0].id)
+    }
+  }, [checklistRequirementRows, selectedChecklistRequirementId])
 
   const checklistCoverage = useMemo(() => {
     const applicable = operationalChecklistRows.filter((row) => row.is_applicable)
@@ -628,14 +817,17 @@ export function EvidenceManagementWorkspace({
     () =>
       filteredAssets.map((row) => ({
         id: row.evidence_asset_id,
-        eixo: 'Não vinculado',
+        eixo: assetChecklistAxisMap.get(row.evidence_asset_id) ?? 'Não vinculado',
         categoria: categoryLabel(row.evidence_type),
         evidencia: row.title ?? 'Evidência sem título',
         situacao:
           availabilityLabels[row.availability_status ?? ''] ??
           row.availability_status ??
           'Não avaliada',
-        origem: originLabel(row),
+        origem: sourceReferenceLabel(
+          row,
+          downloadVersions.find((version) => version.evidence_asset_id === row.evidence_asset_id) ?? null,
+        ),
         disponibilizada_em: formatDateTime(row.made_available_at),
         disponibilizada_por:
           row.made_available_by_name ?? 'Não registrado',
@@ -650,7 +842,7 @@ export function EvidenceManagementWorkspace({
           'Não avaliada',
         utilizada: row.is_currently_used ? 'Sim' : 'Não',
       })),
-    [filteredAssets],
+    [assetChecklistAxisMap, downloadVersions, filteredAssets],
   )
 
   const expectedGridData = useMemo<EvidenceGridRow[]>(() => {
@@ -701,18 +893,286 @@ export function EvidenceManagementWorkspace({
     setActiveFilter((current) => (current === filter ? null : filter))
   }
 
-  function checklistDetail(value: unknown) {
+  function checklistDetail(value: unknown): string {
     if (Array.isArray(value)) {
-      return value.map((item) => String(item)).filter(Boolean).join(' · ')
+      return value.map(checklistDetail).filter(Boolean).join(' · ')
     }
     if (value && typeof value === 'object') {
       return Object.values(value as Record<string, unknown>)
-        .flatMap((item) => (Array.isArray(item) ? item : [item]))
-        .map((item) => String(item))
+        .map(checklistDetail)
         .filter(Boolean)
         .join(' · ')
     }
-    return value ? String(value) : ''
+    return value === null || value === undefined ? '' : String(value)
+  }
+
+  function statusLabel(value: string) {
+    const normalized = value.trim().toLowerCase()
+    const labels: Record<string, string> = {
+      pending: 'Pendente',
+      not_started: 'Não iniciado',
+      not_assessed: 'Não avaliado',
+      in_progress: 'Em andamento',
+      collected: 'Coletado',
+      linked: 'Associado',
+      validated: 'Validado',
+      approved: 'Aprovado',
+      rejected: 'Rejeitado',
+      partial: 'Parcialmente atendido',
+      compliant: 'Atendido',
+      non_compliant: 'Não atendido',
+      high: 'Alto',
+      medium: 'Médio',
+      low: 'Baixo',
+    }
+    return labels[normalized] ?? value
+  }
+
+  function impactLabel(value: string | null) {
+    return value ? statusLabel(value) : 'Não informado'
+  }
+
+  function openEvidenceMaintenance(id: string) {
+    const asset = assets.find((item) => item.evidence_asset_id === id) ?? null
+    setSelectedEvidenceAssetId(id)
+    setEvidenceMaintenanceOpen(true)
+    setAssociationChecklistItemId('')
+    setAssociationReason('')
+    setAssociationMessage('')
+    setSeriesTitle(asset ? defaultSeriesTitle(asset) : '')
+    setSeriesFiles([])
+    setSeriesReason('')
+    setSeriesMessage('')
+  }
+
+  function legacyEvidenceSourceId(row: EvidenceRow) {
+    const value = row.metadata?.legacy_evidence_source_id
+    return typeof value === 'string' && value.trim() ? value.trim() : null
+  }
+
+  async function associateEvidenceToChecklist() {
+    if (!selectedEvidenceAsset || !associationChecklistItemId) {
+      setAssociationMessage('Selecione um requisito do checklist para associar esta evidência.')
+      return
+    }
+    const target = operationalChecklistRows.find((row) => row.item_id === associationChecklistItemId)
+    if (!target) {
+      setAssociationMessage('O requisito selecionado ainda não está materializado no checklist operacional.')
+      return
+    }
+    if (associationReason.trim().length < 10) {
+      setAssociationMessage('Informe uma justificativa com pelo menos 10 caracteres.')
+      return
+    }
+
+    setAssociatingEvidence(true)
+    setAssociationMessage('')
+
+    try {
+      const latestVersion = downloadVersions.find(
+        (version) => version.evidence_asset_id === selectedEvidenceAsset.evidence_asset_id,
+      )
+      const sourceId = legacyEvidenceSourceId(selectedEvidenceAsset)
+
+      const { data: existingFiles, error: existingError } = await supabase
+        .from('skpe_evidence_checklist_item_files')
+        .select('id,evidence_source_id,skdoc_document_id,storage_path,file_name')
+        .eq('checklist_item_id', target.item_id)
+
+      if (existingError) throw existingError
+
+      const alreadyLinked = (existingFiles ?? []).some((file: any) =>
+        (sourceId && file.evidence_source_id === sourceId) ||
+        (selectedEvidenceAsset.skdoc_document_id && file.skdoc_document_id === selectedEvidenceAsset.skdoc_document_id) ||
+        (latestVersion?.storage_path && file.storage_path === latestVersion.storage_path),
+      )
+
+      if (!alreadyLinked) {
+        const { error: registerError } = await supabase.rpc('register_skpe_checklist_item_file', {
+          target_checklist_item_id: target.item_id,
+          file_name: latestVersion?.file_name ?? selectedEvidenceAsset.title ?? 'Evidência associada',
+          storage_bucket: latestVersion?.storage_bucket ?? null,
+          storage_path: latestVersion?.storage_path ?? null,
+          mime_type: latestVersion?.mime_type ?? null,
+          file_size_bytes: latestVersion?.file_size_bytes ?? null,
+          evidence_source_id: sourceId,
+          skdoc_document_id: selectedEvidenceAsset.skdoc_document_id ?? null,
+          document_date: selectedEvidenceAsset.reference_date ?? null,
+          reference_period_start: selectedEvidenceAsset.reference_period_start ?? null,
+          reference_period_end: selectedEvidenceAsset.reference_period_end ?? null,
+          version_label: latestVersion?.version_label ?? null,
+          confidentiality_level: 'internal',
+          notes: sourceReferenceLabel(selectedEvidenceAsset, latestVersion ?? null),
+          change_reason: associationReason.trim(),
+        })
+        if (registerError) throw registerError
+      }
+
+      const { error: linkError } = await supabase.rpc('link_sparks_evidence', {
+        target_organization_id: organizationId,
+        target_evidence_asset_id: selectedEvidenceAsset.evidence_asset_id,
+        target_module_code: 'SK-PE',
+        target_type: 'skpe_evidence_checklist_item',
+        target_id: target.item_id,
+        target_usage_purpose: `Evidência associada ao requisito ${target.item_code} — ${target.item_name} do checklist PEM-00.`,
+        target_relevance_level: 'important',
+        target_is_primary: false,
+        change_reason: associationReason.trim(),
+      })
+      if (linkError) throw linkError
+
+      setAssociationMessage(
+        alreadyLinked
+          ? 'A evidência já estava associada a este requisito. O vínculo governado foi confirmado.'
+          : 'Evidência associada ao requisito com rastreabilidade e auditoria.',
+      )
+      setChecklistRefreshKey((value) => value + 1)
+      setEvidenceRefreshKey((value) => value + 1)
+    } catch (caught) {
+      setAssociationMessage(
+        caught instanceof Error ? caught.message : 'Não foi possível associar a evidência ao requisito.',
+      )
+    } finally {
+      setAssociatingEvidence(false)
+    }
+  }
+
+  async function registerEvidenceSeriesFiles() {
+    if (!selectedEvidenceAsset) {
+      setSeriesMessage('Selecione uma evidência para iniciar a série documental.')
+      return
+    }
+    const title = seriesTitle.trim()
+    if (!title) {
+      setSeriesMessage('Informe o nome da série documental.')
+      return
+    }
+    if (seriesFiles.length === 0) {
+      setSeriesMessage('Selecione um ou mais arquivos da série histórica.')
+      return
+    }
+    if (seriesReason.trim().length < 10) {
+      setSeriesMessage('Informe uma justificativa com pelo menos 10 caracteres.')
+      return
+    }
+
+    const fileYears = seriesFiles.map((file) => ({ file, year: inferDocumentYear(file.name) }))
+    const ambiguous = fileYears.filter((item) => !item.year)
+    if (ambiguous.length > 0) {
+      setSeriesMessage(
+        `Não foi possível identificar uma competência única em: ${ambiguous.map((item) => item.file.name).join(', ')}. Inclua o ano no nome do arquivo.`,
+      )
+      return
+    }
+
+    const repeatedYears = fileYears
+      .map((item) => item.year as string)
+      .filter((year, index, years) => years.indexOf(year) !== index)
+    if (repeatedYears.length > 0) {
+      setSeriesMessage(`Há mais de um arquivo para a mesma competência: ${Array.from(new Set(repeatedYears)).join(', ')}.`)
+      return
+    }
+
+    setRegisteringSeries(true)
+    setSeriesMessage('')
+
+    const seriesKey = normalizeSeriesKey(title)
+    const results: string[] = []
+    const uploadedPaths: string[] = []
+
+    try {
+      for (const { file, year } of fileYears) {
+        const period = year as string
+        const contentHash = await fileSha256(file)
+
+        const { data: duplicateAsset, error: duplicateLookupError } = await supabase
+          .from('sparks_evidence_assets')
+          .select('id,title')
+          .eq('organization_id', organizationId)
+          .eq('content_hash', contentHash)
+          .is('archived_at', null)
+          .maybeSingle()
+        if (duplicateLookupError) throw duplicateLookupError
+
+        let storagePath: string | null = null
+        if (!duplicateAsset) {
+          storagePath = `${organizationId}/${period}/series/${crypto.randomUUID()}-${safeStorageFileName(file.name)}`
+          const { error: uploadError } = await supabase.storage
+            .from('sparks-evidence')
+            .upload(storagePath, file, {
+              cacheControl: '3600',
+              contentType: file.type || undefined,
+              upsert: false,
+            })
+          if (uploadError) throw uploadError
+          uploadedPaths.push(storagePath)
+        }
+
+        const { data: registration, error: registrationError } = await supabase.rpc(
+          'register_sparks_evidence_series_document',
+          {
+            target_organization_id: organizationId,
+            target_series_key: seriesKey,
+            target_series_title: title,
+            target_document_family: title,
+            target_period_label: period,
+            target_period_start: `${period}-01-01`,
+            target_period_end: `${period}-12-31`,
+            target_reference_date: `${period}-12-31`,
+            target_evidence_title: `${title} — ${period}`,
+            target_origin_module_code: 'SK-PE',
+            target_content_hash: contentHash,
+            target_file_name: file.name,
+            target_mime_type: file.type || null,
+            target_file_size_bytes: file.size,
+            target_storage_bucket: duplicateAsset ? null : 'sparks-evidence',
+            target_storage_path: storagePath,
+            change_reason: seriesReason.trim(),
+            seed_evidence_asset_id: selectedEvidenceAsset.evidence_asset_id,
+          },
+        )
+        if (registrationError) {
+          if (storagePath) {
+            await supabase.storage.from('sparks-evidence').remove([storagePath])
+            const index = uploadedPaths.indexOf(storagePath)
+            if (index >= 0) uploadedPaths.splice(index, 1)
+          }
+          throw registrationError
+        }
+
+        const status = String((registration as any)?.status ?? '')
+        if (storagePath && status !== 'duplicate_content' && status !== 'duplicate_content_reused') {
+          const index = uploadedPaths.indexOf(storagePath)
+          if (index >= 0) uploadedPaths.splice(index, 1)
+        }
+        if (status === 'duplicate_content' || status === 'duplicate_content_reused') {
+          if (storagePath) {
+            await supabase.storage.from('sparks-evidence').remove([storagePath])
+            const index = uploadedPaths.indexOf(storagePath)
+            if (index >= 0) uploadedPaths.splice(index, 1)
+          }
+          results.push(`${period}: conteúdo já existente, reutilizado sem duplicação física`)
+        } else if (status === 'created_period_version') {
+          results.push(`${period}: nova versão registrada para a competência`)
+        } else {
+          results.push(`${period}: documento da série registrado`)
+        }
+      }
+
+      setSeriesMessage(`Série processada. ${results.join(' · ')}`)
+      setSeriesFiles([])
+      setSeriesReason('')
+      setEvidenceRefreshKey((value) => value + 1)
+    } catch (caught) {
+      for (const path of uploadedPaths) {
+        await supabase.storage.from('sparks-evidence').remove([path])
+      }
+      setSeriesMessage(
+        caught instanceof Error ? caught.message : 'Não foi possível registrar a série documental.',
+      )
+    } finally {
+      setRegisteringSeries(false)
+    }
   }
 
   async function saveEvidence() {
@@ -1111,6 +1571,10 @@ export function EvidenceManagementWorkspace({
               rows={selectedGridData}
               columns={columns}
               ariaLabel={activeFilter === 'expected' ? 'Evidências previstas' : 'Evidências disponíveis'}
+              selectedId={activeFilter === 'expected' ? null : selectedEvidenceAssetId}
+              onSelect={activeFilter === 'expected' ? undefined : setSelectedEvidenceAssetId}
+              onActivate={activeFilter === 'expected' ? undefined : openEvidenceMaintenance}
+              primaryActionLabel="Abrir manutenção"
               fillViewport
               autoRowHeight={false}
             />
@@ -1125,6 +1589,304 @@ export function EvidenceManagementWorkspace({
           </>
         )}
       </section>
+
+      {evidenceMaintenanceOpen && selectedEvidenceAsset ? (
+        <aside className="skpe-evidence-maintenance-workspace" aria-label="Manutenção da evidência">
+          <button
+            type="button"
+            className="skpe-evidence-maintenance-backdrop"
+            aria-label="Fechar manutenção da evidência"
+            onClick={() => setEvidenceMaintenanceOpen(false)}
+          />
+          <section className="skpe-evidence-maintenance-panel">
+            <header>
+              <div>
+                <span className="skpe-evidence-section__eyebrow">Manutenção da evidência</span>
+                <h2>{selectedEvidenceAsset.title ?? 'Evidência sem título'}</h2>
+                <p>{sourceReferenceLabel(
+                  selectedEvidenceAsset,
+                  downloadVersions.find((version) => version.evidence_asset_id === selectedEvidenceAsset.evidence_asset_id) ?? null,
+                )}</p>
+              </div>
+              <button type="button" onClick={() => setEvidenceMaintenanceOpen(false)} aria-label="Fechar">×</button>
+            </header>
+
+            <section className="skpe-evidence-maintenance-summary">
+              <dl>
+                <div><dt>Eixo associado</dt><dd>{assetChecklistAxisMap.get(selectedEvidenceAsset.evidence_asset_id) ?? 'Não vinculado'}</dd></div>
+                <div><dt>Origem</dt><dd>{originLabel(selectedEvidenceAsset)}</dd></div>
+                <div><dt>Período / vigência</dt><dd>{periodLabel(selectedEvidenceAsset)}</dd></div>
+                <div><dt>Qualidade</dt><dd>{qualityLabels[selectedEvidenceAsset.quality_status ?? ''] ?? selectedEvidenceAsset.quality_status ?? 'Não avaliada'}</dd></div>
+                <div><dt>Suficiência</dt><dd>{sufficiencyLabels[selectedEvidenceAsset.sufficiency_status ?? ''] ?? selectedEvidenceAsset.sufficiency_status ?? 'Não avaliada'}</dd></div>
+                <div><dt>Chave de origem</dt><dd>{selectedEvidenceAsset.source_external_key ?? 'Não informada'}</dd></div>
+              </dl>
+            </section>
+
+            <section className="skpe-evidence-maintenance-section">
+              <div className="skpe-evidence-detail-section-heading">
+                <div><span className="skpe-evidence-section__eyebrow">Rastreabilidade</span><h3>Referência da fonte original</h3></div>
+              </div>
+              <p className="skpe-evidence-source-reference">
+                {sourceReferenceLabel(
+                  selectedEvidenceAsset,
+                  downloadVersions.find((version) => version.evidence_asset_id === selectedEvidenceAsset.evidence_asset_id) ?? null,
+                )}
+              </p>
+              <small>
+                Esta referência identifica a origem recuperável da evidência; o título resumido, como “E05 — Mandioca”, não substitui a proveniência.
+              </small>
+            </section>
+
+            <section className="skpe-evidence-maintenance-section">
+              <div className="skpe-evidence-detail-section-heading">
+                <div><span className="skpe-evidence-section__eyebrow">Vínculo metodológico</span><h3>Associar a eixo / requisito do PEM-00</h3></div>
+              </div>
+              {operationalChecklistRows.length === 0 ? (
+                <div className="skpe-evidence-detail-empty">
+                  O checklist operacional ainda não foi materializado; por isso o vínculo não pode ser gravado neste momento.
+                </div>
+              ) : (
+                <>
+                  <label className="skpe-evidence-maintenance-field">
+                    <span>Requisito *</span>
+                    <select value={associationChecklistItemId} onChange={(event) => setAssociationChecklistItemId(event.target.value)}>
+                      <option value="">Selecione o requisito</option>
+                      {operationalChecklistRows.map((item) => (
+                        <option key={item.item_id} value={item.item_id}>
+                          {item.item_code} — {item.item_name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="skpe-evidence-maintenance-field">
+                    <span>Justificativa do vínculo *</span>
+                    <textarea
+                      value={associationReason}
+                      onChange={(event) => setAssociationReason(event.target.value)}
+                      placeholder="Explique por que esta evidência atende ou apoia o requisito selecionado."
+                    />
+                  </label>
+                  {associationMessage ? <div className="skpe-evidence-version-message" role="status">{associationMessage}</div> : null}
+                  <button
+                    type="button"
+                    className="skpe-evidence-version-primary"
+                    disabled={associatingEvidence}
+                    onClick={() => void associateEvidenceToChecklist()}
+                  >
+                    {associatingEvidence ? 'Associando...' : 'Associar evidência ao requisito'}
+                  </button>
+                </>
+              )}
+            </section>
+
+            <section className="skpe-evidence-maintenance-section skpe-evidence-series-section">
+              <div className="skpe-evidence-detail-section-heading">
+                <div>
+                  <span className="skpe-evidence-section__eyebrow">Série documental</span>
+                  <h3>Análise histórica por competência</h3>
+                </div>
+              </div>
+              <p className="skpe-evidence-version-guidance">
+                Exercícios diferentes não são versões entre si. Cada competência vira um documento próprio da série; somente republicações do mesmo exercício geram nova versão.
+              </p>
+              <label className="skpe-evidence-maintenance-field">
+                <span>Nome da série *</span>
+                <input
+                  value={seriesTitle}
+                  onChange={(event) => setSeriesTitle(event.target.value)}
+                  placeholder="Ex.: Balanço Patrimonial"
+                />
+              </label>
+              <label className="skpe-evidence-maintenance-field">
+                <span>Arquivos da série *</span>
+                <input
+                  type="file"
+                  multiple
+                  key={`series-${evidenceRefreshKey}`}
+                  onChange={(event) => setSeriesFiles(Array.from(event.target.files ?? []))}
+                />
+              </label>
+              {seriesFiles.length > 0 ? (
+                <div className="skpe-evidence-series-preview">
+                  {seriesFiles.map((file) => {
+                    const year = inferDocumentYear(file.name)
+                    return (
+                      <div key={`${file.name}:${file.size}`}>
+                        <strong>{year ?? 'Ano não identificado'}</strong>
+                        <span>{file.name}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
+              <label className="skpe-evidence-maintenance-field">
+                <span>Justificativa do registro da série *</span>
+                <textarea
+                  value={seriesReason}
+                  onChange={(event) => setSeriesReason(event.target.value)}
+                  placeholder="Ex.: inclusão da série histórica de demonstrações financeiras para análise evolutiva."
+                />
+              </label>
+              {seriesMessage ? <div className="skpe-evidence-version-message" role="status">{seriesMessage}</div> : null}
+              <button
+                type="button"
+                className="skpe-evidence-version-primary"
+                disabled={registeringSeries || seriesFiles.length === 0}
+                onClick={() => void registerEvidenceSeriesFiles()}
+              >
+                {registeringSeries ? 'Processando série...' : 'Registrar série histórica'}
+              </button>
+            </section>
+
+            <section className="skpe-evidence-maintenance-section">
+              <div className="skpe-evidence-detail-section-heading">
+                <div><span className="skpe-evidence-section__eyebrow">Arquivo e versão</span><h3>Conteúdo materializado</h3></div>
+              </div>
+              {(() => {
+                const version = downloadVersions.find((item) => item.evidence_asset_id === selectedEvidenceAsset.evidence_asset_id)
+                return version?.storage_bucket && version.storage_path ? (
+                  <>
+                    <div className="skpe-evidence-maintenance-file">
+                      <div>
+                        <strong>{version.file_name ?? 'Arquivo sem nome'}</strong>
+                        <span>Versão {version.version_label ?? version.version_number ?? '—'}</span>
+                      </div>
+                      <button type="button" onClick={() => void downloadEvidence(selectedEvidenceAsset)}>Baixar arquivo</button>
+                    </div>
+                    <div className="skpe-evidence-inline-preview">
+                      <div className="skpe-evidence-detail-section-heading">
+                        <div>
+                          <span className="skpe-evidence-section__eyebrow">Visualização</span>
+                          <h4>Prévia do arquivo</h4>
+                        </div>
+                      </div>
+                      <EvidenceFilePreview
+                        storageBucket={version.storage_bucket}
+                        storagePath={version.storage_path}
+                        fileName={version.file_name ?? selectedEvidenceAsset.title ?? 'evidencia'}
+                        mimeType={version.mime_type}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="skpe-evidence-detail-empty">
+                    Esta evidência ainda não possui arquivo físico recuperável. Ela pode ser uma evidência declarativa migrada ou apenas um cadastro documental.
+                  </div>
+                )
+              })()}
+              <div className="skpe-evidence-maintenance-history">
+                {(() => {
+                  const physicalVersions = selectedVersionHistory.filter(
+                    (version) => Boolean(version.storage_bucket && version.storage_path),
+                  )
+                  const historicalReferences = selectedVersionHistory.filter(
+                    (version) => !version.storage_bucket || !version.storage_path,
+                  )
+                  return (
+                    <>
+                      <div className="skpe-evidence-detail-section-heading">
+                        <h4>Versões físicas</h4>
+                        <strong>{physicalVersions.length}</strong>
+                      </div>
+                      {physicalVersions.length === 0 ? (
+                        <div className="skpe-evidence-detail-empty">Nenhuma versão física registrada.</div>
+                      ) : (
+                        physicalVersions.map((version) => (
+                          <article key={version.id ?? `${version.evidence_asset_id}:${version.version_number}`}>
+                            <div>
+                              <strong>v{version.version_label ?? version.version_number ?? '—'}</strong>
+                              <span>{version.file_name ?? 'Arquivo sem nome'}</span>
+                              <small>{version.created_at ? new Date(version.created_at).toLocaleString('pt-BR') : 'Data não informada'}</small>
+                            </div>
+                            <div className="skpe-evidence-version-actions">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewVersionId(version.id ?? null)}
+                              >
+                                Visualizar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void downloadEvidenceVersion(version, selectedEvidenceAsset.title ?? 'evidencia')}
+                              >
+                                Baixar
+                              </button>
+                            </div>
+                          </article>
+                        ))
+                      )}
+                      {historicalReferences.length > 0 ? (
+                        <details className="skpe-evidence-historical-references">
+                          <summary>{historicalReferences.length} referência(s) histórica(s) sem arquivo físico</summary>
+                          <p>
+                            Estes registros preservam a rastreabilidade de fontes localizadas anteriormente, mas não contam como PDFs ou versões físicas armazenadas.
+                          </p>
+                          {historicalReferences.map((version) => (
+                            <article key={version.id ?? `reference:${version.version_number}`}>
+                              <div>
+                                <strong>Referência {version.version_label ?? version.version_number ?? '—'}</strong>
+                                <span>{version.file_name ?? 'Fonte histórica sem arquivo'}</span>
+                                <small>{version.change_summary ?? 'Sem observação adicional.'}</small>
+                              </div>
+                            </article>
+                          ))}
+                        </details>
+                      ) : null}
+                      {(() => {
+                        const previewVersion = physicalVersions.find((version) => version.id === previewVersionId)
+                        if (!previewVersion?.storage_bucket || !previewVersion.storage_path) return null
+                        return (
+                          <div className="skpe-evidence-version-preview">
+                            <div className="skpe-evidence-detail-section-heading">
+                              <div>
+                                <span className="skpe-evidence-section__eyebrow">Versão selecionada</span>
+                                <h4>
+                                  v{previewVersion.version_label ?? previewVersion.version_number ?? '—'} · {previewVersion.file_name ?? 'Arquivo'}
+                                </h4>
+                              </div>
+                              <button type="button" onClick={() => setPreviewVersionId(null)}>Fechar prévia</button>
+                            </div>
+                            <EvidenceFilePreview
+                              storageBucket={previewVersion.storage_bucket}
+                              storagePath={previewVersion.storage_path}
+                              fileName={previewVersion.file_name ?? selectedEvidenceAsset.title ?? 'evidencia'}
+                              mimeType={previewVersion.mime_type}
+                            />
+                          </div>
+                        )
+                      })()}
+                    </>
+                  )
+                })()}
+              </div>
+              <p className="skpe-evidence-version-guidance">
+                A versão anterior será preservada. O novo arquivo se tornará a versão corrente e a evidência retornará para validação humana.
+              </p>
+              <label className="skpe-evidence-maintenance-field">
+                <span>Novo arquivo / nova versão</span>
+                <input type="file" key={evidenceRefreshKey} onChange={(event) => setVersionFile(event.target.files?.[0] ?? null)} />
+              </label>
+              <label className="skpe-evidence-maintenance-field">
+                <span>Justificativa da nova versão</span>
+                <textarea
+                  value={versionReason}
+                  onChange={(event) => setVersionReason(event.target.value)}
+                  placeholder="Informe o que mudou e por que esta versão deve substituir a atual."
+                />
+              </label>
+              {versionMessage ? <div className="skpe-evidence-version-message" role="status">{versionMessage}</div> : null}
+              <button
+                type="button"
+                className="skpe-evidence-version-primary"
+                disabled={savingVersion || !versionFile}
+                onClick={() => void saveEvidenceVersion()}
+              >
+                {savingVersion ? 'Registrando versão...' : 'Registrar nova versão'}
+              </button>
+            </section>
+          </section>
+        </aside>
+      ) : null}
 
       {showChecklistWorkspace ? (
         <aside className="skpe-evidence-checklist-workspace" aria-label="Checklist de evidências e downloads">
@@ -1163,211 +1925,22 @@ export function EvidenceManagementWorkspace({
               </div>
             ) : null}
 
-            <div className="skpe-evidence-checklist-layout">
-              <section className="skpe-evidence-checklist-axes">
-                {checklistAxes.map(({ axis, requirements }) => (
-                  <article key={axis.id} className="skpe-evidence-axis-card">
-                    <header>
-                      <span>{axis.code}</span>
-                      <h3>{axis.name}</h3>
-                      {axis.description ? <p>{axis.description}</p> : null}
-                    </header>
-                    <div className="skpe-evidence-axis-requirements">
-                      {requirements.map((requirement) => {
-                        const criteria = checklistDetail(requirement.best_practice_criteria)
-                        const possible = checklistDetail(requirement.possible_evidences)
-                        return (
-                          <section key={requirement.id} className="skpe-evidence-requirement-card">
-                            <div className="skpe-evidence-requirement-heading">
-                              <span>{requirement.code}</span>
-                              <strong>{requirement.name}</strong>
-                            </div>
-                            {requirement.description ? <p>{requirement.description}</p> : null}
-                            {criteria ? (
-                              <div>
-                                <small>Critérios / práticas de referência</small>
-                                <p>{criteria}</p>
-                              </div>
-                            ) : null}
-                            {possible ? (
-                              <div>
-                                <small>Evidências possíveis</small>
-                                <p>{possible}</p>
-                              </div>
-                            ) : null}
-                            {requirement.absence_impact ? (
-                              <div>
-                                <small>Impacto da ausência</small>
-                                <p>{requirement.absence_impact}</p>
-                              </div>
-                            ) : null}
-                          </section>
-                        )
-                      })}
-                    </div>
-                  </article>
-                ))}
+            <div className="skpe-evidence-checklist-master-detail">
+              <section className="skpe-evidence-checklist-grid">
+                <header><div><span className="skpe-evidence-section__eyebrow">Checklist PEM-00</span><h3>Requisitos e práticas</h3></div><p>Selecione um registro para consultar evidências, critérios e avaliação no painel lateral.</p></header>
+                <SparksSmartGrid rows={checklistRequirementRows} columns={checklistRequirementColumns} ariaLabel="Requisitos e práticas do checklist metodológico PEM-00" selectedId={selectedChecklistRequirementId} onSelect={setSelectedChecklistRequirementId} onActivate={setSelectedChecklistRequirementId} primaryActionLabel="Abrir detalhes" viewportMode="compact" className="skpe-evidence-checklist-smart-grid" emptyMessage="Nenhum requisito metodológico disponível." />
               </section>
-
-              <aside className="skpe-evidence-downloads-panel">
-                <div>
-                  <span className="skpe-evidence-section__eyebrow">Arquivos da organização</span>
-                  <h3>Downloads disponíveis</h3>
-                  <p>
-                    Somente arquivos efetivamente materializados no repositório canônico podem ser baixados.
-                  </p>
-                </div>
-                <div className="skpe-evidence-download-list">
-                  {assets.map((asset) => {
-                    const version = downloadVersions.find(
-                      (item) => item.evidence_asset_id === asset.evidence_asset_id,
-                    )
-                    const downloadable = Boolean(version?.storage_bucket && version.storage_path)
-                    return (
-                      <article key={asset.evidence_asset_id}>
-                        <div>
-                          <strong>{asset.title ?? 'Evidência sem título'}</strong>
-                          <span>{originLabel(asset)}</span>
-                        </div>
-                        <div className="skpe-evidence-download-actions">
-                          <button
-                            type="button"
-                            className="skpe-evidence-analysis-button"
-                            onClick={() => setSelectedEvidenceAssetId(asset.evidence_asset_id)}
-                          >
-                            Analisar
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!downloadable}
-                            onClick={() => void downloadEvidence(asset)}
-                            title={
-                              downloadable
-                                ? 'Baixar versão materializada'
-                                : 'Arquivo ainda não materializado no repositório canônico'
-                            }
-                          >
-                            {downloadable ? 'Baixar' : 'Sem arquivo'}
-                          </button>
-                        </div>
-                      </article>
-                    )
-                  })}
-                </div>
-
-                {selectedEvidenceAsset ? (
-                  <section className="skpe-evidence-analysis-card">
-                    <div className="skpe-evidence-analysis-card__heading">
-                      <div>
-                        <span className="skpe-evidence-section__eyebrow">Análise da evidência</span>
-                        <h4>{selectedEvidenceAsset.title ?? 'Evidência sem título'}</h4>
-                      </div>
-                      <button
-                        type="button"
-                        aria-label="Fechar análise da evidência"
-                        onClick={() => setSelectedEvidenceAssetId(null)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <dl>
-                      <div>
-                        <dt>Origem</dt>
-                        <dd>{originLabel(selectedEvidenceAsset)}</dd>
-                      </div>
-                      <div>
-                        <dt>Qualidade</dt>
-                        <dd>{qualityLabels[selectedEvidenceAsset.reliability_level ?? 'not_assessed'] ?? selectedEvidenceAsset.reliability_level ?? 'Não avaliada'}</dd>
-                      </div>
-                      <div>
-                        <dt>Suficiência</dt>
-                        <dd>{sufficiencyLabels[selectedEvidenceAsset.sufficiency_status ?? 'not_assessed'] ?? selectedEvidenceAsset.sufficiency_status ?? 'Não avaliada'}</dd>
-                      </div>
-                      <div>
-                        <dt>Validação</dt>
-                        <dd>{selectedEvidenceAsset.validation_status ?? 'Não avaliada'}</dd>
-                      </div>
-                      <div>
-                        <dt>Vigência</dt>
-                        <dd>{periodLabel(selectedEvidenceAsset)}</dd>
-                      </div>
-                      <div>
-                        <dt>Uso no SK-PE</dt>
-                        <dd>{selectedEvidenceAsset.is_currently_used ? 'Em uso no contexto estratégico' : 'Ainda não vinculada a um uso estratégico governado'}</dd>
-                      </div>
-                    </dl>
-                    <p>
-                      A consulta e análise permanecem disponíveis mesmo sem arquivo materializado.
-                      O download só é liberado quando existir uma versão física governada pelo SK-DOC.
-                    </p>
-
-                    <section className="skpe-evidence-version-lifecycle">
-                      <header>
-                        <div>
-                          <span className="skpe-evidence-section__eyebrow">Versionamento governado</span>
-                          <h5>Histórico de versões</h5>
-                        </div>
-                        <strong>{selectedVersionHistory.length} versão(ões)</strong>
-                      </header>
-
-                      {selectedVersionHistory.length === 0 ? (
-                        <p className="skpe-evidence-version-empty">Nenhuma versão física foi registrada para esta evidência.</p>
-                      ) : (
-                        <div className="skpe-evidence-version-list">
-                          {selectedVersionHistory.map((version) => (
-                            <article key={version.id ?? `${version.evidence_asset_id}:${version.version_number}`}>
-                              <div>
-                                <strong>v{version.version_label ?? version.version_number ?? '—'}</strong>
-                                <span>{version.file_name ?? 'Arquivo sem nome registrado'}</span>
-                                <small>{version.created_at ? new Date(version.created_at).toLocaleString('pt-BR') : 'Data não informada'}</small>
-                                {version.change_summary ? <p>{version.change_summary}</p> : null}
-                              </div>
-                              <button
-                                type="button"
-                                disabled={!version.storage_bucket || !version.storage_path}
-                                onClick={() => void downloadEvidenceVersion(version, selectedEvidenceAsset.title ?? 'evidencia')}
-                              >
-                                Baixar v{version.version_number ?? ''}
-                              </button>
-                            </article>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="skpe-evidence-version-form">
-                        <strong>Registrar nova versão</strong>
-                        <p>
-                          A versão anterior será preservada. O novo arquivo se tornará a versão corrente e a evidência retornará para validação humana.
-                        </p>
-                        <label>
-                          <span>Novo arquivo *</span>
-                          <input
-                            key={evidenceRefreshKey}
-                            type="file"
-                            onChange={(event) => setVersionFile(event.target.files?.[0] ?? null)}
-                          />
-                        </label>
-                        <label>
-                          <span>Justificativa da nova versão *</span>
-                          <textarea
-                            value={versionReason}
-                            onChange={(event) => setVersionReason(event.target.value)}
-                            placeholder="Descreva o que mudou e por que esta versão substitui a versão corrente."
-                          />
-                        </label>
-                        {versionMessage ? <div className="skpe-evidence-version-message" role="status">{versionMessage}</div> : null}
-                        <button
-                          type="button"
-                          className="skpe-evidence-version-primary"
-                          onClick={() => void saveEvidenceVersion()}
-                          disabled={savingVersion}
-                        >
-                          {savingVersion ? 'Registrando versão...' : 'Registrar nova versão'}
-                        </button>
-                      </div>
-                    </section>
-                  </section>
-                ) : null}
+              <aside className="skpe-evidence-requirement-detail">
+                {selectedChecklistRequirement ? (<>
+                  <header><span className="skpe-evidence-section__eyebrow">Detalhes do requisito</span><strong>{selectedChecklistRequirement.requirement.code}</strong><h3>{selectedChecklistRequirement.requirement.name}</h3><p>{selectedChecklistRequirement.axis.name}</p></header>
+                  {selectedChecklistRequirement.requirement.description ? (<section><h4>O que será avaliado</h4><p>{selectedChecklistRequirement.requirement.description}</p></section>) : null}
+                  <section><h4>Critérios e práticas de referência</h4><p>{checklistDetail(selectedChecklistRequirement.requirement.best_practice_criteria) || 'Não informados.'}</p></section>
+                  <section><h4>Evidências esperadas</h4><p>{checklistDetail(selectedChecklistRequirement.requirement.possible_evidences) || 'Não informadas.'}</p></section>
+                  <section><h4>Impacto da ausência</h4><p>{impactLabel(selectedChecklistRequirement.requirement.absence_impact)}</p></section>
+                  <section className="skpe-evidence-associated-section"><div className="skpe-evidence-detail-section-heading"><h4>Evidências associadas</h4><strong>{selectedChecklistRequirement.operational?.files_count ?? 0}</strong></div>{(selectedChecklistRequirement.operational?.files_count ?? 0) > 0 ? (<p>Há evidência(s) vinculada(s) a este requisito no checklist operacional. A abertura individual será feita a partir do vínculo governado do requisito, sem misturar o acervo geral da organização.</p>) : (<div className="skpe-evidence-detail-empty">Nenhuma evidência foi associada a este requisito.</div>)}</section>
+                  <section><h4>Avaliação do SK-PE</h4><dl className="skpe-evidence-requirement-assessment"><div><dt>Atendimento</dt><dd>{selectedChecklistRequirement.operational?.assessment_status ? statusLabel(selectedChecklistRequirement.operational.assessment_status) : 'Não avaliado'}</dd></div><div><dt>Aderência</dt><dd>{selectedChecklistRequirement.operational?.compliance_level == null ? 'Não avaliada' : String(selectedChecklistRequirement.operational.compliance_level) + '%'}</dd></div><div><dt>Situação da coleta</dt><dd>{selectedChecklistRequirement.operational?.collection_status ? statusLabel(selectedChecklistRequirement.operational.collection_status) : 'Pendente'}</dd></div><div><dt>Evidências validadas</dt><dd>{selectedChecklistRequirement.operational?.validated_files_count ?? 0}</dd></div></dl></section>
+                  <p className="skpe-evidence-detail-authority">O SK-DOC governa o documento e suas versões. O SK-PE registra o vínculo com este requisito e a avaliação específica de atendimento, aderência, suficiência e maturidade.</p>
+                </>) : (<div className="skpe-evidence-detail-empty">Selecione um requisito no GRID para abrir seus detalhes.</div>)}
               </aside>
             </div>
           </div>
