@@ -180,9 +180,9 @@ const categoryLabels: Record<string, string> = {
   action_plan: 'Plano de ação',
   interview: 'Entrevista',
   workshop: 'Oficina',
-  bmc: 'Modelo de Negócio — BMC',
-  vpc: 'Proposta de Valor — VPC',
-  benchmark: 'Benchmark / Referência comparativa',
+  bmc: 'Modelo de negócios',
+  vpc: 'Proposta de valor',
+  benchmark: 'Referência comparativa',
   market_study: 'Estudo de mercado',
   legal_reference: 'Referência legal ou normativa',
   image: 'Imagem',
@@ -240,15 +240,14 @@ function originLabel(row: EvidenceRow) {
   const moduleCode = row.origin_module_code?.trim()
 
   if (rawOrigin === 'SK-DOC') {
-    return 'SK-PE - Evidências no SK-DOC'
+    return 'Documento do acervo da organização'
   }
 
   const knownOrigins: Record<string, string> = {
-    skpe_import_batches: 'SK-PE - Importação da Planilha de Gestão Estratégica',
-    skpe_evidence_sources: 'SK-PE - Evidências históricas do Diagnóstico',
-    skpe_data_provenance: 'SK-PE - Proveniência de dados do Diagnóstico',
-    'Respostas ao Questionário':
-      'SK-PE - Questionário e levantamento de informações',
+    skpe_import_batches: 'Planilha de Gestão Estratégica',
+    skpe_evidence_sources: 'Documento do Diagnóstico Estratégico',
+    skpe_data_provenance: 'Informação do Diagnóstico Estratégico',
+    'Respostas ao Questionário': 'Questionário e levantamento de informações',
   }
 
   if (rawOrigin && knownOrigins[rawOrigin]) {
@@ -256,14 +255,23 @@ function originLabel(row: EvidenceRow) {
   }
 
   if (rawOrigin?.startsWith('skpe_')) {
-    return 'SK-PE - Fonte interna do Planejamento Estratégico'
+    return 'Registro do Diagnóstico Estratégico'
   }
 
-  if (rawOrigin && moduleCode) {
-    return `${moduleCode} - ${rawOrigin}`
+  const moduleNames: Record<string, string> = {
+    'SK-PE': 'Planejamento Estratégico',
+    'SK-DOC': 'Acervo documental',
+    'SK-KM': 'Base de conhecimento',
   }
+  const moduleName = moduleCode ? moduleNames[moduleCode] : null
+  const readableOrigin = rawOrigin && !/^[A-Z]+-[A-Z]+$/.test(rawOrigin) && !rawOrigin.includes('_')
+    ? rawOrigin
+    : null
 
-  return rawOrigin || moduleCode || 'Origem não informada'
+  if (moduleName && readableOrigin) return `${moduleName} · ${readableOrigin}`
+  if (readableOrigin) return readableOrigin
+  if (moduleName) return moduleName
+  return 'Origem não informada'
 }
 
 function sourceReferenceLabel(row: EvidenceRow, version?: EvidenceVersionDownload | null) {
@@ -437,7 +445,7 @@ export function EvidenceManagementWorkspace({
 
       if (queryError) {
         setRows([])
-        setError(queryError.message)
+        setError('Não foi possível carregar as evidências. Tente novamente.')
         setLoading(false)
         return
       }
@@ -491,7 +499,7 @@ export function EvidenceManagementWorkspace({
         target_project_id: projectId,
       })
       if (cancelled) return
-      if (queryError) { setOperationalChecklistRows([]); setOperationalChecklistError(queryError.message); return }
+      if (queryError) { setOperationalChecklistRows([]); setOperationalChecklistError('Não foi possível consultar a lista de requisitos deste projeto.'); return }
       setOperationalChecklistRows((data ?? []) as unknown as OperationalChecklistRow[])
     }
     void loadOperationalChecklist()
@@ -517,7 +525,7 @@ export function EvidenceManagementWorkspace({
       if (templateError || !template) {
         setExpectedItems([])
         setExpectedError(
-          templateError?.message ?? 'Checklist PEM-00 não localizado.',
+          'Não foi possível carregar a lista de requisitos de evidência. Tente novamente mais tarde.'
         )
         setExpectedLoading(false)
         return
@@ -537,7 +545,7 @@ export function EvidenceManagementWorkspace({
       if (versionError || !version) {
         setExpectedItems([])
         setExpectedError(
-          versionError?.message ?? 'Nenhuma versão publicada do PEM-00 foi localizada.',
+          'A lista de requisitos de evidência não está disponível no momento.'
         )
         setExpectedLoading(false)
         return
@@ -555,7 +563,7 @@ export function EvidenceManagementWorkspace({
 
       if (itemsError) {
         setExpectedItems([])
-        setExpectedError(itemsError.message)
+        setExpectedError('Não foi possível carregar os requisitos de evidência. Tente novamente mais tarde.')
         setExpectedLoading(false)
         return
       }
@@ -645,7 +653,7 @@ export function EvidenceManagementWorkspace({
       if (cancelled) return
       if (historyError) {
         setSelectedVersionHistory([])
-        setVersionMessage(historyError.message)
+        setVersionMessage('Não foi possível carregar o histórico de versões. Tente novamente.')
         return
       }
 
@@ -682,7 +690,6 @@ export function EvidenceManagementWorkspace({
       return {
         id: requirement.id,
         eixo: axis.name,
-        codigo: requirement.code,
         requisito: requirement.name,
         evidencias: operational ? String(operational.files_count) : '0',
         atendimento: operational?.assessment_status ? statusLabel(operational.assessment_status) : 'Não avaliado',
@@ -694,7 +701,6 @@ export function EvidenceManagementWorkspace({
 
   const checklistRequirementColumns: SparksSmartGridColumn[] = [
     { id: 'eixo', label: 'Eixo', minWidth: 170, maxWidth: 260, tooltip: true },
-    { id: 'codigo', label: 'Código', minWidth: 105, maxWidth: 130 },
     { id: 'requisito', label: 'Requisito / prática', minWidth: 300, maxWidth: 560, tooltip: true, grow: 2 },
     { id: 'evidencias', label: 'Evidências', minWidth: 105, maxWidth: 130, align: 'center' },
     { id: 'atendimento', label: 'Atendimento', minWidth: 150, maxWidth: 220 },
@@ -862,7 +868,7 @@ export function EvidenceManagementWorkspace({
         categoria: 'Evidência prevista',
         evidencia: item.name,
         situacao: 'Prevista no checklist',
-        origem: 'PEM-00 - Checklist Padrão de Evidências',
+        origem: 'Checklist de evidências',
         disponibilizada_em: 'Ainda não aplicável',
         disponibilizada_por: 'Ainda não aplicável',
         periodo_vigencia: 'Preparação do Diagnóstico Estratégico',
@@ -898,16 +904,25 @@ export function EvidenceManagementWorkspace({
       return value.map(checklistDetail).filter(Boolean).join(' · ')
     }
     if (value && typeof value === 'object') {
-      return Object.values(value as Record<string, unknown>)
-        .map(checklistDetail)
-        .filter(Boolean)
-        .join(' · ')
+      const entries = Object.values(value as Record<string, unknown>)
+      return entries.map(checklistDetail).filter(Boolean).join(' · ')
     }
-    return value === null || value === undefined ? '' : String(value)
+    if (value === null || value === undefined) return ''
+
+    const text = String(value).trim()
+    if (!text || text.toLowerCase() === '[object object]') return ''
+    if (text.startsWith('{') || text.startsWith('[')) {
+      try {
+        return checklistDetail(JSON.parse(text))
+      } catch {
+        return text
+      }
+    }
+    return text
   }
 
   function statusLabel(value: string) {
-    const normalized = value.trim().toLowerCase()
+    const normalized = value.trim().toLowerCase().replace(/[ -]+/g, '_')
     const labels: Record<string, string> = {
       pending: 'Pendente',
       not_started: 'Não iniciado',
@@ -923,13 +938,17 @@ export function EvidenceManagementWorkspace({
       non_compliant: 'Não atendido',
       high: 'Alto',
       medium: 'Médio',
+      moderate: 'Moderado',
       low: 'Baixo',
+      critical: 'Crítico',
     }
-    return labels[normalized] ?? value
+    return labels[normalized] ?? 'Não informado'
   }
 
   function impactLabel(value: string | null) {
-    return value ? statusLabel(value) : 'Não informado'
+    if (!value) return 'Não informado'
+    const label = statusLabel(value)
+    return label === 'Não informado' ? 'Não classificado' : label
   }
 
   function openEvidenceMaintenance(id: string) {
@@ -957,7 +976,7 @@ export function EvidenceManagementWorkspace({
     }
     const target = operationalChecklistRows.find((row) => row.item_id === associationChecklistItemId)
     if (!target) {
-      setAssociationMessage('O requisito selecionado ainda não está materializado no checklist operacional.')
+      setAssociationMessage('O requisito selecionado não está disponível na lista deste projeto.')
       return
     }
     if (associationReason.trim().length < 10) {
@@ -1023,14 +1042,14 @@ export function EvidenceManagementWorkspace({
 
       setAssociationMessage(
         alreadyLinked
-          ? 'A evidência já estava associada a este requisito. O vínculo governado foi confirmado.'
-          : 'Evidência associada ao requisito com rastreabilidade e auditoria.',
+          ? 'Esta evidência já estava associada a este requisito. A associação foi confirmada.'
+          : 'Evidência associada ao requisito.',
       )
       setChecklistRefreshKey((value) => value + 1)
       setEvidenceRefreshKey((value) => value + 1)
     } catch (caught) {
       setAssociationMessage(
-        caught instanceof Error ? caught.message : 'Não foi possível associar a evidência ao requisito.',
+        'Não foi possível associar a evidência ao requisito. Tente novamente.',
       )
     } finally {
       setAssociatingEvidence(false)
@@ -1168,7 +1187,7 @@ export function EvidenceManagementWorkspace({
         await supabase.storage.from('sparks-evidence').remove([path])
       }
       setSeriesMessage(
-        caught instanceof Error ? caught.message : 'Não foi possível registrar a série documental.',
+        'Não foi possível registrar a série documental. Tente novamente.',
       )
     } finally {
       setRegisteringSeries(false)
@@ -1256,7 +1275,7 @@ export function EvidenceManagementWorkspace({
           change_reason: reason,
         })
         if (linkError) {
-          setEvidenceCreateMessage(`Evidência registrada, mas o vínculo ao projeto requer revisão: ${linkError.message}`)
+          setEvidenceCreateMessage(`Evidência registrada, mas não foi possível confirmar sua associação ao projeto. Tente novamente.`)
         } else {
           setEvidenceCreateMessage('Evidência registrada e vinculada ao projeto com rastreabilidade.')
         }
@@ -1269,7 +1288,7 @@ export function EvidenceManagementWorkspace({
       if (uploadedPath) {
         await supabase.storage.from('sparks-evidence').remove([uploadedPath])
       }
-      setEvidenceCreateMessage(caught instanceof Error ? caught.message : 'Não foi possível registrar a evidência.')
+      setEvidenceCreateMessage('Não foi possível registrar a evidência. Tente novamente.')
     } finally {
       setSavingEvidence(false)
     }
@@ -1328,7 +1347,7 @@ export function EvidenceManagementWorkspace({
       if (uploadedPath) {
         await supabase.storage.from('sparks-evidence').remove([uploadedPath])
       }
-      setVersionMessage(caught instanceof Error ? caught.message : 'Não foi possível registrar a nova versão.')
+      setVersionMessage('Não foi possível registrar a nova versão. Tente novamente.')
     } finally {
       setSavingVersion(false)
     }
@@ -1378,27 +1397,27 @@ export function EvidenceManagementWorkspace({
               className="skpe-evidence-checklist-button"
               onClick={() => setShowChecklistWorkspace(true)}
             >
-              Checklist de evidências e downloads
+              Checklist e arquivos
             </button>
           </div>
         </div>
         <p>
           Decisões estratégicas confiáveis precisam nascer de fatos e dados, não de achismos.
-          Esta base reúne as evidências governadas pela Plataforma para sustentar diagnóstico,
-          maturidade, riscos, escolhas e acompanhamento com rastreabilidade.
+          Esta base reúne os documentos e informações que apoiam o diagnóstico, a avaliação
+          da organização, as decisões e o acompanhamento dos resultados.
         </p>
         <p className="skpe-evidence-authority-note">
-          SK-DOC governa documentos, evidências e versões. SK-KM sustenta conhecimento,
-          classificação e contexto. O SK-PE apenas consome essas evidências e avalia sua
-          suficiência e uso no contexto estratégico.
+          O acervo documental mantém os arquivos e suas versões. A base de conhecimento
+          organiza as informações e seu contexto. O Planejamento Estratégico utiliza essas
+          fontes para avaliar sua suficiência e aplicação nas decisões.
         </p>
         <div className="skpe-evidence-operational-state">
           {operationalChecklistError ? (
             <span>Não foi possível consultar o checklist do projeto neste momento.</span>
           ) : operationalChecklistRows.length === 0 ? (
-            <span>O checklist do projeto ainda não foi materializado. Os requisitos previstos abaixo vêm do padrão metodológico publicado e devem ser reconciliados com evidências já disponíveis na organização antes de novas solicitações.</span>
+            <span>A lista de requisitos deste projeto ainda não está disponível. As evidências já cadastradas na organização permanecem acessíveis; a equipe poderá associá-las aos requisitos quando a lista estiver pronta.</span>
           ) : (
-            <span>Checklist do projeto disponível com {operationalChecklistRows.length} itens para coleta, vínculo e avaliação de evidências.</span>
+            <span>Lista de requisitos disponível com {operationalChecklistRows.length} itens para associar e avaliar evidências.</span>
           )}
         </div>
       </header>
@@ -1406,8 +1425,8 @@ export function EvidenceManagementWorkspace({
       {showCreateEvidence ? (
         <section className="skpe-evidence-create-card" aria-label="Registrar evidência">
           <header>
-            <div><span className="skpe-evidence-section__eyebrow">Cadastro governado</span><h3>Nova evidência transversal</h3></div>
-            <p>O arquivo e seus metadados serão registrados no serviço transversal de evidências, sob autoridade documental do SK-DOC, e vinculados ao projeto estratégico atual.</p>
+            <div><span className="skpe-evidence-section__eyebrow">Adicionar evidência</span><h3>Nova evidência</h3></div>
+            <p>O arquivo ficará disponível no acervo da organização e poderá ser associado ao projeto estratégico e aos requisitos correspondentes.</p>
           </header>
           {evidenceCreateMessage ? <div className="skpe-evidence-create-message" role="status">{evidenceCreateMessage}</div> : null}
           <div className="skpe-evidence-create-grid">
@@ -1427,22 +1446,22 @@ export function EvidenceManagementWorkspace({
           </div>
         </section>
       ) : null}
-      <section className="skpe-evidence-coverage" aria-label="Cobertura governada do checklist de evidências">
+      <section className="skpe-evidence-coverage" aria-label="Cobertura de evidências do checklist">
         <header>
-          <div><span className="skpe-evidence-section__eyebrow">Cobertura do checklist</span><h3>Requisito ≠ arquivo ≠ evidência suficiente</h3></div>
-          <p>A cobertura abaixo só existe quando o checklist operacional foi materializado. Arquivo vinculado não é tratado automaticamente como evidência validada ou suficiente.</p>
+          <div><span className="skpe-evidence-section__eyebrow">Cobertura do checklist</span><h3>Requisitos e evidências</h3></div>
+          <p>Os indicadores mostram quantos requisitos têm arquivos associados e quantas evidências foram avaliadas.</p>
         </header>
         {operationalChecklistRows.length === 0 ? (
-          <div className="skpe-evidence-coverage-empty">Cobertura ainda indisponível: o checklist operacional do projeto não foi materializado.</div>
+          <div className="skpe-evidence-coverage-empty">Os indicadores estarão disponíveis quando a lista de requisitos deste projeto estiver pronta.</div>
         ) : (
           <div className="skpe-evidence-coverage-grid">
             <article><span>Requisitos obrigatórios aplicáveis</span><strong>{checklistCoverage.required}</strong></article>
-            <article><span>Com arquivo vinculado</span><strong>{checklistCoverage.linked}</strong><small>vínculo físico não implica validação</small></article>
+            <article><span>Com arquivo vinculado</span><strong>{checklistCoverage.linked}</strong><small>a associação do arquivo não significa que a evidência foi validada</small></article>
             <article><span>Com arquivo validado</span><strong>{checklistCoverage.validated}</strong><small>{checklistCoverage.validatedCoverage == null ? '—' : `${checklistCoverage.validatedCoverage}%`} dos obrigatórios</small></article>
-            <article><span>Itens avaliados</span><strong>{checklistCoverage.assessed}</strong><small>avaliação contextual registrada</small></article>
+            <article><span>Itens avaliados</span><strong>{checklistCoverage.assessed}</strong><small>avaliação realizada</small></article>
           </div>
         )}
-        <p className="skpe-evidence-coverage-rule">Suficiência permanece uma avaliação contextual governada. Ela não é derivada da quantidade de arquivos nem do percentual de cobertura.</p>
+        <p className="skpe-evidence-coverage-rule">A equipe avalia se cada evidência é suficiente considerando o requisito e seu contexto. A quantidade de arquivos, por si só, não define essa avaliação.</p>
       </section>
       <div className="skpe-evidence-metrics">
         <MetricCard
@@ -1450,8 +1469,8 @@ export function EvidenceManagementWorkspace({
           value={expectedLoading ? '…' : expectedError ? '—' : expectedGridData.length}
           helper={
             expectedError
-              ? 'Checklist indisponível no momento'
-              : 'requisitos previstos pela versão publicada do checklist PEM-00'
+              ? 'Requisitos indisponíveis no momento'
+              : 'requisitos de referência para diagnóstico e avaliação'
           }
           active={activeFilter === 'expected'}
           onClick={
@@ -1460,11 +1479,11 @@ export function EvidenceManagementWorkspace({
               : undefined
           }
           disabled={expectedLoading || Boolean(expectedError)}
-          ariaLabel="Mostrar evidências previstas pelo checklist"
+          ariaLabel="Mostrar evidências de referência"
           tooltip={
             expectedError
               ? expectedError
-              : 'Clique para mostrar os requisitos de evidência previstos pelo PEM-00.'
+              : 'Clique para consultar os requisitos de referência.'
           }
         />
 
@@ -1479,9 +1498,9 @@ export function EvidenceManagementWorkspace({
         />
 
         <MetricCard
-          label="Reutilizadas de outros processos"
+          label="Usadas em outros processos"
           value={counts.reused}
-          helper={`${counts.reused} evidências com reutilização transversal`}
+          helper={`${counts.reused} evidências aproveitadas em mais de um processo`}
           active={activeFilter === 'reused'}
           onClick={() => toggleFilter('reused')}
           ariaLabel="Filtrar evidências reutilizadas"
@@ -1491,7 +1510,7 @@ export function EvidenceManagementWorkspace({
         <MetricCard
           label="Faltantes / insuficientes"
           value={counts.insufficient || '—'}
-          helper="faltantes dependem do vínculo checklist ↔ evidência"
+          helper="dependem da associação entre evidências e requisitos"
           active={activeFilter === 'insufficient'}
           onClick={
             counts.insufficient > 0
@@ -1503,7 +1522,7 @@ export function EvidenceManagementWorkspace({
           tooltip={
             counts.insufficient > 0
               ? 'Clique para filtrar evidências avaliadas como insuficientes.'
-              : 'Faltantes serão calculadas após o vínculo checklist ↔ evidência.'
+              : 'Os itens faltantes serão calculados quando as evidências forem associadas aos requisitos.'
           }
         />
 
@@ -1633,17 +1652,17 @@ export function EvidenceManagementWorkspace({
                 )}
               </p>
               <small>
-                Esta referência identifica a origem recuperável da evidência; o título resumido, como “E05 — Mandioca”, não substitui a proveniência.
+                Esta informação ajuda a identificar de onde veio a evidência e a localizar o arquivo correspondente.
               </small>
             </section>
 
             <section className="skpe-evidence-maintenance-section">
               <div className="skpe-evidence-detail-section-heading">
-                <div><span className="skpe-evidence-section__eyebrow">Vínculo metodológico</span><h3>Associar a eixo / requisito do PEM-00</h3></div>
+                <div><span className="skpe-evidence-section__eyebrow">Relação com o requisito</span><h3>Associar evidência</h3></div>
               </div>
               {operationalChecklistRows.length === 0 ? (
                 <div className="skpe-evidence-detail-empty">
-                  O checklist operacional ainda não foi materializado; por isso o vínculo não pode ser gravado neste momento.
+                  O checklist do projeto ainda não está disponível para associar esta evidência.
                 </div>
               ) : (
                 <>
@@ -1740,7 +1759,7 @@ export function EvidenceManagementWorkspace({
 
             <section className="skpe-evidence-maintenance-section">
               <div className="skpe-evidence-detail-section-heading">
-                <div><span className="skpe-evidence-section__eyebrow">Arquivo e versão</span><h3>Conteúdo materializado</h3></div>
+                <div><span className="skpe-evidence-section__eyebrow">Arquivo e versão</span><h3>Arquivo disponível</h3></div>
               </div>
               {(() => {
                 const version = downloadVersions.find((item) => item.evidence_asset_id === selectedEvidenceAsset.evidence_asset_id)
@@ -1770,7 +1789,7 @@ export function EvidenceManagementWorkspace({
                   </>
                 ) : (
                   <div className="skpe-evidence-detail-empty">
-                    Esta evidência ainda não possui arquivo físico recuperável. Ela pode ser uma evidência declarativa migrada ou apenas um cadastro documental.
+                    Esta evidência ainda não tem um arquivo anexado.
                   </div>
                 )
               })()}
@@ -1817,15 +1836,15 @@ export function EvidenceManagementWorkspace({
                       )}
                       {historicalReferences.length > 0 ? (
                         <details className="skpe-evidence-historical-references">
-                          <summary>{historicalReferences.length} referência(s) histórica(s) sem arquivo físico</summary>
+                          <summary>{historicalReferences.length} referência(s) anterior(es) sem arquivo anexado</summary>
                           <p>
-                            Estes registros preservam a rastreabilidade de fontes localizadas anteriormente, mas não contam como PDFs ou versões físicas armazenadas.
+                            Estes registros informam onde o arquivo foi mencionado anteriormente, mas não incluem um arquivo para visualizar ou baixar.
                           </p>
                           {historicalReferences.map((version) => (
                             <article key={version.id ?? `reference:${version.version_number}`}>
                               <div>
                                 <strong>Referência {version.version_label ?? version.version_number ?? '—'}</strong>
-                                <span>{version.file_name ?? 'Fonte histórica sem arquivo'}</span>
+                                <span>{version.file_name ?? 'Referência anterior'}</span>
                                 <small>{version.change_summary ?? 'Sem observação adicional.'}</small>
                               </div>
                             </article>
@@ -1889,7 +1908,7 @@ export function EvidenceManagementWorkspace({
       ) : null}
 
       {showChecklistWorkspace ? (
-        <aside className="skpe-evidence-checklist-workspace" aria-label="Checklist de evidências e downloads">
+        <aside className="skpe-evidence-checklist-workspace" aria-label="Checklist de evidências e arquivos">
           <button
             type="button"
             className="skpe-evidence-checklist-backdrop"
@@ -1899,11 +1918,11 @@ export function EvidenceManagementWorkspace({
           <div className="skpe-evidence-checklist-panel">
             <header className="skpe-evidence-checklist-panel__header">
               <div>
-                <span className="skpe-evidence-section__eyebrow">Checklist metodológico PEM-00</span>
+                <span className="skpe-evidence-section__eyebrow">Checklist de evidências</span>
                 <h2>Evidências para diagnóstico, governança e maturidade</h2>
                 <p>
                   Organizado pelos grandes eixos de governança e gestão e, dentro deles,
-                  pelos requisitos/práticas que orientam a análise do ambiente interno e da maturidade organizacional.
+                  pelos requisitos e práticas que orientam a análise do ambiente interno e da maturidade organizacional.
                 </p>
               </div>
               <button
@@ -1918,29 +1937,29 @@ export function EvidenceManagementWorkspace({
 
             {operationalChecklistRows.length === 0 ? (
               <div className="skpe-evidence-checklist-notice">
-                <strong>Checklist operacional ainda não materializado para este projeto.</strong>
+                <strong>Lista de requisitos ainda não disponível para este projeto.</strong>
                 <span>
-                  A estrutura abaixo é a versão metodológica publicada. Evidências da organização não serão atribuídas automaticamente a um requisito sem vínculo governado.
+                  A lista abaixo reúne os requisitos de referência. Cada evidência precisa ser associada ao requisito correspondente antes de ser considerada na avaliação.
                 </span>
               </div>
             ) : null}
 
             <div className="skpe-evidence-checklist-master-detail">
               <section className="skpe-evidence-checklist-grid">
-                <header><div><span className="skpe-evidence-section__eyebrow">Checklist PEM-00</span><h3>Requisitos e práticas</h3></div><p>Selecione um registro para consultar evidências, critérios e avaliação no painel lateral.</p></header>
-                <SparksSmartGrid rows={checklistRequirementRows} columns={checklistRequirementColumns} ariaLabel="Requisitos e práticas do checklist metodológico PEM-00" selectedId={selectedChecklistRequirementId} onSelect={setSelectedChecklistRequirementId} onActivate={setSelectedChecklistRequirementId} primaryActionLabel="Abrir detalhes" viewportMode="compact" className="skpe-evidence-checklist-smart-grid" emptyMessage="Nenhum requisito metodológico disponível." />
+                <header><div><span className="skpe-evidence-section__eyebrow">Checklist de evidências</span><h3>Requisitos e práticas</h3></div><p>Selecione um requisito para consultar as evidências, os critérios e a avaliação.</p></header>
+                <SparksSmartGrid rows={checklistRequirementRows} columns={checklistRequirementColumns} ariaLabel="Requisitos e práticas do checklist de evidências" selectedId={selectedChecklistRequirementId} onSelect={setSelectedChecklistRequirementId} onActivate={setSelectedChecklistRequirementId} primaryActionLabel="Abrir detalhes" viewportMode="compact" className="skpe-evidence-checklist-smart-grid" emptyMessage="Nenhum requisito disponível." />
               </section>
               <aside className="skpe-evidence-requirement-detail">
                 {selectedChecklistRequirement ? (<>
-                  <header><span className="skpe-evidence-section__eyebrow">Detalhes do requisito</span><strong>{selectedChecklistRequirement.requirement.code}</strong><h3>{selectedChecklistRequirement.requirement.name}</h3><p>{selectedChecklistRequirement.axis.name}</p></header>
-                  {selectedChecklistRequirement.requirement.description ? (<section><h4>O que será avaliado</h4><p>{selectedChecklistRequirement.requirement.description}</p></section>) : null}
+                  <header><span className="skpe-evidence-section__eyebrow">Detalhes do requisito</span><h3>{selectedChecklistRequirement.requirement.name}</h3><p>{selectedChecklistRequirement.axis.name}</p></header>
+                  {selectedChecklistRequirement.requirement.description ? (<section><h4>O que será observado</h4><p>{selectedChecklistRequirement.requirement.description}</p></section>) : null}
                   <section><h4>Critérios e práticas de referência</h4><p>{checklistDetail(selectedChecklistRequirement.requirement.best_practice_criteria) || 'Não informados.'}</p></section>
                   <section><h4>Evidências esperadas</h4><p>{checklistDetail(selectedChecklistRequirement.requirement.possible_evidences) || 'Não informadas.'}</p></section>
-                  <section><h4>Impacto da ausência</h4><p>{impactLabel(selectedChecklistRequirement.requirement.absence_impact)}</p></section>
-                  <section className="skpe-evidence-associated-section"><div className="skpe-evidence-detail-section-heading"><h4>Evidências associadas</h4><strong>{selectedChecklistRequirement.operational?.files_count ?? 0}</strong></div>{(selectedChecklistRequirement.operational?.files_count ?? 0) > 0 ? (<p>Há evidência(s) vinculada(s) a este requisito no checklist operacional. A abertura individual será feita a partir do vínculo governado do requisito, sem misturar o acervo geral da organização.</p>) : (<div className="skpe-evidence-detail-empty">Nenhuma evidência foi associada a este requisito.</div>)}</section>
-                  <section><h4>Avaliação do SK-PE</h4><dl className="skpe-evidence-requirement-assessment"><div><dt>Atendimento</dt><dd>{selectedChecklistRequirement.operational?.assessment_status ? statusLabel(selectedChecklistRequirement.operational.assessment_status) : 'Não avaliado'}</dd></div><div><dt>Aderência</dt><dd>{selectedChecklistRequirement.operational?.compliance_level == null ? 'Não avaliada' : String(selectedChecklistRequirement.operational.compliance_level) + '%'}</dd></div><div><dt>Situação da coleta</dt><dd>{selectedChecklistRequirement.operational?.collection_status ? statusLabel(selectedChecklistRequirement.operational.collection_status) : 'Pendente'}</dd></div><div><dt>Evidências validadas</dt><dd>{selectedChecklistRequirement.operational?.validated_files_count ?? 0}</dd></div></dl></section>
-                  <p className="skpe-evidence-detail-authority">O SK-DOC governa o documento e suas versões. O SK-PE registra o vínculo com este requisito e a avaliação específica de atendimento, aderência, suficiência e maturidade.</p>
-                </>) : (<div className="skpe-evidence-detail-empty">Selecione um requisito no GRID para abrir seus detalhes.</div>)}
+                  <section><h4>Consequência da falta de evidências</h4><p>{impactLabel(selectedChecklistRequirement.requirement.absence_impact)}</p></section>
+                  <section className="skpe-evidence-associated-section"><div className="skpe-evidence-detail-section-heading"><h4>Evidências associadas</h4><strong>{selectedChecklistRequirement.operational?.files_count ?? 0}</strong></div>{(selectedChecklistRequirement.operational?.files_count ?? 0) > 0 ? (<p>Há evidência(s) vinculada(s) a este requisito no checklist operacional. Abra o registro da evidência para consultar o arquivo e suas informações.</p>) : (<div className="skpe-evidence-detail-empty">Nenhuma evidência foi associada a este requisito.</div>)}</section>
+                  <section><h4>Avaliação do requisito</h4><dl className="skpe-evidence-requirement-assessment"><div><dt>Atendimento</dt><dd>{selectedChecklistRequirement.operational?.assessment_status ? statusLabel(selectedChecklistRequirement.operational.assessment_status) : 'Não avaliado'}</dd></div><div><dt>Aderência</dt><dd>{selectedChecklistRequirement.operational?.compliance_level == null ? 'Não avaliada' : String(selectedChecklistRequirement.operational.compliance_level) + '%'}</dd></div><div><dt>Situação da coleta</dt><dd>{selectedChecklistRequirement.operational?.collection_status ? statusLabel(selectedChecklistRequirement.operational.collection_status) : 'Pendente'}</dd></div><div><dt>Evidências validadas</dt><dd>{selectedChecklistRequirement.operational?.validated_files_count ?? 0}</dd></div></dl></section>
+                  <p className="skpe-evidence-detail-authority">Os arquivos e suas versões permanecem no acervo documental. Aqui você consulta a relação deste material com o requisito e acompanha sua avaliação.</p>
+                </>) : (<div className="skpe-evidence-detail-empty">Selecione um requisito para consultar os detalhes.</div>)}
               </aside>
             </div>
           </div>

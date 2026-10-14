@@ -38,8 +38,8 @@ test('duplo clique em risco preserva rastreabilidade para iniciativa associada',
 })
 
 test('Gestão de Evidências preserva autoridade SK-DOC e SK-KM fora do SK-PE', () => {
-  assert.match(evidence, /SK-DOC governa documentos, evidências e versões/)
-  assert.match(evidence, /SK-KM sustenta conhecimento/)
+  assert.match(evidence, /O acervo documental mantém os arquivos e suas versões/)
+  assert.match(evidence, /A base de conhecimento\s+organiza as informações e seu contexto/)
   assert.match(evidence, /fatos e dados, não de achismos/)
   assert.match(roadmap, /Evidências e documentos \*\*nunca pertencem ao domínio do SK-PE\*\*/)
   assert.match(roadmap, /Ingestão inteligente de evidências por diretório\/conector/)

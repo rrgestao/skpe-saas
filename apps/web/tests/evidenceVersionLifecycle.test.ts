@@ -25,7 +25,7 @@ test('evidence version lifecycle preserves immutable history and returns new con
 
 test('evidence workspace exposes version history, prior downloads and governed new-version upload', () => {
   assert.match(workspace, /Versões físicas/)
-  assert.match(workspace, /referência\(s\) histórica\(s\) sem arquivo físico/)
+  assert.match(workspace, /referência\(s\) anterior\(es\) sem arquivo anexado/)
   assert.match(workspace, /Registrar nova versão/)
   assert.match(workspace, /add_sparks_evidence_version/)
   assert.match(workspace, /selectedVersionHistory\.some\(\(version\) => version\.content_hash === contentHash\)/)

@@ -18,10 +18,10 @@ test('evidence coverage uses the operational checklist rather than raw asset cou
 })
 
 test('evidence semantics keep availability, linkage, validation and sufficiency distinct', () => {
-  assert.match(workspace, /Requisito ≠ arquivo ≠ evidência suficiente/)
-  assert.match(workspace, /Arquivo vinculado não é tratado automaticamente como evidência validada ou suficiente/)
-  assert.match(workspace, /Suficiência permanece uma avaliação contextual governada/)
-  assert.match(workspace, /não é derivada da quantidade de arquivos nem do percentual de cobertura/)
+  assert.match(workspace, /Requisitos e evidências/)
+  assert.match(workspace, /quantos requisitos têm arquivos associados e quantas evidências foram avaliadas/)
+  assert.match(workspace, /A equipe avalia se cada evidência é suficiente considerando o requisito e seu contexto/)
+  assert.match(workspace, /A quantidade de arquivos, por si só, não define essa avaliação/)
   assert.match(workspace, /Em uso estratégico/)
 })
 

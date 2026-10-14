@@ -44,7 +44,7 @@ test('evidence maintenance supports governed multi-period upload', () => {
 
 test('historical references without physical files are not presented as physical versions', () => {
   assert.match(workspace, /Versões físicas/)
-  assert.match(workspace, /referência\(s\) histórica\(s\) sem arquivo físico/)
-  assert.match(workspace, /não contam como PDFs ou versões físicas armazenadas/)
+  assert.match(workspace, /referência\(s\) anterior\(es\) sem arquivo anexado/)
+  assert.match(workspace, /não incluem um arquivo para visualizar ou baixar/)
   assert.match(workspace, /Boolean\(version\.storage_bucket && version\.storage_path\)/)
 })

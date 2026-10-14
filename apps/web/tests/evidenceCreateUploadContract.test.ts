@@ -28,7 +28,7 @@ test('evidence workspace registers and links evidence without duplicating SK-DOC
   assert.match(workspace, /register_sparks_evidence_asset/)
   assert.match(workspace, /link_sparks_evidence/)
   assert.match(workspace, /target_type: 'strategic_project'/)
-  assert.match(workspace, /SK-DOC governa documentos, evidências e versões/)
+  assert.match(workspace, /O acervo documental mantém os arquivos e suas versões/)
 })
 
 test('failed registration cleans uploaded object and duplicate hash reuses canonical evidence', () => {
