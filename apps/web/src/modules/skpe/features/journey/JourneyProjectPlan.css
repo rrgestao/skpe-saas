@@ -538,3 +538,53 @@
   color: var(--organization-primary, var(--sparks-accent, #176b53));
 }
 /* SPARKS JOURNEY PROJECT PLAN VISUAL V1 END */
+
+/* Compact, single project identity container above the workspace tabs. */
+.skpe-project-plan-hero--compact {
+  align-items: center;
+  min-height: 0;
+  padding: 1rem 1.2rem;
+}
+.skpe-project-plan-hero--compact h2 {
+  margin: .18rem 0 0;
+}
+.skpe-project-plan-project-link {
+  flex: 0 0 auto;
+  padding: .65rem .9rem;
+  border: 1px solid var(--organization-secondary, #17664f);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--organization-secondary, #17664f);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.skpe-project-plan-project-link:hover:not(:disabled),
+.skpe-project-plan-project-link:focus-visible {
+  background: color-mix(in srgb, var(--organization-secondary, #17664f) 7%, white);
+}
+.skpe-project-plan-project-link:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 760px) {
+  .skpe-project-plan-hero--compact { flex-direction: column; align-items: stretch; }
+  .skpe-project-plan-project-link { width: 100%; }
+}
+
+/* Consistent readable layout for project planning stages. */
+.skpe-project-plan-panel-heading { display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap; }
+.skpe-project-plan-panel-heading > div:first-child { flex:1 1 440px;min-width:0; }
+.skpe-project-plan-panel-heading p { max-width:none;line-height:1.5;font-size:.91rem; }
+.skpe-project-plan-panel-heading h3 { font-size:1.16rem;line-height:1.3; }
+.skpe-project-plan-kpis { display:flex;flex:0 1 auto;align-items:center;justify-content:flex-end;gap:.45rem;flex-wrap:wrap; }
+.skpe-project-plan-kpis span { min-width:0; }
+.skpe-project-plan-context-strip { align-items:center; }
+.skpe-project-plan-context-strip > div { flex:1 1 auto;min-width:0; }
+.skpe-project-plan-context-strip span { font-size:.9rem;line-height:1.5; }
+.skpe-project-plan-panel .skpe-project-plan-callout { font-size:.88rem;line-height:1.5; }
+.skpe-project-plan-panel .skpe-project-team-grid { width:100%; }
+@media(max-width:760px) {
+ .skpe-project-plan-panel-heading { flex-direction:column; }
+ .skpe-project-plan-kpis { justify-content:flex-start; }
+}
+
+.skpe-project-baseline-history{overflow-x:auto;width:100%}.skpe-project-baseline-history table{border-collapse:collapse;width:100%;min-width:880px;font-size:.85rem}.skpe-project-baseline-history th,.skpe-project-baseline-history td{padding:.8rem .65rem;border-bottom:1px solid #dce5e1;text-align:left;vertical-align:top}.skpe-project-baseline-history th{background:#f1f7f4;font-weight:800;color:#244b3f}.skpe-project-baseline-history tbody tr:hover{background:#f3f9f6}

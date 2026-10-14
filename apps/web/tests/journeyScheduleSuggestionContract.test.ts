@@ -70,6 +70,11 @@ test('Plano do Projeto separa planejamento de execucao e torna Recursos acionave
   assert.match(projectPlan, /Planejamento continua nesta Jornada/)
   assert.match(projectPlan, /Gerenciar equipe, capacidade e alocações/)
   assert.match(projectPlan, /O que fazer aqui:/)
+  assert.match(projectPlan, /Linha de Base vigente: aprovada/)
+  assert.match(projectPlan, /registro histórico da reunião de abertura/)
+  assert.match(projectPlan, /proposta técnica automática e não substitui a Linha de Base vigente/)
+  assert.match(projectPlan, /Não se aplica — proposta técnica/)
+  assert.doesNotMatch(projectPlan, /Sem registro/)
 })
 test('Gantt separa planejamento de execucao integrada com CTAs explicitos', () => {
   assert.match(gantt, /Editar cronograma da Jornada/)

@@ -1577,3 +1577,12 @@
 .skpe-strategic-diagnosis-validation-card strong {
   color: var(--organization-primary, #176b55) !important;
 }
+/* Shared scroll behavior: diagnosis tabs stay below the opaque cockpit heading. */
+.skpe-strategic-diagnosis-tabs-row {
+  position: sticky;
+  top: 60px;
+  z-index: 80;
+  background: #fff;
+  isolation: isolate;
+}
+.skpe-strategic-diagnosis-tabs-row > .sparks-workspace-tabs { margin: 0; }

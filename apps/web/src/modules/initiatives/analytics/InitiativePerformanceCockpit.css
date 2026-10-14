@@ -1322,3 +1322,75 @@ button.skpe-performance-summary-card:focus-visible {
 .skpe-performance-composition-section .skpe-performance-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1180px){.skpe-performance-composition-section .skpe-performance-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.skpe-performance-export-row{justify-content:stretch}.skpe-performance-export-button{width:100%}}
+
+/* Executive dashboard: consolidated visual layout */
+.skpe-performance-export-row { display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:flex-start;margin:0 }
+.skpe-performance-export-button { min-height:2.35rem }
+.skpe-performance-strategic-container { box-sizing:border-box;min-width:0;padding:1.05rem;background:var(--sparks-surface,#fff);border:1px solid var(--sparks-border,#dfe6e2);border-radius:14px;display:flex;flex-direction:column;gap:.8rem }
+.skpe-performance-strategic-container>.skpe-performance-panel-heading { margin:0 }
+@media(min-width:960px) {
+.skpe-performance-dashboard-layout { grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch }
+.skpe-performance-dashboard-layout>.skpe-performance-executive-column { display:contents }
+.skpe-performance-dashboard-layout>.skpe-performance-results-section,.skpe-performance-dashboard-layout>.skpe-performance-executive-column>.skpe-performance-execution-section { box-sizing:border-box;grid-row:1;align-self:stretch;height:auto;min-height:100%;padding:1.05rem;background:var(--sparks-surface,#fff);border:1px solid var(--sparks-border,#dfe6e2);border-radius:14px;display:flex;flex-direction:column;justify-content:space-between;gap:.75rem }
+.skpe-performance-dashboard-layout>.skpe-performance-results-section { grid-column:1 }
+.skpe-performance-dashboard-layout>.skpe-performance-executive-column>.skpe-performance-execution-section { grid-column:2 }
+.skpe-performance-dashboard-layout>.skpe-performance-executive-column>.skpe-performance-strategic-container { grid-column:1/-1;grid-row:2;align-self:stretch }
+.skpe-performance-dashboard-layout .skpe-performance-execution-section .skpe-performance-summary-grid { margin-bottom:0;flex:0 0 auto }
+.skpe-performance-dashboard-layout .skpe-performance-execution-section .skpe-performance-portfolio-visual { flex:1 1 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem }
+}
+@media(max-width:760px) { .skpe-performance-export-row { flex-direction:column;align-items:stretch } .skpe-performance-export-button { width:100% } }
+/* Shared executive card treatment: Journey reference parity. */
+.skpe-performance-dashboard-layout .skpe-performance-result-card__heading > span,
+.skpe-performance-dashboard-layout .skpe-performance-summary-card > span {
+  color: var(--skpe-text-muted, #66736d);
+  font-size: .73rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.skpe-performance-dashboard-layout .skpe-performance-result-card,
+.skpe-performance-dashboard-layout .skpe-performance-summary-card {
+  border: 1px solid var(--sparks-border, #dbe6e1);
+  border-radius: 14px;
+  background: var(--sparks-surface, #fff);
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.skpe-performance-dashboard-layout .skpe-performance-result-card:hover,
+.skpe-performance-dashboard-layout .skpe-performance-result-card:focus-within,
+.skpe-performance-dashboard-layout .skpe-performance-summary-card:hover,
+.skpe-performance-dashboard-layout .skpe-performance-summary-card:focus-visible {
+  background: color-mix(in srgb, var(--organization-secondary, #01877a) 5%, white);
+  border-color: color-mix(in srgb, var(--organization-secondary, #01877a) 24%, var(--sparks-border, #dbe6e1));
+  box-shadow: 0 2px 10px rgba(25, 44, 37, .04);
+}
+.skpe-performance-dashboard-layout .skpe-performance-result-card__heading > strong,
+.skpe-performance-dashboard-layout .skpe-performance-summary-card > strong {
+  color: var(--sparks-text, #1c2924);
+  font-weight: 800;
+}
+
+/* Keep executive export actions beside the section title while space allows. */
+.skpe-performance-strategic-container > .skpe-performance-panel-heading-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.skpe-performance-panel-heading-copy {
+  min-width: min(100%, 18rem);
+}
+
+.skpe-performance-panel-heading-with-actions .skpe-performance-export-row {
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .skpe-performance-strategic-container > .skpe-performance-panel-heading-with-actions {
+    flex-direction: column;
+  }
+
+  .skpe-performance-panel-heading-with-actions .skpe-performance-export-row {
+    justify-content: flex-start;
+  }
+}

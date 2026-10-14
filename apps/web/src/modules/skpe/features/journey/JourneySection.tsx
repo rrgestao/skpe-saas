@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+import { WorkspaceTabs } from '../../../../components/design-system'
 import { supabase } from '../../../../lib/supabase'
 import { statusLabelPtBr, translateBackendMessage } from '../../../../shared/i18n/ptBR'
 import { useSkpeWorkspace } from '../../context/SkpeWorkspaceContext'
@@ -36,6 +37,15 @@ type ProjectGovernance = {
   targetEndDate: string | null
   implementationTargetDate: string | null
 }
+
+type JourneyView = 'structure' | 'project-plan' | 'gantt' | 'svar'
+
+const journeyViewTabs: Array<{ id: JourneyView; label: string }> = [
+  { id: 'structure', label: 'Estrutura' },
+  { id: 'project-plan', label: 'Plano do Projeto' },
+  { id: 'gantt', label: 'Cronograma (Gantt)' },
+  { id: 'svar', label: 'Gantt interativo' },
+]
 
 function ChevronDownIcon() {
   return (
@@ -190,6 +200,39 @@ function getTemporalStateLabel(state: JourneyTemporalState) {
   return labels[state]
 }
 
+function getApprovedScheduleDates(item: JourneyTemporalRow) {
+  if (item.current_plan_version_id) {
+    return {
+      startDate: item.current_plan_start_date,
+      endDate: item.current_plan_end_date,
+    }
+  }
+
+  if (item.baseline_governance_status === 'approved') {
+    return {
+      startDate: item.baseline_start_date,
+      endDate: item.baseline_end_date,
+    }
+  }
+
+  return { startDate: null, endDate: null }
+}
+
+function getEffectiveTemporalState(item: JourneyTemporalRow): JourneyTemporalState {
+  if (item.temporal_state !== 'unscheduled') return item.temporal_state
+
+  const { startDate, endDate } = getApprovedScheduleDates(item)
+  if (!startDate || !endDate) return item.temporal_state
+  if (item.item_status === 'cancelled') return 'cancelled'
+  if (item.item_status === 'completed' && !item.actual_end_date) return 'completed_without_actual_end'
+  if (item.item_status === 'completed' && item.actual_end_date && item.actual_end_date <= endDate) return 'completed_on_time'
+  if (item.item_status === 'completed' && item.actual_end_date && item.actual_end_date > endDate) return 'completed_late'
+  if (item.item_status === 'blocked') return 'blocked'
+  if (!item.actual_end_date && item.reference_date > endDate) return 'completion_overdue'
+  if (!item.actual_start_date && item.reference_date > startDate) return 'start_overdue'
+  return 'on_schedule'
+}
+
 function getJourneyDisplayState(item: JourneyTemporalRow) {
   if (item.item_status === 'completed') {
     if (item.validation_required && item.validation_status === 'approved') {
@@ -197,18 +240,20 @@ function getJourneyDisplayState(item: JourneyTemporalRow) {
     }
     return 'Concluída'
   }
-  return getTemporalStateLabel(item.temporal_state)
+  return getTemporalStateLabel(getEffectiveTemporalState(item))
 }
 
 function getScheduleLabel(item: JourneyTemporalRow) {
-  if (item.current_plan_start_date || item.current_plan_end_date) return 'Cronograma aprovado'
+  const { startDate, endDate } = getApprovedScheduleDates(item)
+  if (startDate || endDate) return 'Cronograma aprovado'
   if (item.proposal_start_date || item.proposal_end_date) return 'Cronograma proposto'
   return 'Cronograma'
 }
 
 function getScheduleDisplay(item: JourneyTemporalRow, formatDate: (value: string | null) => string) {
-  if (item.current_plan_start_date || item.current_plan_end_date) {
-    return formatPeriod(item.current_plan_start_date, item.current_plan_end_date, formatDate)
+  const { startDate, endDate } = getApprovedScheduleDates(item)
+  if (startDate || endDate) {
+    return formatPeriod(startDate, endDate, formatDate)
   }
   if (item.proposal_start_date || item.proposal_end_date) {
     return formatPeriod(item.proposal_start_date ?? null, item.proposal_end_date ?? null, formatDate)
@@ -217,7 +262,8 @@ function getScheduleDisplay(item: JourneyTemporalRow, formatDate: (value: string
 }
 
 function shouldShowSchedule(item: JourneyTemporalRow) {
-  if (item.item_status === 'completed' && !item.has_approved_plan) return false
+  const { startDate, endDate } = getApprovedScheduleDates(item)
+  if (item.item_status === 'completed' && !startDate && !endDate) return false
   return true
 }
 
@@ -437,9 +483,8 @@ export function JourneySection({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const journeyDetailPanelRef = useRef<HTMLElement | null>(null)
-  const [journeyView, setJourneyView] =
-    useState<'structure' | 'project-plan' | 'gantt' | 'svar'>('structure')
-  const [projectPlanInitialStage, setProjectPlanInitialStage] = useState<'scope' | 'team' | 'schedule' | 'resources' | 'review' | 'baseline'>('scope')
+  const [journeyView, setJourneyView] = useState<JourneyView>('structure')
+  const [projectPlanInitialStage, setProjectPlanInitialStage] = useState<'scope' | 'team' | 'schedule' | 'resources' | 'review'>('scope')
   const [eventDialogItemId, setEventDialogItemId] = useState<string | null>(null)
   const [eventProjectionRevision, setEventProjectionRevision] = useState(0)
   const [projectGovernance, setProjectGovernance] = useState<ProjectGovernance>({
@@ -475,20 +520,19 @@ export function JourneySection({
 
   const temporalSummary = useMemo(() => {
     const mandatoryRows = rows.filter((row) => row.is_mandatory)
-    const planRow = rows.find((row) => row.has_approved_plan) ?? null
+    const planRow = rows.find((row) => row.has_approved_plan)
+      ?? rows.find((row) => row.baseline_governance_status === 'approved')
+      ?? null
     const forecastRow = rows.find((row) => row.has_active_forecast) ?? null
+    const mandatoryStates = mandatoryRows.map(getEffectiveTemporalState)
 
     return {
       mandatoryCount: mandatoryRows.length,
-      overdueCount: mandatoryRows.filter(
-        (row) => row.is_start_overdue || row.is_completion_overdue,
+      overdueCount: mandatoryStates.filter(
+        (state) => state === 'start_overdue' || state === 'completion_overdue',
       ).length,
-      unscheduledCount: mandatoryRows.filter(
-        (row) => row.temporal_state === 'unscheduled',
-      ).length,
-      blockedCount: mandatoryRows.filter(
-        (row) => row.temporal_state === 'blocked',
-      ).length,
+      unscheduledCount: mandatoryStates.filter((state) => state === 'unscheduled').length,
+      blockedCount: mandatoryStates.filter((state) => state === 'blocked').length,
       planRow,
       forecastRow,
     }
@@ -515,11 +559,17 @@ export function JourneySection({
     }
 
     let baseJourneyRows = ((data ?? []) as JourneyTemporalReadRow[]).map(
-      (row): JourneyTemporalRow => ({
-        ...row,
-        planned_start_date: row.current_plan_start_date,
-        planned_end_date: row.current_plan_end_date,
-      }),
+      (row): JourneyTemporalRow => {
+        const approvedBaseline = row.baseline_governance_status === 'approved'
+          && !row.current_plan_version_id
+        return {
+          ...row,
+          planned_start_date: row.current_plan_start_date
+            ?? (approvedBaseline ? row.baseline_start_date : null),
+          planned_end_date: row.current_plan_end_date
+            ?? (approvedBaseline ? row.baseline_end_date : null),
+        }
+      },
     )
 
     const resolvedProjectId = baseJourneyRows[0]?.project_id ?? workspace.route.projectId
@@ -695,6 +745,13 @@ export function JourneySection({
       )
     const methodologyLocked = unmetDependencies.length > 0
     const firstUnmetDependency = unmetDependencies[0] ?? null
+    const blockingTooltipMessages = [
+      item.blocked && item.blocking_reason ? item.blocking_reason : null,
+      methodologyLocked && firstUnmetDependency
+        ? 'Esta etapa permanece bloqueada até que ' + methodologyTextPtBr(firstUnmetDependency.prerequisite.item_name) + ' esteja ' + statusLabelPtBr(firstUnmetDependency.requiredStatus) + '.'
+        : null,
+    ].filter((message): message is string => Boolean(message))
+    const lockTooltip = blockingTooltipMessages.join('\n')
 
     return (
       <article
@@ -717,7 +774,12 @@ export function JourneySection({
         }}
       >
         <div className="skpe-journey-item-main">
-          <div className={`skpe-phase-marker skpe-phase-${item.item_status}`}>
+          <div
+            className={'skpe-phase-marker skpe-phase-' + item.item_status}
+            data-tooltip={lockTooltip || undefined}
+            aria-label={lockTooltip ? 'Bloqueado: ' + blockingTooltipMessages.join(' ') : undefined}
+            tabIndex={lockTooltip ? 0 : undefined}
+          >
             {getJourneyStatusIcon(item.item_status, LockIcon)}
           </div>
 
@@ -828,17 +890,7 @@ export function JourneySection({
               </div>
             )}
 
-            {item.blocked && item.blocking_reason && (
-              <div className="skpe-journey-blocked-message">
-                {item.blocking_reason}
-              </div>
-            )}
 
-            {methodologyLocked && firstUnmetDependency ? (
-              <div className="skpe-journey-blocked-message">
-                Esta etapa permanece bloqueada até que {methodologyTextPtBr(firstUnmetDependency.prerequisite.item_name)} esteja {statusLabelPtBr(firstUnmetDependency.requiredStatus)}.
-              </div>
-            ) : null}
 
             <div className="skpe-phase-progress">
               <div className="skpe-progress-track">
@@ -1084,12 +1136,22 @@ export function JourneySection({
               <strong>
                 {temporalSummary.planRow?.current_plan_version_number
                   ? `v${temporalSummary.planRow.current_plan_version_number}`
-                  : 'Sugerido'}
+                  : temporalSummary.planRow?.baseline_version_number
+                    ? `v${temporalSummary.planRow.baseline_version_number}`
+                    : temporalSummary.planRow?.baseline_governance_status === 'approved'
+                      ? 'Aprovada'
+                      : '—'}
               </strong>
               <small>
-                {temporalSummary.planRow
-                  ? getPlanKindLabel(temporalSummary.planRow.current_plan_kind)
-                  : 'Cronograma ainda não aprovado'}
+                {temporalSummary.planRow?.baseline_governance_status === 'approved'
+                  && !temporalSummary.planRow.current_plan_version_id
+                  ? 'Linha de Base vigente · reunião de abertura'
+                  : temporalSummary.planRow
+                    ? getPlanKindLabel(
+                        temporalSummary.planRow.current_plan_kind
+                          ?? (temporalSummary.planRow.baseline_governance_status === 'approved' ? 'baseline' : null),
+                      )
+                    : 'Aguardando decisão institucional'}
               </small>
             </article>
 
@@ -1110,53 +1172,53 @@ export function JourneySection({
         </div>
       )}
 
-
-
-
-      {rows.length > 0 && !loading && (
-        <div className="skpe-journey-view-switch-row">
-          <div
-            className="skpe-journey-view-tabs"
-            role="tablist"
-            aria-label="Visualização da jornada"
-          >
+      {project && (
+        <>
+          <div className="skpe-journey-navigation-sticky">
+            <div className="skpe-journey-primary-navigation" role="group" aria-label="Navegação do projeto">
             <button
               type="button"
-              role="tab"
-              aria-selected={journeyView === 'structure'}
-              className={journeyView === 'structure' ? 'active' : ''}
+              className={journeyView === 'structure' || journeyView === 'project-plan' ? 'active' : ''}
+              aria-pressed={journeyView === 'structure' || journeyView === 'project-plan'}
               onClick={() => setJourneyView('structure')}
             >
-              Estrutura
-            </button>            <button
+              Projeto
+            </button>
+            {canViewInitiatives ? (
+              <button type="button" aria-pressed="false" onClick={onOpenInitiatives}>
+                KANBAN
+              </button>
+            ) : null}
+            <button
               type="button"
-              role="tab"
-              aria-selected={journeyView === 'project-plan'}
-              className={journeyView === 'project-plan' ? 'active' : ''}
-              onClick={() => { setProjectPlanInitialStage('scope'); setJourneyView('project-plan') }}
+              className={journeyView === 'gantt' ? 'active' : ''}
+              aria-pressed={journeyView === 'gantt'}
+              onClick={() => setJourneyView('gantt')}
             >
-              Plano do Projeto
+              Cronograma
             </button>
             <button
               type="button"
-              role="tab"
-              aria-selected={journeyView === 'gantt'}
-              className={journeyView === 'gantt' ? 'active' : ''}
-              onClick={() => setJourneyView('gantt')}
-            >
-              Cronograma (Gantt)
-            </button>            <button
-              type="button"
-              role="tab"
-              aria-selected={journeyView === 'svar'}
               className={journeyView === 'svar' ? 'active' : ''}
+              aria-pressed={journeyView === 'svar'}
               onClick={() => setJourneyView('svar')}
             >
               Gantt interativo
             </button>
           </div>
-        </div>
+          <WorkspaceTabs
+            ariaLabel="Visualização da jornada"
+            activeId={journeyView}
+            onChange={(view) => {
+              if (view === 'project-plan') setProjectPlanInitialStage('scope')
+              setJourneyView(view)
+            }}
+            tabs={journeyViewTabs}
+          />
+          </div>
+        </>
       )}
+
       {errorMessage && (
         <div className="skpe-admin-message skpe-admin-message-error">
           {errorMessage}

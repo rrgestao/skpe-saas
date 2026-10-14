@@ -271,3 +271,20 @@
     grid-column: auto;
   }
 }
+
+/* Shared scroll-layer contract: the opaque cockpit heading stays above section navigation. */
+.skpe-shell .skpe-main > .skpe-cockpit-header {
+  position: sticky;
+  top: 0;
+  z-index: 600;
+  isolation: isolate;
+  background-color: var(--skpe-surface, #fff);
+  opacity: 1;
+}
+.skpe-shell .skpe-main > .skpe-cockpit-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--skpe-surface, #fff);
+}

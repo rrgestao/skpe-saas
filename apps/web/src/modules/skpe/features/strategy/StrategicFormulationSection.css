@@ -34,6 +34,8 @@
   display: grid;
   gap: 1rem;
   min-width: 0;
+  padding-top: 1.25rem;
+  scroll-margin-top: 9rem;
 }
 
 .skpe-formulation-stage-lock {
@@ -160,14 +162,25 @@
   }
 }
 
-/* Mantém as perspectivas internas da Formulação acessíveis durante a rolagem. */
+/* Contrato único de navegação: superfície opaca e abaixo do cabeçalho do módulo. */
 .skpe-strategic-formulation > .sparks-workspace-tabs {
   position: sticky;
-  top: calc(var(--skpe-cockpit-header-height, 76px) + 0.5rem);
-  z-index: 55;
+  top: 60px;
+  z-index: 100;
   width: 100%;
   max-width: 100%;
-  box-shadow: none;
+  min-height: 52px;
+  background-color: #eaf1ee;
+  isolation: isolate;
+  box-shadow: 0 1px 0 #dce5e1;
+}
+.skpe-strategic-formulation > .sparks-workspace-tabs::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #eaf1ee;
+  z-index: -1;
+  pointer-events: none;
 }
 .skpe-formulation-lifecycle {
   display: grid;

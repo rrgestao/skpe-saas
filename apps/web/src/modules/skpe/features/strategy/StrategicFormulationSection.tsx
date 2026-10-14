@@ -69,6 +69,19 @@ export function StrategicFormulationSection({
   const [initiatives, setInitiatives] = useState<InitiativeRow[]>([])
   const [errorMessage, setErrorMessage] = useState('')
   const [futureWorkRefresh, setFutureWorkRefresh] = useState(0)
+  const [hasValidatedMap, setHasValidatedMap] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setHasValidatedMap(false)
+    if (!formulationId) return () => { active = false }
+    void supabase.from('skpe_strategic_map_packages')
+      .select('status').eq('formulation_id', formulationId).maybeSingle()
+      .then(({ data }) => {
+        if (active) setHasValidatedMap(data?.status === 'validated')
+      })
+    return () => { active = false }
+  }, [formulationId])
 
   useEffect(() => {
     const requestedTab = sessionStorage.getItem('skpe:formulation:target-tab') as FormulationTab | null
@@ -253,7 +266,7 @@ export function StrategicFormulationSection({
 
       {activeTab === 'architecture' ? (
         <section className="skpe-formulation-tab-panel">
-          {!strategicMapStageUnlocked ? (
+          {!strategicMapStageUnlocked && !hasValidatedMap ? (
             <div className="skpe-formulation-stage-lock">
               <strong>Prévia do Modelo Estratégico Futuro</strong>
               <p>
@@ -262,16 +275,16 @@ export function StrategicFormulationSection({
               </p>
             </div>
           ) : null}
-          <StrategicMapLifecyclePanel
-            organizationId={organizationId}
-            formulationId={formulationId}
-            stageUnlocked={strategicMapStageUnlocked}
-          />
           <StrategicBscMap
             formulationId={formulationId}
             canAdjustLayout={canAdjustStrategicMap && strategicMapStageUnlocked}
           />
           <StrategicArchitectureSummary formulationId={formulationId} />
+          <StrategicMapLifecyclePanel
+            organizationId={organizationId}
+            formulationId={formulationId}
+            stageUnlocked={strategicMapStageUnlocked}
+          />
         </section>
       ) : null}
 {activeTab === 'performance' ? (
@@ -377,8 +390,8 @@ export function StrategicFormulationSection({
                   <strong>{initiative.name}</strong>
                 </div>
                 <div>
-                  <span>{initiative.status}</span>
-                  <strong>{percent(initiative.progress)}</strong>
+                  <span>{({ in_progress: 'Em andamento', completed: 'Concluída', blocked: 'Com impedimentos', not_started: 'Não iniciada', pending: 'Pendente', proposed: 'Proposta', draft: 'Rascunho', on_hold: 'Suspensa', cancelled: 'Cancelada' } as Record<string, string>)[initiative.status] ?? 'Situação não classificada'}</span>
+                  <strong title="Progresso operacional desta iniciativa; não representa o avanço da Jornada Estratégica">{percent(initiative.progress)}</strong>
                 </div>
               </article>
             ))}

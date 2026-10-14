@@ -309,11 +309,18 @@ export function JourneySchedulePlanner({
       loaded.find((version) => version.id === preferredVersionId) ??
       loaded.find(
         (version) =>
-          version.governance_status === 'draft' &&
+          version.is_current_plan &&
+          version.governance_status === 'approved' &&
           (version.schedule_kind === 'baseline' ||
             version.schedule_kind === 'rebaseline'),
       ) ??
       loaded.find((version) => version.is_current_plan) ??
+      loaded.find(
+        (version) =>
+          version.governance_status === 'draft' &&
+          (version.schedule_kind === 'baseline' ||
+            version.schedule_kind === 'rebaseline'),
+      ) ??
       loaded[0] ??
       null
 

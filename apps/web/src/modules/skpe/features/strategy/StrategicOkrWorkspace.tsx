@@ -51,7 +51,7 @@ export function StrategicOkrWorkspace({organizationId,formulationId,onChanged}:P
     const [pkg,cyc,obj,okr,links,kr,manage,validate]=await Promise.all([
       supabase.from('skpe_okr_packages').select('id,status,okr_enabled').eq('formulation_id',formulationId).maybeSingle(),
       supabase.from('skpe_okr_cycles').select('id,code,name,cycle_type,period_start,period_end,reference_year,status').eq('formulation_id',formulationId).order('period_start'),
-      supabase.from('skpe_strategic_objectives').select('id,code,name,validation_status').eq('formulation_id',formulationId).neq('status','archived').order('display_order'),
+      supabase.from('skpe_strategic_objectives').select('id,code,name,validation_status').eq('formulation_id',formulationId).neq('status','archived').order('code'),
       supabase.from('skpe_okrs').select('id,okr_cycle_id,code,title,description,status,validation_status,display_order').eq('formulation_id',formulationId).order('display_order'),
       supabase.from('skpe_okr_objectives').select('okr_id,strategic_objective_id,is_primary').eq('formulation_id',formulationId),
       supabase.from('skpe_key_results').select('id,okr_id,strategic_objective_id,code,name,description,baseline_value,target_value,unit,period_start,period_end,status,validation_status,metadata').eq('formulation_id',formulationId).order('code'),

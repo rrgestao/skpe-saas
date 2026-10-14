@@ -722,7 +722,13 @@ export function InitiativePerformanceCockpit({
               <strong>
                 {journeySnapshot?.currentMacrophaseStatus === 'in_progress'
                   ? 'Em andamento'
-                  : journeySnapshot?.currentMacrophaseStatus ?? '—'}
+                  : journeySnapshot?.currentMacrophaseStatus === 'blocked'
+                    ? 'Com impedimentos'
+                    : journeySnapshot?.currentMacrophaseStatus === 'completed'
+                      ? 'Concluída'
+                      : journeySnapshot?.currentMacrophaseStatus === 'not_started'
+                        ? 'Não iniciada'
+                        : journeySnapshot?.currentMacrophaseStatus ?? '—'}
               </strong>
             </div>
             <div>
@@ -734,28 +740,6 @@ export function InitiativePerformanceCockpit({
       </section>
 
       <section className="skpe-performance-executive-column" aria-label="Execução estratégica e atenção à gestão">
-        <header className="skpe-performance-panel-heading">
-          <h2>Execução estratégica e atenção à gestão</h2>
-          <p>Acompanhe o que está sendo executado e onde a gestão precisa agir.</p>
-        </header>
-        <div className="skpe-performance-export-row">
-          <button type="button" className="skpe-performance-export-button" onClick={exportPortfolioCsv}>
-            Exportar dados do portfólio (CSV)
-          </button>
-          <button type="button" className="skpe-performance-export-button" onClick={exportExecutivePerformance}>
-            Exportar relatório executivo de desempenho
-          </button>
-        </div>
-
-      {formulationId && projectId ? (
-        <StrategicObjectiveExecutiveAnalytics
-          organizationId={organizationId}
-          projectId={projectId}
-          formulationId={formulationId}
-          onOpenMeasures={onObjectivePerformanceDrilldown}
-          onOpenInitiatives={onObjectiveInitiativesDrilldown}
-        />
-      ) : null}
       <section className="skpe-performance-execution-section">
         <header className="skpe-performance-section-heading">
           <div>
@@ -823,6 +807,33 @@ export function InitiativePerformanceCockpit({
         </div>
       </section>
 
+        <section className="skpe-performance-strategic-container">
+        <header className="skpe-performance-panel-heading skpe-performance-panel-heading-with-actions">
+          <div className="skpe-performance-panel-heading-copy">
+
+          <h2>Execução estratégica e atenção à gestão</h2>
+          <p>Acompanhe o que está sendo executado e onde a gestão precisa agir.</p>
+          </div>
+          <div className="skpe-performance-export-row">
+
+          <button type="button" className="skpe-performance-export-button" onClick={exportPortfolioCsv}>
+            Exportar dados do portfólio (CSV)
+          </button>
+          <button type="button" className="skpe-performance-export-button" onClick={exportExecutivePerformance}>
+            Exportar relatório executivo de desempenho
+          </button>
+          </div>
+        </header>
+
+      {formulationId && projectId ? (
+        <StrategicObjectiveExecutiveAnalytics
+          organizationId={organizationId}
+          projectId={projectId}
+          formulationId={formulationId}
+          onOpenMeasures={onObjectivePerformanceDrilldown}
+          onOpenInitiatives={onObjectiveInitiativesDrilldown}
+        />
+      ) : null}
       <section className="skpe-performance-attention-section">
         <header className="skpe-performance-section-heading">
           <div>
@@ -900,6 +911,7 @@ export function InitiativePerformanceCockpit({
           </article>
         </div>
       </section>
+        </section>
       </section>
 
         </div>

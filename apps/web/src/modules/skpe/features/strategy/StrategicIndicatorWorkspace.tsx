@@ -31,7 +31,7 @@ export function StrategicIndicatorWorkspace({organizationId,formulationId,onChan
     if(!formulationId)return
     const [pkg,obj,ind,tgt,manage,validate]=await Promise.all([
       supabase.from('skpe_indicator_packages').select('id,status').eq('formulation_id',formulationId).maybeSingle(),
-      supabase.from('skpe_strategic_objectives').select('id,code,name').eq('formulation_id',formulationId).neq('status','archived').order('display_order'),
+      supabase.from('skpe_strategic_objectives').select('id,code,name').eq('formulation_id',formulationId).neq('status','archived').order('code'),
       supabase.from('skpe_indicators').select('id,code,name,description,strategic_objective_id,formula_text,unit,polarity,measurement_frequency,data_source,baseline_value,baseline_date,status').eq('formulation_id',formulationId).neq('status','archived').order('code'),
       supabase.from('skpe_indicator_targets').select('id,indicator_id,target_type,period_start,period_end,target_value,minimum_value,challenge_value,tolerance_lower,tolerance_upper,status').eq('formulation_id',formulationId).neq('status','superseded').order('period_start'),
       supabase.rpc('can_manage_skpe_formulation',{target_organization_id:organizationId}),

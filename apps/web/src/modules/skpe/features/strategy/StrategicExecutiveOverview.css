@@ -81,3 +81,52 @@
 .skpe-executive-overview-metrics > article > strong {
   color: var(--sparks-role-text-primary);
 }
+
+/* SKPE-OVERVIEW-CARDS-V3: shared executive card hierarchy */
+.skpe-executive-overview-metrics > article,
+.skpe-executive-overview-flow > article {
+  box-sizing: border-box;
+  border: 1px solid var(--sparks-role-border, #dbe6e1);
+  border-radius: 14px;
+  background: var(--sparks-role-surface, #fff);
+  box-shadow: none;
+}
+.skpe-executive-overview-metrics > article {
+  min-height: 124px;
+  padding: 16px;
+  justify-content: center;
+  gap: 7px;
+}
+.skpe-executive-overview-metrics > article > span:first-child {
+  margin: 0;
+  color: var(--sparks-role-text-muted, #65746e);
+  font-size: .83rem;
+  line-height: 1.35;
+  font-weight: 500 !important;
+}
+.skpe-executive-overview-metrics > article > strong {
+  margin: 0;
+  color: var(--sparks-role-text-primary, #20372f);
+  font-size: clamp(1.5rem, 2vw, 1.85rem);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.skpe-executive-overview-metrics > article > small {
+  margin: 0;
+  line-height: 1.35;
+}
+.skpe-executive-overview-flow > article {
+  min-height: 170px;
+  padding: 18px;
+}
+.skpe-executive-overview-flow > article > strong {
+  font-size: .94rem;
+  line-height: 1.4;
+}
+.skpe-executive-overview-flow > article > span {
+  font-size: .9rem;
+  line-height: 1.55;
+}
+@media (max-width: 1180px) {
+  .skpe-executive-overview-flow > article { min-height: 0; }
+}

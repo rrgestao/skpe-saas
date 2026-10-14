@@ -44,6 +44,19 @@ type Props = {
   formulationId: string | null
 }
 
+function issueLabel(code: string) {
+  const labels: Record<string, string> = {
+    OBJECTIVE_WITHOUT_INDICATOR: 'Objetivos Estratégicos ainda sem indicadores associados',
+    INDICATOR_PACKAGE_NOT_CREATED: 'Pacote de indicadores ainda não constituído',
+  }
+  return labels[code] ?? 'Verificação de prontidão da etapa'
+}
+
+function issueScope(scope?: string) {
+  const labels: Record<string, string> = { content: 'Conteúdo', formulation: 'Formulação', blocking: 'Impeditivo', recommendation: 'Recomendação' }
+  return labels[scope ?? ''] ?? 'Verificação metodológica'
+}
+
 function packageLabel(status: string | undefined) {
   if (status === 'validated') return 'Validado'
   if (status === 'pending_validation') return 'Aguardando validação'
@@ -164,8 +177,8 @@ export function StrategicIndicatorsReadinessSection({ formulationId }: Props) {
           {blockingIssues.map((issue) => (
             <article key={`${issue.code}:${issue.message}`}>
               <div>
-                <b>{issue.code}</b>
-                <span>{issue.scope ?? 'content'}</span>
+                <b>{issueLabel(issue.code)}</b>
+                <span>{issueScope(issue.scope)}</span>
               </div>
               <p>{issue.message}</p>
               {typeof issue.affectedCount === 'number' ? (
@@ -185,7 +198,7 @@ export function StrategicIndicatorsReadinessSection({ formulationId }: Props) {
           <summary>Recomendações metodológicas ({recommendations.length})</summary>
           {recommendations.map((issue) => (
             <article key={`${issue.code}:${issue.message}`}>
-              <b>{issue.code}</b>
+              <b>{issueLabel(issue.code)}</b>
               <p>{issue.message}</p>
             </article>
           ))}

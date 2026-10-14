@@ -1363,6 +1363,7 @@ export function StrategicDiagnosisSection({
 
   return (
     <section className="skpe-strategic-diagnosis">
+      <div className="skpe-strategic-diagnosis-tabs-row">
       <WorkspaceTabs
         ariaLabel={'Perspectivas do Diagn\u00f3stico Estrat\u00e9gico'}
         activeId={activeTab}
@@ -1407,6 +1408,7 @@ export function StrategicDiagnosisSection({
           },
         ]}
       />
+      </div>
 
       {errorMessage ? (
         <div className="skpe-admin-message skpe-admin-message-error">

@@ -20,8 +20,8 @@ test('Journey uses user-facing schedule language', () => {
   assert.doesNotMatch(section, /Não aplicável ao item já concluído/)
 })
 
-test('completed items without an approved plan rely on the actual period instead of fake plan text', () => {
-  assert.match(section, /item\.item_status === 'completed' && !item\.has_approved_plan/)
+test('completed items without approved schedule dates rely on the actual period instead of fake plan text', () => {
+  assert.match(section, /item\.item_status === 'completed' && !startDate && !endDate/)
   assert.match(section, /Realizado:/)
 })
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useNavigate } from 'react-router-dom'
 import { WorkspaceTabs } from '../../../../components/design-system'
+import { SparksSmartGrid } from '../../../../components/design-system/SparksSmartGrid'
 
 import { supabase } from '../../../../lib/supabase'
 import { platformRoutes } from '../../app/skpeRoutes'
@@ -21,7 +22,6 @@ type ProjectPlanStage =
   | 'schedule'
   | 'resources'
   | 'review'
-  | 'baseline'
 
 type StrategicProjectBinding = {
   initiative_id: string
@@ -92,12 +92,7 @@ const stages: Array<{
   {
     id: 'review',
     label: 'Revisão',
-    description: 'Checagem integrada antes do fechamento.',
-  },
-  {
-    id: 'baseline',
-    label: 'Fechar Linha de Base',
-    description: 'Aprovação do plano institucional do projeto.',
+    description: 'Histórico de versões e alterações da Linha de Base.',
   },
 ]
 
@@ -140,6 +135,36 @@ export function JourneyProjectPlan({
     loading: true,
     error: '',
   })
+
+  const [baselineVersions, setBaselineVersions] = useState<Array<{
+    id: string
+    version_number: number
+    title: string
+    schedule_kind: string
+    governance_status: string
+    is_current_plan: boolean
+    notes: string | null
+    approved_at: string | null
+    created_at: string
+  }>>([])
+  const [baselineLoadError, setBaselineLoadError] = useState('')
+  const [baselineLoading, setBaselineLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    setBaselineLoading(true)
+    void supabase.from('skpe_journey_schedule_versions')
+      .select('id, version_number, title, schedule_kind, governance_status, is_current_plan, notes, approved_at, created_at')
+      .eq('project_id', projectId)
+      .order('version_number', { ascending: false })
+      .then(({ data, error }) => {
+        if (!mounted) return
+        setBaselineVersions(data ?? [])
+        setBaselineLoadError(error?.message ?? '')
+        setBaselineLoading(false)
+      })
+    return () => { mounted = false }
+  }, [projectId, activeStage])
 
   const project = rows[0] ?? null
 
@@ -339,77 +364,25 @@ export function JourneyProjectPlan({
 
   return (
     <section className="skpe-project-plan">
-      <header className="skpe-project-plan-hero">
+      <header className="skpe-project-plan-hero skpe-project-plan-hero--compact">
         <div>
-          <p className="skpe-eyebrow">Projeto Estratégico sugerido pelo SPARKs PE</p>
+          <p className="skpe-eyebrow">Projeto Estratégico vinculado à Jornada</p>
           <h2>{project.project_name}</h2>
-          <p>
-            A Jornada fornece a estrutura metodológica do Projeto Estratégico e
-            organiza, de forma integrada, o escopo, as responsabilidades, o
-            cronograma, os recursos, os critérios de revisão e a Linha de Base.
-            O planejamento deve ser construído a partir das condições reais da
-            organização, das dependências entre entregas, da capacidade
-            disponível, das prioridades estratégicas e dos riscos identificados,
-            evitando transformar referências de prazo em compromissos artificiais.
-            Prazos de implantação, aceleração ou acompanhamento devem aparecer
-            como dicas contextuais quando as iniciativas e ações forem planejadas,
-            sempre sujeitos à validação da governança do projeto.
-          </p>
+          {!operational.loading && !operational.initiative && operational.error && (
+            <p role="status">{operational.error}</p>
+          )}
         </div>
-      </header>
-
-      <section
-        className={[
-          'skpe-project-plan-binding',
-          operational.error ? 'has-error' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        aria-label="Vínculo Jornada Estratégica e Projeto Estratégico"
-      >
-        {operational.loading ? (
-          <span>Carregando vínculo Jornada ↔ Projeto...</span>
-        ) : operational.initiative ? (
-          <>
-            <div className="skpe-project-plan-binding-copy">
-              <small>Projeto Estratégico vinculado</small>
-              <strong>
-                {operational.initiative.code} · {operational.initiative.name}
-              </strong>
-              <span>
-                {operational.initiative.status}
-                {' · '}
-                {Number(operational.initiative.progress).toLocaleString(
-                  'pt-BR',
-                  { maximumFractionDigits: 1 },
-                )}
-                %
-              </span>
-            </div>
-
-            <div className="skpe-project-plan-binding-actions">
-              <div className="skpe-project-plan-binding-kpis">
-                <span>
-                  <strong>{metrics.operationalActionCount}</strong> ações/marcos
-                </span>
-                <span>
-                  <strong>{metrics.operationalRootCount}</strong> raízes
-                </span>
-                <span>
-                  <strong>{metrics.operationalMilestoneCount}</strong> marcos
-                </span>
-                <span>
-                  <strong>{metrics.operationalPeople.length}</strong> pessoas
-                </span>
-              </div>
-
-              <div className="skpe-project-plan-binding-open"><small>Planejamento continua nesta Jornada. Este atalho abre a execução operacional, ações e alocações.</small><button type="button" onClick={openStrategicProject} disabled={!workspace.route.formulationId}>Abrir execução do Projeto</button></div>
-            </div>
-          </>
-        ) : (
-          <span>{operational.error}</span>
+        {operational.initiative && (
+          <button
+            type="button"
+            className="skpe-project-plan-project-link"
+            onClick={openStrategicProject}
+            disabled={!workspace.route.formulationId}
+          >
+            Abrir execução do Projeto Estratégico
+          </button>
         )}
-      </section>
+      </header>
 
             <WorkspaceTabs
         ariaLabel="Etapas do Plano do Projeto"
@@ -430,7 +403,7 @@ export function JourneyProjectPlan({
               <p>
                 A Jornada permanece como fonte metodológica. A iniciativa
                 vinculada materializa a execução do mesmo Projeto Estratégico,
-                sem criar uma estrutura operacional concorrente.
+                sem criar uma estrutura operacional concorrente. Planejamento continua nesta Jornada.
               </p>
             </div>
             <div className="skpe-project-plan-kpis">
@@ -535,14 +508,7 @@ export function JourneyProjectPlan({
             as duas visões antes da Linha de Base.
           </div>
 
-          <div className="skpe-project-plan-navigation">
-            <button type="button" onClick={() => setActiveStage('scope')}>
-              Voltar
-            </button>
-            <button type="button" onClick={() => setActiveStage('schedule')}>
-              Avançar para Cronograma
-            </button>
-          </div>
+
         </section>
       )}
 
@@ -552,7 +518,7 @@ export function JourneyProjectPlan({
             <div>
               <strong>3 · Cronograma</strong>
               <span>
-                Informe e revise as datas planejadas. Fases e MEGAFASES são consolidadas automaticamente a partir das atividades e entregas planejadas.
+                Informe e revise as datas planejadas. Fases e MEGAFASES são consolidadas automaticamente a partir das atividades e entregas planejadas. Previsão operacional: {metrics.forecastActive ? 'registrada' : 'ainda não registrada'}.
               </span>
             </div>
           </section>
@@ -566,14 +532,7 @@ export function JourneyProjectPlan({
             onPlanMaterialized={onPlanMaterialized}
           />
 
-          <div className="skpe-project-plan-navigation">
-            <button type="button" onClick={() => setActiveStage('team')}>
-              Voltar
-            </button>
-            <button type="button" onClick={() => setActiveStage('resources')}>
-              Avançar para Recursos
-            </button>
-          </div>
+
         </>
       )}
 
@@ -627,14 +586,7 @@ export function JourneyProjectPlan({
             </article>
           </div>
 
-          <div className="skpe-project-plan-navigation">
-            <button type="button" onClick={() => setActiveStage('schedule')}>
-              Voltar
-            </button>
-            <button type="button" onClick={() => setActiveStage('review')}>
-              Avançar para Revisão
-            </button>
-          </div>
+
         </section>
       )}
 
@@ -642,87 +594,59 @@ export function JourneyProjectPlan({
         <section className="skpe-project-plan-panel">
           <div className="skpe-project-plan-panel-heading">
             <div>
-              <p className="skpe-eyebrow">5 · Revisão</p>
-              <h3>Revisão integrada antes da Linha de Base</h3>
-              <p>
-                O fechamento deve ocorrer somente após revisar a estrutura
-                metodológica, responsabilidades, cronograma e recursos.
-              </p>
+              <p className="skpe-eyebrow">5 - Revisão da Linha de Base</p>
+              <h3>Histórico e vigência das Linhas de Base</h3>
+              <p>Consulte as versões registradas e a referência vigente. Revisões somente são necessárias quando houver alteração formal.</p>
             </div>
           </div>
-
-          <div className="skpe-project-review-grid">
-            <article>
-              <span>Escopo metodológico</span>
-              <strong>{metrics.activeRows.length} itens ativos</strong>
-              <small>{metrics.mandatoryCount} obrigatórios</small>
-            </article>
-            <article>
-              <span>Responsabilidades</span>
-              <strong>{metrics.assignedCount} atribuídos</strong>
-              <small>{metrics.unassignedCount} ainda sem responsável</small>
-            </article>
-            <article>
-              <span>Janela inicial</span>
-              <strong>{formatDate(project.project_start_date)}</strong>
-              <small>
-                Meta do projeto: {formatDate(project.project_target_end_date)}
-              </small>
-            </article>
-            <article>
-              <span>Plano institucional</span>
-              <strong>{metrics.baselineApproved ? 'Aprovado' : 'Ainda não fechado'}</strong>
-              <small>
-                {metrics.forecastActive
-                  ? 'Previsão operacional já ativa'
-                  : 'Sem previsão operacional ativa'}
-              </small>
-            </article>
-          </div>
-
-          <div className="skpe-project-plan-callout">
-            A aplicação verifica se o cronograma obrigatório está completo antes da submissão da Linha de Base. Responsabilidades e recursos são considerados na mesma verificação de prontidão, preservando as regras de governança já estabelecidas.
-          </div>
-
-          <div className="skpe-project-plan-navigation">
-            <button type="button" onClick={() => setActiveStage('resources')}>
-              Voltar
-            </button>
-            <button type="button" onClick={() => setActiveStage('baseline')}>
-              Ir para Fechamento
-            </button>
-          </div>
+          {project?.project_status === 'active' && (
+            <div className="skpe-project-plan-callout is-guidance" role="status">
+              <strong>Linha de Base vigente: aprovada.</strong>{' '}
+              A aprovação do Projeto e do cronograma consta do registro histórico da reunião de abertura. A v1 listada abaixo é uma proposta técnica automática e não substitui a Linha de Base vigente.
+            </div>
+          )}
+          {baselineLoading ? <p>Carregando versões...</p> :
+            baselineLoadError ? <p role="alert">Falha na consulta: {baselineLoadError}</p> : (
+              <SparksSmartGrid
+                ariaLabel="Histórico de Linhas de Base"
+                rows={baselineVersions.map((version) => ({
+                  id: version.id,
+                  version: 'v' + version.version_number,
+                  title: version.title,
+                  kind: version.governance_status === 'draft'
+                    ? 'Proposta técnica'
+                    : version.schedule_kind === 'baseline'
+                      ? 'Inicial'
+                      : version.schedule_kind === 'rebaseline'
+                        ? 'Revisão'
+                        : 'Previsão',
+                  status: ({ approved: 'Aprovada', active: 'Ativa', draft: 'Rascunho técnico', pending_approval: 'Aguardando aprovação', superseded: 'Substituída', cancelled: 'Cancelada' } as Record<string, string>)[version.governance_status] ?? version.governance_status,
+                  current: version.is_current_plan
+                    ? 'Vigente'
+                    : version.governance_status === 'draft'
+                      ? 'Proposta técnica'
+                      : 'Histórica',
+                  approved: version.approved_at
+                    ? formatDate(version.approved_at)
+                    : version.governance_status === 'draft'
+                      ? 'Não se aplica — proposta técnica'
+                      : 'Data da decisão não informada',
+                  notes: version.notes || 'Não informada',
+                }))}
+                columns={[
+                  { id: 'version', label: 'Versão', minWidth: 90 },
+                  { id: 'title', label: 'Descrição', minWidth: 180, grow: 2, tooltip: true },
+                  { id: 'kind', label: 'Tipo', minWidth: 95 },
+                  { id: 'status', label: 'Situação', minWidth: 135 },
+                  { id: 'current', label: 'Vigência', minWidth: 100 },
+                  { id: 'approved', label: 'Aprovação', minWidth: 125 },
+                  { id: 'notes', label: 'Justificativa registrada', minWidth: 220, grow: 2, tooltip: true },
+                ]}
+                emptyMessage="Nenhuma versão localizada no registro de cronogramas."
+                viewportMode="balanced"
+              />
+            )}
         </section>
-      )}
-
-      {activeStage === 'baseline' && (
-        <>
-          <section className="skpe-project-plan-context-strip is-baseline">
-            <div>
-              <strong>6 · Fechar Linha de Base</strong>
-              <span>
-                A aprovação congela o plano institucional como referência. Toda
-                mudança posterior deve ocorrer por Revisão da Linha de Base.
-              </span>
-            </div>
-          </section>
-
-          <JourneySchedulePlanner
-            organizationId={organizationId}
-            projectId={projectId}
-            rows={rows}
-            canManageJourney={canManageJourney}
-            formatDate={formatDate}
-            onPlanMaterialized={onPlanMaterialized}
-          />
-
-          <div className="skpe-project-plan-navigation">
-            <button type="button" onClick={() => setActiveStage('review')}>
-              Voltar para Revisão
-            </button>
-            <span />
-          </div>
-        </>
       )}
     </section>
   )
