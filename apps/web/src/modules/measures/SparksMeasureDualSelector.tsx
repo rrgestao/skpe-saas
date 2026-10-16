@@ -355,7 +355,7 @@ export function SparksMeasureDualSelector({ organizationId }: Props) {
             onSelectionChange={setCatalogSelection}
             onDoubleClick={(id) => {
               setCatalogSelection([id])
-              void adoptReferences([id])
+              // Selection only: adoption requires the explicit Adotar action.
             }}
             viewportMode="balanced"
           />
@@ -418,7 +418,7 @@ export function SparksMeasureDualSelector({ organizationId }: Props) {
 
       <footer className="sparks-measure-dual-selector__footer">
         <span>
-          Duplo clique no Catálogo adota o indicador. Ctrl/Cmd adiciona ou
+          Selecione os indicadores e clique em Adotar para confirmar. Ctrl/Cmd adiciona ou
           remove itens da seleção; Shift seleciona um intervalo.
         </span>
         <span>
