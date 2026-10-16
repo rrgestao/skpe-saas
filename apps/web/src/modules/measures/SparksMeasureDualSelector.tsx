@@ -247,7 +247,10 @@ export function SparksMeasureDualSelector({ organizationId }: Props) {
   )
 
   async function adoptReferences(referenceIds: string[]) {
-    if (referenceIds.length === 0 || changing) return
+    if (referenceIds.length === 0 || changing || loading) return
+    const availableIds = new Set(availableCatalog.map((reference) => reference.reference_catalog_id))
+    const eligibleIds = [...new Set(referenceIds)].filter((id) => availableIds.has(id))
+    if (eligibleIds.length === 0) return
 
     setChanging(true)
     setMessage(null)
@@ -256,7 +259,7 @@ export function SparksMeasureDualSelector({ organizationId }: Props) {
       'adopt_sparks_measure_references_for_organization' as never,
       {
         target_organization_id: organizationId,
-        target_reference_catalog_ids: referenceIds,
+        target_reference_catalog_ids: eligibleIds,
         target_change_reason:
           'Adoção realizada no painel de Indicadores da Organização.',
       } as never,

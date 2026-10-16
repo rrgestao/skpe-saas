@@ -13,3 +13,11 @@ test('catalog single click selects and double click adopts through governed acti
   assert.match(source, /onClick=\{\(\) => void adoptSelected\(\)\}/)
   assert.match(source, /Um clique seleciona; duplo clique adota o indicador/)
 })
+
+test('adoption submits only unique available master catalog references', () => {
+  assert.match(source, /if \(referenceIds\.length === 0 \|\| changing \|\| loading\) return/)
+  assert.match(source, /new Set\(availableCatalog\.map\(\(reference\) => reference\.reference_catalog_id\)\)/)
+  assert.match(source, /\[\.\.\.new Set\(referenceIds\)\]\.filter\(\(id\) => availableIds\.has\(id\)\)/)
+  assert.match(source, /if \(eligibleIds\.length === 0\) return/)
+  assert.match(source, /target_reference_catalog_ids: eligibleIds/)
+})
