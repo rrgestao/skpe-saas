@@ -4,11 +4,12 @@ import test from 'node:test'
 
 const source = readFileSync(new URL('../src/modules/measures/SparksMeasureDualSelector.tsx', import.meta.url), 'utf8')
 
-test('catalog double-click only selects; adoption requires explicit action', () => {
+test('catalog single click selects and double click adopts through governed action', () => {
   const match = source.match(/onDoubleClick=\{\(id\) => \{([\s\S]*?)\}\}/)
   assert.ok(match, 'catalog double-click handler must exist')
+  assert.match(source, /onSelectionChange=\{setCatalogSelection\}/)
   assert.match(match[1], /setCatalogSelection\(\[id\]\)/)
-  assert.doesNotMatch(match[1], /adoptReferences|adoptSelected|supabase\.rpc/)
+  assert.match(match[1], /void adoptReferences\(\[id\]\)/)
   assert.match(source, /onClick=\{\(\) => void adoptSelected\(\)\}/)
-  assert.match(source, /Selecione os indicadores e clique em Adotar para confirmar/)
+  assert.match(source, /Um clique seleciona; duplo clique adota o indicador/)
 })
