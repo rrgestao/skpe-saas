@@ -11,6 +11,7 @@ type Props = {
   canManage: boolean
   canGenerateDeliveryKit: boolean
   onOpenPerformanceOutputs?: () => void
+  onOpenPortability?: () => void
   onBack?: () => void
   backLabel?: string
 }
@@ -120,7 +121,7 @@ const formatDate = (value: string | null | undefined) => {
 
 const safeName = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '_')
 
-export function MethodologyArtifactsSection({ organizationId, projectId, canManage, canGenerateDeliveryKit, onOpenPerformanceOutputs, onBack, backLabel = 'Voltar' }: Props) {
+export function MethodologyArtifactsSection({ organizationId, projectId, canManage, canGenerateDeliveryKit, onOpenPerformanceOutputs, onOpenPortability, onBack, backLabel = 'Voltar' }: Props) {
   const [catalog, setCatalog] = useState<CatalogItem[]>([])
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
@@ -404,6 +405,11 @@ export function MethodologyArtifactsSection({ organizationId, projectId, canMana
           <span>Resultados</span><h3>Desempenho e Portfólio</h3>
           <p>Relatório executivo de desempenho e extração CSV ficam na Visão Geral, junto ao cockpit governado.</p>
           <button type="button" disabled={!onOpenPerformanceOutputs} onClick={onOpenPerformanceOutputs}>Abrir saídas de desempenho</button>
+        </article>
+        <article>
+          <span>Intercâmbio de dados</span><h3>Importação e exportação</h3>
+          <p>Acesse os fluxos canônicos de importação e exportação, com revisão e materialização governadas.</p>
+          <button type="button" disabled={!onOpenPortability} onClick={onOpenPortability}>Abrir importação e exportação</button>
         </article>
       </div>
     </section>

@@ -1394,3 +1394,15 @@ button.skpe-performance-summary-card:focus-visible {
     justify-content: flex-start;
   }
 }
+
+/* CARD-CANON-03: mesma cor de sensibilizacao para cards executivos. */
+.skpe-performance-dashboard-layout .skpe-performance-result-card:hover,
+.skpe-performance-dashboard-layout .skpe-performance-result-card:focus-within,
+.skpe-performance-dashboard-layout .skpe-performance-summary-card:hover,
+.skpe-performance-dashboard-layout .skpe-performance-summary-card:focus-visible,
+button.skpe-performance-summary-card:hover,
+button.skpe-performance-summary-card:focus-visible {
+  background: var(--sparks-card-hover-surface, #eef7f3) !important;
+  border-color: #b9d7ca;
+  box-shadow: 0 6px 18px rgba(23, 107, 83, 0.07);
+}

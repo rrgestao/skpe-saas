@@ -74,7 +74,7 @@ button.sparks-summary-card:focus-visible {
 .sparks-summary-card__label {
   font-size: 0.78rem;
   line-height: 1.25;
-  font-weight: 780;
+  font-weight: 800;
   color: var(--skpe-text-muted, var(--sparks-text-muted, #5f7068));
 }
 
@@ -96,4 +96,12 @@ button.sparks-summary-card:focus-visible {
   .sparks-summary-cards {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* CARD-CANON-03: hover coerente com os demais cards de medida. */
+button.sparks-summary-card {
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+button.sparks-summary-card:hover {
+  background: var(--sparks-card-hover-surface, #eef7f3);
 }

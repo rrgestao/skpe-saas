@@ -11,13 +11,41 @@ export type ExecutiveReportArtifact = {
   fileName: string | null
 }
 
+export type ExecutiveReportCanonicalSummary = {
+  formulationLabel: string | null
+  formulationStatus: string | null
+  objectives: number | null
+  indicators: number | null
+  okrs: number | null
+  keyResults: number | null
+  initiatives: number | null
+  risks: number | null
+  monitoringStatus: string | null
+  note: string | null
+}
+
 type BuildExecutiveReportArgs = {
   organizationName: string
   projectName: string
   horizonLabel: string | null
   isFinalized: boolean
+  finalGateCompleted: boolean
   generatedAt: Date
   artifacts: ExecutiveReportArtifact[]
+  availableArtifactCount: number
+  canonicalSummary: ExecutiveReportCanonicalSummary
+}
+
+export function isExecutiveReportFinalized({
+  finalGateCompleted,
+  allArtifactsSelected,
+  allArtifactsValidated,
+}: {
+  finalGateCompleted: boolean
+  allArtifactsSelected: boolean
+  allArtifactsValidated: boolean
+}) {
+  return finalGateCompleted && allArtifactsSelected && allArtifactsValidated
 }
 
 const phaseLabels: Record<string, string> = {
@@ -75,15 +103,23 @@ export function buildExecutiveStrategicReportHtml({
   projectName,
   horizonLabel,
   isFinalized,
+  finalGateCompleted,
   generatedAt,
   artifacts,
+  availableArtifactCount,
+  canonicalSummary,
 }: BuildExecutiveReportArgs) {
   const reportTitle = isFinalized
     ? 'Plano Estratégico Consolidado'
     : 'Relatório Executivo de Trabalho'
   const reportStatus = isFinalized
-    ? 'Jornada concluída e ratificada'
-    : 'Documento de trabalho — a Jornada ainda não foi concluída'
+    ? 'Jornada concluída e ratificada; a seleção abrange todos os artefatos disponíveis e validados.'
+    : finalGateCompleted
+      ? 'Documento de trabalho — a seleção ou a validação dos artefatos ainda está incompleta.'
+      : 'Documento de trabalho — a Jornada ainda não foi concluída.'
+  const scopeNotice = artifacts.length < availableArtifactCount
+    ? 'Esta emissão inclui ' + artifacts.length + ' de ' + availableArtifactCount + ' artefatos disponíveis. Os itens não selecionados não aparecem neste relatório.'
+    : 'Esta emissão inclui os ' + artifacts.length + ' artefatos disponibilizados para este projeto.'
 
   const sorted = [...artifacts].sort((a, b) => {
     const phaseCompare = phaseSortValue(phaseRoot(a.phaseCode)) - phaseSortValue(phaseRoot(b.phaseCode))
@@ -184,7 +220,12 @@ export function buildExecutiveStrategicReportHtml({
       <strong>${isFinalized ? 'Plano consolidado:' : 'Documento de trabalho:'}</strong>
       ${isFinalized
         ? ' a Jornada registrada no projeto está concluída. Este relatório continua subordinado aos registros canônicos e às validações existentes na solução.'
-        : ' a Jornada ainda possui etapas ou validações pendentes. Este arquivo não deve ser apresentado como versão final institucional do Planejamento Estratégico.'}
+        : finalGateCompleted
+          ? ' a Jornada está concluída, mas esta emissão ainda não reúne todos os artefatos disponíveis e validados. Este arquivo não deve ser apresentado como versão final institucional do Planejamento Estratégico.'
+          : ' a Jornada ainda possui etapas ou validações pendentes. Este arquivo não deve ser apresentado como versão final institucional do Planejamento Estratégico.'}
+    </div>
+    <div class="notice">
+      <strong>Escopo da emissão:</strong> ${escapeHtml(scopeNotice)}
     </div>
     <div class="notice">
       <strong>Regra de autoridade:</strong> em caso de divergência, prevalecem os registros canônicos e as validações existentes na solução SPARKs PE.
@@ -192,7 +233,7 @@ export function buildExecutiveStrategicReportHtml({
     <p><strong>Organização:</strong> ${escapeHtml(organizationName)}<br>
     <strong>Projeto:</strong> ${escapeHtml(projectName)}<br>
     ${horizonLabel ? `<strong>Horizonte Estratégico:</strong> ${escapeHtml(horizonLabel)}<br>` : ''}
-    <strong>Artefatos incluídos:</strong> ${artifacts.length}</p>
+    <strong>Artefatos incluídos:</strong> ${artifacts.length} de ${availableArtifactCount} disponíveis</p>
   </section>
 
   <section>
@@ -201,6 +242,26 @@ export function buildExecutiveStrategicReportHtml({
     <table>
       <thead><tr><th>Etapa</th><th>Artefato</th><th>Situação</th><th>Versão</th></tr></thead>
       <tbody>${summaryRows}</tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="eyebrow">Cobertura canônica</p>
+    <h2>Formulação e desdobramento registrados</h2>
+    <p>Esta seção lê diretamente os objetos canônicos da Formulação quando a versão aplicável pode ser determinada sem ambiguidade. Ela não substitui os artefatos metodológicos nem cria conteúdo ausente.</p>
+    ${canonicalSummary.note ? `<div class="notice"><strong>Limite de consolidação:</strong> ${escapeHtml(canonicalSummary.note)}</div>` : ''}
+    <table>
+      <tbody>
+        <tr><th>Formulação</th><td>${escapeHtml(canonicalSummary.formulationLabel ?? 'Não consolidada automaticamente')}</td></tr>
+        <tr><th>Situação da formulação</th><td>${escapeHtml(canonicalSummary.formulationStatus ?? '—')}</td></tr>
+        <tr><th>Objetivos Estratégicos</th><td>${escapeHtml(canonicalSummary.objectives ?? '—')}</td></tr>
+        <tr><th>KPIs / Indicadores estratégicos</th><td>${escapeHtml(canonicalSummary.indicators ?? '—')}</td></tr>
+        <tr><th>OKRs</th><td>${escapeHtml(canonicalSummary.okrs ?? '—')}</td></tr>
+        <tr><th>KRs</th><td>${escapeHtml(canonicalSummary.keyResults ?? '—')}</td></tr>
+        <tr><th>Iniciativas selecionadas</th><td>${escapeHtml(canonicalSummary.initiatives ?? '—')}</td></tr>
+        <tr><th>Riscos de iniciativas</th><td>${escapeHtml(canonicalSummary.risks ?? '—')}</td></tr>
+        <tr><th>Governança de monitoramento</th><td>${escapeHtml(canonicalSummary.monitoringStatus ?? '—')}</td></tr>
+      </tbody>
     </table>
   </section>
 

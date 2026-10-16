@@ -130,3 +130,27 @@
 @media (max-width: 1180px) {
   .skpe-executive-overview-flow > article { min-height: 0; }
 }
+/* CARD-CANON-03: Formulação Estratégica */
+.skpe-executive-overview-metrics > article,
+.skpe-executive-overview-flow > article {
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.skpe-executive-overview-metrics > article > span:first-child {
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+.skpe-executive-overview-metrics > article > strong,
+.skpe-executive-overview-metrics > article > small {
+  text-align: center !important;
+}
+.skpe-executive-overview-flow > article > strong {
+  display: block;
+  text-align: center;
+  font-weight: 800;
+}
+.skpe-executive-overview-metrics > article:hover,
+.skpe-executive-overview-flow > article:hover {
+  border-color: #b9d7ca;
+  background: var(--sparks-card-hover-surface, #eef7f3);
+  box-shadow: 0 6px 18px rgba(23, 107, 83, 0.07);
+}

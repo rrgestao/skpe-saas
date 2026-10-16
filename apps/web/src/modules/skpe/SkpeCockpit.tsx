@@ -9639,6 +9639,11 @@ case 'monitoring':
             canManage={canManageArtifacts}
             canGenerateDeliveryKit={capabilities?.can_generate_delivery_kit ?? canViewArtifacts}
             onOpenPerformanceOutputs={() => navigateToSection('overview')}
+            onOpenPortability={
+              canManageGovernance
+                ? () => navigateToSection('portability')
+                : undefined
+            }
             onBack={() => navigateToSection('journey')}
             backLabel="Voltar para Jornada Estratégica"
           />

@@ -511,3 +511,23 @@
 .sparks-measures-indicator-grid [role="columnheader"] {
   box-shadow: 0 1px 0 var(--skpe-border, #d7e2dd);
 }
+
+/* CARD-CANON-03: métricas da tela de Medidas seguem o mesmo alinhamento e hover. */
+.sparks-measures-workspace__summary article {
+  text-align: center;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.sparks-measures-workspace__summary article > span {
+  width: 100%;
+  text-align: center;
+  font-weight: 800;
+}
+.sparks-measures-workspace__summary article > strong {
+  width: 100%;
+  text-align: center;
+}
+.sparks-measures-workspace__summary article:hover {
+  border-color: #b9d7ca;
+  background: var(--sparks-card-hover-surface, #eef7f3);
+  box-shadow: 0 6px 18px rgba(23, 107, 83, 0.07);
+}

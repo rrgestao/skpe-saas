@@ -32,3 +32,33 @@
 .skpe-architecture-state{padding:1rem;border:1px solid #dce6e1;border-radius:12px;background:#fff}
 .skpe-architecture-state.is-error{border-color:#ecc7c1;background:#fff7f5;color:#7a3127}
 @media(max-width:900px){.skpe-architecture-objective-grid,.skpe-architecture-relation-grid{grid-template-columns:1fr}}
+/* CARD-CANON-03: hierarquia e superficie dos cards da arquitetura estratégica. */
+.skpe-architecture-theme-grid > article,
+.skpe-architecture-perspective-grid > article,
+.skpe-architecture-objective-grid > article,
+.skpe-architecture-relation-grid > article {
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.skpe-architecture-theme-grid > article > small,
+.skpe-architecture-perspective-grid > article > small,
+.skpe-architecture-objective-grid > article > small,
+.skpe-architecture-relation-grid > article > small {
+  display: block;
+  text-align: center;
+}
+.skpe-architecture-theme-grid > article > strong,
+.skpe-architecture-perspective-grid > article > strong,
+.skpe-architecture-objective-grid > article > strong,
+.skpe-architecture-relation-grid > article > strong {
+  display: block;
+  text-align: center;
+  font-weight: 800;
+}
+.skpe-architecture-theme-grid > article:hover,
+.skpe-architecture-perspective-grid > article:hover,
+.skpe-architecture-objective-grid > article:hover,
+.skpe-architecture-relation-grid > article:hover {
+  border-color: #b9d7ca;
+  background: var(--sparks-card-hover-surface, #eef7f3);
+  box-shadow: 0 6px 18px rgba(23, 107, 83, 0.07);
+}

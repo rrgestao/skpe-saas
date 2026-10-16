@@ -199,6 +199,22 @@ The full Strategic Plan report should reconcile, when available:
 
 It must never fill missing approved content with generated facts.
 
+Implementation update — 2026-10-15:
+
+- The report now presents the selected artifact count against the artifacts available for the project and states when the publication is partial.
+- The publication center links portfolio/performance outputs and authorized users to the existing canonical import/export area.
+- “Plano Estratégico Consolidado” is restricted to a completed PEM-05 gate, full selection of the returned project artifacts, and validated artifact statuses.
+- Partial selection or pending validation keeps the output classified as a work report; report generation remains read-only.
+- V1-R02 remains PARTIAL: reconciliation of the full thematic contents listed above and authenticated runtime/visual acceptance are still pending.
+
+Implementation update — 2026-10-16:
+
+- The report now reads canonical strategic-domain coverage directly when exactly one eligible formulation can be determined for the project.
+- Direct canonical coverage includes Strategic Objectives, strategic KPIs/indicators, OKRs, KRs, selected initiative portfolio items, initiative risks and monitoring-governance status.
+- Formulation resolution is fail-closed: if no eligible formulation exists, or if more than one eligible formulation makes the applicable version ambiguous, the report exposes that limitation instead of choosing silently.
+- Methodology artifacts remain separately listed and retain their own governed status/version authority; canonical coverage does not create, approve or rewrite strategic content.
+- V1-R02 remains PARTIAL until the remaining thematic contents and authenticated visual/runtime acceptance are reconciled.
+
 ### V1-R03 — Initiative budget / physical-financial management UX
 
 Complete the already-approved roadmap scope without becoming corporate accounting.

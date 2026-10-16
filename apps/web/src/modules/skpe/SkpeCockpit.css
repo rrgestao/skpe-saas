@@ -11464,3 +11464,42 @@ button.skpe-admin-kpi-card:hover,
   outline: 3px solid rgb(23 107 83 / 20%);
   outline-offset: 2px;
 }
+/* CARD-CANON-03: autoridade final para cards de medidas do SK-PE. */
+.skpe-kpi-card,
+.skpe-admin-kpi-card,
+.skpe-governance-kpi-card,
+.skpe-monitoring-kpi-card,
+.skpe-journey-summary-card,
+.skpe-evolution-summary-card {
+  text-align: center !important;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.skpe-kpi-card > span:first-child,
+.skpe-admin-kpi-card > span:first-child,
+.skpe-governance-kpi-card > span:first-child,
+.skpe-monitoring-kpi-card > span:first-child,
+.skpe-journey-summary-card > span:first-child,
+.skpe-evolution-summary-card > span:first-child {
+  width: 100%;
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+.skpe-kpi-card > strong,
+.skpe-admin-kpi-card > strong,
+.skpe-governance-kpi-card > strong,
+.skpe-monitoring-kpi-card > strong,
+.skpe-journey-summary-card > strong,
+.skpe-evolution-summary-card > strong {
+  width: 100%;
+  text-align: center !important;
+}
+.skpe-kpi-card:hover,
+.skpe-admin-kpi-card:hover,
+.skpe-governance-kpi-card:hover,
+.skpe-monitoring-kpi-card:hover,
+.skpe-journey-summary-card:hover,
+.skpe-evolution-summary-card:hover {
+  border-color: #b9d7ca !important;
+  background: var(--sparks-card-hover-surface, #eef7f3) !important;
+  box-shadow: 0 6px 18px rgba(23, 107, 83, 0.07) !important;
+}

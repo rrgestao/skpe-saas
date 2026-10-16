@@ -7,7 +7,10 @@ import {
   statusLabelPtBr,
   translateBackendMessage,
 } from '../../shared/i18n/ptBR'
-import { buildExecutiveStrategicReportHtml } from './executiveStrategicReport'
+import {
+  buildExecutiveStrategicReportHtml,
+  isExecutiveReportFinalized,
+} from './executiveStrategicReport'
 
 import './DeliveryKitDialog.css'
 
@@ -319,7 +322,17 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
       const horizonEnd = projectResponse.data?.planning_horizon_end_year
       const horizonLabel =
         horizonStart && horizonEnd ? `${horizonStart}–${horizonEnd}` : null
-      const isFinalized = finalGateResponse.data?.status === 'completed'
+      const finalGateCompleted = finalGateResponse.data?.status === 'completed'
+      const allArtifactsSelected =
+        artifacts.length > 0 && selectedArtifacts.length === artifacts.length
+      const allArtifactsValidated = selectedArtifacts.every((artifact) =>
+        VALIDATED_STATUSES.has(artifact.status),
+      )
+      const isFinalized = isExecutiveReportFinalized({
+        finalGateCompleted,
+        allArtifactsSelected,
+        allArtifactsValidated,
+      })
 
       const reportArtifacts = await Promise.all(
         selectedArtifacts.map(async (artifact) => {
@@ -345,14 +358,132 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
         }),
       )
 
+      const formulationResponse = await supabase
+        .from('skpe_strategic_formulations')
+        .select('id,version_label,status')
+        .eq('organization_id', organizationId)
+        .eq('project_id', projectId)
+        .in('status', [
+          'draft',
+          'in_elaboration',
+          'pending_validation',
+          'validated',
+          'pending_approval',
+          'approved',
+        ])
+        .order('version_number', { ascending: false })
+        .limit(2)
+
+      if (formulationResponse.error) throw formulationResponse.error
+
+      const eligibleFormulations = formulationResponse.data ?? []
+      let canonicalSummary = {
+        formulationLabel: null as string | null,
+        formulationStatus: null as string | null,
+        objectives: null as number | null,
+        indicators: null as number | null,
+        okrs: null as number | null,
+        keyResults: null as number | null,
+        initiatives: null as number | null,
+        risks: null as number | null,
+        monitoringStatus: null as string | null,
+        note: null as string | null,
+      }
+
+      if (eligibleFormulations.length === 1) {
+        const formulation = eligibleFormulations[0]
+        const [objectivesResponse, indicatorsResponse, okrsResponse, keyResultsResponse, initiativesResponse, risksResponse, monitoringResponse] = await Promise.all([
+          supabase
+            .from('skpe_strategic_objectives')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('project_id', projectId)
+            .eq('formulation_id', formulation.id)
+            .neq('status', 'archived'),
+          supabase
+            .from('skpe_indicators')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('project_id', projectId)
+            .eq('formulation_id', formulation.id)
+            .eq('indicator_scope', 'strategic_kpi')
+            .neq('status', 'archived'),
+          supabase
+            .from('skpe_okrs')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('project_id', projectId)
+            .eq('formulation_id', formulation.id),
+          supabase
+            .from('skpe_key_results')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('project_id', projectId)
+            .eq('formulation_id', formulation.id)
+            .neq('status', 'cancelled'),
+          supabase
+            .from('skpe_initiative_portfolio_items')
+            .select('initiative_id')
+            .eq('organization_id', organizationId)
+            .eq('project_id', projectId)
+            .eq('formulation_id', formulation.id)
+            .eq('selection_status', 'selected'),
+          supabase
+            .from('skpe_initiative_risks')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('project_id', projectId)
+            .is('archived_at', null),
+          supabase
+            .from('skpe_monitoring_packages')
+            .select('status')
+            .eq('organization_id', organizationId)
+            .eq('project_id', projectId)
+            .eq('formulation_id', formulation.id)
+            .maybeSingle(),
+        ])
+
+        const canonicalError =
+          objectivesResponse.error ||
+          indicatorsResponse.error ||
+          okrsResponse.error ||
+          keyResultsResponse.error ||
+          initiativesResponse.error ||
+          risksResponse.error ||
+          monitoringResponse.error
+        if (canonicalError) throw canonicalError
+
+        canonicalSummary = {
+          formulationLabel: formulation.version_label,
+          formulationStatus: statusLabelPtBr(formulation.status),
+          objectives: objectivesResponse.data?.length ?? 0,
+          indicators: indicatorsResponse.data?.length ?? 0,
+          okrs: okrsResponse.data?.length ?? 0,
+          keyResults: keyResultsResponse.data?.length ?? 0,
+          initiatives: initiativesResponse.data?.length ?? 0,
+          risks: risksResponse.data?.length ?? 0,
+          monitoringStatus: monitoringResponse.data?.status
+            ? statusLabelPtBr(monitoringResponse.data.status)
+            : 'Não configurada',
+          note: null,
+        }
+      } else if (eligibleFormulations.length === 0) {
+        canonicalSummary.note = 'Nenhuma Formulação elegível foi encontrada para consolidação direta. Os artefatos selecionados permanecem disponíveis como fonte registrada.'
+      } else {
+        canonicalSummary.note = 'Há mais de uma Formulação elegível para o projeto. O relatório não escolheu uma versão automaticamente; a definição da versão aplicável deve permanecer governada.'
+      }
+
       const generatedAt = new Date()
       const html = buildExecutiveStrategicReportHtml({
         organizationName,
         projectName,
         horizonLabel,
         isFinalized,
+        finalGateCompleted,
         generatedAt,
         artifacts: reportArtifacts,
+        availableArtifactCount: artifacts.length,
+        canonicalSummary,
       })
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
       const timestamp = generatedAt
@@ -366,7 +497,7 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
         `SPARKs_PE_Relatorio_Executivo_${timestamp}.html`,
       )
       setMessage(
-        `Relatório Executivo consolidado com ${reportArtifacts.length} artefato(s), sem alterar a Jornada.`,
+        `Relatório Executivo ${isFinalized ? 'consolidado' : 'de trabalho'} gerado com ${reportArtifacts.length} artefato(s), sem alterar a Jornada.`,
       )
     } catch (error) {
       console.error(error)

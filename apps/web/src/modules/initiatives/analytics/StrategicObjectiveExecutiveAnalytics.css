@@ -6,13 +6,14 @@
 .skpe-objective-analytics__rule{margin:0;color:#66756e;font-size:.76rem}
 .skpe-objective-analytics__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem}
 .skpe-objective-analytics__card{display:grid;gap:.8rem;border:1px solid #dce4df;border-radius:12px;background:#fff;padding:1rem}
+.skpe-objective-analytics__title{text-align:center}
 .skpe-objective-analytics__title span{font-size:.68rem;font-weight:800;color:#66756e}
-.skpe-objective-analytics__title h3{margin:.15rem 0 .2rem;font-size:1rem}
+.skpe-objective-analytics__title h3{margin:.15rem 0 .2rem;font-size:1rem;font-weight:750;text-align:center}
 .skpe-objective-analytics__title small{color:#66756e}
 .skpe-objective-analytics__metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem}
-.skpe-objective-analytics__metrics>div{border:1px solid #e2e9e5;border-radius:9px;padding:.55rem .6rem}
-.skpe-objective-analytics__metrics span,.skpe-objective-analytics__metrics small{display:block;font-size:.64rem;color:#66756e}
-.skpe-objective-analytics__metrics strong{display:block;margin-top:.2rem;font-size:.95rem}
+.skpe-objective-analytics__metrics>div{border:1px solid #e2e9e5;border-radius:9px;padding:.55rem .6rem;text-align:center}
+.skpe-objective-analytics__metrics span,.skpe-objective-analytics__metrics small{display:block;font-size:.64rem;color:#66756e;text-align:center}
+.skpe-objective-analytics__metrics strong{display:block;margin-top:.2rem;font-size:.95rem;text-align:center}
 .skpe-objective-analytics__metrics .is-attention{border-color:#d9b76d;background:#fffaf0}
 .skpe-objective-analytics__actions{display:flex;gap:.55rem;flex-wrap:wrap}
 .skpe-objective-analytics__actions button{border:1px solid #cad8d1;border-radius:8px;background:#fff;padding:.5rem .7rem;font:inherit;font-size:.72rem;cursor:pointer}
@@ -20,3 +21,16 @@
 .skpe-objective-analytics-state.is-error{background:#fff7f7;border-color:#dcb7b7}
 @media(max-width:1100px){.skpe-objective-analytics__grid{grid-template-columns:1fr}}
 @media(max-width:760px){.skpe-objective-analytics>header{display:block}.skpe-objective-analytics>header>span{display:block;margin-top:.35rem}.skpe-objective-analytics__metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* CARD-CANON-03: títulos e sensibilização dos cards de Objetivos Estratégicos. */
+.skpe-objective-analytics__card {
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.skpe-objective-analytics__title h3 {
+  font-weight: 800 !important;
+}
+.skpe-objective-analytics__card:hover {
+  border-color: #b9d7ca;
+  background: var(--sparks-card-hover-surface, #eef7f3);
+  box-shadow: 0 6px 18px rgba(23, 107, 83, 0.07);
+}

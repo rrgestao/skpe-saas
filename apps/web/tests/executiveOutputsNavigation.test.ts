@@ -33,3 +33,10 @@ test('outputs center explains that reports and kits come from governed artifacts
   assert.match(artifacts, /Desempenho e Portfólio/)
   assert.match(cockpit, /onOpenPerformanceOutputs=\{\(\) => navigateToSection\('overview'\)\}/)
 })
+
+test('publication center routes canonical import/export only through authorized portability access', () => {
+  assert.match(artifacts, /Importação e exportação/)
+  assert.match(artifacts, /disabled={!onOpenPortability}/)
+  assert.match(cockpit, /onOpenPortability={[\s\S]*?navigateToSection\('portability'\)/)
+  assert.match(cockpit, /canManageGovernance[\s\S]*?onOpenPortability/)
+})

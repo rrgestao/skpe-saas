@@ -2437,3 +2437,13 @@ label.pa-field-invalid::after {
 .pa-content .sparks-smart-grid{height:calc(100vh - 250px)!important;max-height:none!important;min-height:360px!important}
 .pa-icon-button,.pa-view-toggle button,.pa-card-actions button,.pa-table-card td button,.pa-panel-header button{border-color:transparent!important;background:transparent!important;box-shadow:none!important}
 .pa-icon-button:hover,.pa-view-toggle button:hover,.pa-card-actions button:hover,.pa-table-card td button:hover,.pa-panel-header button:hover{background:rgba(23,107,83,.07)!important}
+
+
+/* CARD-CANON-03: atalho administrativo segue o mesmo destaque de mouse. */
+.pa-summary-grid > .pa-summary-card > span {
+  font-weight: 800;
+}
+.pa-summary-grid > .pa-summary-card:hover,
+.pa-summary-grid > .pa-summary-card:focus-visible {
+  background: var(--sparks-card-hover-surface, #eef7f3);
+}

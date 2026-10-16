@@ -632,3 +632,17 @@ button.sparks-metric-card {
 /* CARD-CANON-02 — autoridade transversal dos cards métricos. */
 .sparks-metric-card { min-height:104px!important; padding:.85rem 1rem!important; border-radius:14px!important; display:grid!important; align-content:center!important; justify-items:center!important; text-align:center!important; gap:.35rem!important; }
 .sparks-metric-card__label,.sparks-metric-card__value,.sparks-metric-card__helper,.sparks-metric-card__footer { width:100%!important; text-align:center!important; justify-content:center!important; }
+/* CARD-CANON-03: tipografia e sensibilizacao comuns aos cards de medida. */
+:root {
+  --sparks-card-hover-surface: #eef7f3;
+}
+.sparks-metric-card__label {
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+.sparks-metric-card--interactive {
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+.sparks-metric-card--interactive:hover:not(:disabled) {
+  background: var(--sparks-card-hover-surface, #eef7f3) !important;
+}

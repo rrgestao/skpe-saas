@@ -2881,3 +2881,24 @@ td,
     grid-template-columns: 1fr;
   }
 }
+
+
+/* CARD-CANON-03: resumo da Rede com titulo e medidas centralizados. */
+.network-summary-card > span,
+.network-summary-card > strong,
+.network-summary-card > small {
+  width: 100%;
+  text-align: center;
+}
+.network-summary-card > span {
+  font-weight: 800;
+}
+.network-summary-card:hover,
+.network-summary-card:focus-visible {
+  background: var(--sparks-card-hover-surface, #eef7f3);
+}
+.platform-theme-dark .network-summary-card:hover,
+.platform-theme-dark .network-summary-card:focus-visible {
+  background: color-mix(in srgb, var(--platform-accent) 14%, var(--platform-surface));
+  border-color: var(--platform-accent);
+}
