@@ -1,5 +1,3 @@
-import JSZip from 'jszip'
-
 import { createCanonicalWorkbook } from './generateCanonicalWorkbook'
 import { createPortablePortal } from './generatePortablePortal'
 
@@ -24,6 +22,7 @@ function jsonBlobToText(value: unknown) {
 }
 
 export async function createPortablePackage(document: ExportDocument) {
+  const { default: JSZip } = await import('jszip')
   const manifesto = (document.manifesto ?? {}) as JsonObject
   const dados = (document.dados ?? {}) as JsonObject
   const organizacao = (dados.organizacao ?? {}) as JsonObject

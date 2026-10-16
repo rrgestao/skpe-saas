@@ -1,4 +1,3 @@
-import JSZip from 'jszip'
 import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../lib/supabase'
@@ -216,6 +215,7 @@ export function DeliveryKitDialog({ organizationId, projectId, onClose }: Props)
     setGenerating(true)
     setMessage('Preparando o Kit de Entregas...')
     try {
+      const { default: JSZip } = await import('jszip')
       const zip = new JSZip()
       const manifestItems: Array<Record<string, unknown>> = []
       const indexRows: string[] = []

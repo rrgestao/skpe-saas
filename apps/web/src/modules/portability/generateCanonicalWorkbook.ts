@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
 
 type JsonObject = Record<string, unknown>
 
@@ -109,12 +109,13 @@ function addKeyValueSheet(workbook: ExcelJS.Workbook, name: string, data: JsonOb
 }
 
 export async function createCanonicalWorkbook(documentData: ExportDocument): Promise<{ blob: Blob; fileName: string }> {
+  const { default: ExcelJSRuntime } = await import('exceljs')
   const manifesto = asObject(documentData.manifesto)
   const dados = asObject(documentData.dados)
   const organization = asObject(dados.organizacao)
   const project = asObject(dados.projeto)
 
-  const workbook = new ExcelJS.Workbook()
+  const workbook = new ExcelJSRuntime.Workbook()
   workbook.creator = 'Plataforma SPARKs'
   workbook.title = 'SPARKs PE - Gestão Estratégica Portátil'
   workbook.subject = 'Planilha Canônica de Gestão Estratégica'

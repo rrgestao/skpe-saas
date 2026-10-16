@@ -1,5 +1,4 @@
-import ExcelJS from 'exceljs'
-import JSZip from 'jszip'
+import type ExcelJS from 'exceljs'
 
 export type ReconciliationConflict = {
   id: string
@@ -416,6 +415,7 @@ function hasZipSignature(buffer: ArrayBuffer): boolean {
 }
 
 async function normalizeOoxmlForTabularRead(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+  const { default: JSZip } = await import('jszip')
   const zip = await JSZip.loadAsync(buffer)
   const spreadsheetNamespace = 'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
 
@@ -440,7 +440,8 @@ async function normalizeOoxmlForTabularRead(buffer: ArrayBuffer): Promise<ArrayB
 }
 
 async function loadWorkbook(buffer: ArrayBuffer): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook()
+  const { default: ExcelJSRuntime } = await import('exceljs')
+  const workbook = new ExcelJSRuntime.Workbook()
   try {
     await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer, {
       ignoreNodes: ['drawing', 'legacyDrawing', 'tableParts'],
@@ -448,7 +449,7 @@ async function loadWorkbook(buffer: ArrayBuffer): Promise<ExcelJS.Workbook> {
     return workbook
   } catch {
     const normalizedBuffer = await normalizeOoxmlForTabularRead(buffer)
-    const normalizedWorkbook = new ExcelJS.Workbook()
+    const normalizedWorkbook = new ExcelJSRuntime.Workbook()
     await normalizedWorkbook.xlsx.load(normalizedBuffer as unknown as ExcelJS.Buffer, {
       ignoreNodes: ['drawing', 'legacyDrawing', 'tableParts'],
     })

@@ -313,6 +313,15 @@ Required:
 - measure post-split bundle;
 - keep regression/build green.
 
+Implementation update — 2026-10-16:
+
+- JSZip and ExcelJS runtime imports were moved behind dynamic imports in portability and delivery-kit paths.
+- The prior ineffective-dynamic-import warnings for both libraries were eliminated.
+- Production build remained green and now emits dedicated `jszip` and `exceljs` chunks.
+- Main JavaScript bundle decreased from approximately 3,421 kB / 906 kB gzip to 2,396 kB / 620 kB gzip.
+- A regression test prevents static runtime imports of these heavy dependencies from being reintroduced in the critical paths.
+- V1-P03 remains PARTIAL because the main application chunk and the ExcelJS chunk still exceed the current 500 kB warning threshold; further safe route/workspace splitting remains release work.
+
 ### V1-P04 — HOMOL acceptance
 
 Deploy only after closure baseline is committed.
